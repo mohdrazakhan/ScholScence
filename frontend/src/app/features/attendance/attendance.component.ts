@@ -27,65 +27,78 @@ interface FlatSection {
       <ng-container *ngIf="!auth.isParent()">
         
         <!-- Top Controls: Class/Section Selector + Date Presets & Export Actions -->
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        <div class="bg-white p-5 sm:p-7 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] space-y-5">
           <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             
             <!-- Section Selector & Active Badge -->
             <div class="flex flex-col sm:flex-row sm:items-center gap-3">
               <div>
-                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Select Class & Section</label>
-                <select [(ngModel)]="selectedSectionId" (change)="loadAttendance()"
-                        class="px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-500 shadow-sm min-w-[220px]">
-                  <option *ngFor="let sec of availableSections" [value]="sec.id">
-                    {{ sec.displayName }}
-                  </option>
-                </select>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Select Class & Section</label>
+                <div class="relative min-w-[240px]">
+                  <select [(ngModel)]="selectedSectionId" (change)="loadAttendance()"
+                          class="w-full appearance-none px-4 py-2.5 pr-10 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:border-slate-800 shadow-[inset_2px_2px_5px_#e2e8f0,inset_-2px_-2px_5px_#ffffff] cursor-pointer transition-all">
+                    <option *ngFor="let sec of availableSections" [value]="sec.id">
+                      {{ sec.displayName }}
+                    </option>
+                  </select>
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-500">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
               <!-- Date Info Badge -->
               <div class="sm:pt-5">
-                <span class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                  📅 {{ getDateLabel() }}
+                <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-bold bg-[#f8fafc] text-slate-700 border border-slate-200 shadow-xs">
+                  <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span>{{ getDateLabel() }}</span>
                 </span>
               </div>
             </div>
 
             <!-- Date Selectors & Presets -->
             <div class="flex flex-wrap items-center gap-2">
-              <div class="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
+              <div class="flex items-center bg-[#f8fafc] p-1 rounded-2xl border border-slate-200 shadow-[inset_1px_1px_3px_#e2e8f0,inset_-1px_-1px_3px_#ffffff]">
                 <button type="button" (click)="setToday()"
                         [class.bg-white]="isToday()"
-                        [class.text-indigo-700]="isToday()"
-                        [class.shadow-sm]="isToday()"
-                        [class.text-slate-600]="!isToday()"
-                        class="px-3 py-1.5 rounded-md text-xs font-bold transition-all">
-                  ⚡ Today
+                        [class.text-slate-900]="isToday()"
+                        [class.shadow-xs]="isToday()"
+                        [class.text-slate-500]="!isToday()"
+                        class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                  Today
                 </button>
                 <button type="button" (click)="setYesterday()"
                         [class.bg-white]="isYesterday()"
-                        [class.text-indigo-700]="isYesterday()"
-                        [class.shadow-sm]="isYesterday()"
-                        [class.text-slate-600]="!isYesterday()"
-                        class="px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1">
-                  <span>⏪ Yesterday</span>
+                        [class.text-slate-900]="isYesterday()"
+                        [class.shadow-xs]="isYesterday()"
+                        [class.text-slate-500]="!isYesterday()"
+                        class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                  Yesterday
                 </button>
                 <button type="button" (click)="setDaysAgo(2)"
                         [class.bg-white]="isDaysAgo(2)"
-                        [class.text-indigo-700]="isDaysAgo(2)"
-                        [class.shadow-sm]="isDaysAgo(2)"
-                        [class.text-slate-600]="!isDaysAgo(2)"
-                        class="px-3 py-1.5 rounded-md text-xs font-bold transition-all">
+                        [class.text-slate-900]="isDaysAgo(2)"
+                        [class.shadow-xs]="isDaysAgo(2)"
+                        [class.text-slate-500]="!isDaysAgo(2)"
+                        class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
                   2 Days Ago
                 </button>
               </div>
 
               <div class="flex items-center gap-2">
                 <input type="date" [(ngModel)]="selectedDate" (change)="loadAttendance()"
-                       class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 shadow-sm focus:outline-none focus:border-indigo-500" />
+                       class="px-3.5 py-2 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-semibold text-slate-700 shadow-[inset_1px_1px_3px_#e2e8f0,inset_-1px_-1px_3px_#ffffff] focus:outline-none focus:border-slate-800" />
                 
                 <button (click)="saveAttendance()" [disabled]="saving || students.length === 0"
-                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm shadow-indigo-600/20 transition-all disabled:opacity-50 flex items-center gap-1.5">
-                  <span *ngIf="!saving">💾 Save All</span>
+                        class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_10px_#cbd5e1,-4px_-4px_10px_#ffffff] transition-all disabled:opacity-40 flex items-center gap-1.5 cursor-pointer">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                  <span *ngIf="!saving">Save All</span>
                   <span *ngIf="saving">Saving...</span>
                 </button>
               </div>
@@ -95,28 +108,34 @@ interface FlatSection {
           <!-- Live DB Sync Bar & Enterprise Export Buttons -->
           <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div class="flex items-center gap-2">
-              <span *ngIf="syncStatus === 'SAVED'" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span *ngIf="syncStatus === 'SAVED'" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                ✓ Live Synced to PostgreSQL ({{ lastSyncTime }})
+                Synced ({{ lastSyncTime }})
               </span>
-              <span *ngIf="syncStatus === 'SAVING'" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+              <span *ngIf="syncStatus === 'SAVING'" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                 <span class="w-2 h-2 rounded-full bg-amber-500 animate-spin"></span>
-                Writing changes to Database (API Call)...
+                Saving changes...
               </span>
               <span *ngIf="syncStatus === 'IDLE'" class="text-slate-400 text-[11px]">
-                ⚡ Click any status (Present / Absent / Late) to immediately persist to database.
+                Click any status (Present / Absent / Late) to update attendance.
               </span>
             </div>
 
-            <!-- FretBox-style Export Actions -->
+            <!-- Export Actions -->
             <div class="flex items-center gap-2">
               <button (click)="exportToExcel()" [disabled]="students.length === 0"
-                      class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-colors">
-                <span>📥 Export Excel (CSV)</span>
+                      class="px-3.5 py-1.5 bg-[#f8fafc] hover:bg-white text-slate-700 border border-slate-300 rounded-2xl text-xs font-bold shadow-[2px_2px_6px_#d9e2ec,-2px_-2px_6px_#ffffff] flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-40">
+                <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span>Export Excel</span>
               </button>
               <button (click)="printAttendanceRoster()" [disabled]="students.length === 0"
-                      class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-colors">
-                <span>🖨 Print Roster</span>
+                      class="px-3.5 py-1.5 bg-[#f8fafc] hover:bg-white text-slate-700 border border-slate-300 rounded-2xl text-xs font-bold shadow-[2px_2px_6px_#d9e2ec,-2px_-2px_6px_#ffffff] flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-40">
+                <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                <span>Print Roster</span>
               </button>
             </div>
           </div>
@@ -124,48 +143,54 @@ interface FlatSection {
 
         <!-- Quick Summary Cards -->
         <div *ngIf="registerData" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div class="bg-white p-4 rounded-xl border border-slate-200/90 shadow-sm">
+          <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff]">
             <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Strength</div>
-            <div class="text-xl font-black text-slate-900 mt-1">{{ students.length }}</div>
+            <div class="text-2xl font-black text-slate-900 mt-1">{{ students.length }}</div>
           </div>
-          <div class="bg-white p-4 rounded-xl border border-slate-200/90 shadow-sm">
+          <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff]">
             <div class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Present</div>
-            <div class="text-xl font-black text-emerald-600 mt-1">{{ countStatus('PRESENT') }}</div>
+            <div class="text-2xl font-black text-emerald-600 mt-1">{{ countStatus('PRESENT') }}</div>
           </div>
-          <div class="bg-white p-4 rounded-xl border border-slate-200/90 shadow-sm">
+          <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff]">
             <div class="text-[11px] font-bold text-rose-600 uppercase tracking-wider">Absent</div>
-            <div class="text-xl font-black text-rose-600 mt-1">{{ countStatus('ABSENT') }}</div>
+            <div class="text-2xl font-black text-rose-600 mt-1">{{ countStatus('ABSENT') }}</div>
           </div>
-          <div class="bg-white p-4 rounded-xl border border-slate-200/90 shadow-sm">
+          <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff]">
             <div class="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Late</div>
-            <div class="text-xl font-black text-amber-600 mt-1">{{ countStatus('LATE') }}</div>
+            <div class="text-2xl font-black text-amber-600 mt-1">{{ countStatus('LATE') }}</div>
           </div>
         </div>
 
         <!-- Quick Toggles & Search Bar -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200/90 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff]">
           <div class="w-full sm:w-64">
-            <input type="text" [(ngModel)]="searchQuery" placeholder="Filter student or roll no..."
-                   class="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-500" />
+            <input type="text" [(ngModel)]="searchQuery" placeholder="Filter student or roll..."
+                   class="w-full px-3.5 py-2 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-[inset_1px_1px_3px_#e2e8f0,inset_-1px_-1px_3px_#ffffff]" />
           </div>
 
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             <button (click)="markAll('PRESENT')"
-                    class="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold transition-colors">
-              ✓ Mark All Present (Auto-Save)
+                    class="px-3.5 py-2 bg-[#f8fafc] hover:bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-2xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Mark All Present</span>
             </button>
             <button (click)="markAll('ABSENT')"
-                    class="px-3 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition-colors">
-              ✕ Mark All Absent (Auto-Save)
+                    class="px-3.5 py-2 bg-[#f8fafc] hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-2xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span>Mark All Absent</span>
             </button>
           </div>
         </div>
 
         <!-- Register Table with Pagination -->
-        <div class="bg-white rounded-xl border border-slate-200/90 shadow-sm overflow-hidden">
+        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] overflow-hidden">
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
-              <thead class="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider">
+              <thead class="bg-[#f8fafc] text-slate-600 font-bold uppercase tracking-wider">
                 <tr>
                   <th class="px-5 py-3.5">Roll No</th>
                   <th class="px-5 py-3.5">Admission No</th>
@@ -184,32 +209,35 @@ interface FlatSection {
                       <button type="button" (click)="updateStudentStatus(student, 'PRESENT')"
                               [class.bg-emerald-600]="student.status === 'PRESENT'"
                               [class.text-white]="student.status === 'PRESENT'"
+                              [class.shadow-[inset_1px_1px_3px_#065f46]]="student.status === 'PRESENT'"
                               [class.bg-slate-100]="student.status !== 'PRESENT'"
                               [class.text-slate-600]="student.status !== 'PRESENT'"
-                              class="px-3 py-1 rounded font-bold text-[11px] transition-colors shadow-xs hover:opacity-90">
+                              class="px-3 py-1.5 rounded-xl font-bold text-[11px] transition-all cursor-pointer">
                         Present
                       </button>
                       <button type="button" (click)="updateStudentStatus(student, 'ABSENT')"
                               [class.bg-rose-600]="student.status === 'ABSENT'"
                               [class.text-white]="student.status === 'ABSENT'"
+                              [class.shadow-[inset_1px_1px_3px_#881337]]="student.status === 'ABSENT'"
                               [class.bg-slate-100]="student.status !== 'ABSENT'"
                               [class.text-slate-600]="student.status !== 'ABSENT'"
-                              class="px-3 py-1 rounded font-bold text-[11px] transition-colors shadow-xs hover:opacity-90">
+                              class="px-3 py-1.5 rounded-xl font-bold text-[11px] transition-all cursor-pointer">
                         Absent
                       </button>
                       <button type="button" (click)="updateStudentStatus(student, 'LATE')"
                               [class.bg-amber-500]="student.status === 'LATE'"
                               [class.text-white]="student.status === 'LATE'"
+                              [class.shadow-[inset_1px_1px_3px_#78350f]]="student.status === 'LATE'"
                               [class.bg-slate-100]="student.status !== 'LATE'"
                               [class.text-slate-600]="student.status !== 'LATE'"
-                              class="px-3 py-1 rounded font-bold text-[11px] transition-colors shadow-xs hover:opacity-90">
+                              class="px-3 py-1.5 rounded-xl font-bold text-[11px] transition-all cursor-pointer">
                         Late
                       </button>
                     </div>
                   </td>
                   <td class="px-5 py-3">
                     <input type="text" [(ngModel)]="student.reason" (blur)="saveChanges()" placeholder="Optional remark/note..."
-                           class="w-full max-w-xs px-2.5 py-1 bg-slate-50 border border-slate-200 rounded text-xs text-slate-700 focus:bg-white focus:outline-none focus:border-indigo-500" />
+                           class="w-full max-w-xs px-3 py-1.5 bg-[#f8fafc] border border-slate-200 rounded-xl text-xs text-slate-700 focus:bg-white focus:outline-none focus:border-slate-800 shadow-[inset_1px_1px_2px_#e2e8f0]" />
                   </td>
                 </tr>
                 <tr *ngIf="paginatedStudents.length === 0">
@@ -221,28 +249,28 @@ interface FlatSection {
             </table>
           </div>
 
-          <!-- Table Pagination Footer (FretBox style) -->
-          <div class="px-5 py-3 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600">
+          <!-- Table Pagination Footer -->
+          <div class="px-5 py-3.5 border-t border-slate-100 bg-[#f8fafc] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600">
             <div class="flex items-center gap-2">
               <span>Rows per page:</span>
               <select [(ngModel)]="pageSize" (change)="currentPage = 1"
-                      class="px-2 py-1 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none">
+                      class="px-2.5 py-1 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none shadow-xs">
                 <option [value]="10">10</option>
                 <option [value]="25">25</option>
                 <option [value]="50">50</option>
                 <option [value]="100">100</option>
               </select>
-              <span>Showing {{ startIndex + 1 }}-{{ endIndex }} of {{ filteredStudents.length }} students</span>
+              <span class="text-slate-500">Showing {{ startIndex + 1 }}-{{ endIndex }} of {{ filteredStudents.length }} students</span>
             </div>
 
-            <div class="flex items-center gap-1 self-end sm:self-auto">
+            <div class="flex items-center gap-1.5 self-end sm:self-auto">
               <button (click)="currentPage = currentPage - 1" [disabled]="currentPage === 1"
-                      class="px-2.5 py-1 bg-white border border-slate-200 rounded hover:bg-slate-50 disabled:opacity-40 text-xs font-semibold">
+                      class="px-3 py-1 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-40 text-xs font-bold transition-all shadow-xs cursor-pointer">
                 ‹ Prev
               </button>
               <span class="px-3 py-1 font-bold text-slate-800">Page {{ currentPage }} of {{ totalPages || 1 }}</span>
               <button (click)="currentPage = currentPage + 1" [disabled]="currentPage >= totalPages"
-                      class="px-2.5 py-1 bg-white border border-slate-200 rounded hover:bg-slate-50 disabled:opacity-40 text-xs font-semibold">
+                      class="px-3 py-1 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-40 text-xs font-bold transition-all shadow-xs cursor-pointer">
                 Next ›
               </button>
             </div>
@@ -254,9 +282,9 @@ interface FlatSection {
       <!-- PARENT VIEW: CHILD ATTENDANCE DIARY                            -->
       <!-- ============================================================== -->
       <ng-container *ngIf="auth.isParent()">
-        <div class="bg-white p-6 rounded-xl border border-slate-200/90 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="bg-white p-6 sm:p-7 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 class="text-xl font-bold text-slate-900">Child Attendance Record</h1>
+            <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Child Attendance Record</h1>
             <p class="text-xs text-slate-500 mt-0.5">Pupil: <span class="font-bold text-slate-800">Aarav Sharma</span> • Class 8 - Section A</p>
           </div>
           
@@ -267,43 +295,46 @@ interface FlatSection {
             </div>
             
             <button (click)="exportParentAttendance()"
-                    class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5">
-              <span>📥 Download Report</span>
+                    class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-xs font-bold shadow-[4px_4px_10px_#cbd5e1,-4px_-4px_10px_#ffffff] transition-all flex items-center gap-1.5 cursor-pointer">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span>Download Report</span>
             </button>
           </div>
         </div>
 
-        <div class="bg-white rounded-xl border border-slate-200/90 shadow-sm overflow-hidden">
-          <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-100 bg-[#f8fafc] flex items-center justify-between">
             <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Past 5 Days Daily Attendance Logs</h3>
-            <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">5 / 5 Days Present</span>
+            <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">5 / 5 Days Present</span>
           </div>
           <div class="divide-y divide-slate-100">
             <div class="p-4 flex items-center justify-between text-xs hover:bg-slate-50">
               <div>
                 <span class="font-bold text-slate-800">Thursday, 10 September 2026</span>
-                <span class="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700">Today</span>
+                <span class="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700">Today</span>
               </div>
-              <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">✓ Present</span>
+              <span class="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Present</span>
             </div>
             <div class="p-4 flex items-center justify-between text-xs hover:bg-slate-50">
               <div>
                 <span class="font-bold text-slate-800">Wednesday, 09 September 2026</span>
-                <span class="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">Yesterday</span>
+                <span class="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600">Yesterday</span>
               </div>
-              <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">✓ Present</span>
+              <span class="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Present</span>
             </div>
             <div class="p-4 flex items-center justify-between text-xs hover:bg-slate-50">
               <span class="font-bold text-slate-800">Tuesday, 08 September 2026</span>
-              <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">✓ Present</span>
+              <span class="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Present</span>
             </div>
             <div class="p-4 flex items-center justify-between text-xs hover:bg-slate-50">
               <span class="font-bold text-slate-800">Monday, 07 September 2026</span>
-              <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">✓ Present</span>
+              <span class="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Present</span>
             </div>
             <div class="p-4 flex items-center justify-between text-xs hover:bg-slate-50">
               <span class="font-bold text-slate-800">Friday, 04 September 2026</span>
-              <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">✓ Present</span>
+              <span class="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Present</span>
             </div>
           </div>
         </div>
@@ -342,20 +373,33 @@ export class AttendanceComponent implements OnInit {
         for (const c of classes) {
           if (c.sections && c.sections.length > 0) {
             for (const s of c.sections) {
+              const secName = s.name.startsWith('Section') ? s.name : `Section ${s.name}`;
               flat.push({
                 id: s.id,
                 name: s.name,
                 className: c.name,
-                displayName: `${c.name} - Section ${s.name}`,
+                displayName: `${c.name} - ${secName}`,
               });
             }
           }
         }
-        this.availableSections = flat;
 
-        if (flat.length > 0) {
-          const defaultSec = flat.find((s) => s.displayName.includes('Class 8 - Section A')) || flat[0];
-          this.selectedSectionId = defaultSec.id;
+        // Scope to assigned teaching sections if Teacher
+        const teacherSectionIds = new Set<string>();
+        const teachingScope = this.auth.currentUser()?.teachingScope;
+        if (teachingScope) {
+          teachingScope.classTeacherSections?.forEach((cts) => teacherSectionIds.add(cts.sectionId));
+          teachingScope.subjectAssignments?.forEach((sa) => teacherSectionIds.add(sa.sectionId));
+        }
+
+        if (this.auth.isTeacher() && teacherSectionIds.size > 0) {
+          this.availableSections = flat.filter((sec) => teacherSectionIds.has(sec.id));
+        } else {
+          this.availableSections = flat;
+        }
+
+        if (this.availableSections.length > 0) {
+          this.selectedSectionId = this.availableSections[0].id;
           this.loadAttendance();
         }
       },
@@ -487,7 +531,7 @@ export class AttendanceComponent implements OnInit {
       },
       error: () => {
         this.syncStatus = 'ERROR';
-        this.toast.error('Failed to auto-sync attendance with database.');
+        this.toast.error('Failed to auto-save attendance.');
       },
     });
   }
@@ -517,7 +561,7 @@ export class AttendanceComponent implements OnInit {
       error: () => {
         this.saving = false;
         this.syncStatus = 'ERROR';
-        this.toast.error('Could not save attendance to database.');
+        this.toast.error('Could not save attendance. Please try again.');
       },
     });
   }

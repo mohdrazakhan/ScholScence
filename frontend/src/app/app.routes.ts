@@ -8,6 +8,7 @@ import { HomeworkComponent } from './features/homework/homework.component';
 import { ExamsComponent } from './features/exams/exams.component';
 import { CommunicationComponent } from './features/communication/communication.component';
 import { ComplaintsComponent } from './features/complaints/complaints.component';
+import { MyClassComponent } from './features/my-class/my-class.component';
 import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -19,6 +20,7 @@ export const routes: Routes = [
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },
+      { path: 'my-class', component: MyClassComponent },
       { path: 'attendance', component: AttendanceComponent },
       { path: 'academics', component: AcademicsComponent },
       { path: 'homework', component: HomeworkComponent },

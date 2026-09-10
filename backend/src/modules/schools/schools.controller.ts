@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SchoolsService } from './schools.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
+import { Public } from '../../common/decorators/auth-metadata.decorator';
 
 @ApiTags('Schools')
 @ApiBearerAuth()
@@ -10,6 +11,13 @@ import { CurrentTenant } from '../../common/decorators/current-tenant.decorator'
 @Controller('schools')
 export class SchoolsController {
   constructor(private schoolsService: SchoolsService) {}
+
+  @Public()
+  @Get('public')
+  @ApiOperation({ summary: 'List all active schools for public directory and login portal' })
+  getPublicSchools() {
+    return this.schoolsService.getPublicSchools();
+  }
 
   @Get('current')
   @ApiOperation({ summary: 'Get current tenant school profile and configurations' })

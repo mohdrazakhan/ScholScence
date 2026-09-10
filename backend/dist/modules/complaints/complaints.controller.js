@@ -23,8 +23,20 @@ let ComplaintsController = class ComplaintsController {
     constructor(complaintsService) {
         this.complaintsService = complaintsService;
     }
-    getComplaints(schoolId, user) {
-        return this.complaintsService.getComplaints(schoolId);
+    getComplaints(schoolId, user, scope, classId, sectionId, status, category) {
+        return this.complaintsService.getComplaints(schoolId, user, {
+            scope,
+            classId,
+            sectionId,
+            status,
+            category,
+        });
+    }
+    getMyChildren(schoolId, user) {
+        return this.complaintsService.getMyChildren(schoolId, user.userId);
+    }
+    getFaculty(schoolId) {
+        return this.complaintsService.getFaculty(schoolId);
     }
     getComplaintById(id) {
         return this.complaintsService.getComplaintById(id);
@@ -38,17 +50,47 @@ let ComplaintsController = class ComplaintsController {
     updateStatus(id, status) {
         return this.complaintsService.updateStatus(id, status);
     }
+    assignComplaint(id, schoolId, user, dto) {
+        return this.complaintsService.assignComplaint(id, schoolId, user, dto.assignedTo, dto.note);
+    }
 };
 exports.ComplaintsController = ComplaintsController;
 __decorate([
     (0, common_1.Get)(),
-    (0, swagger_1.ApiOperation)({ summary: 'List complaint tickets' }),
+    (0, swagger_1.ApiOperation)({ summary: 'List complaint tickets based on user role and filters' }),
+    (0, swagger_1.ApiQuery)({ name: 'scope', required: false }),
+    (0, swagger_1.ApiQuery)({ name: 'classId', required: false }),
+    (0, swagger_1.ApiQuery)({ name: 'sectionId', required: false }),
+    (0, swagger_1.ApiQuery)({ name: 'status', required: false }),
+    (0, swagger_1.ApiQuery)({ name: 'category', required: false }),
+    __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __param(2, (0, common_1.Query)('scope')),
+    __param(3, (0, common_1.Query)('classId')),
+    __param(4, (0, common_1.Query)('sectionId')),
+    __param(5, (0, common_1.Query)('status')),
+    __param(6, (0, common_1.Query)('category')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, String, String, String, String, String]),
+    __metadata("design:returntype", void 0)
+], ComplaintsController.prototype, "getComplaints", null);
+__decorate([
+    (0, common_1.Get)('my-children'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get list of enrolled children for the logged-in parent' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
-], ComplaintsController.prototype, "getComplaints", null);
+], ComplaintsController.prototype, "getMyChildren", null);
+__decorate([
+    (0, common_1.Get)('faculty'),
+    (0, swagger_1.ApiOperation)({ summary: 'List teachers and faculty for ticket delegation' }),
+    __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ComplaintsController.prototype, "getFaculty", null);
 __decorate([
     (0, common_1.Get)(':id'),
     (0, swagger_1.ApiOperation)({ summary: 'Get complaint ticket details and message thread' }),
@@ -86,6 +128,17 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], ComplaintsController.prototype, "updateStatus", null);
+__decorate([
+    (0, common_1.Patch)(':id/assign'),
+    (0, swagger_1.ApiOperation)({ summary: 'Delegate or assign complaint ticket to a faculty member' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_tenant_decorator_1.CurrentTenant)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __param(3, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object, Object]),
+    __metadata("design:returntype", void 0)
+], ComplaintsController.prototype, "assignComplaint", null);
 exports.ComplaintsController = ComplaintsController = __decorate([
     (0, swagger_1.ApiTags)('Complaints / Grievances'),
     (0, swagger_1.ApiBearerAuth)(),

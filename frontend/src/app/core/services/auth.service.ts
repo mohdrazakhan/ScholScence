@@ -18,6 +18,10 @@ export class AuthService {
 
   isAdmin = computed(() => ['SCHOOL_ADMIN', 'PRINCIPAL', 'PLATFORM_ADMIN'].includes(this.userRole()));
   isTeacher = computed(() => ['TEACHER', 'CLASS_TEACHER'].includes(this.userRole()));
+  isClassTeacher = computed(() => {
+    const scope = this.currentUser()?.teachingScope;
+    return !!(scope?.classTeacherSections && scope.classTeacherSections.length > 0);
+  });
   isParent = computed(() => this.userRole() === 'GUARDIAN');
 
   constructor(
@@ -25,9 +29,13 @@ export class AuthService {
     private router: Router,
   ) {}
 
-  login(identifier: string, password: string): Observable<AuthResponse> {
+  getPublicSchools(): Observable<any[]> {
+    return this.api.get<any[]>('schools/public');
+  }
+
+  login(identifier: string, password: string, schoolCode?: string): Observable<AuthResponse> {
     return this.api
-      .post<AuthResponse>('auth/login', { identifier, password })
+      .post<AuthResponse>('auth/login', { identifier, password, schoolCode })
       .pipe(
         tap((res) => {
           localStorage.setItem(this.TOKEN_KEY, res.accessToken);

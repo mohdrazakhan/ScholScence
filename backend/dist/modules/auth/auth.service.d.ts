@@ -24,6 +24,35 @@ export declare class AuthService {
                 code: string;
             };
             permissions: string[];
+            children: {
+                id: string;
+                admissionNumber: string;
+                name: string;
+                className: string;
+                sectionName: string;
+                sectionId: string;
+                rollNumber: string;
+                relationship: string;
+                isPrimaryContact: boolean;
+            }[];
+            teachingScope: {
+                classTeacherSections: {
+                    sectionId: string;
+                    className: string;
+                    sectionName: string;
+                    academicYear: string;
+                }[];
+                subjectAssignments: {
+                    assignmentId: string;
+                    sectionId: string;
+                    className: string;
+                    sectionName: string;
+                    subjectId: string;
+                    subjectName: string;
+                    subjectCode: string;
+                    classSubjectId: string;
+                }[];
+            };
         };
     }>;
     getMe(userId: string, schoolId: string): Promise<{

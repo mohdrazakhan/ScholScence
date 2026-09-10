@@ -18,9 +18,13 @@ const swagger_1 = require("@nestjs/swagger");
 const schools_service_1 = require("./schools.service");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const current_tenant_decorator_1 = require("../../common/decorators/current-tenant.decorator");
+const auth_metadata_decorator_1 = require("../../common/decorators/auth-metadata.decorator");
 let SchoolsController = class SchoolsController {
     constructor(schoolsService) {
         this.schoolsService = schoolsService;
+    }
+    getPublicSchools() {
+        return this.schoolsService.getPublicSchools();
     }
     getCurrentSchool(schoolId) {
         return this.schoolsService.getCurrentSchool(schoolId);
@@ -33,6 +37,14 @@ let SchoolsController = class SchoolsController {
     }
 };
 exports.SchoolsController = SchoolsController;
+__decorate([
+    (0, auth_metadata_decorator_1.Public)(),
+    (0, common_1.Get)('public'),
+    (0, swagger_1.ApiOperation)({ summary: 'List all active schools for public directory and login portal' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], SchoolsController.prototype, "getPublicSchools", null);
 __decorate([
     (0, common_1.Get)('current'),
     (0, swagger_1.ApiOperation)({ summary: 'Get current tenant school profile and configurations' }),

@@ -20,11 +20,33 @@ export class AuthService {
 
   async login(loginDto: LoginDto) {
     const { identifier, password, schoolCode } = loginDto;
+    const cleanId = (identifier || '').trim();
+
+    // Build flexible lookup criteria for Email and Phone formats
+    const digitsOnly = cleanId.replace(/\D/g, '');
+    const phoneOrConditions: any[] = [{ phone: cleanId }];
+
+    if (digitsOnly.length >= 7) {
+      phoneOrConditions.push({ phone: digitsOnly });
+      if (digitsOnly.length >= 10) {
+        const last10 = digitsOnly.slice(-10);
+        phoneOrConditions.push(
+          { phone: last10 },
+          { phone: `+91${last10}` },
+          { phone: `+91 ${last10}` },
+          { phone: `0${last10}` },
+          { phone: { contains: last10 } },
+        );
+      }
+    }
 
     // 1. Find user by email or phone
     const user = await this.prisma.user.findFirst({
       where: {
-        OR: [{ email: identifier }, { phone: identifier }],
+        OR: [
+          { email: { equals: cleanId, mode: 'insensitive' } },
+          ...phoneOrConditions,
+        ],
         status: 'ACTIVE',
         deleted_at: null,
       },
@@ -77,7 +99,12 @@ export class AuthService {
     if (schoolCode) {
       const match = user.user_school_roles.find((usr) => usr.school.code === schoolCode);
       if (!match) {
-        throw new BadRequestException(`User is not enrolled in school with code: ${schoolCode}`);
+        const targetSchool = await this.prisma.school.findUnique({
+          where: { code: schoolCode },
+          select: { name: true },
+        });
+        const schoolName = targetSchool?.name || schoolCode;
+        throw new BadRequestException(`User is not enrolled in ${schoolName}`);
       }
       targetMembership = match;
     }
@@ -108,24 +135,12 @@ export class AuthService {
       data: { last_login_at: new Date() },
     });
 
+    const userProfile = await this.getMe(user.id, targetMembership.school_id);
+
     return {
       accessToken,
       refreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        phone: user.phone,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        role: targetMembership.role.code,
-        roleName: targetMembership.role.name,
-        school: {
-          id: targetMembership.school.id,
-          name: targetMembership.school.name,
-          code: targetMembership.school.code,
-        },
-        permissions,
-      },
+      user: userProfile,
     };
   }
 
@@ -245,6 +260,11 @@ export class AuthService {
       classSubjectId: ssta.class_subject_id,
     }));
 
+    const isDesignatedClassTeacher = classTeacherSections.length > 0;
+    const computedRoleName = (['TEACHER', 'CLASS_TEACHER'].includes(schoolRole?.role.code || '') && isDesignatedClassTeacher)
+      ? 'Class Teacher'
+      : (schoolRole?.role.name || schoolRole?.role.code);
+
     return {
       id: user.id,
       email: user.email,
@@ -252,7 +272,7 @@ export class AuthService {
       firstName: user.first_name,
       lastName: user.last_name,
       role: schoolRole?.role.code,
-      roleName: schoolRole?.role.name,
+      roleName: computedRoleName,
       school: schoolRole?.school ? {
         id: schoolRole.school.id,
         name: schoolRole.school.name,

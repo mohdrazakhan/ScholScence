@@ -29,6 +29,8 @@ __decorate([
 ], LoginDto.prototype, "password", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ example: 'DIS001', required: false, description: 'School Code (optional if single school)' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], LoginDto.prototype, "schoolCode", void 0);
 class RefreshTokenDto {

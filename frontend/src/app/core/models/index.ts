@@ -106,11 +106,19 @@ export interface StudentItem {
   className: string;
   sectionName: string;
   primaryContact?: {
-    first_name: string;
+    first_name?: string;
     last_name?: string;
-    phone: string;
+    phone?: string;
     email?: string;
+    name?: string;
+    relationship?: string;
   };
+  guardians?: {
+    name: string;
+    relationship?: string;
+    phone?: string;
+    email?: string;
+  }[];
 }
 
 export interface AttendanceStudent {
@@ -218,15 +226,37 @@ export interface ComplaintItem {
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   created_at: string;
+  assigned_to?: string;
+  isClassTeacherTicket?: boolean;
+  isAssignedToMe?: boolean;
   guardian?: {
     first_name: string;
     last_name?: string;
     phone: string;
+    email?: string;
   };
   student?: {
+    id: string;
     first_name: string;
     last_name?: string;
     admission_number: string;
+    student_enrollments?: {
+      section_id: string;
+      section: {
+        id: string;
+        name: string;
+        class: {
+          id: string;
+          name: string;
+        };
+      };
+    }[];
+  };
+  users?: {
+    id: string;
+    first_name: string;
+    last_name?: string;
+    email: string;
   };
   messages?: {
     id: string;
@@ -234,8 +264,10 @@ export interface ComplaintItem {
     is_internal_note: boolean;
     created_at: string;
     sender: {
+      id?: string;
       first_name: string;
       last_name?: string;
     };
   }[];
 }
+

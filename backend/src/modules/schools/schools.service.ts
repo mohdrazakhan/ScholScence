@@ -28,6 +28,23 @@ export class SchoolsService {
     });
   }
 
+  async getPublicSchools() {
+    return this.prisma.school.findMany({
+      where: { status: 'ACTIVE', deleted_at: null },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        city: true,
+        state: true,
+        address_line1: true,
+        phone: true,
+        email: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
   async getBranches(schoolId: string) {
     return this.prisma.schoolBranch.findMany({
       where: { school_id: schoolId, status: 'ACTIVE', deleted_at: null },

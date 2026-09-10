@@ -62,6 +62,16 @@ export declare class SchoolsService {
         end_date: Date;
         is_current: boolean;
     }[]>;
+    getPublicSchools(): Promise<{
+        name: string;
+        id: string;
+        email: string;
+        phone: string;
+        code: string;
+        address_line1: string;
+        city: string;
+        state: string;
+    }[]>;
     getBranches(schoolId: string): Promise<{
         name: string;
         id: string;

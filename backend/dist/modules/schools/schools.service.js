@@ -35,6 +35,22 @@ let SchoolsService = class SchoolsService {
             orderBy: { start_date: 'desc' },
         });
     }
+    async getPublicSchools() {
+        return this.prisma.school.findMany({
+            where: { status: 'ACTIVE', deleted_at: null },
+            select: {
+                id: true,
+                name: true,
+                code: true,
+                city: true,
+                state: true,
+                address_line1: true,
+                phone: true,
+                email: true,
+            },
+            orderBy: { name: 'asc' },
+        });
+    }
     async getBranches(schoolId) {
         return this.prisma.schoolBranch.findMany({
             where: { school_id: schoolId, status: 'ACTIVE', deleted_at: null },

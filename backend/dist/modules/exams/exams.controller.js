@@ -18,6 +18,8 @@ const swagger_1 = require("@nestjs/swagger");
 const exams_service_1 = require("./exams.service");
 const enter_marks_dto_1 = require("./dto/enter-marks.dto");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
+const roles_guard_1 = require("../../common/guards/roles.guard");
+const auth_metadata_decorator_1 = require("../../common/decorators/auth-metadata.decorator");
 const current_tenant_decorator_1 = require("../../common/decorators/current-tenant.decorator");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
 let ExamsController = class ExamsController {
@@ -59,6 +61,8 @@ __decorate([
 ], ExamsController.prototype, "getExamSubjects", null);
 __decorate([
     (0, common_1.Get)('subjects/:id/marks'),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, auth_metadata_decorator_1.Roles)('SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'SUPER_ADMIN'),
     (0, swagger_1.ApiOperation)({ summary: 'Get student marks list for an exam subject paper' }),
     (0, swagger_1.ApiQuery)({ name: 'sectionId', required: false }),
     __param(0, (0, common_1.Param)('id')),
@@ -69,6 +73,8 @@ __decorate([
 ], ExamsController.prototype, "getExamSubjectMarks", null);
 __decorate([
     (0, common_1.Post)('marks/bulk'),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, auth_metadata_decorator_1.Roles)('SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'SUPER_ADMIN'),
     (0, swagger_1.ApiOperation)({ summary: 'Bulk enter/update marks for students in an exam subject' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),

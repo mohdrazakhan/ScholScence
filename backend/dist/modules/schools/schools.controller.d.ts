@@ -2,6 +2,16 @@ import { SchoolsService } from './schools.service';
 export declare class SchoolsController {
     private schoolsService;
     constructor(schoolsService: SchoolsService);
+    getPublicSchools(): Promise<{
+        name: string;
+        id: string;
+        email: string;
+        phone: string;
+        code: string;
+        address_line1: string;
+        city: string;
+        state: string;
+    }[]>;
     getCurrentSchool(schoolId: string): Promise<{
         academic_years: {
             name: string;

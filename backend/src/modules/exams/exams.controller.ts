@@ -3,6 +3,8 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { ExamsService } from './exams.service';
 import { BulkEnterMarksDto } from './dto/enter-marks.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/auth-metadata.decorator';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 import { CurrentUser, AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 
@@ -26,6 +28,8 @@ export class ExamsController {
   }
 
   @Get('subjects/:id/marks')
+  @UseGuards(RolesGuard)
+  @Roles('SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Get student marks list for an exam subject paper' })
   @ApiQuery({ name: 'sectionId', required: false })
   getExamSubjectMarks(
@@ -36,6 +40,8 @@ export class ExamsController {
   }
 
   @Post('marks/bulk')
+  @UseGuards(RolesGuard)
+  @Roles('SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Bulk enter/update marks for students in an exam subject' })
   enterMarks(
     @CurrentTenant() schoolId: string,
