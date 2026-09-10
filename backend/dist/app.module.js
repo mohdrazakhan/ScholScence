@@ -19,6 +19,7 @@ const exams_module_1 = require("./modules/exams/exams.module");
 const communication_module_1 = require("./modules/communication/communication.module");
 const complaints_module_1 = require("./modules/complaints/complaints.module");
 const dashboard_module_1 = require("./modules/dashboard/dashboard.module");
+const timetable_module_1 = require("./modules/timetable/timetable.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -36,6 +37,7 @@ exports.AppModule = AppModule = __decorate([
             communication_module_1.CommunicationModule,
             complaints_module_1.ComplaintsModule,
             dashboard_module_1.DashboardModule,
+            timetable_module_1.TimetableModule,
         ],
     })
 ], AppModule);

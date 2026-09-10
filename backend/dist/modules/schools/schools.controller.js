@@ -40,7 +40,8 @@ exports.SchoolsController = SchoolsController;
 __decorate([
     (0, auth_metadata_decorator_1.Public)(),
     (0, common_1.Get)('public'),
-    (0, swagger_1.ApiOperation)({ summary: 'List all active schools for public directory and login portal' }),
+    (0, swagger_1.ApiOperation)({ summary: 'List all active schools for public directory and login portal', description: 'Returns public school names, codes, affiliations, and logos without authentication.' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Public school directory retrieved' }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
@@ -48,6 +49,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)('current'),
     (0, swagger_1.ApiOperation)({ summary: 'Get current tenant school profile and configurations' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Tenant school profile returned' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -56,6 +58,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)('academic-years'),
     (0, swagger_1.ApiOperation)({ summary: 'List academic years for current school' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Academic years list returned' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -64,6 +67,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)('branches'),
     (0, swagger_1.ApiOperation)({ summary: 'List campuses/branches for current school' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'School branch locations returned' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),

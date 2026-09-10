@@ -1,4 +1,5 @@
 import { AcademicsService } from './academics.service';
+import { CreateSubjectDto } from './dto/academics.dto';
 import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 export declare class AcademicsController {
     private academicsService;
@@ -85,12 +86,7 @@ export declare class AcademicsController {
         display_order: number;
         subject_type: string;
     }[]>;
-    createSubject(schoolId: string, dto: {
-        name: string;
-        code: string;
-        subjectType?: string;
-        description?: string;
-    }): Promise<{
+    createSubject(schoolId: string, dto: CreateSubjectDto): Promise<{
         name: string;
         description: string | null;
         id: string;

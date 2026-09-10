@@ -41,6 +41,7 @@ exports.HomeworkController = HomeworkController;
 __decorate([
     (0, common_1.Post)(),
     (0, swagger_1.ApiOperation)({ summary: 'Create and assign homework for a section & subject' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Homework published to section diary' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __param(2, (0, common_1.Body)()),
@@ -51,6 +52,8 @@ __decorate([
 __decorate([
     (0, common_1.Get)('section/:sectionId'),
     (0, swagger_1.ApiOperation)({ summary: 'Get all homework assignments for a section' }),
+    (0, swagger_1.ApiParam)({ name: 'sectionId', description: 'Section UUID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Section homework feed retrieved' }),
     __param(0, (0, common_1.Param)('sectionId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -59,6 +62,8 @@ __decorate([
 __decorate([
     (0, common_1.Get)('student/:studentId'),
     (0, swagger_1.ApiOperation)({ summary: 'Get homework feed for a student (Parent/Student view)' }),
+    (0, swagger_1.ApiParam)({ name: 'studentId', description: 'Student UUID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Student homework list retrieved' }),
     __param(0, (0, common_1.Param)('studentId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -67,6 +72,8 @@ __decorate([
 __decorate([
     (0, common_1.Get)(':id'),
     (0, swagger_1.ApiOperation)({ summary: 'Get homework details by ID' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Homework UUID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Homework assignment details returned' }),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),

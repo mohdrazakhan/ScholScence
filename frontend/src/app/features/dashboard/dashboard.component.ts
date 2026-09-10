@@ -159,24 +159,26 @@ import { DashboardStats } from '../../core/models';
             <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-xl border border-indigo-200 shadow-sm">
               Parent & Student Portal
             </span>
-            <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-2">Child: Aarav Sharma</h1>
+            <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-2">
+              Child: {{ primaryChild?.name || 'Aarav Sharma' }}
+            </h1>
             <p class="text-xs text-slate-500 mt-0.5">
-              Class 8 • Section A • Roll No: <span class="font-bold text-slate-800">#1</span> • Admission: <span class="font-bold text-slate-800">DIS001-2026-001</span>
+              {{ primaryChild?.className || 'Class 8' }} • {{ primaryChild?.sectionName || 'Section A' }} • Roll No: <span class="font-bold text-slate-800">#{{ primaryChild?.rollNumber || 1 }}</span> • Admission: <span class="font-bold text-slate-800">{{ primaryChild?.admissionNumber || 'DIS001-2026-001' }}</span>
             </p>
           </div>
 
           <div class="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
-            <a routerLink="/homework" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_10px_#cbd5e1,-4px_-4px_10px_#ffffff] transition-all flex items-center gap-2">
+            <a routerLink="/timetable" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_10px_#cbd5e1,-4px_-4px_10px_#ffffff] transition-all flex items-center gap-2">
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              <span>Homework Diary</span>
+              <span>Weekly Timetable</span>
             </a>
-            <a routerLink="/complaints" class="px-4 py-2.5 bg-[#f8fafc] hover:bg-white text-slate-700 text-xs font-bold rounded-2xl border border-slate-300 shadow-[3px_3px_8px_#d9e2ec,-3px_-3px_8px_#ffffff] transition-all flex items-center gap-2">
+            <a routerLink="/attendance" class="px-4 py-2.5 bg-[#f8fafc] hover:bg-white text-slate-700 text-xs font-bold rounded-2xl border border-slate-300 shadow-[3px_3px_8px_#d9e2ec,-3px_-3px_8px_#ffffff] transition-all flex items-center gap-2">
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span>Message School</span>
+              <span>Subject Attendance</span>
             </a>
           </div>
         </div>
@@ -184,16 +186,22 @@ import { DashboardStats } from '../../core/models';
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
           <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff]">
             <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Attendance Percentage</span>
-            <div class="text-2xl font-black text-emerald-600 mt-2">100.0%</div>
-            <div class="text-xs text-slate-500 mt-1">Present 5 of 5 days</div>
+            <div class="text-2xl font-black text-emerald-600 mt-2">
+              {{ stats?.parentData?.childStats?.attendancePercentage || '100.0' }}%
+            </div>
+            <div class="text-xs text-slate-500 mt-1">
+              Present {{ stats?.parentData?.childStats?.presentDays || 5 }} of {{ stats?.parentData?.childStats?.totalDays || 5 }} recorded days
+            </div>
           </div>
           <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff]">
             <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Pending Homework</span>
-            <div class="text-2xl font-black text-slate-900 mt-2">1 Assignment</div>
-            <div class="text-xs text-rose-600 font-semibold mt-1">Linear Equations (Math)</div>
+            <div class="text-2xl font-black text-slate-900 mt-2">
+              {{ stats?.parentData?.childStats?.pendingHomeworkCount || 1 }} Active
+            </div>
+            <div class="text-xs text-rose-600 font-semibold mt-1">Check Homework Diary</div>
           </div>
           <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff]">
-            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Latest Exam Result</span>
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Academic Standing</span>
             <div class="text-2xl font-black text-indigo-600 mt-2">Grade A1 (92%)</div>
             <div class="text-xs text-slate-500 mt-1">Term 1 Assessment</div>
           </div>
@@ -250,6 +258,10 @@ export class DashboardComponent implements OnInit {
 
   get primarySubject() {
     return this.auth.currentUser()?.teachingScope?.subjectAssignments?.[0] || null;
+  }
+
+  get primaryChild() {
+    return (this.stats as any)?.parentData?.primaryChild || null;
   }
 
   ngOnInit() {

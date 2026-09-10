@@ -16,6 +16,7 @@ exports.AcademicsController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const academics_service_1 = require("./academics.service");
+const academics_dto_1 = require("./dto/academics.dto");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const current_tenant_decorator_1 = require("../../common/decorators/current-tenant.decorator");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
@@ -52,7 +53,8 @@ let AcademicsController = class AcademicsController {
 exports.AcademicsController = AcademicsController;
 __decorate([
     (0, common_1.Get)('classes'),
-    (0, swagger_1.ApiOperation)({ summary: 'List classes and their active sections' }),
+    (0, swagger_1.ApiOperation)({ summary: 'List all classes and their active sections', description: 'Returns academic classes with nested sections for the current school.' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Classes and sections retrieved successfully' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -61,7 +63,8 @@ __decorate([
 __decorate([
     (0, common_1.Get)('sections'),
     (0, swagger_1.ApiOperation)({ summary: 'List sections with optional classId filter' }),
-    (0, swagger_1.ApiQuery)({ name: 'classId', required: false }),
+    (0, swagger_1.ApiQuery)({ name: 'classId', required: false, description: 'Optional UUID of the class to filter sections' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Sections retrieved successfully' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __param(1, (0, common_1.Query)('classId')),
     __metadata("design:type", Function),
@@ -70,7 +73,8 @@ __decorate([
 ], AcademicsController.prototype, "getSections", null);
 __decorate([
     (0, common_1.Get)('subjects'),
-    (0, swagger_1.ApiOperation)({ summary: 'List all school subjects' }),
+    (0, swagger_1.ApiOperation)({ summary: 'List all subjects in school curriculum' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Subjects retrieved successfully' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -79,15 +83,18 @@ __decorate([
 __decorate([
     (0, common_1.Post)('subjects'),
     (0, swagger_1.ApiOperation)({ summary: 'Create a new subject in the curriculum' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Subject created successfully' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, academics_dto_1.CreateSubjectDto]),
     __metadata("design:returntype", void 0)
 ], AcademicsController.prototype, "createSubject", null);
 __decorate([
     (0, common_1.Delete)('subjects/:id'),
-    (0, swagger_1.ApiOperation)({ summary: 'Remove/archive a subject' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Remove or archive a subject from curriculum' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Subject UUID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Subject removed successfully' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -97,6 +104,8 @@ __decorate([
 __decorate([
     (0, common_1.Get)('classes/:classId/subjects'),
     (0, swagger_1.ApiOperation)({ summary: 'List subjects mapped to a specific class' }),
+    (0, swagger_1.ApiParam)({ name: 'classId', description: 'Class UUID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Mapped class subjects retrieved' }),
     __param(0, (0, common_1.Param)('classId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -104,7 +113,9 @@ __decorate([
 ], AcademicsController.prototype, "getClassSubjects", null);
 __decorate([
     (0, common_1.Get)('sections/:sectionId/students'),
-    (0, swagger_1.ApiOperation)({ summary: 'List enrolled students in a specific section' }),
+    (0, swagger_1.ApiOperation)({ summary: 'List enrolled students roster in a specific section' }),
+    (0, swagger_1.ApiParam)({ name: 'sectionId', description: 'Section UUID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Student roster retrieved successfully' }),
     __param(0, (0, common_1.Param)('sectionId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -112,7 +123,8 @@ __decorate([
 ], AcademicsController.prototype, "getStudentsBySection", null);
 __decorate([
     (0, common_1.Get)('teacher-assignments'),
-    (0, swagger_1.ApiOperation)({ summary: 'List subject teacher assignments' }),
+    (0, swagger_1.ApiOperation)({ summary: 'List subject and class teacher allocations across sections' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Teaching allocations retrieved' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),

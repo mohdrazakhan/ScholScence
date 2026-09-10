@@ -18,21 +18,24 @@ const swagger_1 = require("@nestjs/swagger");
 const dashboard_service_1 = require("./dashboard.service");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const current_tenant_decorator_1 = require("../../common/decorators/current-tenant.decorator");
+const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
 let DashboardController = class DashboardController {
     constructor(dashboardService) {
         this.dashboardService = dashboardService;
     }
-    getOverview(schoolId) {
-        return this.dashboardService.getAdminDashboard(schoolId);
+    getOverview(schoolId, user) {
+        return this.dashboardService.getOverview(schoolId, user);
     }
 };
 exports.DashboardController = DashboardController;
 __decorate([
     (0, common_1.Get)('overview'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get school overview KPIs, attendance metrics, and recent activities' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Get school overview KPIs, attendance metrics, and role-scoped analytics', description: 'Returns institutional metrics for Admins, teaching routine for Teachers, and child performance KPIs for Parents.' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Role-scoped dashboard overview returned' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], DashboardController.prototype, "getOverview", null);
 exports.DashboardController = DashboardController = __decorate([

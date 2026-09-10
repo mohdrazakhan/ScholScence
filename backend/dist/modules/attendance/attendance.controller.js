@@ -31,6 +31,9 @@ let AttendanceController = class AttendanceController {
         const targetDate = date || new Date().toISOString().split('T')[0];
         return this.attendanceService.getSectionAttendance(schoolId, sectionId, targetDate);
     }
+    getMyChildren(schoolId, user, studentId) {
+        return this.attendanceService.getMyChildrenAttendance(schoolId, user.userId, studentId);
+    }
     getStudentAttendance(studentId, month) {
         return this.attendanceService.getStudentAttendance(studentId, month);
     }
@@ -38,7 +41,8 @@ let AttendanceController = class AttendanceController {
 exports.AttendanceController = AttendanceController;
 __decorate([
     (0, common_1.Post)('bulk'),
-    (0, swagger_1.ApiOperation)({ summary: 'Bulk mark student attendance for a section and date' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Bulk mark student attendance for a section and date', description: 'Allows teachers and administrators to submit daily or period attendance records for an entire section.' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Attendance records successfully saved and synced' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __param(2, (0, common_1.Body)()),
@@ -48,8 +52,10 @@ __decorate([
 ], AttendanceController.prototype, "bulkMark", null);
 __decorate([
     (0, common_1.Get)('section/:sectionId'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get attendance register for a section on a given date (defaults to today)' }),
-    (0, swagger_1.ApiQuery)({ name: 'date', required: false, example: '2026-09-10' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Get attendance register for a section on a given date' }),
+    (0, swagger_1.ApiParam)({ name: 'sectionId', description: 'Section UUID' }),
+    (0, swagger_1.ApiQuery)({ name: 'date', required: false, example: '2026-09-10', description: 'Target date (YYYY-MM-DD), defaults to today' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Attendance register and student status summary returned' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __param(1, (0, common_1.Param)('sectionId')),
     __param(2, (0, common_1.Query)('date')),
@@ -58,9 +64,23 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], AttendanceController.prototype, "getSectionAttendance", null);
 __decorate([
+    (0, common_1.Get)('my-children'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get live child attendance with subject breakdown for logged-in parent', description: 'Returns dynamic child statistics, daily register logs with real teacher markings, and course-by-course attendance rates.' }),
+    (0, swagger_1.ApiQuery)({ name: 'studentId', required: false, description: 'Optional child student UUID if parent has multiple children' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Parent child attendance diary and subject breakdown returned' }),
+    __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __param(2, (0, common_1.Query)('studentId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, String]),
+    __metadata("design:returntype", void 0)
+], AttendanceController.prototype, "getMyChildren", null);
+__decorate([
     (0, common_1.Get)('student/:studentId'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get student attendance summary and history (Parent/Student view)' }),
-    (0, swagger_1.ApiQuery)({ name: 'month', required: false }),
+    (0, swagger_1.ApiOperation)({ summary: 'Get student attendance summary and history by student ID' }),
+    (0, swagger_1.ApiParam)({ name: 'studentId', description: 'Student UUID' }),
+    (0, swagger_1.ApiQuery)({ name: 'month', required: false, description: 'Month in YYYY-MM format' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Student attendance logs retrieved' }),
     __param(0, (0, common_1.Param)('studentId')),
     __param(1, (0, common_1.Query)('month')),
     __metadata("design:type", Function),

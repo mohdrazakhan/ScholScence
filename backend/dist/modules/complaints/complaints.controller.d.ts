@@ -1,4 +1,5 @@
-import { ComplaintsService, CreateComplaintDto, AddMessageDto } from './complaints.service';
+import { ComplaintsService } from './complaints.service';
+import { CreateComplaintDto, AddMessageDto, UpdateStatusDto, AssignComplaintDto } from './dto/complaints.dto';
 import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 export declare class ComplaintsController {
     private complaintsService;
@@ -376,7 +377,7 @@ export declare class ComplaintsController {
         message: string;
         is_internal_note: boolean;
     }>;
-    updateStatus(id: string, status: string): Promise<{
+    updateStatus(id: string, dto: UpdateStatusDto): Promise<{
         student: {
             student_enrollments: ({
                 section: {
@@ -495,10 +496,7 @@ export declare class ComplaintsController {
         assigned_to: string | null;
         resolved_at: Date | null;
     }>;
-    assignComplaint(id: string, schoolId: string, user: AuthenticatedUser, dto: {
-        assignedTo: string | null;
-        note?: string;
-    }): Promise<{
+    assignComplaint(id: string, schoolId: string, user: AuthenticatedUser, dto: AssignComplaintDto): Promise<{
         student: {
             student_enrollments: ({
                 section: {

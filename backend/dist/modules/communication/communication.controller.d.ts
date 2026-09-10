@@ -1,4 +1,5 @@
-import { CommunicationService, CreateNoticeDto, CreateEventDto } from './communication.service';
+import { CommunicationService } from './communication.service';
+import { CreateNoticeDto, CreateEventDto } from './dto/communication.dto';
 import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 export declare class CommunicationController {
     private communicationService;

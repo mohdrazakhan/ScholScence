@@ -468,7 +468,7 @@ export class ComplaintsComponent implements OnInit {
   isParent = computed(() => this.auth.isParent());
   isTeacher = computed(() => this.auth.isTeacher() || this.auth.isClassTeacher());
   isClassTeacher = computed(() => this.auth.isClassTeacher());
-  isAdmin = computed(() => this.auth.isAdmin() || this.auth.isPrincipal() || this.auth.isSuperAdmin());
+  isAdmin = computed(() => this.auth.isAdmin());
 
   complaints: ComplaintItem[] = [];
   selectedTicket: ComplaintItem | null = null;

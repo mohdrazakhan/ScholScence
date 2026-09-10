@@ -30,6 +30,32 @@ export declare class AttendanceController {
             markedAt: Date;
         }[];
     }>;
+    getMyChildren(schoolId: string, user: AuthenticatedUser, studentId?: string): Promise<{
+        childrenList: any[];
+        selectedChild: {
+            studentId: any;
+            admissionNumber: any;
+            name: any;
+            rollNumber: any;
+            sectionId: any;
+            sectionName: any;
+            className: any;
+        };
+        overallSummary: {
+            totalDays: number;
+            presentDays: number;
+            absentDays: number;
+            lateDays: number;
+            percentage: string;
+        };
+        dailyHistory: {
+            id: string;
+            date: Date;
+            status: string;
+            reason: string;
+        }[];
+        subjectBreakdown: any;
+    }>;
     getStudentAttendance(studentId: string, month?: string): Promise<{
         studentId: string;
         studentName: string;

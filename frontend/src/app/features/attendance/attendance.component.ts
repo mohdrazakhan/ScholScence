@@ -279,19 +279,52 @@ interface FlatSection {
       </ng-container>
 
       <!-- ============================================================== -->
-      <!-- PARENT VIEW: CHILD ATTENDANCE DIARY                            -->
+      <!-- PARENT VIEW: DYNAMIC CHILD ATTENDANCE & SUBJECT BREAKDOWN      -->
       <!-- ============================================================== -->
       <ng-container *ngIf="auth.isParent()">
-        <div class="bg-white p-6 sm:p-7 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <!-- Header Banner with Child Selector & Summary -->
+        <div class="bg-white p-6 sm:p-7 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] flex flex-col lg:flex-row lg:items-center justify-between gap-5">
           <div>
-            <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Child Attendance Record</h1>
-            <p class="text-xs text-slate-500 mt-0.5">Pupil: <span class="font-bold text-slate-800">Aarav Sharma</span> • Class 8 - Section A</p>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-xl border border-indigo-200 shadow-sm">
+                Parent & Student Portal
+              </span>
+              <span class="text-xs text-slate-300">•</span>
+              <span class="text-xs font-semibold text-slate-600">{{ parentData?.selectedChild?.className }} - {{ parentData?.selectedChild?.sectionName }}</span>
+            </div>
+            <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-2">
+              Child Attendance & Subject Performance
+            </h1>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Pupil: <strong class="text-slate-800">{{ parentData?.selectedChild?.name || 'Your Child' }}</strong> • Roll No: <strong class="text-slate-800">#{{ parentData?.selectedChild?.rollNumber || 1 }}</strong> • Adm: <strong class="text-slate-800">{{ parentData?.selectedChild?.admissionNumber }}</strong>
+            </p>
           </div>
           
-          <div class="flex items-center gap-4">
-            <div class="text-right">
-              <span class="text-xs text-slate-400">Term Attendance</span>
-              <div class="text-2xl font-black text-emerald-600">100.0%</div>
+          <div class="flex items-center gap-4 flex-wrap">
+            <!-- Child Switcher (if multiple children) -->
+            <div *ngIf="parentData?.childrenList?.length > 1" class="flex items-center gap-2">
+              <label class="text-xs font-bold text-slate-600">Child:</label>
+              <select [ngModel]="parentSelectedChildId" (ngModelChange)="onParentChildSelect($event)"
+                      class="px-3 py-2 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none shadow-sm cursor-pointer">
+                <option *ngFor="let c of parentData?.childrenList" [value]="c.studentId">
+                  {{ c.name }} ({{ c.className }})
+                </option>
+              </select>
+            </div>
+
+            <!-- Overall Percentage KPI -->
+            <div class="px-5 py-3 rounded-2xl bg-[#f8fafc] border border-slate-200/90 shadow-inner flex items-center gap-3">
+              <div class="text-right">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Overall Term Attendance</span>
+                <div class="text-2xl font-black"
+                     [ngClass]="{
+                       'text-emerald-600': (parentAttendancePct >= 90),
+                       'text-amber-600': (parentAttendancePct >= 75 && parentAttendancePct < 90),
+                       'text-rose-600': (parentAttendancePct < 75)
+                     }">
+                  {{ parentData?.overallSummary?.percentage || '100.0' }}%
+                </div>
+              </div>
             </div>
             
             <button (click)="exportParentAttendance()"
@@ -299,42 +332,170 @@ interface FlatSection {
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              <span>Download Report</span>
+              <span>Download Statement</span>
             </button>
           </div>
         </div>
 
+        <!-- Metric KPI Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div class="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff]">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Recorded Days</span>
+            <div class="text-xl sm:text-2xl font-black text-slate-900 mt-1">{{ parentData?.overallSummary?.totalDays || 0 }} Days</div>
+            <div class="text-[11px] text-slate-500 mt-0.5">Academic Session</div>
+          </div>
+
+          <div class="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff]">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Days Present</span>
+            <div class="text-xl sm:text-2xl font-black text-emerald-600 mt-1">{{ parentData?.overallSummary?.presentDays || 0 }} Days</div>
+            <div class="text-[11px] text-emerald-600 font-semibold mt-0.5">Regular in Class</div>
+          </div>
+
+          <div class="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff]">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Days Absent</span>
+            <div class="text-xl sm:text-2xl font-black"
+                 [ngClass]="(parentData?.overallSummary?.absentDays || 0) > 0 ? 'text-rose-600 font-black' : 'text-slate-900'">
+              {{ parentData?.overallSummary?.absentDays || 0 }} Days
+            </div>
+            <div class="text-[11px] text-slate-500 mt-0.5">Unexcused / Leave</div>
+          </div>
+
+          <div class="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff]">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Timetable & Schedule</span>
+            <a routerLink="/timetable" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1 mt-2">
+              <span>View Weekly Timetable</span>
+              <span>&rarr;</span>
+            </a>
+            <div class="text-[11px] text-slate-500 mt-0.5">Periods & Recess slots</div>
+          </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- SUBJECT-WISE ATTENDANCE BREAKDOWN TABLE                        -->
+        <!-- ============================================================== -->
         <div class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] overflow-hidden">
           <div class="px-6 py-4 border-b border-slate-100 bg-[#f8fafc] flex items-center justify-between">
-            <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Past 5 Days Daily Attendance Logs</h3>
-            <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">5 / 5 Days Present</span>
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center border border-indigo-200">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Subject-Wise Attendance Breakdown</h3>
+                <p class="text-[11px] text-slate-500">Period attendance distribution across individual courses</p>
+              </div>
+            </div>
+            <span class="text-xs font-bold text-slate-600 bg-white px-3 py-1 rounded-xl border border-slate-200">
+              {{ parentData?.subjectBreakdown?.length || 0 }} Subjects Enrolled
+            </span>
           </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                  <th class="p-4">Subject</th>
+                  <th class="p-4 text-center">Subject Code</th>
+                  <th class="p-4 text-center">Total Periods</th>
+                  <th class="p-4 text-center">Attended</th>
+                  <th class="p-4 text-center">Absent</th>
+                  <th class="p-4">Attendance Rate</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr *ngFor="let sub of parentData?.subjectBreakdown" class="hover:bg-slate-50/60 transition-colors">
+                  <td class="p-4 font-bold text-slate-900">
+                    {{ sub.subjectName }}
+                    <span *ngIf="sub.subjectType" class="ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 uppercase">
+                      {{ sub.subjectType }}
+                    </span>
+                  </td>
+                  <td class="p-4 text-center font-mono font-bold text-slate-600">
+                    {{ sub.subjectCode }}
+                  </td>
+                  <td class="p-4 text-center font-bold text-slate-800">
+                    {{ sub.totalPeriods }}
+                  </td>
+                  <td class="p-4 text-center font-bold text-emerald-600">
+                    {{ sub.attendedPeriods }}
+                  </td>
+                  <td class="p-4 text-center font-bold"
+                      [ngClass]="sub.absentPeriods > 0 ? 'text-rose-600' : 'text-slate-400'">
+                    {{ sub.absentPeriods }}
+                  </td>
+                  <td class="p-4 w-52">
+                    <div class="flex items-center gap-3">
+                      <div class="flex-1 bg-slate-100 rounded-full h-2.5 overflow-hidden shadow-inner">
+                        <div class="h-full rounded-full transition-all"
+                             [ngClass]="{
+                               'bg-emerald-500': +sub.percentage >= 90,
+                               'bg-amber-500': +sub.percentage >= 75 && +sub.percentage < 90,
+                               'bg-rose-500': +sub.percentage < 75
+                             }"
+                             [style.width.%]="+sub.percentage">
+                        </div>
+                      </div>
+                      <span class="font-black text-xs min-w-[45px] text-right"
+                            [ngClass]="{
+                              'text-emerald-600': +sub.percentage >= 90,
+                              'text-amber-600': +sub.percentage >= 75 && +sub.percentage < 90,
+                              'text-rose-600': +sub.percentage < 75
+                            }">
+                        {{ sub.percentage }}%
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- DAILY ATTENDANCE REGISTER LOGS                                 -->
+        <!-- ============================================================== -->
+        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-100 bg-[#f8fafc] flex items-center justify-between">
+            <div>
+              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Live Daily Homeroom Register History</h3>
+              <p class="text-[11px] text-slate-500">Real-time attendance entries marked by the class teacher</p>
+            </div>
+            <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
+              {{ parentData?.dailyHistory?.length || 0 }} Logged Days
+            </span>
+          </div>
+
           <div class="divide-y divide-slate-100">
-            <div class="p-4 flex items-center justify-between text-xs hover:bg-slate-50">
+            <div *ngFor="let record of parentData?.dailyHistory" class="p-4 flex items-center justify-between text-xs hover:bg-slate-50 transition-colors">
               <div>
-                <span class="font-bold text-slate-800">Thursday, 10 September 2026</span>
-                <span class="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700">Today</span>
+                <span class="font-bold text-slate-800">{{ formatDailyDate(record.date) }}</span>
+                <span *ngIf="isDateToday(record.date)" class="ml-2 text-[10px] font-black px-2 py-0.5 rounded-lg bg-slate-900 text-white">Today</span>
+                <span *ngIf="record.reason" class="ml-2 text-[11px] text-slate-500 italic">({{ record.reason }})</span>
               </div>
-              <span class="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Present</span>
-            </div>
-            <div class="p-4 flex items-center justify-between text-xs hover:bg-slate-50">
+
               <div>
-                <span class="font-bold text-slate-800">Wednesday, 09 September 2026</span>
-                <span class="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600">Yesterday</span>
+                <span *ngIf="record.status === 'PRESENT'"
+                      class="px-3 py-1 rounded-xl text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  Present
+                </span>
+                <span *ngIf="record.status === 'ABSENT'"
+                      class="px-3 py-1 rounded-xl text-[11px] font-black bg-rose-50 text-rose-700 border border-rose-200 shadow-xs animate-pulse">
+                  Absent
+                </span>
+                <span *ngIf="record.status === 'LATE'"
+                      class="px-3 py-1 rounded-xl text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                  Late Arrival
+                </span>
+                <span *ngIf="record.status === 'NOT_MARKED'"
+                      class="px-3 py-1 rounded-xl text-[11px] font-medium bg-slate-100 text-slate-500">
+                  Not Marked
+                </span>
               </div>
-              <span class="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Present</span>
             </div>
-            <div class="p-4 flex items-center justify-between text-xs hover:bg-slate-50">
-              <span class="font-bold text-slate-800">Tuesday, 08 September 2026</span>
-              <span class="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Present</span>
-            </div>
-            <div class="p-4 flex items-center justify-between text-xs hover:bg-slate-50">
-              <span class="font-bold text-slate-800">Monday, 07 September 2026</span>
-              <span class="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Present</span>
-            </div>
-            <div class="p-4 flex items-center justify-between text-xs hover:bg-slate-50">
-              <span class="font-bold text-slate-800">Friday, 04 September 2026</span>
-              <span class="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Present</span>
+
+            <div *ngIf="!parentData?.dailyHistory || parentData?.dailyHistory?.length === 0" class="p-8 text-center text-xs text-slate-400">
+              No daily attendance logs recorded yet for this session.
             </div>
           </div>
         </div>
@@ -362,8 +523,53 @@ export class AttendanceComponent implements OnInit {
   currentPage = 1;
   pageSize = 25;
 
+  // Parent specific state
+  parentData: any = null;
+  parentSelectedChildId = '';
+
+  get parentAttendancePct(): number {
+    return parseFloat(this.parentData?.overallSummary?.percentage || '100');
+  }
+
   ngOnInit() {
-    this.loadSections();
+    if (this.auth.isParent()) {
+      this.loadParentAttendance();
+    } else {
+      this.loadSections();
+    }
+  }
+
+  loadParentAttendance(studentId?: string) {
+    const url = studentId ? `attendance/my-children?studentId=${studentId}` : 'attendance/my-children';
+    this.api.get<any>(url).subscribe({
+      next: (res) => {
+        this.parentData = res;
+        if (res.selectedChild) {
+          this.parentSelectedChildId = res.selectedChild.studentId;
+        }
+      },
+      error: () => {
+        this.toast.error('Unable to fetch child attendance data.');
+      },
+    });
+  }
+
+  onParentChildSelect(childId: string) {
+    this.parentSelectedChildId = childId;
+    this.loadParentAttendance(childId);
+  }
+
+  formatDailyDate(dateStr: string): string {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  isDateToday(dateStr: string): boolean {
+    if (!dateStr) return false;
+    const today = new Date().toISOString().split('T')[0];
+    const itemDate = new Date(dateStr).toISOString().split('T')[0];
+    return today === itemDate;
   }
 
   loadSections() {
@@ -632,20 +838,29 @@ export class AttendanceComponent implements OnInit {
   }
 
   exportParentAttendance() {
-    const logs = [
-      { date: '2026-09-10', day: 'Thursday', status: 'PRESENT', child: 'Aarav Sharma', class: 'Class 8-A' },
-      { date: '2026-09-09', day: 'Wednesday', status: 'PRESENT', child: 'Aarav Sharma', class: 'Class 8-A' },
-      { date: '2026-09-08', day: 'Tuesday', status: 'PRESENT', child: 'Aarav Sharma', class: 'Class 8-A' },
-      { date: '2026-09-07', day: 'Monday', status: 'PRESENT', child: 'Aarav Sharma', class: 'Class 8-A' },
-      { date: '2026-09-04', day: 'Friday', status: 'PRESENT', child: 'Aarav Sharma', class: 'Class 8-A' },
-    ];
-    this.exportService.exportToCsv('Aarav_Sharma_Attendance_Report', logs, [
-      { key: 'date', label: 'Date' },
-      { key: 'day', label: 'Day' },
-      { key: 'status', label: 'Status' },
-      { key: 'child', label: 'Student Name' },
-      { key: 'class', label: 'Class & Section' },
-    ]);
+    const childName = this.parentData?.selectedChild?.name || 'Child';
+    const className = `${this.parentData?.selectedChild?.className || ''} ${this.parentData?.selectedChild?.sectionName || ''}`.trim();
+    const records = this.parentData?.dailyHistory || [];
+
+    const rows = records.map((r: any) => ({
+      date: r.date?.split('T')?.[0] || r.date,
+      status: r.status,
+      reason: r.reason || '',
+      child: childName,
+      class: className,
+    }));
+
+    this.exportService.exportToCsv(
+      `${childName.replace(/\s+/g, '_')}_Attendance_Report`,
+      rows,
+      [
+        { key: 'date', label: 'Date' },
+        { key: 'status', label: 'Status' },
+        { key: 'reason', label: 'Reason / Remarks' },
+        { key: 'child', label: 'Student Name' },
+        { key: 'class', label: 'Class & Section' },
+      ]
+    );
     this.toast.success('Child attendance statement downloaded!');
   }
 }

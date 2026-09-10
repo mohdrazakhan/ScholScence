@@ -9,6 +9,7 @@ import { ExamsComponent } from './features/exams/exams.component';
 import { CommunicationComponent } from './features/communication/communication.component';
 import { ComplaintsComponent } from './features/complaints/complaints.component';
 import { MyClassComponent } from './features/my-class/my-class.component';
+import { TimetableComponent } from './features/timetable/timetable.component';
 import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -21,6 +22,7 @@ export const routes: Routes = [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },
       { path: 'my-class', component: MyClassComponent },
+      { path: 'timetable', component: TimetableComponent },
       { path: 'attendance', component: AttendanceComponent },
       { path: 'academics', component: AcademicsComponent },
       { path: 'homework', component: HomeworkComponent },

@@ -16,13 +16,17 @@ export class AuthService {
   isAuthenticated = computed(() => !!this.currentUser());
   userRole = computed(() => this.currentUser()?.role || '');
 
-  isAdmin = computed(() => ['SCHOOL_ADMIN', 'PRINCIPAL', 'PLATFORM_ADMIN'].includes(this.userRole()));
+  isAdmin = computed(() => ['SCHOOL_ADMIN', 'PRINCIPAL', 'PLATFORM_ADMIN', 'SUPER_ADMIN'].includes(this.userRole()));
+  isPrincipal = computed(() => this.userRole() === 'PRINCIPAL');
+  isSchoolAdmin = computed(() => this.userRole() === 'SCHOOL_ADMIN');
+  isSuperAdmin = computed(() => ['PLATFORM_ADMIN', 'SUPER_ADMIN'].includes(this.userRole()));
   isTeacher = computed(() => ['TEACHER', 'CLASS_TEACHER'].includes(this.userRole()));
   isClassTeacher = computed(() => {
     const scope = this.currentUser()?.teachingScope;
     return !!(scope?.classTeacherSections && scope.classTeacherSections.length > 0);
   });
-  isParent = computed(() => this.userRole() === 'GUARDIAN');
+  isParent = computed(() => ['GUARDIAN', 'PARENT'].includes(this.userRole()));
+
 
   constructor(
     private api: ApiService,

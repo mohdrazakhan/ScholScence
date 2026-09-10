@@ -45,7 +45,8 @@ let ExamsController = class ExamsController {
 exports.ExamsController = ExamsController;
 __decorate([
     (0, common_1.Get)(),
-    (0, swagger_1.ApiOperation)({ summary: 'List all exams for the school' }),
+    (0, swagger_1.ApiOperation)({ summary: 'List all exams for the school', description: 'Returns term assessments, periodic tests, and annual examinations.' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Exams list retrieved' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -54,6 +55,8 @@ __decorate([
 __decorate([
     (0, common_1.Get)(':id/subjects'),
     (0, swagger_1.ApiOperation)({ summary: 'Get subject schedules and max marks for an exam' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Exam UUID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Exam subject papers and schedules returned' }),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -64,7 +67,9 @@ __decorate([
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
     (0, auth_metadata_decorator_1.Roles)('SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'SUPER_ADMIN'),
     (0, swagger_1.ApiOperation)({ summary: 'Get student marks list for an exam subject paper' }),
-    (0, swagger_1.ApiQuery)({ name: 'sectionId', required: false }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Exam Subject Paper UUID' }),
+    (0, swagger_1.ApiQuery)({ name: 'sectionId', required: false, description: 'Optional Section UUID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Marks register for exam paper returned' }),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Query)('sectionId')),
     __metadata("design:type", Function),
@@ -76,6 +81,7 @@ __decorate([
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
     (0, auth_metadata_decorator_1.Roles)('SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'SUPER_ADMIN'),
     (0, swagger_1.ApiOperation)({ summary: 'Bulk enter/update marks for students in an exam subject' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Student marks entered and grades computed' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __param(2, (0, common_1.Body)()),
@@ -86,7 +92,9 @@ __decorate([
 __decorate([
     (0, common_1.Get)('student/:studentId/report'),
     (0, swagger_1.ApiOperation)({ summary: 'Get student academic report card' }),
-    (0, swagger_1.ApiQuery)({ name: 'examId', required: false }),
+    (0, swagger_1.ApiParam)({ name: 'studentId', description: 'Student UUID' }),
+    (0, swagger_1.ApiQuery)({ name: 'examId', required: false, description: 'Optional Exam UUID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Student report card with marks, grades, and remarks returned' }),
     __param(0, (0, common_1.Param)('studentId')),
     __param(1, (0, common_1.Query)('examId')),
     __metadata("design:type", Function),

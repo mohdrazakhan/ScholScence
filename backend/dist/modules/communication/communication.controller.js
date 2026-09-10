@@ -16,6 +16,7 @@ exports.CommunicationController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const communication_service_1 = require("./communication.service");
+const communication_dto_1 = require("./dto/communication.dto");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const current_tenant_decorator_1 = require("../../common/decorators/current-tenant.decorator");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
@@ -39,7 +40,8 @@ let CommunicationController = class CommunicationController {
 exports.CommunicationController = CommunicationController;
 __decorate([
     (0, common_1.Get)('notices'),
-    (0, swagger_1.ApiOperation)({ summary: 'List notices for current school' }),
+    (0, swagger_1.ApiOperation)({ summary: 'List notices for current school', description: 'Returns circulars filtered by the target audience and user role.' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Notices list retrieved successfully' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
@@ -48,17 +50,19 @@ __decorate([
 ], CommunicationController.prototype, "getNotices", null);
 __decorate([
     (0, common_1.Post)('notices'),
-    (0, swagger_1.ApiOperation)({ summary: 'Create and broadcast a new notice' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Create and broadcast a new notice circular' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Notice published' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:paramtypes", [String, Object, communication_dto_1.CreateNoticeDto]),
     __metadata("design:returntype", void 0)
 ], CommunicationController.prototype, "createNotice", null);
 __decorate([
     (0, common_1.Get)('events'),
     (0, swagger_1.ApiOperation)({ summary: 'List calendar events and school holidays' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Academic events and holidays retrieved' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -66,12 +70,13 @@ __decorate([
 ], CommunicationController.prototype, "getEvents", null);
 __decorate([
     (0, common_1.Post)('events'),
-    (0, swagger_1.ApiOperation)({ summary: 'Create a new school event' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Create a new calendar event or holiday' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Event added to school calendar' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:paramtypes", [String, Object, communication_dto_1.CreateEventDto]),
     __metadata("design:returntype", void 0)
 ], CommunicationController.prototype, "createEvent", null);
 exports.CommunicationController = CommunicationController = __decorate([
