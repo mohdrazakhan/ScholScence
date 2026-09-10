@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -50,6 +50,13 @@ interface ChildItem {
   className: string | null;
 }
 
+interface TeacherItem {
+  id: string;
+  name: string;
+  email: string;
+  role?: string;
+}
+
 @Component({
   selector: 'app-timetable',
   standalone: true,
@@ -57,6 +64,44 @@ interface ChildItem {
   template: `
     <div class="space-y-6">
       
+      <!-- ============================================================== -->
+      <!-- TOP PRIMARY MODE TABS (For Admins / Principals)                 -->
+      <!-- ============================================================== -->
+      <div *ngIf="canSwitchModes" class="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
+        <button (click)="setMode('STUDENT')"
+                [class.bg-slate-900]="timetableMode === 'STUDENT'"
+                [class.text-white]="timetableMode === 'STUDENT'"
+                [class.shadow-md]="timetableMode === 'STUDENT'"
+                [class.bg-white]="timetableMode !== 'STUDENT'"
+                [class.text-slate-700]="timetableMode !== 'STUDENT'"
+                class="px-5 py-2.5 rounded-2xl text-xs font-bold border border-slate-200/80 transition-all flex items-center gap-2 cursor-pointer shrink-0">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+          </svg>
+          <span>Student / Class Timetable</span>
+          <span class="text-[10px] px-2 py-0.5 rounded-lg" [ngClass]="timetableMode === 'STUDENT' ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-600'">
+            {{ flatSections.length }} Sections
+          </span>
+        </button>
+
+        <button (click)="setMode('FACULTY')"
+                [class.bg-slate-900]="timetableMode === 'FACULTY'"
+                [class.text-white]="timetableMode === 'FACULTY'"
+                [class.shadow-md]="timetableMode === 'FACULTY'"
+                [class.bg-white]="timetableMode !== 'FACULTY'"
+                [class.text-slate-700]="timetableMode !== 'FACULTY'"
+                class="px-5 py-2.5 rounded-2xl text-xs font-bold border border-slate-200/80 transition-all flex items-center gap-2 cursor-pointer shrink-0">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+          <span>Faculty / Teacher Timetable</span>
+          <span class="text-[10px] px-2 py-0.5 rounded-lg" [ngClass]="timetableMode === 'FACULTY' ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-600'">
+            {{ teachersList.length }} Teachers
+          </span>
+        </button>
+      </div>
+
       <!-- ============================================================== -->
       <!-- TOP HEADER BANNER (Role-Tailored)                              -->
       <!-- ============================================================== -->
@@ -69,7 +114,7 @@ interface ChildItem {
                     'bg-emerald-50 text-emerald-700 border-emerald-200': auth.isTeacher() && !auth.isAdmin(),
                     'bg-indigo-50 text-indigo-700 border-indigo-200': auth.isParent()
                   }">
-              {{ auth.isParent() ? 'Parent & Student Portal' : (auth.isTeacher() && !auth.isAdmin() ? 'Teacher Routine' : 'Institutional Schedule') }}
+              {{ auth.isParent() ? 'Parent & Student Portal' : (timetableMode === 'FACULTY' ? 'Faculty Schedule' : 'Institutional Schedule') }}
             </span>
             <span class="text-xs text-slate-300">•</span>
             <span class="text-xs font-semibold text-slate-600">{{ currentSectionTitle }}</span>
@@ -96,8 +141,9 @@ interface ChildItem {
             </select>
           </div>
 
-          <!-- Section Switcher for Admin / Principal -->
-          <div *ngIf="(auth.isAdmin() || auth.isSuperAdmin() || auth.isPrincipal())" class="flex items-center gap-2 flex-wrap">
+          <!-- Section Switcher for Admin / Principal (Student Timetable Mode) -->
+          <div *ngIf="canSwitchModes && timetableMode === 'STUDENT'" class="flex items-center gap-2 flex-wrap">
+            <label class="text-xs font-bold text-slate-600">Class Section:</label>
             <select [ngModel]="selectedSectionId" (ngModelChange)="onSectionChange($event)"
                     class="px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none shadow-sm cursor-pointer">
               <option *ngFor="let sec of flatSections" [value]="sec.sectionId">
@@ -112,6 +158,17 @@ interface ChildItem {
               </svg>
               <span>Add Period / Break</span>
             </button>
+          </div>
+
+          <!-- Faculty Switcher for Admin / Principal (Faculty Timetable Mode) -->
+          <div *ngIf="canSwitchModes && timetableMode === 'FACULTY'" class="flex items-center gap-2 flex-wrap">
+            <label class="text-xs font-bold text-slate-600">Teacher / Faculty:</label>
+            <select [ngModel]="selectedTeacherId" (ngModelChange)="onTeacherChange($event)"
+                    class="px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none shadow-sm cursor-pointer">
+              <option *ngFor="let t of teachersList" [value]="t.id">
+                {{ t.name }} ({{ t.email }})
+              </option>
+            </select>
           </div>
 
           <!-- Teacher Mode Toggle (Personal Routine vs Class Teacher Timetable) -->
@@ -164,7 +221,7 @@ interface ChildItem {
       </div>
 
       <!-- ============================================================== -->
-      <!-- DAY SELECTOR TABS (Active when Day View is active or on mobile) -->
+      <!-- DAY SELECTOR TABS (Active when Day View is active)             -->
       <!-- ============================================================== -->
       <div *ngIf="viewLayout === 'DAY'" class="flex items-center gap-2 overflow-x-auto pb-2">
         <button *ngFor="let day of days" (click)="activeDayTab = day.id"
@@ -191,8 +248,12 @@ interface ChildItem {
               </svg>
             </div>
             <div>
-              <h3 class="text-sm font-extrabold text-slate-900">Weekly Timetable Schedule</h3>
-              <p class="text-[11px] text-slate-500">Periods 1 through 8 with standard Recess and Lunch intervals</p>
+              <h3 class="text-sm font-extrabold text-slate-900">
+                {{ timetableMode === 'FACULTY' ? 'Faculty Weekly Teaching Schedule' : 'Weekly Class Timetable Schedule' }}
+              </h3>
+              <p class="text-[11px] text-slate-500">
+                {{ timetableMode === 'FACULTY' ? 'Weekly periods and room allocations for the selected faculty member' : 'Periods 1 through 8 with standard Recess and Lunch intervals' }}
+              </p>
             </div>
           </div>
 
@@ -278,8 +339,8 @@ interface ChildItem {
                       </div>
 
                       <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600">
-                        <span class="truncate font-medium text-slate-700" title="{{ slot.teacherName || 'Faculty' }}">
-                          {{ slot.teacherName || 'Assigned Teacher' }}
+                        <span class="truncate font-medium text-slate-700" title="{{ slot.className ? slot.className + ' - ' + slot.sectionName : (slot.teacherName || 'Faculty') }}">
+                          {{ slot.className ? (slot.className + ' Sec ' + slot.sectionName) : (slot.teacherName || 'Assigned Teacher') }}
                         </span>
                         <span class="text-[10px] font-bold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
                           {{ slot.roomNumber || 'Room' }}
@@ -287,7 +348,7 @@ interface ChildItem {
                       </div>
 
                       <!-- Edit/Delete Action for Teachers/Admins on Hover -->
-                      <div *ngIf="canEditCurrentTimetable" class="absolute top-2 right-2 hidden group-hover:flex items-center gap-1 bg-white/95 p-1 rounded-xl shadow-md border border-slate-200">
+                      <div *ngIf="canEditCurrentTimetable && timetableMode === 'STUDENT'" class="absolute top-2 right-2 hidden group-hover:flex items-center gap-1 bg-white/95 p-1 rounded-xl shadow-md border border-slate-200">
                         <button (click)="deletePeriod(slot.id)" title="Remove Period"
                                 class="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg cursor-pointer">
                           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -303,7 +364,7 @@ interface ChildItem {
                   <ng-template #emptySlot>
                     <div class="h-full min-h-[90px] p-3 rounded-2xl border-2 border-dashed border-slate-200/70 flex flex-col items-center justify-center text-center text-slate-400">
                       <span class="text-[10px] font-medium">Free Slot</span>
-                      <button *ngIf="canEditCurrentTimetable" (click)="openAddPeriodModal(day.id, pNum.number, pNum.start, pNum.end)"
+                      <button *ngIf="canEditCurrentTimetable && timetableMode === 'STUDENT'" (click)="openAddPeriodModal(day.id, pNum.number, pNum.start, pNum.end)"
                               class="mt-1 text-[10px] font-bold text-indigo-600 hover:underline cursor-pointer">
                         + Assign
                       </button>
@@ -347,11 +408,11 @@ interface ChildItem {
               <h3 class="text-base font-black text-slate-900 mt-1">
                 {{ slot.subjectName || slot.title }}
               </h3>
-              <p *ngIf="slot.teacherName" class="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
+              <p *ngIf="slot.teacherName || slot.className" class="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
                 <svg class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                <span>Faculty: <strong class="text-slate-700">{{ slot.teacherName }}</strong></span>
+                <span>{{ slot.className ? ('Class: ' + slot.className + ' - ' + slot.sectionName) : ('Faculty: ' + slot.teacherName) }}</span>
               </p>
             </div>
           </div>
@@ -366,7 +427,7 @@ interface ChildItem {
               {{ slot.slotType }}
             </span>
 
-            <button *ngIf="canEditCurrentTimetable" (click)="deletePeriod(slot.id)"
+            <button *ngIf="canEditCurrentTimetable && timetableMode === 'STUDENT'" (click)="deletePeriod(slot.id)"
                     class="px-3 py-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 text-xs font-bold transition-all cursor-pointer">
               Remove
             </button>
@@ -381,7 +442,7 @@ interface ChildItem {
             </svg>
           </div>
           <h4 class="text-sm font-bold text-slate-800">No scheduled periods for {{ getSelectedDayName() }}</h4>
-          <p class="text-xs text-slate-500 mt-1">Free day or timetable not yet configured for this day.</p>
+          <p class="text-xs text-slate-500 mt-1">Free day or schedule not yet configured for this day.</p>
         </div>
       </div>
 
@@ -513,7 +574,9 @@ export class TimetableComponent implements OnInit {
   api = inject(ApiService);
   auth = inject(AuthService);
   toast = inject(ToastService);
+  route = inject(ActivatedRoute);
 
+  timetableMode: 'STUDENT' | 'FACULTY' = 'STUDENT';
   viewLayout: 'GRID' | 'DAY' = 'GRID';
   activeDayTab = 1;
   teacherViewMode: 'TEACHER' | 'CLASS' = 'TEACHER';
@@ -540,11 +603,12 @@ export class TimetableComponent implements OnInit {
 
   periods: TimetablePeriodItem[] = [];
   availableSubjects: AvailableSubject[] = [];
-  teachersList: { id: string; name: string; email: string }[] = [];
+  teachersList: TeacherItem[] = [];
 
   // Flat sections list for Admin/Principal dropdown
   flatSections: { sectionId: string; className: string; sectionName: string }[] = [];
   selectedSectionId = '';
+  selectedTeacherId = '';
   currentSectionTitle = 'Campus Schedule';
 
   // Parent child list
@@ -566,6 +630,10 @@ export class TimetableComponent implements OnInit {
     roomNumber: 'Room 101',
   };
 
+  get canSwitchModes(): boolean {
+    return this.auth.isAdmin() || this.auth.isSuperAdmin() || this.auth.isPrincipal();
+  }
+
   get canEditCurrentTimetable(): boolean {
     if (this.auth.isAdmin() || this.auth.isSuperAdmin() || this.auth.isPrincipal()) {
       return true;
@@ -581,6 +649,10 @@ export class TimetableComponent implements OnInit {
       const child = this.childrenList.find((c) => c.studentId === this.selectedChildId);
       return child ? `${child.name}'s Weekly Timetable` : 'Child Weekly Schedule';
     }
+    if (this.timetableMode === 'FACULTY') {
+      const teacher = this.teachersList.find((t) => t.id === this.selectedTeacherId);
+      return teacher ? `${teacher.name}'s Weekly Routine` : 'Faculty Teaching Routine';
+    }
     if (this.auth.isTeacher() && !this.auth.isAdmin() && this.teacherViewMode === 'TEACHER') {
       return 'My Teaching Routine & Periods';
     }
@@ -591,14 +663,38 @@ export class TimetableComponent implements OnInit {
     if (this.auth.isParent()) {
       return 'Daily period intervals, subject teachers, and recess timings.';
     }
-    if (this.auth.isTeacher() && !this.auth.isAdmin() && this.teacherViewMode === 'TEACHER') {
-      return 'Your scheduled periods, assigned sections, and classroom allocations.';
+    if (this.timetableMode === 'FACULTY' || (this.auth.isTeacher() && !this.auth.isAdmin() && this.teacherViewMode === 'TEACHER')) {
+      return 'Weekly periods, assigned class sections, and classroom allocations.';
     }
     return 'Manage weekly schedules, subject allocations, and recess intervals.';
   }
 
   ngOnInit() {
+    this.route.queryParams.subscribe((params) => {
+      if (params['type'] === 'faculty') {
+        this.timetableMode = 'FACULTY';
+      } else if (params['type'] === 'student') {
+        this.timetableMode = 'STUDENT';
+      }
+    });
+
     this.initData();
+  }
+
+  setMode(mode: 'STUDENT' | 'FACULTY') {
+    this.timetableMode = mode;
+    if (mode === 'FACULTY') {
+      if (this.selectedTeacherId) {
+        this.loadFacultyTimetable(this.selectedTeacherId);
+      } else if (this.teachersList.length > 0) {
+        this.selectedTeacherId = this.teachersList[0].id;
+        this.loadFacultyTimetable(this.selectedTeacherId);
+      }
+    } else {
+      if (this.selectedSectionId) {
+        this.loadSectionTimetable(this.selectedSectionId);
+      }
+    }
   }
 
   initData() {
@@ -626,31 +722,40 @@ export class TimetableComponent implements OnInit {
           }
         }
         if (this.flatSections.length > 0 && !this.selectedSectionId) {
-          // If class teacher, default to their section
           const classTeacherSec = this.auth.currentUser()?.teachingScope?.classTeacherSections?.[0];
           if (classTeacherSec) {
             this.selectedSectionId = classTeacherSec.sectionId;
           } else {
             this.selectedSectionId = this.flatSections[0].sectionId;
           }
-          this.loadSectionTimetable(this.selectedSectionId);
+
+          if (this.timetableMode === 'STUDENT') {
+            this.loadSectionTimetable(this.selectedSectionId);
+          }
         }
       },
     });
 
-    // Load school teachers for assigning
-    this.api.get<any[]>('schools/users').subscribe({
-      next: (users) => {
-        this.teachersList = users
-          .filter((u) => u.roles?.includes('TEACHER') || u.role === 'TEACHER')
+    // Load staff & teachers
+    this.api.get<any[]>('academics/staff').subscribe({
+      next: (staff) => {
+        this.teachersList = staff
+          .filter((u) => u.role === 'TEACHER' || u.role === 'CLASS_TEACHER' || u.role === 'PRINCIPAL')
           .map((u) => ({
             id: u.id,
-            name: `${u.first_name || u.firstName} ${u.last_name || u.lastName || ''}`.trim(),
+            name: u.fullName || `${u.firstName} ${u.lastName || ''}`.trim(),
             email: u.email,
+            role: u.role,
           }));
+
+        if (this.teachersList.length > 0 && !this.selectedTeacherId) {
+          this.selectedTeacherId = this.teachersList[0].id;
+          if (this.timetableMode === 'FACULTY') {
+            this.loadFacultyTimetable(this.selectedTeacherId);
+          }
+        }
       },
       error: () => {
-        // Fallback if endpoint not available
         this.teachersList = [];
       },
     });
@@ -686,6 +791,19 @@ export class TimetableComponent implements OnInit {
     });
   }
 
+  loadFacultyTimetable(teacherId: string) {
+    const teacher = this.teachersList.find((t) => t.id === teacherId);
+    this.api.get<any>(`timetable/teacher?teacherId=${teacherId}`).subscribe({
+      next: (res) => {
+        this.periods = res.periods || [];
+        this.currentSectionTitle = teacher ? `${teacher.name} (${teacher.role || 'Faculty'})` : 'Faculty Routine';
+      },
+      error: () => {
+        this.periods = [];
+      },
+    });
+  }
+
   loadSectionTimetable(sectionId: string) {
     this.api.get<any>(`timetable/section/${sectionId}`).subscribe({
       next: (res) => {
@@ -701,6 +819,11 @@ export class TimetableComponent implements OnInit {
   onSectionChange(sectionId: string) {
     this.selectedSectionId = sectionId;
     this.loadSectionTimetable(sectionId);
+  }
+
+  onTeacherChange(teacherId: string) {
+    this.selectedTeacherId = teacherId;
+    this.loadFacultyTimetable(teacherId);
   }
 
   onChildChange(childId: string) {

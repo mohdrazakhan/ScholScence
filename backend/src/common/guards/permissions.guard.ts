@@ -20,8 +20,8 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException('User permissions not loaded');
     }
 
-    // Super admin, platform admin and school admin bypass
-    if (user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN' || user.role === 'SCHOOL_ADMIN') {
+    // School admin bypass for institutional operations within their school
+    if (user.role === 'SCHOOL_ADMIN') {
       return true;
     }
 

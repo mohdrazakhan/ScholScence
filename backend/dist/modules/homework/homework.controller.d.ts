@@ -7,15 +7,15 @@ export declare class HomeworkController {
     create(schoolId: string, user: AuthenticatedUser, dto: CreateHomeworkDto): Promise<{
         class_subject: {
             subject: {
-                name: string;
-                description: string | null;
                 id: string;
+                code: string;
+                name: string;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
+                description: string | null;
                 school_id: string;
-                code: string;
                 display_order: number;
                 subject_type: string;
             };
@@ -41,13 +41,13 @@ export declare class HomeworkController {
             homework_id: string;
         }[];
     } & {
-        description: string;
-        title: string;
         id: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
+        description: string;
+        title: string;
         school_id: string;
         academic_year_id: string;
         section_id: string;
@@ -59,15 +59,15 @@ export declare class HomeworkController {
     getSectionHomework(sectionId: string): Promise<({
         class_subject: {
             subject: {
-                name: string;
-                description: string | null;
                 id: string;
+                code: string;
+                name: string;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
+                description: string | null;
                 school_id: string;
-                code: string;
                 display_order: number;
                 subject_type: string;
             };
@@ -98,13 +98,13 @@ export declare class HomeworkController {
             homework_id: string;
         }[];
     } & {
-        description: string;
-        title: string;
         id: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
+        description: string;
+        title: string;
         school_id: string;
         academic_year_id: string;
         section_id: string;
@@ -116,15 +116,15 @@ export declare class HomeworkController {
     getStudentHomework(studentId: string): Promise<({
         class_subject: {
             subject: {
-                name: string;
-                description: string | null;
                 id: string;
+                code: string;
+                name: string;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
+                description: string | null;
                 school_id: string;
-                code: string;
                 display_order: number;
                 subject_type: string;
             };
@@ -155,13 +155,13 @@ export declare class HomeworkController {
             homework_id: string;
         }[];
     } & {
-        description: string;
-        title: string;
         id: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
+        description: string;
+        title: string;
         school_id: string;
         academic_year_id: string;
         section_id: string;
@@ -172,14 +172,14 @@ export declare class HomeworkController {
     })[]>;
     getHomeworkById(id: string): Promise<{
         section: {
-            name: string;
             id: string;
+            code: string;
+            name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
             school_id: string;
-            code: string;
             academic_year_id: string;
             class_id: string;
             capacity: number | null;
@@ -188,26 +188,26 @@ export declare class HomeworkController {
         };
         class_subject: {
             class: {
-                name: string;
                 id: string;
+                code: string;
+                name: string;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
                 school_id: string;
-                code: string;
                 display_order: number;
             };
             subject: {
-                name: string;
-                description: string | null;
                 id: string;
+                code: string;
+                name: string;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
+                description: string | null;
                 school_id: string;
-                code: string;
                 display_order: number;
                 subject_type: string;
             };
@@ -237,13 +237,13 @@ export declare class HomeworkController {
             homework_id: string;
         }[];
     } & {
-        description: string;
-        title: string;
         id: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
+        description: string;
+        title: string;
         school_id: string;
         academic_year_id: string;
         section_id: string;

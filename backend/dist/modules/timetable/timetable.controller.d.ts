@@ -38,7 +38,7 @@ export declare class TimetableController {
             roomNumber: string;
         }[];
     }>;
-    getTeacherTimetable(schoolId: string, user: AuthenticatedUser): Promise<{
+    getTeacherTimetable(schoolId: string, user: AuthenticatedUser, teacherId?: string): Promise<{
         teacherId: string;
         periods: {
             id: string;
@@ -96,11 +96,11 @@ export declare class TimetableController {
         };
     }>;
     savePeriod(schoolId: string, user: AuthenticatedUser, dto: CreateTimetablePeriodDto): Promise<{
-        title: string | null;
         id: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
+        title: string | null;
         school_id: string;
         academic_year_id: string;
         section_id: string;

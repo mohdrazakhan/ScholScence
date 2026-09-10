@@ -20,6 +20,7 @@ const timetable_dto_1 = require("./dto/timetable.dto");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const current_tenant_decorator_1 = require("../../common/decorators/current-tenant.decorator");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
+const auth_metadata_decorator_1 = require("../../common/decorators/auth-metadata.decorator");
 let TimetableController = class TimetableController {
     constructor(timetableService) {
         this.timetableService = timetableService;
@@ -27,8 +28,11 @@ let TimetableController = class TimetableController {
     getSectionTimetable(schoolId, sectionId) {
         return this.timetableService.getSectionTimetable(schoolId, sectionId);
     }
-    getTeacherTimetable(schoolId, user) {
-        return this.timetableService.getTeacherTimetable(schoolId, user.userId);
+    getTeacherTimetable(schoolId, user, teacherId) {
+        const targetTeacherId = (user.role === 'SCHOOL_ADMIN' || user.role === 'PRINCIPAL') && teacherId
+            ? teacherId
+            : user.userId;
+        return this.timetableService.getTeacherTimetable(schoolId, targetTeacherId);
     }
     getMyChildTimetable(schoolId, user, studentId) {
         return this.timetableService.getMyChildTimetable(schoolId, user.userId, studentId);
@@ -57,12 +61,14 @@ __decorate([
 ], TimetableController.prototype, "getSectionTimetable", null);
 __decorate([
     (0, common_1.Get)('teacher'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get current teacher routine across all sections', description: 'Returns weekly teaching schedule with classroom locations for the authenticated teacher.' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Get teacher routine across all sections', description: 'Returns weekly teaching schedule with classroom locations. School Admins and Principals can pass teacherId to view any faculty routine.' }),
+    (0, swagger_1.ApiQuery)({ name: 'teacherId', required: false, description: 'Optional Teacher User UUID (Admin / Principal only)' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Teacher teaching routine returned' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __param(2, (0, common_1.Query)('teacherId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, Object, String]),
     __metadata("design:returntype", void 0)
 ], TimetableController.prototype, "getTeacherTimetable", null);
 __decorate([
@@ -118,6 +124,7 @@ exports.TimetableController = TimetableController = __decorate([
     (0, swagger_1.ApiTags)('Timetable'),
     (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, auth_metadata_decorator_1.RequireService)('TIMETABLE'),
     (0, common_1.Controller)('timetable'),
     __metadata("design:paramtypes", [timetable_service_1.TimetableService])
 ], TimetableController);

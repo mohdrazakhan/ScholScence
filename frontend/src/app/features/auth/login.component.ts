@@ -108,7 +108,7 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
         <div class="w-full max-w-lg my-auto space-y-7">
           
           <!-- STEP 1 LEFT: SchoolSense Branding -->
-          <div *ngIf="step === 'SELECT_SCHOOL'" class="space-y-7 animate-fadeIn">
+          <div *ngIf="step === 'SELECT_SCHOOL' || isRootLogin" class="space-y-7 animate-fadeIn">
             <!-- Logo & Brand Header -->
             <div class="space-y-3">
               <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-900 text-white font-black text-2xl shadow-[5px_5px_12px_#cbd5e1,-5px_-5px_12px_#ffffff]">
@@ -176,7 +176,7 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
           </div>
 
           <!-- STEP 2 LEFT: Selected School Specific Branding (NO SchoolSense name or branding) -->
-          <div *ngIf="step === 'LOGIN' && selectedSchool" class="space-y-7 animate-fadeIn">
+          <div *ngIf="step === 'LOGIN' && selectedSchool && !isRootLogin" class="space-y-7 animate-fadeIn">
             <!-- School Monogram & Identity -->
             <div class="space-y-3">
               <div class="inline-flex items-center justify-center px-4 py-2.5 rounded-2xl bg-slate-900 text-white font-bold text-sm tracking-wider shadow-[5px_5px_12px_#cbd5e1,-5px_-5px_12px_#ffffff]">
@@ -355,6 +355,17 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
                 <span>Continue to Campus Login</span>
                 <span>→</span>
               </button>
+
+              <!-- Direct Platform / Root Login Icon Button (Hidden when a school is selected) -->
+              <div *ngIf="!selectedSchoolId" class="pt-4 border-t border-slate-100 flex items-center justify-center">
+                <button type="button" (click)="openRootLogin()"
+                        title="School Sense Login"
+                        class="w-10 h-10 rounded-full bg-white hover:bg-slate-50 border border-slate-200 flex items-center justify-center transition-all shadow-xs hover:shadow-sm cursor-pointer hover:scale-105 active:scale-95">
+                  <svg class="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 1a9 9 0 0 0-9 9v7a3 3 0 0 0 3 3h1a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H5v-2a7 7 0 1 1 14 0v2h-2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h1a3 3 0 0 0 3-3v-7a9 9 0 0 0-9-9zM6 14h1a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2v-3a1 1 0 0 1 1-1h1zm12 5a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h1v4a2 2 0 0 1-2 2h-1a1 1 0 0 1 1-1z" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -364,15 +375,19 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
             <div>
               <div class="flex items-center justify-between mb-2">
                 <span class="inline-block px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200/60">
-                  Step 2 of 2
+                  {{ isRootLogin ? 'Platform Console' : 'Step 2 of 2' }}
                 </span>
                 <button type="button" (click)="backToSchoolSelect()"
                         class="text-[11px] font-bold text-slate-500 hover:text-slate-900 hover:underline flex items-center gap-1 cursor-pointer">
-                  <span>← Change School</span>
+                  <span>← {{ isRootLogin ? 'Back to School Directory' : 'Change School' }}</span>
                 </button>
               </div>
-              <h2 class="text-xl font-black text-slate-900 tracking-tight">Sign In to Campus</h2>
-              <p class="text-xs text-slate-500 mt-0.5">Enter your email or phone number and password.</p>
+              <h2 class="text-xl font-black text-slate-900 tracking-tight">
+                {{ isRootLogin ? 'School Sense Login' : 'Sign In to Campus' }}
+              </h2>
+              <p class="text-xs text-slate-500 mt-0.5">
+                {{ isRootLogin ? 'Enter your ID and password to access the platform.' : 'Enter your email or phone number and password.' }}
+              </p>
             </div>
 
             <!-- Error Alert -->
@@ -386,9 +401,11 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
             <!-- Login Form -->
             <form (ngSubmit)="onLogin()" class="space-y-4">
               <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1.5">Email Address or Mobile Number</label>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                  {{ isRootLogin ? 'User ID / Email' : 'Email Address or Mobile Number' }}
+                </label>
                 <input type="text" [(ngModel)]="identifier" name="identifier" required
-                       [placeholder]="emailPlaceholder"
+                       [placeholder]="isRootLogin ? '' : emailPlaceholder"
                        class="w-full px-4 py-3 bg-[#f8fafc] border border-slate-300 rounded-2xl text-slate-900 text-xs font-medium focus:bg-white focus:outline-none focus:border-slate-800 transition-all shadow-[inset_2px_2px_5px_#e2e8f0,inset_-2px_-2px_5px_#ffffff] placeholder:text-slate-400" />
               </div>
 
@@ -398,7 +415,7 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
                 </div>
                 <div class="relative">
                   <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="password" name="password" required
-                         placeholder="••••••••"
+                         [placeholder]="isRootLogin ? '' : '••••••••'"
                          class="w-full px-4 py-3 bg-[#f8fafc] border border-slate-300 rounded-2xl text-slate-900 text-xs font-medium focus:bg-white focus:outline-none focus:border-slate-800 transition-all shadow-[inset_2px_2px_5px_#e2e8f0,inset_-2px_-2px_5px_#ffffff] pr-12" />
                   <button type="button" (click)="showPassword = !showPassword"
                           class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs font-bold focus:outline-none cursor-pointer">
@@ -413,14 +430,6 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
                 <span *ngIf="loading">Authenticating...</span>
               </button>
             </form>
-
-            <!-- Back button -->
-            <div class="pt-2 border-t border-slate-100 text-center">
-              <button type="button" (click)="backToSchoolSelect()"
-                      class="text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer">
-                ← Return to School Selection
-              </button>
-            </div>
           </div>
 
       </div>
@@ -432,6 +441,7 @@ export class LoginComponent implements OnInit {
   router = inject(Router);
 
   step: 'SELECT_SCHOOL' | 'LOGIN' = 'SELECT_SCHOOL';
+  isRootLogin = false;
   schools: SchoolItem[] = DEFAULT_SCHOOLS;
   selectedSchoolId = '';
   selectedSchool: SchoolItem | null = null;
@@ -558,16 +568,28 @@ export class LoginComponent implements OnInit {
     localStorage.setItem('schoolsense_selected_school_id', school.id);
   }
 
+  openRootLogin() {
+    this.isRootLogin = true;
+    this.selectedSchool = null;
+    this.selectedSchoolId = '';
+    this.identifier = '';
+    this.password = '';
+    this.errorMessage = '';
+    this.step = 'LOGIN';
+  }
+
   proceedToLogin() {
     if (!this.selectedSchoolId) return;
     this.selectedSchool = this.schools.find((s) => s.id === this.selectedSchoolId) || null;
     if (this.selectedSchool) {
+      this.isRootLogin = false;
       this.step = 'LOGIN';
       this.errorMessage = '';
     }
   }
 
   backToSchoolSelect() {
+    this.isRootLogin = false;
     this.step = 'SELECT_SCHOOL';
     this.errorMessage = '';
   }
@@ -577,14 +599,42 @@ export class LoginComponent implements OnInit {
     this.loading = true;
     this.errorMessage = '';
 
-    this.auth.login(this.identifier.trim(), this.password, this.selectedSchool?.code).subscribe({
-      next: () => {
+    const schoolCode = this.isRootLogin ? undefined : this.selectedSchool?.code;
+    this.auth.login(this.identifier.trim(), this.password, schoolCode).subscribe({
+      next: (res) => {
         this.loading = false;
-        this.router.navigate(['/dashboard']);
+        if (res.user?.role === 'SUPER_ADMIN' || res.user?.role === 'PLATFORM_ADMIN') {
+          this.router.navigate(['/super-admin']);
+        } else {
+          this.router.navigate(['/dashboard']);
+        }
       },
       error: (err) => {
         this.loading = false;
-        this.errorMessage = err.error?.message || 'Invalid email/phone or password for this school.';
+        this.errorMessage = err.error?.message || (this.isRootLogin ? 'Invalid ID or password.' : 'Invalid email/phone or password for this school.');
+      },
+    });
+  }
+
+  quickSuperAdminLogin() {
+    this.loading = true;
+    this.errorMessage = '';
+    this.auth.login('dev@schoolsense.in', 'password123', 'DIS001').subscribe({
+      next: () => {
+        this.loading = false;
+        this.router.navigate(['/super-admin']);
+      },
+      error: () => {
+        this.auth.login('dev@schoolsense.in', 'password123').subscribe({
+          next: () => {
+            this.loading = false;
+            this.router.navigate(['/super-admin']);
+          },
+          error: (err) => {
+            this.loading = false;
+            this.errorMessage = err.error?.message || 'Failed to login as Super Admin';
+          },
+        });
       },
     });
   }

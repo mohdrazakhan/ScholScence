@@ -18,17 +18,19 @@ let ComplaintsService = class ComplaintsService {
     }
     async getComplaints(schoolId, user, filters) {
         const role = user.role;
-        if (role === 'PARENT') {
-            const guardian = await this.prisma.guardian.findFirst({
+        if (role === 'PARENT' || role === 'GUARDIAN') {
+            const guardians = await this.prisma.guardian.findMany({
                 where: { user_id: user.userId, school_id: schoolId },
+                select: { id: true },
             });
-            if (!guardian) {
+            if (guardians.length === 0) {
                 return [];
             }
+            const guardianIds = guardians.map((g) => g.id);
             const tickets = await this.prisma.complaint.findMany({
                 where: {
                     school_id: schoolId,
-                    guardian_id: guardian.id,
+                    guardian_id: { in: guardianIds },
                     deleted_at: null,
                     ...(filters?.status && filters.status !== 'ALL' ? { status: filters.status } : {}),
                     ...(filters?.category && filters.category !== 'ALL' ? { category: filters.category } : {}),
@@ -239,15 +241,17 @@ let ComplaintsService = class ComplaintsService {
         });
     }
     async getMyChildren(schoolId, userId) {
-        const guardian = await this.prisma.guardian.findFirst({
+        const guardians = await this.prisma.guardian.findMany({
             where: { user_id: userId, school_id: schoolId },
+            select: { id: true },
         });
-        if (!guardian) {
+        if (guardians.length === 0) {
             return [];
         }
+        const guardianIds = guardians.map((g) => g.id);
         const links = await this.prisma.studentGuardian.findMany({
             where: {
-                guardian_id: guardian.id,
+                guardian_id: { in: guardianIds },
                 school_id: schoolId,
                 status: 'ACTIVE',
                 deleted_at: null,
@@ -269,20 +273,24 @@ let ComplaintsService = class ComplaintsService {
                 },
             },
         });
-        return links.map((l) => {
-            const enrollment = l.student.student_enrollments[0];
-            return {
-                studentId: l.student.id,
-                admissionNumber: l.student.admission_number,
-                firstName: l.student.first_name,
-                lastName: l.student.last_name,
-                fullName: `${l.student.first_name} ${l.student.last_name || ''}`.trim(),
-                className: enrollment?.section?.class?.name || 'N/A',
-                sectionName: enrollment?.section?.name || 'N/A',
-                sectionId: enrollment?.section_id,
-                relationship: l.relationship_type,
-            };
-        });
+        const studentMap = new Map();
+        for (const l of links) {
+            if (!studentMap.has(l.student.id)) {
+                const enrollment = l.student.student_enrollments[0];
+                studentMap.set(l.student.id, {
+                    studentId: l.student.id,
+                    admissionNumber: l.student.admission_number,
+                    firstName: l.student.first_name,
+                    lastName: l.student.last_name,
+                    fullName: `${l.student.first_name} ${l.student.last_name || ''}`.trim(),
+                    className: enrollment?.section?.class?.name || 'N/A',
+                    sectionName: enrollment?.section?.name || 'N/A',
+                    sectionId: enrollment?.section_id,
+                    relationship: l.relationship_type,
+                });
+            }
+        }
+        return Array.from(studentMap.values());
     }
     async getFaculty(schoolId) {
         const staffRoles = await this.prisma.userSchoolRole.findMany({
@@ -315,7 +323,8 @@ let ComplaintsService = class ComplaintsService {
         }
         return Array.from(facultyMap.values());
     }
-    async getComplaintById(id) {
+    async getComplaintById(id, user) {
+        const isParent = user?.role === 'PARENT' || user?.role === 'GUARDIAN';
         const complaint = await this.prisma.complaint.findUnique({
             where: { id },
             include: {
@@ -333,6 +342,7 @@ let ComplaintsService = class ComplaintsService {
                 },
                 users: true,
                 messages: {
+                    where: isParent ? { is_internal_note: false } : undefined,
                     orderBy: { created_at: 'asc' },
                     include: {
                         sender: {
@@ -348,6 +358,16 @@ let ComplaintsService = class ComplaintsService {
         });
         if (!complaint) {
             throw new common_1.NotFoundException('Complaint ticket not found');
+        }
+        if (isParent && user) {
+            const guardians = await this.prisma.guardian.findMany({
+                where: { user_id: user.userId },
+                select: { id: true },
+            });
+            const guardianIds = guardians.map((g) => g.id);
+            if (!guardianIds.includes(complaint.guardian_id)) {
+                throw new common_1.ForbiddenException('Access denied: You are not authorized to view this ticket.');
+            }
         }
         return complaint;
     }
@@ -447,7 +467,7 @@ let ComplaintsService = class ComplaintsService {
                 is_internal_note: true,
             },
         });
-        return this.getComplaintById(complaintId);
+        return this.getComplaintById(complaintId, user);
     }
     async addMessage(complaintId, userId, dto) {
         const complaint = await this.prisma.complaint.findUnique({
@@ -466,6 +486,7 @@ let ComplaintsService = class ComplaintsService {
             include: {
                 sender: {
                     select: {
+                        id: true,
                         first_name: true,
                         last_name: true,
                     },
@@ -474,39 +495,14 @@ let ComplaintsService = class ComplaintsService {
         });
         return message;
     }
-    async updateStatus(complaintId, status) {
+    async updateStatus(id, status) {
         return this.prisma.complaint.update({
-            where: { id: complaintId },
-            data: {
-                status,
-                ...(status === 'RESOLVED' || status === 'CLOSED' ? { resolved_at: new Date() } : {}),
-            },
+            where: { id },
+            data: { status },
             include: {
                 guardian: true,
-                student: {
-                    include: {
-                        student_enrollments: {
-                            include: {
-                                section: {
-                                    include: { class: true },
-                                },
-                            },
-                        },
-                    },
-                },
+                student: true,
                 users: true,
-                messages: {
-                    orderBy: { created_at: 'asc' },
-                    include: {
-                        sender: {
-                            select: {
-                                id: true,
-                                first_name: true,
-                                last_name: true,
-                            },
-                        },
-                    },
-                },
             },
         });
     }

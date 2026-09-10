@@ -20,6 +20,7 @@ const communication_dto_1 = require("./dto/communication.dto");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const current_tenant_decorator_1 = require("../../common/decorators/current-tenant.decorator");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
+const auth_metadata_decorator_1 = require("../../common/decorators/auth-metadata.decorator");
 let CommunicationController = class CommunicationController {
     constructor(communicationService) {
         this.communicationService = communicationService;
@@ -83,6 +84,7 @@ exports.CommunicationController = CommunicationController = __decorate([
     (0, swagger_1.ApiTags)('Communication'),
     (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, auth_metadata_decorator_1.RequireService)('COMMUNICATION'),
     (0, common_1.Controller)('communication'),
     __metadata("design:paramtypes", [communication_service_1.CommunicationService])
 ], CommunicationController);

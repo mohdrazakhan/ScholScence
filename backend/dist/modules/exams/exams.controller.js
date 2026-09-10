@@ -65,7 +65,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)('subjects/:id/marks'),
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, auth_metadata_decorator_1.Roles)('SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'SUPER_ADMIN'),
+    (0, auth_metadata_decorator_1.Roles)('SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER'),
     (0, swagger_1.ApiOperation)({ summary: 'Get student marks list for an exam subject paper' }),
     (0, swagger_1.ApiParam)({ name: 'id', description: 'Exam Subject Paper UUID' }),
     (0, swagger_1.ApiQuery)({ name: 'sectionId', required: false, description: 'Optional Section UUID' }),
@@ -79,7 +79,7 @@ __decorate([
 __decorate([
     (0, common_1.Post)('marks/bulk'),
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, auth_metadata_decorator_1.Roles)('SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'SUPER_ADMIN'),
+    (0, auth_metadata_decorator_1.Roles)('SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER'),
     (0, swagger_1.ApiOperation)({ summary: 'Bulk enter/update marks for students in an exam subject' }),
     (0, swagger_1.ApiResponse)({ status: 201, description: 'Student marks entered and grades computed' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
@@ -105,6 +105,7 @@ exports.ExamsController = ExamsController = __decorate([
     (0, swagger_1.ApiTags)('Exams & Marks'),
     (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, auth_metadata_decorator_1.RequireService)('EXAMS'),
     (0, common_1.Controller)('exams'),
     __metadata("design:paramtypes", [exams_service_1.ExamsService])
 ], ExamsController);

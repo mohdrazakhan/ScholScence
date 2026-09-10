@@ -16,7 +16,7 @@ export class AuthService {
   isAuthenticated = computed(() => !!this.currentUser());
   userRole = computed(() => this.currentUser()?.role || '');
 
-  isAdmin = computed(() => ['SCHOOL_ADMIN', 'PRINCIPAL', 'PLATFORM_ADMIN', 'SUPER_ADMIN'].includes(this.userRole()));
+  isAdmin = computed(() => ['SCHOOL_ADMIN', 'PRINCIPAL'].includes(this.userRole()));
   isPrincipal = computed(() => this.userRole() === 'PRINCIPAL');
   isSchoolAdmin = computed(() => this.userRole() === 'SCHOOL_ADMIN');
   isSuperAdmin = computed(() => ['PLATFORM_ADMIN', 'SUPER_ADMIN'].includes(this.userRole()));
@@ -26,6 +26,11 @@ export class AuthService {
     return !!(scope?.classTeacherSections && scope.classTeacherSections.length > 0);
   });
   isParent = computed(() => ['GUARDIAN', 'PARENT'].includes(this.userRole()));
+
+  isServiceEnabled(serviceCode: string): boolean {
+    const disabled = this.currentUser()?.school?.disabledServices || [];
+    return !disabled.includes(serviceCode);
+  }
 
 
   constructor(
@@ -56,6 +61,22 @@ export class AuthService {
         this.currentUser.set(user);
       }),
     );
+  }
+
+  updateSchoolStatus(schoolId: string, status: string): Observable<any> {
+    return this.api.patch<any>(`schools/${schoolId}/status`, { status });
+  }
+
+  updateSchoolServices(schoolId: string, disabledServices: string[]): Observable<any> {
+    return this.api.patch<any>(`schools/${schoolId}/services`, { disabledServices });
+  }
+
+  getAllSchools(): Observable<any[]> {
+    return this.api.get<any[]>('schools/all');
+  }
+
+  onboardSchool(payload: any): Observable<any> {
+    return this.api.post<any>('schools/onboard', payload);
   }
 
   logout(): void {

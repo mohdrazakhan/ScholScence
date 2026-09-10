@@ -1,21 +1,24 @@
 import { SchoolsService } from './schools.service';
+import { OnboardSchoolDto, UpdateSchoolStatusDto, UpdateSchoolServicesDto } from './dto/schools.dto';
+import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 export declare class SchoolsController {
     private schoolsService;
     constructor(schoolsService: SchoolsService);
     getPublicSchools(): Promise<{
-        name: string;
         id: string;
+        code: string;
+        name: string;
         email: string;
         phone: string;
-        code: string;
         address_line1: string;
         city: string;
         state: string;
     }[]>;
     getCurrentSchool(schoolId: string): Promise<{
+        disabledServices: string[];
         academic_years: {
-            name: string;
             id: string;
+            name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
@@ -26,43 +29,42 @@ export declare class SchoolsController {
             is_current: boolean;
         }[];
         branches: {
-            name: string;
             id: string;
+            code: string;
+            name: string;
             email: string | null;
             phone: string | null;
-            status: string;
-            created_at: Date;
-            updated_at: Date;
-            deleted_at: Date | null;
-            school_id: string;
-            code: string;
             address_line1: string | null;
             address_line2: string | null;
             city: string | null;
             state: string | null;
             country: string | null;
             postal_code: string | null;
+            status: string;
+            created_at: Date;
+            updated_at: Date;
+            deleted_at: Date | null;
+            school_id: string;
         }[];
-    } & {
-        name: string;
         id: string;
+        code: string;
+        name: string;
         email: string | null;
         phone: string | null;
-        status: string;
-        created_at: Date;
-        updated_at: Date;
-        deleted_at: Date | null;
-        code: string;
         address_line1: string | null;
         address_line2: string | null;
         city: string | null;
         state: string | null;
         country: string | null;
         postal_code: string | null;
+        status: string;
+        created_at: Date;
+        updated_at: Date;
+        deleted_at: Date | null;
     }>;
     getAcademicYears(schoolId: string): Promise<{
-        name: string;
         id: string;
+        name: string;
         status: string;
         created_at: Date;
         updated_at: Date;
@@ -73,21 +75,80 @@ export declare class SchoolsController {
         is_current: boolean;
     }[]>;
     getBranches(schoolId: string): Promise<{
-        name: string;
         id: string;
+        code: string;
+        name: string;
         email: string | null;
         phone: string | null;
-        status: string;
-        created_at: Date;
-        updated_at: Date;
-        deleted_at: Date | null;
-        school_id: string;
-        code: string;
         address_line1: string | null;
         address_line2: string | null;
         city: string | null;
         state: string | null;
         country: string | null;
         postal_code: string | null;
+        status: string;
+        created_at: Date;
+        updated_at: Date;
+        deleted_at: Date | null;
+        school_id: string;
     }[]>;
+    getAllSchools(user: AuthenticatedUser): Promise<{
+        id: string;
+        name: string;
+        code: string;
+        email: string;
+        phone: string;
+        addressLine1: string;
+        city: string;
+        state: string;
+        postalCode: string;
+        status: string;
+        disabledServices: string[];
+        createdAt: Date;
+        stats: {
+            studentsCount: number;
+            classesCount: number;
+            subjectsCount: number;
+            totalStaffCount: number;
+        };
+        admin: {
+            id: string;
+            firstName: string;
+            lastName: string;
+            fullName: string;
+            email: string;
+            phone: string;
+            status: string;
+        };
+    }[]>;
+    onboardSchool(user: AuthenticatedUser, dto: OnboardSchoolDto): Promise<{
+        school: {
+            id: string;
+            name: string;
+            code: string;
+            email: string;
+            city: string;
+            state: string;
+        };
+        admin: {
+            id: string;
+            fullName: string;
+            email: string;
+            phone: string;
+            role: string;
+        };
+        message: string;
+    }>;
+    updateSchoolStatus(user: AuthenticatedUser, schoolId: string, dto: UpdateSchoolStatusDto): Promise<{
+        id: string;
+        name: string;
+        status: string;
+        message: string;
+    }>;
+    updateSchoolServices(user: AuthenticatedUser, schoolId: string, dto: UpdateSchoolServicesDto): Promise<{
+        id: string;
+        name: string;
+        disabledServices: string[];
+        message: string;
+    }>;
 }

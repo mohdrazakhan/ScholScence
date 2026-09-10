@@ -106,7 +106,7 @@ interface StudentMarkRow {
                   </span>
                 </div>
                 <p class="text-xs text-slate-500 mt-1 flex items-center gap-2 flex-wrap">
-                  <span>Class: <strong class="text-slate-800">{{ parentReport.student?.className }} - Section {{ parentReport.student?.sectionName }}</strong></span>
+                  <span>Class: <strong class="text-slate-800">{{ parentReport.student?.className }} - {{ formatSection(parentReport.student?.sectionName) }}</strong></span>
                   <span>•</span>
                   <span>Roll No: <strong class="text-slate-800">#{{ parentReport.student?.rollNumber }}</strong></span>
                   <span>•</span>
@@ -687,11 +687,17 @@ export class ExamsComponent implements OnInit {
     return 'F';
   }
 
+  formatSection(name?: string): string {
+    if (!name) return 'Section A';
+    const cleaned = name.replace(/^section\s+/i, '').replace(/^sec\s+/i, '').trim();
+    return cleaned ? `Section ${cleaned}` : name;
+  }
+
   printParentReportCard() {
     if (!this.parentReport) return;
     this.exporter.printReport(
       `Student Academic Report Card — ${this.parentReport.student?.name}`,
-      `Class: ${this.parentReport.student?.className} - Section ${this.parentReport.student?.sectionName} | Roll: #${this.parentReport.student?.rollNumber} | Adm: ${this.parentReport.student?.admissionNumber} | Overall: ${this.parentReport.summary?.overallPercentage}% (${this.getParentOverallGrade()})`,
+      `Class: ${this.parentReport.student?.className} - ${this.formatSection(this.parentReport.student?.sectionName)} | Roll: #${this.parentReport.student?.rollNumber} | Adm: ${this.parentReport.student?.admissionNumber} | Overall: ${this.parentReport.summary?.overallPercentage}% (${this.getParentOverallGrade()})`,
       this.parentReport.subjectResults,
       [
         { header: 'Subject', key: 'subjectName' },
@@ -930,7 +936,7 @@ export class ExamsComponent implements OnInit {
     if (!this.studentReport) return;
     this.exporter.printReport(
       `Student Academic Report Card — ${this.studentReport.student.name}`,
-      `Class: ${this.studentReport.student.className} - Section ${this.studentReport.student.sectionName} | Roll: #${this.studentReport.student.rollNumber} | Adm: ${this.studentReport.student.admissionNumber} | Overall: ${this.studentReport.summary.overallPercentage}%`,
+      `Class: ${this.studentReport.student.className} - ${this.formatSection(this.studentReport.student.sectionName)} | Roll: #${this.studentReport.student.rollNumber} | Adm: ${this.studentReport.student.admissionNumber} | Overall: ${this.studentReport.summary.overallPercentage}%`,
       this.studentReport.subjectResults,
       [
         { header: 'Subject', key: 'subjectName' },

@@ -2,6 +2,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
+import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 export declare class AuthService {
     private prisma;
     private jwtService;
@@ -22,6 +23,8 @@ export declare class AuthService {
                 id: string;
                 name: string;
                 code: string;
+                status: string;
+                disabledServices: string[];
             };
             permissions: string[];
             children: {
@@ -67,6 +70,8 @@ export declare class AuthService {
             id: string;
             name: string;
             code: string;
+            status: string;
+            disabledServices: string[];
         };
         permissions: string[];
         children: {
@@ -99,4 +104,54 @@ export declare class AuthService {
             }[];
         };
     }>;
+    switchSchool(user: AuthenticatedUser, schoolId: string): Promise<{
+        accessToken: string;
+        user: {
+            id: string;
+            email: string;
+            phone: string;
+            firstName: string;
+            lastName: string;
+            role: string;
+            roleName: string;
+            school: {
+                id: string;
+                name: string;
+                code: string;
+                status: string;
+                disabledServices: string[];
+            };
+            permissions: string[];
+            children: {
+                id: string;
+                admissionNumber: string;
+                name: string;
+                className: string;
+                sectionName: string;
+                sectionId: string;
+                rollNumber: string;
+                relationship: string;
+                isPrimaryContact: boolean;
+            }[];
+            teachingScope: {
+                classTeacherSections: {
+                    sectionId: string;
+                    className: string;
+                    sectionName: string;
+                    academicYear: string;
+                }[];
+                subjectAssignments: {
+                    assignmentId: string;
+                    sectionId: string;
+                    className: string;
+                    sectionName: string;
+                    subjectId: string;
+                    subjectName: string;
+                    subjectCode: string;
+                    classSubjectId: string;
+                }[];
+            };
+        };
+    }>;
+    impersonateSchoolAdmin(user: AuthenticatedUser, schoolId: string): Promise<void>;
 }

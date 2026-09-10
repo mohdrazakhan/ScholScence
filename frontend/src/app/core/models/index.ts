@@ -10,6 +10,8 @@ export interface User {
     id: string;
     name: string;
     code: string;
+    status?: string;
+    disabledServices?: string[];
   };
   permissions: string[];
   children?: {
@@ -230,6 +232,8 @@ export interface ComplaintItem {
   isClassTeacherTicket?: boolean;
   isAssignedToMe?: boolean;
   guardian?: {
+    id?: string;
+    user_id?: string;
     first_name: string;
     last_name?: string;
     phone: string;

@@ -20,6 +20,7 @@ const create_homework_dto_1 = require("./dto/create-homework.dto");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const current_tenant_decorator_1 = require("../../common/decorators/current-tenant.decorator");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
+const auth_metadata_decorator_1 = require("../../common/decorators/auth-metadata.decorator");
 let HomeworkController = class HomeworkController {
     constructor(homeworkService) {
         this.homeworkService = homeworkService;
@@ -83,6 +84,7 @@ exports.HomeworkController = HomeworkController = __decorate([
     (0, swagger_1.ApiTags)('Homework'),
     (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, auth_metadata_decorator_1.RequireService)('HOMEWORK'),
     (0, common_1.Controller)('homework'),
     __metadata("design:paramtypes", [homework_service_1.HomeworkService])
 ], HomeworkController);

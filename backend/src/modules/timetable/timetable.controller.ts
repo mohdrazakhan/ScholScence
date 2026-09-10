@@ -5,10 +5,12 @@ import { CreateTimetablePeriodDto, BulkUpsertTimetableDto } from './dto/timetabl
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 import { CurrentUser, AuthenticatedUser } from '../../common/decorators/current-user.decorator';
+import { RequireService } from '../../common/decorators/auth-metadata.decorator';
 
 @ApiTags('Timetable')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@RequireService('TIMETABLE')
 @Controller('timetable')
 export class TimetableController {
   constructor(private timetableService: TimetableService) {}
@@ -25,13 +27,19 @@ export class TimetableController {
   }
 
   @Get('teacher')
-  @ApiOperation({ summary: 'Get current teacher routine across all sections', description: 'Returns weekly teaching schedule with classroom locations for the authenticated teacher.' })
+  @ApiOperation({ summary: 'Get teacher routine across all sections', description: 'Returns weekly teaching schedule with classroom locations. School Admins and Principals can pass teacherId to view any faculty routine.' })
+  @ApiQuery({ name: 'teacherId', required: false, description: 'Optional Teacher User UUID (Admin / Principal only)' })
   @ApiResponse({ status: 200, description: 'Teacher teaching routine returned' })
   getTeacherTimetable(
     @CurrentTenant() schoolId: string,
     @CurrentUser() user: AuthenticatedUser,
+    @Query('teacherId') teacherId?: string,
   ) {
-    return this.timetableService.getTeacherTimetable(schoolId, user.userId);
+    const targetTeacherId =
+      (user.role === 'SCHOOL_ADMIN' || user.role === 'PRINCIPAL') && teacherId
+        ? teacherId
+        : user.userId;
+    return this.timetableService.getTeacherTimetable(schoolId, targetTeacherId);
   }
 
   @Get('my-child')

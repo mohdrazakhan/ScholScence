@@ -5,10 +5,12 @@ import { BulkMarkAttendanceDto } from './dto/mark-attendance.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 import { CurrentUser, AuthenticatedUser } from '../../common/decorators/current-user.decorator';
+import { RequireService } from '../../common/decorators/auth-metadata.decorator';
 
 @ApiTags('Attendance')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@RequireService('ATTENDANCE')
 @Controller('attendance')
 export class AttendanceController {
   constructor(private attendanceService: AttendanceService) {}

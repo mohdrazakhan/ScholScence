@@ -8,8 +8,10 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
+const core_1 = require("@nestjs/core");
 const config_1 = require("@nestjs/config");
 const prisma_module_1 = require("./prisma/prisma.module");
+const service_enabled_guard_1 = require("./common/guards/service-enabled.guard");
 const auth_module_1 = require("./modules/auth/auth.module");
 const schools_module_1 = require("./modules/schools/schools.module");
 const academics_module_1 = require("./modules/academics/academics.module");
@@ -38,6 +40,12 @@ exports.AppModule = AppModule = __decorate([
             complaints_module_1.ComplaintsModule,
             dashboard_module_1.DashboardModule,
             timetable_module_1.TimetableModule,
+        ],
+        providers: [
+            {
+                provide: core_1.APP_GUARD,
+                useClass: service_enabled_guard_1.ServiceEnabledGuard,
+            },
         ],
     })
 ], AppModule);

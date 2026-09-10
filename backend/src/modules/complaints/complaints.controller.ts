@@ -11,10 +11,12 @@ import {
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 import { CurrentUser, AuthenticatedUser } from '../../common/decorators/current-user.decorator';
+import { RequireService } from '../../common/decorators/auth-metadata.decorator';
 
 @ApiTags('Complaints / Grievances')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@RequireService('COMPLAINTS')
 @Controller('complaints')
 export class ComplaintsController {
   constructor(private complaintsService: ComplaintsService) {}
@@ -66,8 +68,11 @@ export class ComplaintsController {
   @ApiOperation({ summary: 'Get complaint ticket details and message thread' })
   @ApiParam({ name: 'id', description: 'Complaint Ticket UUID' })
   @ApiResponse({ status: 200, description: 'Ticket details and timeline messages returned' })
-  getComplaintById(@Param('id') id: string) {
-    return this.complaintsService.getComplaintById(id);
+  getComplaintById(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.complaintsService.getComplaintById(id, user);
   }
 
   @Post()

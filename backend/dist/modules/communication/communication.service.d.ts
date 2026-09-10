@@ -23,12 +23,12 @@ export declare class CommunicationService {
             last_name: string;
         };
     } & {
-        title: string;
         id: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
+        title: string;
         school_id: string;
         academic_year_id: string;
         content: string;
@@ -43,12 +43,12 @@ export declare class CommunicationService {
             last_name: string;
         };
     } & {
-        title: string;
         id: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
+        title: string;
         school_id: string;
         academic_year_id: string;
         content: string;
@@ -63,11 +63,11 @@ export declare class CommunicationService {
             last_name: string;
         };
     } & {
-        description: string | null;
-        title: string;
         id: string;
         created_at: Date;
         updated_at: Date;
+        description: string | null;
+        title: string;
         school_id: string;
         academic_year_id: string;
         start_time: Date;
@@ -78,11 +78,11 @@ export declare class CommunicationService {
         created_by: string;
     })[]>;
     createEvent(schoolId: string, userId: string, dto: CreateEventDto): Promise<{
-        description: string | null;
-        title: string;
         id: string;
         created_at: Date;
         updated_at: Date;
+        description: string | null;
+        title: string;
         school_id: string;
         academic_year_id: string;
         start_time: Date;

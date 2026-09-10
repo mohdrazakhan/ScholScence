@@ -1,17 +1,18 @@
 import { PrismaService } from '../../prisma/prisma.service';
+import { CreateSubjectDto, CreateStaffDto, CreateStudentDto } from './dto/academics.dto';
 export declare class AcademicsService {
     private prisma;
     constructor(prisma: PrismaService);
     getClasses(schoolId: string): Promise<({
         sections: {
-            name: string;
             id: string;
+            code: string;
+            name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
             school_id: string;
-            code: string;
             academic_year_id: string;
             class_id: string;
             capacity: number | null;
@@ -19,34 +20,34 @@ export declare class AcademicsService {
             branch_id: string;
         }[];
     } & {
-        name: string;
         id: string;
+        code: string;
+        name: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
         school_id: string;
-        code: string;
         display_order: number;
     })[]>;
     getSections(schoolId: string, classId?: string): Promise<({
         class: {
-            name: string;
             id: string;
+            code: string;
+            name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
             school_id: string;
-            code: string;
             display_order: number;
         };
         _count: {
             student_enrollments: number;
         };
         academic_year: {
-            name: string;
             id: string;
+            name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
@@ -57,14 +58,14 @@ export declare class AcademicsService {
             is_current: boolean;
         };
     } & {
-        name: string;
         id: string;
+        code: string;
+        name: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
         school_id: string;
-        code: string;
         academic_year_id: string;
         class_id: string;
         capacity: number | null;
@@ -72,40 +73,40 @@ export declare class AcademicsService {
         branch_id: string;
     })[]>;
     getSubjects(schoolId: string): Promise<{
-        name: string;
-        description: string | null;
         id: string;
+        code: string;
+        name: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
+        description: string | null;
         school_id: string;
-        code: string;
         display_order: number;
         subject_type: string;
     }[]>;
     getClassSubjects(classId: string, academicYearId?: string): Promise<({
         class: {
-            name: string;
             id: string;
+            code: string;
+            name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
             school_id: string;
-            code: string;
             display_order: number;
         };
         subject: {
-            name: string;
-            description: string | null;
             id: string;
+            code: string;
+            name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
+            description: string | null;
             school_id: string;
-            code: string;
             display_order: number;
             subject_type: string;
         };
@@ -138,12 +139,12 @@ export declare class AcademicsService {
             id: string;
             email: string | null;
             phone: string;
-            first_name: string;
-            last_name: string | null;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
+            first_name: string;
+            last_name: string | null;
             user_id: string | null;
             school_id: string;
             occupation: string | null;
@@ -162,34 +163,44 @@ export declare class AcademicsService {
         subjectCode: string;
         academicYear: string;
     }[]>;
-    createSubject(schoolId: string, dto: {
-        name: string;
-        code: string;
-        subjectType?: string;
-        description?: string;
-    }): Promise<{
-        name: string;
-        description: string | null;
+    getStaff(schoolId: string): Promise<any[]>;
+    createStaff(schoolId: string, dto: CreateStaffDto): Promise<{
         id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+        role: string;
+    }>;
+    createStudent(schoolId: string, dto: CreateStudentDto): Promise<{
+        studentId: string;
+        admissionNumber: string;
+        fullName: string;
+        className: string;
+        sectionName: string;
+    }>;
+    createSubject(schoolId: string, dto: CreateSubjectDto): Promise<{
+        id: string;
+        code: string;
+        name: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
+        description: string | null;
         school_id: string;
-        code: string;
         display_order: number;
         subject_type: string;
     }>;
     deleteSubject(schoolId: string, subjectId: string): Promise<{
-        name: string;
-        description: string | null;
         id: string;
+        code: string;
+        name: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
+        description: string | null;
         school_id: string;
-        code: string;
         display_order: number;
         subject_type: string;
     }>;

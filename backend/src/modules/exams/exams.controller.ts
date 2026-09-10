@@ -4,13 +4,14 @@ import { ExamsService } from './exams.service';
 import { BulkEnterMarksDto } from './dto/enter-marks.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/auth-metadata.decorator';
+import { Roles, RequireService } from '../../common/decorators/auth-metadata.decorator';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 import { CurrentUser, AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Exams & Marks')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@RequireService('EXAMS')
 @Controller('exams')
 export class ExamsController {
   constructor(private examsService: ExamsService) {}
@@ -32,7 +33,7 @@ export class ExamsController {
 
   @Get('subjects/:id/marks')
   @UseGuards(RolesGuard)
-  @Roles('SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'SUPER_ADMIN')
+  @Roles('SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER')
   @ApiOperation({ summary: 'Get student marks list for an exam subject paper' })
   @ApiParam({ name: 'id', description: 'Exam Subject Paper UUID' })
   @ApiQuery({ name: 'sectionId', required: false, description: 'Optional Section UUID' })
@@ -46,7 +47,7 @@ export class ExamsController {
 
   @Post('marks/bulk')
   @UseGuards(RolesGuard)
-  @Roles('SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'SUPER_ADMIN')
+  @Roles('SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER')
   @ApiOperation({ summary: 'Bulk enter/update marks for students in an exam subject' })
   @ApiResponse({ status: 201, description: 'Student marks entered and grades computed' })
   enterMarks(

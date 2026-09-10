@@ -1,14 +1,17 @@
 import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { AcademicsService } from './academics.service';
-import { CreateSubjectDto } from './dto/academics.dto';
+import { CreateSubjectDto, CreateStaffDto, CreateStudentDto } from './dto/academics.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles, RequireService } from '../../common/decorators/auth-metadata.decorator';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 import { CurrentUser, AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Academics')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@RequireService('ACADEMICS')
 @Controller('academics')
 export class AcademicsController {
   constructor(private academicsService: AcademicsService) {}
@@ -36,6 +39,8 @@ export class AcademicsController {
   }
 
   @Post('subjects')
+  @UseGuards(RolesGuard)
+  @Roles('SCHOOL_ADMIN', 'PRINCIPAL')
   @ApiOperation({ summary: 'Create a new subject in the curriculum' })
   @ApiResponse({ status: 201, description: 'Subject created successfully' })
   createSubject(
@@ -46,6 +51,8 @@ export class AcademicsController {
   }
 
   @Delete('subjects/:id')
+  @UseGuards(RolesGuard)
+  @Roles('SCHOOL_ADMIN', 'PRINCIPAL')
   @ApiOperation({ summary: 'Remove or archive a subject from curriculum' })
   @ApiParam({ name: 'id', description: 'Subject UUID' })
   @ApiResponse({ status: 200, description: 'Subject removed successfully' })
@@ -70,6 +77,37 @@ export class AcademicsController {
   @ApiResponse({ status: 200, description: 'Student roster retrieved successfully' })
   getStudentsBySection(@Param('sectionId') sectionId: string) {
     return this.academicsService.getStudentsBySection(sectionId);
+  }
+
+  @Post('students')
+  @UseGuards(RolesGuard)
+  @Roles('SCHOOL_ADMIN', 'PRINCIPAL')
+  @ApiOperation({ summary: 'Enroll a new child / student and link parents', description: 'Creates a student profile, enrolls in section, and links guardian contact.' })
+  @ApiResponse({ status: 201, description: 'Student enrolled successfully' })
+  createStudent(
+    @CurrentTenant() schoolId: string,
+    @Body() dto: CreateStudentDto,
+  ) {
+    return this.academicsService.createStudent(schoolId, dto);
+  }
+
+  @Get('staff')
+  @ApiOperation({ summary: 'List all staff members (Principals, Teachers, Admins)', description: 'Returns institutional faculty directory with teaching & class assignments.' })
+  @ApiResponse({ status: 200, description: 'Staff directory retrieved' })
+  getStaff(@CurrentTenant() schoolId: string) {
+    return this.academicsService.getStaff(schoolId);
+  }
+
+  @Post('staff')
+  @UseGuards(RolesGuard)
+  @Roles('SCHOOL_ADMIN', 'PRINCIPAL')
+  @ApiOperation({ summary: 'Register a new Principal, Teacher, or Staff member', description: 'Creates user account with role, password, and optional class teacher / subject assignment.' })
+  @ApiResponse({ status: 201, description: 'Staff registered successfully' })
+  createStaff(
+    @CurrentTenant() schoolId: string,
+    @Body() dto: CreateStaffDto,
+  ) {
+    return this.academicsService.createStaff(schoolId, dto);
   }
 
   @Get('teacher-assignments')

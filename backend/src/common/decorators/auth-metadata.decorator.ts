@@ -8,3 +8,6 @@ export const RequirePermissions = (...permissions: string[]) => SetMetadata(PERM
 
 export const IS_PUBLIC_KEY = 'isPublic';
 export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
+
+export const SERVICE_KEY = 'required_service';
+export const RequireService = (service: string) => SetMetadata(SERVICE_KEY, service);

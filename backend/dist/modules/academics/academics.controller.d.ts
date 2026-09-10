@@ -1,19 +1,19 @@
 import { AcademicsService } from './academics.service';
-import { CreateSubjectDto } from './dto/academics.dto';
+import { CreateSubjectDto, CreateStaffDto, CreateStudentDto } from './dto/academics.dto';
 import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 export declare class AcademicsController {
     private academicsService;
     constructor(academicsService: AcademicsService);
     getClasses(schoolId: string): Promise<({
         sections: {
-            name: string;
             id: string;
+            code: string;
+            name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
             school_id: string;
-            code: string;
             academic_year_id: string;
             class_id: string;
             capacity: number | null;
@@ -21,34 +21,34 @@ export declare class AcademicsController {
             branch_id: string;
         }[];
     } & {
-        name: string;
         id: string;
+        code: string;
+        name: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
         school_id: string;
-        code: string;
         display_order: number;
     })[]>;
     getSections(schoolId: string, classId?: string): Promise<({
         class: {
-            name: string;
             id: string;
+            code: string;
+            name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
             school_id: string;
-            code: string;
             display_order: number;
         };
         _count: {
             student_enrollments: number;
         };
         academic_year: {
-            name: string;
             id: string;
+            name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
@@ -59,14 +59,14 @@ export declare class AcademicsController {
             is_current: boolean;
         };
     } & {
-        name: string;
         id: string;
+        code: string;
+        name: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
         school_id: string;
-        code: string;
         academic_year_id: string;
         class_id: string;
         capacity: number | null;
@@ -74,66 +74,66 @@ export declare class AcademicsController {
         branch_id: string;
     })[]>;
     getSubjects(schoolId: string): Promise<{
-        name: string;
-        description: string | null;
         id: string;
+        code: string;
+        name: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
+        description: string | null;
         school_id: string;
-        code: string;
         display_order: number;
         subject_type: string;
     }[]>;
     createSubject(schoolId: string, dto: CreateSubjectDto): Promise<{
-        name: string;
-        description: string | null;
         id: string;
+        code: string;
+        name: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
+        description: string | null;
         school_id: string;
-        code: string;
         display_order: number;
         subject_type: string;
     }>;
     deleteSubject(schoolId: string, subjectId: string): Promise<{
-        name: string;
-        description: string | null;
         id: string;
+        code: string;
+        name: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
+        description: string | null;
         school_id: string;
-        code: string;
         display_order: number;
         subject_type: string;
     }>;
     getClassSubjects(classId: string): Promise<({
         class: {
-            name: string;
             id: string;
+            code: string;
+            name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
             school_id: string;
-            code: string;
             display_order: number;
         };
         subject: {
-            name: string;
-            description: string | null;
             id: string;
+            code: string;
+            name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
+            description: string | null;
             school_id: string;
-            code: string;
             display_order: number;
             subject_type: string;
         };
@@ -166,12 +166,12 @@ export declare class AcademicsController {
             id: string;
             email: string | null;
             phone: string;
-            first_name: string;
-            last_name: string | null;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
+            first_name: string;
+            last_name: string | null;
             user_id: string | null;
             school_id: string;
             occupation: string | null;
@@ -179,6 +179,21 @@ export declare class AcademicsController {
             address: string | null;
         };
     }[]>;
+    createStudent(schoolId: string, dto: CreateStudentDto): Promise<{
+        studentId: string;
+        admissionNumber: string;
+        fullName: string;
+        className: string;
+        sectionName: string;
+    }>;
+    getStaff(schoolId: string): Promise<any[]>;
+    createStaff(schoolId: string, dto: CreateStaffDto): Promise<{
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+        role: string;
+    }>;
     getTeacherAssignments(schoolId: string, user: AuthenticatedUser): Promise<{
         id: string;
         teacherId: string;

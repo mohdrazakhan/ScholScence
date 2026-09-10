@@ -30,11 +30,10 @@ export class TimetableService {
    */
   private async checkEditPermission(schoolId: string, sectionId: string, user: AuthenticatedUser) {
     const role = user.role || '';
-    const isSuperAdmin = role === 'SUPER_ADMIN';
     const isPrincipal = role === 'PRINCIPAL';
     const isSchoolAdmin = role === 'SCHOOL_ADMIN' || role === 'ADMIN';
 
-    if (isSuperAdmin || isPrincipal || isSchoolAdmin) {
+    if (isPrincipal || isSchoolAdmin) {
       return true;
     }
 

@@ -1,9 +1,29 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { filter } from 'rxjs/operators';
 import { AuthService } from '../core/services/auth.service';
 import { ToastService } from '../core/services/toast.service';
+
+export interface SubMenuItem {
+  label: string;
+  route: string;
+  queryParams?: Record<string, any>;
+  badge?: string;
+  service?: string;
+}
+
+export interface NavGroup {
+  id: string;
+  label: string;
+  roles?: string[]; // If undefined, visible to all
+  service?: string; // Feature service code
+  expanded?: boolean;
+  route?: string; // If direct link without submenus
+  queryParams?: Record<string, any>;
+  children?: SubMenuItem[];
+}
 
 @Component({
   selector: 'app-main-layout',
@@ -14,313 +34,239 @@ import { ToastService } from '../core/services/toast.service';
       
       <!-- Mobile Backdrop Overlay -->
       <div *ngIf="isMobileSidebarOpen" (click)="isMobileSidebarOpen = false"
-           class="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm lg:hidden animate-fadeIn"></div>
+           class="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs lg:hidden animate-fadeIn"></div>
 
       <!-- ================================================================================== -->
-      <!-- CLAYMORPHIC SIDEBAR (Desktop Fixed & Mobile Slide-Over) -->
+      <!-- UNIFIED CLAYMORPHIC COLLAPSIBLE SIDEBAR                                            -->
       <!-- ================================================================================== -->
-      <aside [class.translate-x-0]="isMobileSidebarOpen"
-             [class.-translate-x-full]="!isMobileSidebarOpen"
-             class="fixed inset-y-0 left-0 z-50 w-72 bg-[#f8fafc] border-r border-slate-200/80 shadow-[4px_0_15px_rgba(0,0,0,0.03)] flex flex-col transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 flex-shrink-0">
+      <aside [ngClass]="{
+               'translate-x-0': isMobileSidebarOpen,
+               '-translate-x-full': !isMobileSidebarOpen,
+               'lg:translate-x-0': true,
+               'lg:w-72': !isDesktopSidebarCollapsed,
+               'lg:w-0': isDesktopSidebarCollapsed,
+               'lg:opacity-100': !isDesktopSidebarCollapsed,
+               'lg:opacity-0': isDesktopSidebarCollapsed,
+               'border-r': !isDesktopSidebarCollapsed
+             }"
+             class="fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200/90 shadow-[4px_0_20px_rgba(0,0,0,0.03)] flex flex-col transition-all duration-300 ease-in-out lg:static lg:flex-shrink-0 overflow-hidden select-none">
         
-        <!-- Brand Header -->
-        <div class="h-16 flex items-center justify-between px-6 border-b border-slate-200/70">
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-2xl bg-slate-900 text-white font-black text-base flex items-center justify-center shadow-[3px_3px_8px_#cbd5e1,-3px_-3px_8px_#ffffff]">
-              S
-            </div>
-            <div>
-              <h1 class="text-sm font-extrabold text-slate-900 tracking-tight leading-none">SchoolSense</h1>
-              <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Campus OS</span>
-            </div>
-          </div>
-
-          <!-- Mobile Close Button -->
-          <button (click)="isMobileSidebarOpen = false" class="lg:hidden p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/50">
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <!-- School & Role Clay Banner -->
-        <div class="p-4 border-b border-slate-200/60 bg-[#ffffff]/60">
-          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active Campus</div>
-          <div class="text-xs font-bold text-slate-900 truncate mt-0.5">{{ auth.currentUser()?.school?.name || 'Demo International School' }}</div>
-          <div class="flex items-center gap-1.5 mt-2">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 shadow-sm">
-              AY 2026-27
-            </span>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 shadow-sm"
-                  [class.bg-amber-100]="auth.currentUser()?.role === 'SUPER_ADMIN'"
-                  [class.text-amber-800]="auth.currentUser()?.role === 'SUPER_ADMIN'"
-                  [class.border-amber-200]="auth.currentUser()?.role === 'SUPER_ADMIN'">
-              {{ displayRole }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Role-Tailored Navigation Links with Vector Icons -->
-        <nav class="flex-1 px-3.5 py-4 space-y-1.5 overflow-y-auto">
+        <div class="w-72 flex flex-col h-full flex-shrink-0 bg-white">
           
-          <!-- Common / Dashboard -->
-          <a routerLink="/dashboard" (click)="isMobileSidebarOpen = false"
-             routerLinkActive="bg-white text-slate-900 font-bold border-slate-200/90 shadow-[3px_3px_8px_#d9e2ec,-3px_-3px_8px_#ffffff]"
-             [routerLinkActiveOptions]="{exact: true}"
-             class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-slate-600 hover:bg-white/80 hover:text-slate-900 transition-all border border-transparent">
-            <div class="w-6 h-6 rounded-lg bg-slate-100/90 flex items-center justify-center text-slate-700 shrink-0">
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-              </svg>
-            </div>
-            <span>Dashboard</span>
-          </a>
-
-          <!-- ADMIN / SUPER ADMIN ONLY MENUS -->
-          <ng-container *ngIf="auth.isAdmin() || auth.currentUser()?.role === 'SUPER_ADMIN'">
-            <div class="pt-3 pb-1 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Administration</div>
-
-            <a routerLink="/academics" (click)="isMobileSidebarOpen = false"
-               routerLinkActive="bg-white text-slate-900 font-bold border-slate-200/90 shadow-[3px_3px_8px_#d9e2ec,-3px_-3px_8px_#ffffff]"
-               class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-slate-600 hover:bg-white/80 hover:text-slate-900 transition-all border border-transparent">
-              <div class="w-6 h-6 rounded-lg bg-slate-100/90 flex items-center justify-center text-slate-700 shrink-0">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
+          <!-- Brand / Campus Header (Seamless on surface, no card, no >> collapse button) -->
+          <div class="h-16 flex items-center px-4 border-b border-slate-100 bg-white flex-shrink-0">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              <div class="w-9 h-9 rounded-xl bg-slate-900 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-xs">
+                {{ (auth.currentUser()?.school?.name || 'S').charAt(0).toUpperCase() }}
               </div>
-              <span>Classes & Roster</span>
-            </a>
-
-            <a routerLink="/timetable" (click)="isMobileSidebarOpen = false"
-               routerLinkActive="bg-white text-slate-900 font-bold border-slate-200/90 shadow-[3px_3px_8px_#d9e2ec,-3px_-3px_8px_#ffffff]"
-               class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-slate-600 hover:bg-white/80 hover:text-slate-900 transition-all border border-transparent">
-              <div class="w-6 h-6 rounded-lg bg-slate-100/90 flex items-center justify-center text-slate-700 shrink-0">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <span>Timetable & Schedule</span>
-            </a>
-
-            <a routerLink="/attendance" (click)="isMobileSidebarOpen = false"
-               routerLinkActive="bg-white text-slate-900 font-bold border-slate-200/90 shadow-[3px_3px_8px_#d9e2ec,-3px_-3px_8px_#ffffff]"
-               class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-slate-600 hover:bg-white/80 hover:text-slate-900 transition-all border border-transparent">
-              <div class="w-6 h-6 rounded-lg bg-slate-100/90 flex items-center justify-center text-slate-700 shrink-0">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <span>Attendance Register</span>
-            </a>
-
-            <a routerLink="/homework" (click)="isMobileSidebarOpen = false"
-               routerLinkActive="bg-white text-slate-900 font-bold border-slate-200/90 shadow-[3px_3px_8px_#d9e2ec,-3px_-3px_8px_#ffffff]"
-               class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-slate-600 hover:bg-white/80 hover:text-slate-900 transition-all border border-transparent">
-              <div class="w-6 h-6 rounded-lg bg-slate-100/90 flex items-center justify-center text-slate-700 shrink-0">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-              </div>
-              <span>Homework Center</span>
-            </a>
-
-            <a routerLink="/exams" (click)="isMobileSidebarOpen = false"
-               routerLinkActive="bg-white text-slate-900 font-bold border-slate-200/90 shadow-[3px_3px_8px_#d9e2ec,-3px_-3px_8px_#ffffff]"
-               class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-slate-600 hover:bg-white/80 hover:text-slate-900 transition-all border border-transparent">
-              <div class="w-6 h-6 rounded-lg bg-slate-100/90 flex items-center justify-center text-slate-700 shrink-0">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <span>Exams & Marksheets</span>
-            </a>
-          </ng-container>
-
-          <!-- TEACHER SPECIFIC MENUS -->
-          <ng-container *ngIf="auth.isTeacher() && !auth.isAdmin()">
-            <div class="pt-3 pb-1 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Teacher Workspace</div>
-
-            <!-- MY CLASS (Visible if designated as a Class Teacher) -->
-            <a *ngIf="auth.isClassTeacher()" routerLink="/my-class" (click)="isMobileSidebarOpen = false"
-               routerLinkActive="bg-white text-slate-900 font-bold border-slate-200/90 shadow-[3px_3px_8px_#d9e2ec,-3px_-3px_8px_#ffffff]"
-               class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-slate-600 hover:bg-white/80 hover:text-slate-900 transition-all border border-transparent">
-              <div class="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200/80">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              </div>
-              <div class="flex items-center justify-between flex-1">
-                <span>My Class</span>
-                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 uppercase tracking-tight">Class Teacher</span>
-              </div>
-            </a>
-
-            <a routerLink="/timetable" (click)="isMobileSidebarOpen = false"
-               routerLinkActive="bg-white text-slate-900 font-bold border-slate-200/90 shadow-[3px_3px_8px_#d9e2ec,-3px_-3px_8px_#ffffff]"
-               class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-slate-600 hover:bg-white/80 hover:text-slate-900 transition-all border border-transparent">
-              <div class="w-6 h-6 rounded-lg bg-slate-100/90 flex items-center justify-center text-slate-700 shrink-0">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <span>Teaching Routine</span>
-            </a>
-
-            <a routerLink="/attendance" (click)="isMobileSidebarOpen = false"
-               routerLinkActive="bg-white text-slate-900 font-bold border-slate-200/90 shadow-[3px_3px_8px_#d9e2ec,-3px_-3px_8px_#ffffff]"
-               class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-slate-600 hover:bg-white/80 hover:text-slate-900 transition-all border border-transparent">
-              <div class="w-6 h-6 rounded-lg bg-slate-100/90 flex items-center justify-center text-slate-700 shrink-0">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <span>Mark Attendance</span>
-            </a>
-
-            <a routerLink="/homework" (click)="isMobileSidebarOpen = false"
-               routerLinkActive="bg-white text-slate-900 font-bold border-slate-200/90 shadow-[3px_3px_8px_#d9e2ec,-3px_-3px_8px_#ffffff]"
-               class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-slate-600 hover:bg-white/80 hover:text-slate-900 transition-all border border-transparent">
-              <div class="w-6 h-6 rounded-lg bg-slate-100/90 flex items-center justify-center text-slate-700 shrink-0">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-              </div>
-              <span>Publish Homework</span>
-            </a>
-
-            <a routerLink="/exams" (click)="isMobileSidebarOpen = false"
-               routerLinkActive="bg-white text-slate-900 font-bold border-slate-200/90 shadow-[3px_3px_8px_#d9e2ec,-3px_-3px_8px_#ffffff]"
-               class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-slate-600 hover:bg-white/80 hover:text-slate-900 transition-all border border-transparent">
-              <div class="w-6 h-6 rounded-lg bg-slate-100/90 flex items-center justify-center text-slate-700 shrink-0">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <span>Enter Subject Marks</span>
-            </a>
-          </ng-container>
-
-          <!-- PARENT / GUARDIAN SPECIFIC MENUS -->
-          <ng-container *ngIf="auth.isParent()">
-            <div class="pt-3 pb-1 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Parent Portal</div>
-
-            <a routerLink="/timetable" (click)="isMobileSidebarOpen = false"
-               routerLinkActive="bg-white text-slate-900 font-bold border-slate-200/90 shadow-[3px_3px_8px_#d9e2ec,-3px_-3px_8px_#ffffff]"
-               class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-slate-600 hover:bg-white/80 hover:text-slate-900 transition-all border border-transparent">
-              <div class="w-6 h-6 rounded-lg bg-slate-100/90 flex items-center justify-center text-slate-700 shrink-0">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <span>Child Timetable</span>
-            </a>
-
-            <a routerLink="/attendance" (click)="isMobileSidebarOpen = false"
-               routerLinkActive="bg-white text-slate-900 font-bold border-slate-200/90 shadow-[3px_3px_8px_#d9e2ec,-3px_-3px_8px_#ffffff]"
-               class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-slate-600 hover:bg-white/80 hover:text-slate-900 transition-all border border-transparent">
-              <div class="w-6 h-6 rounded-lg bg-slate-100/90 flex items-center justify-center text-slate-700 shrink-0">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <span>Child Attendance</span>
-            </a>
-
-            <a routerLink="/homework" (click)="isMobileSidebarOpen = false"
-               routerLinkActive="bg-white text-slate-900 font-bold border-slate-200/90 shadow-[3px_3px_8px_#d9e2ec,-3px_-3px_8px_#ffffff]"
-               class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-slate-600 hover:bg-white/80 hover:text-slate-900 transition-all border border-transparent">
-              <div class="w-6 h-6 rounded-lg bg-slate-100/90 flex items-center justify-center text-slate-700 shrink-0">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-              </div>
-              <span>Homework Diary</span>
-            </a>
-
-            <a routerLink="/exams" (click)="isMobileSidebarOpen = false"
-               routerLinkActive="bg-white text-slate-900 font-bold border-slate-200/90 shadow-[3px_3px_8px_#d9e2ec,-3px_-3px_8px_#ffffff]"
-               class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-slate-600 hover:bg-white/80 hover:text-slate-900 transition-all border border-transparent">
-              <div class="w-6 h-6 rounded-lg bg-slate-100/90 flex items-center justify-center text-slate-700 shrink-0">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <span>Report Cards</span>
-            </a>
-          </ng-container>
-
-          <!-- COMMUNICATION & SUPPORT -->
-          <div class="pt-3 pb-1 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Communications</div>
-
-          <a routerLink="/communication" (click)="isMobileSidebarOpen = false"
-             routerLinkActive="bg-white text-slate-900 font-bold border-slate-200/90 shadow-[3px_3px_8px_#d9e2ec,-3px_-3px_8px_#ffffff]"
-             class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-slate-600 hover:bg-white/80 hover:text-slate-900 transition-all border border-transparent">
-            <div class="w-6 h-6 rounded-lg bg-slate-100/90 flex items-center justify-center text-slate-700 shrink-0">
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-              </svg>
-            </div>
-            <span>Notices & Events</span>
-          </a>
-
-          <a routerLink="/complaints" (click)="isMobileSidebarOpen = false"
-             routerLinkActive="bg-white text-slate-900 font-bold border-slate-200/90 shadow-[3px_3px_8px_#d9e2ec,-3px_-3px_8px_#ffffff]"
-             class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-slate-600 hover:bg-white/80 hover:text-slate-900 transition-all border border-transparent">
-            <div class="w-6 h-6 rounded-lg bg-slate-100/90 flex items-center justify-center text-slate-700 shrink-0">
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-              </svg>
-            </div>
-            <span>Grievance Desk</span>
-          </a>
-        </nav>
-
-        <!-- User Footer & Logout Card -->
-        <div class="p-3.5 border-t border-slate-200/70 bg-[#f8fafc]">
-          <div class="flex items-center justify-between p-2.5 rounded-2xl bg-white border border-slate-200/80 shadow-[2px_2px_6px_#d9e2ec,-2px_-2px_6px_#ffffff]">
-            <div class="flex items-center gap-2.5 min-w-0">
-              <div class="w-8 h-8 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center justify-center shrink-0">
-                {{ auth.currentUser()?.firstName?.charAt(0) || 'U' }}
-              </div>
-              <div class="min-w-0">
-                <p class="text-xs font-bold text-slate-900 truncate">{{ auth.currentUser()?.firstName }} {{ auth.currentUser()?.lastName }}</p>
-                <p class="text-[10px] text-slate-400 truncate">{{ auth.currentUser()?.email }}</p>
+              <div class="min-w-0 flex-1">
+                <h1 class="text-xs font-black text-slate-900 tracking-tight leading-tight truncate"
+                    [title]="auth.currentUser()?.school?.name || 'SchoolSense'">
+                  {{ auth.currentUser()?.school?.name || 'SchoolSense' }}
+                </h1>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Campus OS</span>
+                  <span class="text-[9px] font-medium text-slate-500">• {{ displayRole }}</span>
+                </div>
               </div>
             </div>
-            <button (click)="auth.logout()" title="Log out" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-            </button>
           </div>
+
+          <!-- Clean Search Bar -->
+          <div class="px-3.5 py-2.5 border-b border-slate-100 flex-shrink-0 bg-white">
+            <div class="relative">
+              <input type="text" [(ngModel)]="menuSearchQuery" (input)="filterMenu()"
+                     placeholder="Search menu..."
+                     class="w-full pl-8 pr-7 py-2 bg-slate-50 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium placeholder:text-slate-400 transition-colors outline-none focus:border-slate-400" />
+              <div class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <button *ngIf="menuSearchQuery" (click)="menuSearchQuery = ''; filterMenu()"
+                      class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold p-0.5 cursor-pointer">
+                &times;
+              </button>
+            </div>
+          </div>
+
+          <!-- Navigation Links with Accordion Groups & Sub-headings -->
+          <nav class="flex-1 px-2.5 py-2 space-y-1 overflow-y-auto custom-clay-scroll">
+            
+            <ng-container *ngFor="let group of visibleNavGroups">
+              
+              <!-- CASE 1: DIRECT LINK (e.g. Dashboard, Attendance, Homework, Exams) -->
+              <div *ngIf="!group.children || group.children.length === 0">
+                <a [routerLink]="group.route"
+                   [queryParams]="group.queryParams"
+                   (click)="isMobileSidebarOpen = false"
+                   class="group relative flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-900 text-slate-600"
+                   [class.active-nav-item]="isDirectActive(group)">
+                  
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all"
+                         [ngClass]="isDirectActive(group) 
+                                     ? 'bg-slate-200 text-slate-900' 
+                                     : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200/80 group-hover:text-slate-800'">
+                      <svg *ngIf="group.id === 'dashboard'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                      </svg>
+                      <svg *ngIf="group.id === 'attendance'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <svg *ngIf="group.id === 'homework'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      <svg *ngIf="group.id === 'exams'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    </div>
+                    <span class="truncate">{{ group.label }}</span>
+                  </div>
+                </a>
+              </div>
+
+              <!-- CASE 2: ACCORDION HEADING WITH SUB-HEADINGS (Timetable, Academics, Onboarding, Communication) -->
+              <div *ngIf="group.children && group.children.length > 0" class="space-y-0.5">
+                
+                <!-- Main Heading (Clean div role="button") -->
+                <div role="button" tabindex="0" (click)="toggleGroup(group)"
+                     class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-900 text-slate-600"
+                     [class.bg-slate-100]="group.expanded"
+                     [class.text-slate-900]="group.expanded">
+                  
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all"
+                         [ngClass]="isGroupActive(group)
+                                     ? 'bg-slate-200 text-slate-900'
+                                     : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200/80 group-hover:text-slate-800'">
+                      <!-- Icon for Super Admin Onboarding -->
+                      <svg *ngIf="group.id === 'super-admin'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                      <!-- Icon for Academics -->
+                      <svg *ngIf="group.id === 'academics'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                      <!-- Icon for Timetable -->
+                      <svg *ngIf="group.id === 'timetable'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <!-- Icon for Communication -->
+                      <svg *ngIf="group.id === 'communication'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                      </svg>
+                    </div>
+                    <span class="truncate">{{ group.label }}</span>
+                  </div>
+
+                  <!-- Dropdown Chevron Arrow -->
+                  <div class="w-5 h-5 rounded flex items-center justify-center transition-transform duration-200"
+                       [class.rotate-180]="group.expanded">
+                    <svg class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Sub-menu Items (Clean Indented Links, No Card Box) -->
+                <div *ngIf="group.expanded" class="ml-4 pl-3 border-l border-slate-200/80 py-1 space-y-0.5 animate-fadeIn">
+                  <a *ngFor="let sub of group.children"
+                     [routerLink]="sub.route"
+                     [queryParams]="sub.queryParams"
+                     (click)="isMobileSidebarOpen = false"
+                     class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer hover:text-slate-900 hover:bg-slate-50 text-slate-500"
+                     [class.text-slate-900]="isSubActive(sub)"
+                     [class.font-bold]="isSubActive(sub)"
+                     [class.bg-slate-100]="isSubActive(sub)">
+                    
+                    <span class="truncate">{{ sub.label }}</span>
+
+                    <span *ngIf="sub.badge" class="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-600">
+                      {{ sub.badge }}
+                    </span>
+                  </a>
+                </div>
+
+              </div>
+
+            </ng-container>
+
+            <div *ngIf="visibleNavGroups.length === 0" class="p-4 text-center text-xs text-slate-400">
+              No menus matching "{{ menuSearchQuery }}"
+            </div>
+          </nav>
+
+          <!-- Sidebar Bottom Subtle Tag (No signout here; moved to top right) -->
+          <div class="px-4 py-3 border-t border-slate-100 flex items-center justify-center gap-2 text-[10px] font-semibold text-slate-400 flex-shrink-0">
+            <svg class="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            <span>Campus OS • Protected</span>
+          </div>
+
         </div>
       </aside>
 
       <!-- ================================================================================== -->
-      <!-- MAIN CONTENT AREA -->
+      <!-- MAIN CONTENT AREA                                                                  -->
       <!-- ================================================================================== -->
       <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#edf2f7]">
-        <!-- Top Navigation Header -->
+        <!-- Top Navigation Header (Always Accessible Unhide / Collapse Hamburger) -->
         <header class="h-16 bg-[#ffffff] border-b border-slate-200/80 flex items-center justify-between px-4 sm:px-8 flex-shrink-0 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
           <div class="flex items-center gap-3">
-            <!-- Mobile Hamburger Toggle -->
-            <button type="button" (click)="isMobileSidebarOpen = true"
-                    class="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 cursor-pointer">
-              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <!-- Sidebar Unhide / Toggle Button (Visible on both Desktop and Mobile) -->
+            <button type="button" (click)="toggleSidebar()" title="Toggle Sidebar"
+                    class="p-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer flex items-center justify-center border border-slate-200 shadow-xs">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
 
-            <h2 class="text-xs sm:text-sm font-bold text-slate-800 truncate">
-              {{ auth.currentUser()?.school?.name }}
-            </h2>
+            <div>
+              <h2 class="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                {{ auth.currentUser()?.school?.name || 'SchoolSense Campus' }}
+              </h2>
+              <p class="text-[10px] text-slate-400 font-semibold hidden sm:block">Academic Session 2026-2027</p>
+            </div>
           </div>
 
+          <!-- Top Right User Profile & Sign Out (Replaced lonely role badge) -->
           <div class="flex items-center gap-3">
-            <span class="inline-flex items-center px-3 py-1 rounded-xl text-[11px] font-bold bg-[#f8fafc] text-slate-700 border border-slate-200 shadow-sm"
-                  [class.bg-amber-100]="auth.currentUser()?.role === 'SUPER_ADMIN'"
-                  [class.text-amber-800]="auth.currentUser()?.role === 'SUPER_ADMIN'"
-                  [class.border-amber-200]="auth.currentUser()?.role === 'SUPER_ADMIN'">
-              {{ displayRole }}
-            </span>
+            <div class="flex items-center gap-2.5 pl-2">
+              <!-- Circular Avatar Image -->
+              <div class="w-9 h-9 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-xs ring-2 ring-slate-100 overflow-hidden shrink-0">
+                <img [src]="userAvatarUrl" [alt]="userFullName" (error)="$any($event.target).style.display='none'" class="w-full h-full object-cover" />
+                <span class="sr-only">{{ userInitial }}</span>
+              </div>
+
+              <!-- User Name & Role -->
+              <div class="hidden sm:flex flex-col text-left">
+                <span class="text-xs font-bold text-slate-900 leading-tight truncate max-w-[140px] md:max-w-[180px]">
+                  {{ userFullName }}
+                </span>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <span class="inline-block w-1.5 h-1.5 rounded-full"
+                        [ngClass]="auth.currentUser()?.role === 'SUPER_ADMIN' ? 'bg-amber-500' : 'bg-emerald-500'"></span>
+                  <span class="text-[10px] font-semibold text-slate-500 leading-none">
+                    {{ displayRole }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Vertical Separator -->
+            <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
+
+            <!-- Sign Out Button -->
+            <button (click)="auth.logout()"
+                    title="Sign Out"
+                    class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-all cursor-pointer shadow-xs">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+              </svg>
+              <span class="hidden md:inline">Sign Out</span>
+            </button>
           </div>
         </header>
 
@@ -366,21 +312,274 @@ import { ToastService } from '../core/services/toast.service';
       </div>
     </div>
   `,
+  styles: [`
+    /* Clean, Modern Active Nav Styles */
+    .active-nav-item {
+      background: #f1f5f9 !important;
+      color: #0f172a !important;
+      font-weight: 700 !important;
+      border-radius: 12px !important;
+    }
+
+    .custom-clay-scroll::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-clay-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-clay-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+    .custom-clay-scroll::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  `],
 })
-export class MainLayoutComponent {
+export class MainLayoutComponent implements OnInit {
   auth = inject(AuthService);
   router = inject(Router);
   toastService = inject(ToastService);
+  
   isMobileSidebarOpen = false;
+  isDesktopSidebarCollapsed = false;
+  menuSearchQuery = '';
+
+  allNavGroups: NavGroup[] = [
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      route: '/dashboard',
+      roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
+    },
+    {
+      id: 'super-admin',
+      label: 'Onboarding & Network',
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN'],
+      expanded: true,
+      children: [
+        { label: 'School Network & Campuses', route: '/super-admin', badge: 'Root' },
+        { label: 'Onboard New School', route: '/super-admin' },
+      ],
+    },
+    {
+      id: 'academics',
+      label: 'Academics & Directory',
+      roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER'],
+      expanded: true,
+      children: [
+        { label: 'Classes & Student Roster', route: '/academics', queryParams: { tab: 'students' } },
+        { label: 'Faculty & Staff Directory', route: '/academics', queryParams: { tab: 'staff' } },
+        { label: 'Curriculum Subjects Master', route: '/academics', queryParams: { tab: 'subjects' } },
+      ],
+    },
+    {
+      id: 'timetable',
+      label: 'Timetable & Schedule',
+      service: 'TIMETABLE',
+      roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
+      expanded: true,
+      children: [
+        { label: 'Student / Class Timetable', route: '/timetable', queryParams: { type: 'student' } },
+        { label: 'Faculty / Teacher Timetable', route: '/timetable', queryParams: { type: 'faculty' } },
+      ],
+    },
+    {
+      id: 'attendance',
+      label: 'Attendance Register',
+      service: 'ATTENDANCE',
+      roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
+      route: '/attendance',
+    },
+    {
+      id: 'homework',
+      label: 'Homework Center',
+      service: 'HOMEWORK',
+      roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
+      route: '/homework',
+    },
+    {
+      id: 'exams',
+      label: 'Exams & Marksheets',
+      service: 'EXAMS',
+      roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
+      route: '/exams',
+    },
+    {
+      id: 'communication',
+      label: 'Communication & Notices',
+      service: 'COMMUNICATION',
+      roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
+      expanded: false,
+      children: [
+        { label: 'Circulars & Notices', route: '/communication' },
+        { label: 'Grievance Desk', route: '/complaints', service: 'COMPLAINTS' },
+      ],
+    },
+  ];
+
+  visibleNavGroups: NavGroup[] = [];
 
   get displayRole(): string {
     const user = this.auth.currentUser();
     if (!user) return '';
-    if (user.role === 'SUPER_ADMIN') return 'Dev Root';
+    if (user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN') return 'Super Admin';
     if (this.auth.isTeacher()) {
       return this.auth.isClassTeacher() ? 'Class Teacher' : 'Teacher';
     }
     return user.roleName || user.role;
   }
-}
 
+  get userFullName(): string {
+    const u = this.auth.currentUser();
+    if (!u) return 'User';
+    const name = `${u.firstName || ''} ${u.lastName || ''}`.trim();
+    return name || u.email || 'User';
+  }
+
+  get userInitial(): string {
+    const u = this.auth.currentUser();
+    if (u?.firstName) return u.firstName.charAt(0).toUpperCase();
+    if (u?.email) return u.email.charAt(0).toUpperCase();
+    return 'U';
+  }
+
+  get userAvatarUrl(): string {
+    const name = encodeURIComponent(this.userFullName);
+    return `https://ui-avatars.com/api/?name=${name}&background=0f172a&color=ffffff&bold=true&size=128`;
+  }
+
+  ngOnInit() {
+    this.filterMenu();
+
+    // Auto expand active parent group on route change
+    this.router.events
+      .pipe(filter((event) => event instanceof NavigationEnd))
+      .subscribe(() => {
+        this.expandActiveGroup();
+      });
+    this.expandActiveGroup();
+  }
+
+  isDirectActive(group: NavGroup): boolean {
+    if (!group.route) return false;
+    const urlTree = this.router.parseUrl(this.router.url);
+    const primaryPath = '/' + (urlTree.root.children['primary']?.segments.map((s) => s.path).join('/') || '');
+    return primaryPath === group.route;
+  }
+
+  isGroupActive(group: NavGroup): boolean {
+    if (group.route) return this.isDirectActive(group);
+    return !!group.children?.some((c) => this.isSubActive(c));
+  }
+
+  isSubActive(sub: SubMenuItem): boolean {
+    const urlTree = this.router.parseUrl(this.router.url);
+    const primaryPath = '/' + (urlTree.root.children['primary']?.segments.map((s) => s.path).join('/') || '');
+    
+    if (primaryPath !== sub.route) {
+      return false;
+    }
+
+    if (sub.queryParams && Object.keys(sub.queryParams).length > 0) {
+      for (const key of Object.keys(sub.queryParams)) {
+        const val = urlTree.queryParams[key];
+        if (val !== undefined && val !== sub.queryParams[key]) {
+          return false;
+        }
+        // If current URL has no query param, the first child is active by default
+        if (val === undefined) {
+          const parent = this.allNavGroups.find((g) => g.children?.some((c) => c.label === sub.label));
+          if (parent && parent.children && parent.children[0] === sub) {
+            return true;
+          }
+          return false;
+        }
+      }
+      return true;
+    }
+
+    // Sub has no query params: active if URL has no query params
+    return Object.keys(urlTree.queryParams).length === 0;
+  }
+
+  toggleSidebar() {
+    if (window.innerWidth < 1024) {
+      this.isMobileSidebarOpen = !this.isMobileSidebarOpen;
+    } else {
+      this.isDesktopSidebarCollapsed = !this.isDesktopSidebarCollapsed;
+    }
+  }
+
+  toggleGroup(group: NavGroup) {
+    group.expanded = !group.expanded;
+  }
+
+  expandActiveGroup() {
+    const currentUrl = this.router.url;
+    for (const g of this.allNavGroups) {
+      if (g.children?.some((c) => currentUrl.startsWith(c.route))) {
+        g.expanded = true;
+      }
+    }
+  }
+
+  filterMenu() {
+    const isSuper = this.auth.isSuperAdmin();
+    const userRole = this.auth.currentUser()?.role || '';
+    const q = this.menuSearchQuery.trim().toLowerCase();
+
+    const allowedGroups = this.allNavGroups
+      .filter((g) => {
+        // Super Admin isolation: ONLY super-admin nav group is visible
+        if (isSuper) {
+          return g.id === 'super-admin';
+        }
+        // School users cannot see super-admin root group
+        if (g.id === 'super-admin') {
+          return false;
+        }
+
+        if (g.roles && !g.roles.includes(userRole)) {
+          return false;
+        }
+
+        // Check if group's service is disabled for current school
+        if (g.service && !this.auth.isServiceEnabled(g.service)) {
+          return false;
+        }
+
+        return true;
+      });
+
+    const result: NavGroup[] = [];
+    for (const g of allowedGroups) {
+      // Filter child submenus based on service restrictions
+      let children = g.children;
+      if (children) {
+        children = children.filter((c) => {
+          if (c.service && !this.auth.isServiceEnabled(c.service)) {
+            return false;
+          }
+          return true;
+        });
+      }
+
+      if (!q) {
+        result.push({ ...g, children });
+        continue;
+      }
+
+      const labelMatches = g.label.toLowerCase().includes(q);
+      const matchingChildren = children?.filter((c) => c.label.toLowerCase().includes(q));
+
+      if (labelMatches) {
+        result.push({ ...g, children, expanded: true });
+      } else if (matchingChildren && matchingChildren.length > 0) {
+        result.push({ ...g, children: matchingChildren, expanded: true });
+      }
+    }
+
+    this.visibleNavGroups = result.filter((g) => !g.children || g.children.length > 0);
+  }
+}

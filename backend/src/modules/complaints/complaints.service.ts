@@ -1,27 +1,7 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
-
-export interface CreateComplaintDto {
-  category: string;
-  subject: string;
-  message: string;
-  studentId?: string;
-  priority?: string;
-}
-
-export interface AddMessageDto {
-  message: string;
-  isInternalNote?: boolean;
-}
-
-export interface ComplaintFilterDto {
-  scope?: string; // 'CLASS_TEACHER' | 'ASSIGNED' | 'ALL'
-  classId?: string;
-  sectionId?: string;
-  status?: string;
-  category?: string;
-}
+import { CreateComplaintDto, AddMessageDto, ComplaintFilterDto } from './dto/complaints.dto';
 
 @Injectable()
 export class ComplaintsService {
@@ -31,19 +11,22 @@ export class ComplaintsService {
     const role = user.role;
 
     // 1. PARENT / GUARDIAN: strictly only their own raised tickets
-    if (role === 'PARENT') {
-      const guardian = await this.prisma.guardian.findFirst({
+    if (role === 'PARENT' || role === 'GUARDIAN') {
+      const guardians = await this.prisma.guardian.findMany({
         where: { user_id: user.userId, school_id: schoolId },
+        select: { id: true },
       });
 
-      if (!guardian) {
+      if (guardians.length === 0) {
         return [];
       }
+
+      const guardianIds = guardians.map((g) => g.id);
 
       const tickets = await this.prisma.complaint.findMany({
         where: {
           school_id: schoolId,
-          guardian_id: guardian.id,
+          guardian_id: { in: guardianIds },
           deleted_at: null,
           ...(filters?.status && filters.status !== 'ALL' ? { status: filters.status } : {}),
           ...(filters?.category && filters.category !== 'ALL' ? { category: filters.category } : {}),
@@ -264,17 +247,20 @@ export class ComplaintsService {
   }
 
   async getMyChildren(schoolId: string, userId: string) {
-    const guardian = await this.prisma.guardian.findFirst({
+    const guardians = await this.prisma.guardian.findMany({
       where: { user_id: userId, school_id: schoolId },
+      select: { id: true },
     });
 
-    if (!guardian) {
+    if (guardians.length === 0) {
       return [];
     }
 
+    const guardianIds = guardians.map((g) => g.id);
+
     const links = await this.prisma.studentGuardian.findMany({
       where: {
-        guardian_id: guardian.id,
+        guardian_id: { in: guardianIds },
         school_id: schoolId,
         status: 'ACTIVE',
         deleted_at: null,
@@ -297,20 +283,25 @@ export class ComplaintsService {
       },
     });
 
-    return links.map((l) => {
-      const enrollment = l.student.student_enrollments[0];
-      return {
-        studentId: l.student.id,
-        admissionNumber: l.student.admission_number,
-        firstName: l.student.first_name,
-        lastName: l.student.last_name,
-        fullName: `${l.student.first_name} ${l.student.last_name || ''}`.trim(),
-        className: enrollment?.section?.class?.name || 'N/A',
-        sectionName: enrollment?.section?.name || 'N/A',
-        sectionId: enrollment?.section_id,
-        relationship: l.relationship_type,
-      };
-    });
+    // Deduplicate students
+    const studentMap = new Map();
+    for (const l of links) {
+      if (!studentMap.has(l.student.id)) {
+        const enrollment = l.student.student_enrollments[0];
+        studentMap.set(l.student.id, {
+          studentId: l.student.id,
+          admissionNumber: l.student.admission_number,
+          firstName: l.student.first_name,
+          lastName: l.student.last_name,
+          fullName: `${l.student.first_name} ${l.student.last_name || ''}`.trim(),
+          className: enrollment?.section?.class?.name || 'N/A',
+          sectionName: enrollment?.section?.name || 'N/A',
+          sectionId: enrollment?.section_id,
+          relationship: l.relationship_type,
+        });
+      }
+    }
+    return Array.from(studentMap.values());
   }
 
   async getFaculty(schoolId: string) {
@@ -346,7 +337,9 @@ export class ComplaintsService {
     return Array.from(facultyMap.values());
   }
 
-  async getComplaintById(id: string) {
+  async getComplaintById(id: string, user?: AuthenticatedUser) {
+    const isParent = user?.role === 'PARENT' || user?.role === 'GUARDIAN';
+
     const complaint = await this.prisma.complaint.findUnique({
       where: { id },
       include: {
@@ -364,6 +357,7 @@ export class ComplaintsService {
         },
         users: true,
         messages: {
+          where: isParent ? { is_internal_note: false } : undefined,
           orderBy: { created_at: 'asc' },
           include: {
             sender: {
@@ -380,6 +374,18 @@ export class ComplaintsService {
 
     if (!complaint) {
       throw new NotFoundException('Complaint ticket not found');
+    }
+
+    // If parent, ensure ticket belongs to them
+    if (isParent && user) {
+      const guardians = await this.prisma.guardian.findMany({
+        where: { user_id: user.userId },
+        select: { id: true },
+      });
+      const guardianIds = guardians.map((g) => g.id);
+      if (!guardianIds.includes(complaint.guardian_id)) {
+        throw new ForbiddenException('Access denied: You are not authorized to view this ticket.');
+      }
     }
 
     return complaint;
@@ -499,7 +505,7 @@ export class ComplaintsService {
       },
     });
 
-    return this.getComplaintById(complaintId);
+    return this.getComplaintById(complaintId, user);
   }
 
   async addMessage(complaintId: string, userId: string, dto: AddMessageDto) {
@@ -521,6 +527,7 @@ export class ComplaintsService {
       include: {
         sender: {
           select: {
+            id: true,
             first_name: true,
             last_name: true,
           },
@@ -531,41 +538,15 @@ export class ComplaintsService {
     return message;
   }
 
-  async updateStatus(complaintId: string, status: string) {
+  async updateStatus(id: string, status: string) {
     return this.prisma.complaint.update({
-      where: { id: complaintId },
-      data: {
-        status,
-        ...(status === 'RESOLVED' || status === 'CLOSED' ? { resolved_at: new Date() } : {}),
-      },
+      where: { id },
+      data: { status },
       include: {
         guardian: true,
-        student: {
-          include: {
-            student_enrollments: {
-              include: {
-                section: {
-                  include: { class: true },
-                },
-              },
-            },
-          },
-        },
+        student: true,
         users: true,
-        messages: {
-          orderBy: { created_at: 'asc' },
-          include: {
-            sender: {
-              select: {
-                id: true,
-                first_name: true,
-                last_name: true,
-              },
-            },
-          },
-        },
       },
     });
   }
 }
-

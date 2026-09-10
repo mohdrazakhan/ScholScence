@@ -20,6 +20,7 @@ const complaints_dto_1 = require("./dto/complaints.dto");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const current_tenant_decorator_1 = require("../../common/decorators/current-tenant.decorator");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
+const auth_metadata_decorator_1 = require("../../common/decorators/auth-metadata.decorator");
 let ComplaintsController = class ComplaintsController {
     constructor(complaintsService) {
         this.complaintsService = complaintsService;
@@ -39,8 +40,8 @@ let ComplaintsController = class ComplaintsController {
     getFaculty(schoolId) {
         return this.complaintsService.getFaculty(schoolId);
     }
-    getComplaintById(id) {
-        return this.complaintsService.getComplaintById(id);
+    getComplaintById(id, user) {
+        return this.complaintsService.getComplaintById(id, user);
     }
     createComplaint(schoolId, user, dto) {
         return this.complaintsService.createComplaint(schoolId, user.userId, dto);
@@ -101,8 +102,9 @@ __decorate([
     (0, swagger_1.ApiParam)({ name: 'id', description: 'Complaint Ticket UUID' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Ticket details and timeline messages returned' }),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], ComplaintsController.prototype, "getComplaintById", null);
 __decorate([
@@ -156,6 +158,7 @@ exports.ComplaintsController = ComplaintsController = __decorate([
     (0, swagger_1.ApiTags)('Complaints / Grievances'),
     (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, auth_metadata_decorator_1.RequireService)('COMPLAINTS'),
     (0, common_1.Controller)('complaints'),
     __metadata("design:paramtypes", [complaints_service_1.ComplaintsService])
 ], ComplaintsController);

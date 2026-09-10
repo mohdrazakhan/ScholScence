@@ -97,11 +97,11 @@ export declare class TimetableService {
         };
     }>;
     savePeriod(schoolId: string, user: AuthenticatedUser, dto: CreateTimetablePeriodDto): Promise<{
-        title: string | null;
         id: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
+        title: string | null;
         school_id: string;
         academic_year_id: string;
         section_id: string;

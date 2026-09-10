@@ -5,8 +5,8 @@ export declare class ExamsService {
     constructor(prisma: PrismaService);
     getExams(schoolId: string): Promise<({
         academic_year: {
-            name: string;
             id: string;
+            name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
@@ -19,26 +19,26 @@ export declare class ExamsService {
         exam_subjects: ({
             class_subject: {
                 class: {
-                    name: string;
                     id: string;
+                    code: string;
+                    name: string;
                     status: string;
                     created_at: Date;
                     updated_at: Date;
                     deleted_at: Date | null;
                     school_id: string;
-                    code: string;
                     display_order: number;
                 };
                 subject: {
-                    name: string;
-                    description: string | null;
                     id: string;
+                    code: string;
+                    name: string;
                     status: string;
                     created_at: Date;
                     updated_at: Date;
                     deleted_at: Date | null;
+                    description: string | null;
                     school_id: string;
-                    code: string;
                     display_order: number;
                     subject_type: string;
                 };
@@ -68,25 +68,25 @@ export declare class ExamsService {
             passing_marks: import("@prisma/client/runtime/library").Decimal;
         })[];
         grading_scheme: {
-            name: string;
-            description: string | null;
             id: string;
+            name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
+            description: string | null;
             school_id: string;
             grades_json: import("@prisma/client/runtime/library").JsonValue;
         };
     } & {
-        name: string;
         id: string;
+        code: string;
+        name: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
         school_id: string;
-        code: string;
         academic_year_id: string;
         start_date: Date;
         end_date: Date;
@@ -95,26 +95,26 @@ export declare class ExamsService {
     getExamSubjects(examId: string): Promise<({
         class_subject: {
             class: {
-                name: string;
                 id: string;
+                code: string;
+                name: string;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
                 school_id: string;
-                code: string;
                 display_order: number;
             };
             subject: {
-                name: string;
-                description: string | null;
                 id: string;
+                code: string;
+                name: string;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
+                description: string | null;
                 school_id: string;
-                code: string;
                 display_order: number;
                 subject_type: string;
             };
@@ -146,14 +146,14 @@ export declare class ExamsService {
     getExamSubjectMarks(examSubjectId: string, sectionId?: string): Promise<{
         examSubject: {
             exam: {
-                name: string;
                 id: string;
+                code: string;
+                name: string;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
                 school_id: string;
-                code: string;
                 academic_year_id: string;
                 start_date: Date;
                 end_date: Date;
@@ -161,26 +161,26 @@ export declare class ExamsService {
             };
             class_subject: {
                 class: {
-                    name: string;
                     id: string;
+                    code: string;
+                    name: string;
                     status: string;
                     created_at: Date;
                     updated_at: Date;
                     deleted_at: Date | null;
                     school_id: string;
-                    code: string;
                     display_order: number;
                 };
                 subject: {
-                    name: string;
-                    description: string | null;
                     id: string;
+                    code: string;
+                    name: string;
                     status: string;
                     created_at: Date;
                     updated_at: Date;
                     deleted_at: Date | null;
+                    description: string | null;
                     school_id: string;
-                    code: string;
                     display_order: number;
                     subject_type: string;
                 };

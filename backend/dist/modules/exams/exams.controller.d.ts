@@ -6,8 +6,8 @@ export declare class ExamsController {
     constructor(examsService: ExamsService);
     getExams(schoolId: string): Promise<({
         academic_year: {
-            name: string;
             id: string;
+            name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
@@ -20,26 +20,26 @@ export declare class ExamsController {
         exam_subjects: ({
             class_subject: {
                 class: {
-                    name: string;
                     id: string;
+                    code: string;
+                    name: string;
                     status: string;
                     created_at: Date;
                     updated_at: Date;
                     deleted_at: Date | null;
                     school_id: string;
-                    code: string;
                     display_order: number;
                 };
                 subject: {
-                    name: string;
-                    description: string | null;
                     id: string;
+                    code: string;
+                    name: string;
                     status: string;
                     created_at: Date;
                     updated_at: Date;
                     deleted_at: Date | null;
+                    description: string | null;
                     school_id: string;
-                    code: string;
                     display_order: number;
                     subject_type: string;
                 };
@@ -69,25 +69,25 @@ export declare class ExamsController {
             passing_marks: import("@prisma/client/runtime/library").Decimal;
         })[];
         grading_scheme: {
-            name: string;
-            description: string | null;
             id: string;
+            name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
+            description: string | null;
             school_id: string;
             grades_json: import("@prisma/client/runtime/library").JsonValue;
         };
     } & {
-        name: string;
         id: string;
+        code: string;
+        name: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
         school_id: string;
-        code: string;
         academic_year_id: string;
         start_date: Date;
         end_date: Date;
@@ -96,26 +96,26 @@ export declare class ExamsController {
     getExamSubjects(examId: string): Promise<({
         class_subject: {
             class: {
-                name: string;
                 id: string;
+                code: string;
+                name: string;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
                 school_id: string;
-                code: string;
                 display_order: number;
             };
             subject: {
-                name: string;
-                description: string | null;
                 id: string;
+                code: string;
+                name: string;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
+                description: string | null;
                 school_id: string;
-                code: string;
                 display_order: number;
                 subject_type: string;
             };
@@ -147,14 +147,14 @@ export declare class ExamsController {
     getExamSubjectMarks(examSubjectId: string, sectionId?: string): Promise<{
         examSubject: {
             exam: {
-                name: string;
                 id: string;
+                code: string;
+                name: string;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
                 school_id: string;
-                code: string;
                 academic_year_id: string;
                 start_date: Date;
                 end_date: Date;
@@ -162,26 +162,26 @@ export declare class ExamsController {
             };
             class_subject: {
                 class: {
-                    name: string;
                     id: string;
+                    code: string;
+                    name: string;
                     status: string;
                     created_at: Date;
                     updated_at: Date;
                     deleted_at: Date | null;
                     school_id: string;
-                    code: string;
                     display_order: number;
                 };
                 subject: {
-                    name: string;
-                    description: string | null;
                     id: string;
+                    code: string;
+                    name: string;
                     status: string;
                     created_at: Date;
                     updated_at: Date;
                     deleted_at: Date | null;
+                    description: string | null;
                     school_id: string;
-                    code: string;
                     display_order: number;
                     subject_type: string;
                 };

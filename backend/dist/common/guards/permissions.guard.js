@@ -29,7 +29,7 @@ let PermissionsGuard = class PermissionsGuard {
         if (!user || !user.permissions) {
             throw new common_1.ForbiddenException('User permissions not loaded');
         }
-        if (user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN' || user.role === 'SCHOOL_ADMIN') {
+        if (user.role === 'SCHOOL_ADMIN') {
             return true;
         }
         const hasPermission = requiredPermissions.every((perm) => user.permissions.includes(perm));

@@ -10,7 +10,8 @@ import { CommunicationComponent } from './features/communication/communication.c
 import { ComplaintsComponent } from './features/complaints/complaints.component';
 import { MyClassComponent } from './features/my-class/my-class.component';
 import { TimetableComponent } from './features/timetable/timetable.component';
-import { authGuard } from './core/guards/auth.guard';
+import { SuperAdminComponent } from './features/super-admin/super-admin.component';
+import { authGuard, authChildGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -18,17 +19,19 @@ export const routes: Routes = [
     path: '',
     component: MainLayoutComponent,
     canActivate: [authGuard],
+    canActivateChild: [authChildGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },
-      { path: 'my-class', component: MyClassComponent },
-      { path: 'timetable', component: TimetableComponent },
-      { path: 'attendance', component: AttendanceComponent },
-      { path: 'academics', component: AcademicsComponent },
-      { path: 'homework', component: HomeworkComponent },
-      { path: 'exams', component: ExamsComponent },
-      { path: 'communication', component: CommunicationComponent },
-      { path: 'complaints', component: ComplaintsComponent },
+      { path: 'super-admin', component: SuperAdminComponent, canActivate: [authGuard] },
+      { path: 'my-class', component: MyClassComponent, canActivate: [authGuard] },
+      { path: 'timetable', component: TimetableComponent, canActivate: [authGuard] },
+      { path: 'attendance', component: AttendanceComponent, canActivate: [authGuard] },
+      { path: 'academics', component: AcademicsComponent, canActivate: [authGuard] },
+      { path: 'homework', component: HomeworkComponent, canActivate: [authGuard] },
+      { path: 'exams', component: ExamsComponent, canActivate: [authGuard] },
+      { path: 'communication', component: CommunicationComponent, canActivate: [authGuard] },
+      { path: 'complaints', component: ComplaintsComponent, canActivate: [authGuard] },
     ],
   },
   { path: '**', redirectTo: 'dashboard' },

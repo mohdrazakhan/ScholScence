@@ -124,6 +124,13 @@ import { ComplaintItem } from '../../core/models';
                 [class.text-slate-700]="teacherScope !== 'ALL'"
                 class="px-4 py-2 rounded-2xl text-xs font-bold border border-slate-200 shadow-xs flex items-center gap-2 transition-all cursor-pointer">
           <span>All Accessible</span>
+          <span [class.bg-slate-700]="teacherScope === 'ALL'"
+                [class.text-slate-200]="teacherScope === 'ALL'"
+                [class.bg-slate-100]="teacherScope !== 'ALL'"
+                [class.text-slate-600]="teacherScope !== 'ALL'"
+                class="px-2 py-0.5 rounded-full text-[10px]">
+            {{ allAccessibleTicketsCount }}
+          </span>
         </button>
       </div>
 
@@ -161,6 +168,7 @@ import { ComplaintItem } from '../../core/models';
             <option value="FEE_ACCOUNTS">Fee / Billing</option>
             <option value="FACILITY">Campus Facility</option>
             <option value="DISCIPLINE">Discipline & Safety</option>
+            <option value="OTHER">Other / General</option>
           </select>
         </div>
 
@@ -277,10 +285,7 @@ import { ComplaintItem } from '../../core/models';
 
                 <!-- Status Transition -->
                 <button *ngIf="!isParent()" (click)="toggleStatus()"
-                        [class.bg-emerald-600]="selectedTicket.status !== 'RESOLVED'"
-                        [class.hover:bg-emerald-500]="selectedTicket.status !== 'RESOLVED'"
-                        [class.bg-amber-600]="selectedTicket.status === 'RESOLVED'"
-                        [class.hover:bg-amber-500]="selectedTicket.status === 'RESOLVED'"
+                        [ngClass]="selectedTicket.status !== 'RESOLVED' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-amber-600 hover:bg-amber-500'"
                         class="px-4 py-2 text-white text-xs font-bold rounded-2xl transition-all shadow-[2px_2px_6px_#d9e2ec,-2px_-2px_6px_#ffffff] cursor-pointer">
                   Mark as {{ selectedTicket.status === 'RESOLVED' ? 'Open' : 'Resolved' }}
                 </button>
@@ -290,13 +295,16 @@ import { ComplaintItem } from '../../core/models';
             <!-- Messages Thread -->
             <div class="flex-1 p-6 overflow-y-auto space-y-4 bg-[#fcfdfe]">
               <div *ngFor="let msg of selectedTicket.messages"
-                   class="flex flex-col max-w-lg p-4 rounded-3xl text-xs shadow-xs"
+                   class="flex flex-col max-w-lg p-4 rounded-3xl text-xs transition-all"
                    [ngClass]="msg.is_internal_note 
-                      ? 'bg-amber-50 border border-amber-200 ml-auto' 
-                      : (isMyMessage(msg) ? 'bg-slate-900 text-white ml-auto' : 'bg-white border border-slate-200/80 shadow-[3px_3px_8px_#e2e8f0,-3px_-3px_8px_#ffffff] mr-auto')">
+                      ? 'bg-amber-50 border border-amber-200 text-amber-950 ml-auto' 
+                      : (isMyMessage(msg) 
+                          ? 'bg-slate-900 text-white ml-auto shadow-[4px_4px_12px_#cbd5e1,-2px_-2px_6px_#ffffff]' 
+                          : 'bg-white border border-slate-200/90 text-slate-800 mr-auto shadow-[4px_4px_12px_#e2e8f0,-4px_-4px_12px_#ffffff]')">
                 <div class="flex items-center justify-between gap-4 mb-1.5">
-                  <span class="font-bold" [ngClass]="isMyMessage(msg) && !msg.is_internal_note ? 'text-slate-200' : 'text-slate-900'">
-                    {{ msg.sender?.first_name }} {{ msg.sender?.last_name || '' }}
+                  <span class="font-bold flex items-center gap-1.5" [ngClass]="isMyMessage(msg) && !msg.is_internal_note ? 'text-slate-200' : 'text-slate-900'">
+                    <span>{{ msg.sender?.first_name }} {{ msg.sender?.last_name || '' }}</span>
+                    <span *ngIf="isMyMessage(msg) && !msg.is_internal_note" class="text-[10px] font-medium text-slate-400">(You)</span>
                     <span *ngIf="msg.is_internal_note" class="text-[9px] font-bold bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded ml-1">
                       Staff Note
                     </span>
@@ -312,10 +320,49 @@ import { ComplaintItem } from '../../core/models';
             </div>
 
             <!-- Reply Box -->
-            <div class="p-4 border-t border-slate-100 bg-[#f8fafc] flex flex-col gap-2">
+            <div class="p-4 border-t border-slate-100 bg-[#f8fafc] flex flex-col gap-2 relative">
+              <!-- Mention Autocomplete Popover (Reply) -->
+              <div *ngIf="showMentionSuggestions && mentionTarget === 'reply'"
+                   class="absolute bottom-full left-4 mb-2 w-88 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.12),-4px_-4px_12px_#ffffff] p-2 z-30 animate-fadeIn overflow-hidden">
+                <div class="px-3 py-1.5 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <span>Mention Participants</span>
+                  <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full font-mono">
+                    {{ mentionSuggestions.length }} available
+                  </span>
+                </div>
+                <div class="max-h-52 overflow-y-auto divide-y divide-slate-50 mt-1">
+                  <button *ngFor="let p of mentionSuggestions; let idx = index"
+                          (click)="selectMention(p, 'reply')"
+                          (mouseenter)="mentionSelectedIndex = idx"
+                          [class.bg-slate-100]="mentionSelectedIndex === idx"
+                          type="button"
+                          class="w-full text-left p-2.5 rounded-xl flex items-center gap-3 transition-colors cursor-pointer hover:bg-slate-100">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-black text-xs shadow-xs flex-shrink-0 border"
+                         [ngClass]="p.avatarColor">
+                      {{ p.fullName.charAt(0) || 'U' }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center justify-between gap-1.5">
+                        <p class="text-xs font-bold text-slate-900 truncate">{{ p.fullName }}</p>
+                        <span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border flex-shrink-0"
+                              [ngClass]="p.badgeClass">
+                          {{ p.role }}
+                        </span>
+                      </div>
+                      <p class="text-[11px] text-slate-500 truncate mt-0.5">
+                        {{ p.subtext }}
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
               <div class="flex items-center gap-3">
-                <input type="text" [(ngModel)]="replyText" (keyup.enter)="sendReply()" 
-                       [placeholder]="isParent() ? 'Type a message or inquiry reply...' : 'Type an official response to parent...'"
+                <input type="text" [(ngModel)]="replyText" 
+                       (keyup)="onInputKeyUp($event, 'reply')"
+                       (keydown)="onInputKeyDown($event, 'reply')"
+                       (keyup.enter)="!showMentionSuggestions && sendReply()" 
+                       [placeholder]="isParent() ? 'Type message (type @ to tag your child)...' : 'Type an official response to parent...'"
                        class="flex-1 px-4 py-2.5 bg-white border border-slate-300 rounded-2xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-[inset_1px_1px_3px_#e2e8f0,inset_-1px_-1px_3px_#ffffff]" />
                 <button (click)="sendReply()" [disabled]="!replyText || sendingReply"
                         class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl transition-all shadow-[4px_4px_10px_#cbd5e1,-4px_-4px_10px_#ffffff] disabled:opacity-50 cursor-pointer">
@@ -375,6 +422,7 @@ import { ComplaintItem } from '../../core/models';
                 <option value="FEE_ACCOUNTS">Fee & Accounts Billing</option>
                 <option value="FACILITY">Campus Facility & Infrastructure</option>
                 <option value="DISCIPLINE">Student Discipline & Safety</option>
+                <option value="OTHER">Other / General Inquiry</option>
               </select>
             </div>
 
@@ -394,9 +442,49 @@ import { ComplaintItem } from '../../core/models';
                      class="w-full px-4 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-[inset_1px_1px_3px_#e2e8f0,inset_-1px_-1px_3px_#ffffff]" />
             </div>
 
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Message Description *</label>
-              <textarea [(ngModel)]="newTicket.message" rows="4" placeholder="Describe your question or issue in detail..."
+            <div class="relative">
+              <label class="block text-xs font-bold text-slate-700 mb-1">Message Description * <span class="font-normal text-slate-400">(type &#64; to mention)</span></label>
+              
+              <!-- Mention Autocomplete Popover (Modal) -->
+              <div *ngIf="showMentionSuggestions && mentionTarget === 'modal'"
+                   class="absolute bottom-full left-0 mb-2 w-88 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.12),-4px_-4px_12px_#ffffff] p-2 z-30 animate-fadeIn overflow-hidden">
+                <div class="px-3 py-1.5 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <span>Mention / Tag</span>
+                  <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full font-mono">
+                    {{ mentionSuggestions.length }} available
+                  </span>
+                </div>
+                <div class="max-h-48 overflow-y-auto divide-y divide-slate-50 mt-1">
+                  <button *ngFor="let p of mentionSuggestions; let idx = index"
+                          (click)="selectMention(p, 'modal')"
+                          (mouseenter)="mentionSelectedIndex = idx"
+                          [class.bg-slate-100]="mentionSelectedIndex === idx"
+                          type="button"
+                          class="w-full text-left p-2.5 rounded-xl flex items-center gap-3 transition-colors cursor-pointer hover:bg-slate-100">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-black text-xs shadow-xs flex-shrink-0 border"
+                         [ngClass]="p.avatarColor">
+                      {{ p.fullName.charAt(0) || 'U' }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center justify-between gap-1.5">
+                        <p class="text-xs font-bold text-slate-900 truncate">{{ p.fullName }}</p>
+                        <span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border flex-shrink-0"
+                              [ngClass]="p.badgeClass">
+                          {{ p.role }}
+                        </span>
+                      </div>
+                      <p class="text-[11px] text-slate-500 truncate mt-0.5">
+                        {{ p.subtext }}
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <textarea [(ngModel)]="newTicket.message" rows="4" 
+                        (keyup)="onInputKeyUp($event, 'modal')"
+                        (keydown)="onInputKeyDown($event, 'modal')"
+                        placeholder="Describe your question or issue in detail (e.g. Inquiring about @...)..."
                         class="w-full px-4 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-[inset_1px_1px_3px_#e2e8f0,inset_-1px_-1px_3px_#ffffff]"></textarea>
             </div>
           </div>
@@ -491,6 +579,13 @@ export class ComplaintsComponent implements OnInit {
   // Parent Children for Ticket Creation
   myChildren: any[] = [];
 
+  // Mentions Autocomplete State
+  showMentionSuggestions = false;
+  mentionTarget: 'reply' | 'modal' | null = null;
+  mentionSuggestions: any[] = [];
+  mentionSelectedIndex = 0;
+  mentionStartIndex = -1;
+
   // Modal: Raise Ticket
   showNewTicketModal = false;
   creatingTicket = false;
@@ -548,7 +643,7 @@ export class ComplaintsComponent implements OnInit {
     let params: any = {};
 
     if (this.isTeacher() && !this.isAdmin()) {
-      params.scope = this.teacherScope;
+      params.scope = 'ALL';
     }
 
     if (this.isAdmin() && this.selectedSectionId !== 'ALL') {
@@ -558,17 +653,7 @@ export class ComplaintsComponent implements OnInit {
     this.api.get<ComplaintItem[]>('complaints', params).subscribe({
       next: (res) => {
         this.complaints = res;
-        if (res.length > 0) {
-          if (!this.selectedTicket || !res.find((t) => t.id === this.selectedTicket?.id)) {
-            this.selectTicket(res[0]);
-          } else {
-            // refresh selectedTicket reference
-            const found = res.find((t) => t.id === this.selectedTicket?.id);
-            if (found) this.selectedTicket = found;
-          }
-        } else {
-          this.selectedTicket = null;
-        }
+        this.updateSelectedTicket();
       },
       error: () => this.toast.error('Could not load grievance tickets'),
     });
@@ -576,7 +661,21 @@ export class ComplaintsComponent implements OnInit {
 
   setTeacherScope(scope: 'CLASS_TEACHER' | 'ASSIGNED' | 'ALL') {
     this.teacherScope = scope;
-    this.loadComplaints();
+    this.updateSelectedTicket();
+  }
+
+  updateSelectedTicket() {
+    const list = this.filteredComplaints;
+    if (list.length > 0) {
+      if (!this.selectedTicket || !list.find((t) => t.id === this.selectedTicket?.id)) {
+        this.selectTicket(list[0]);
+      } else {
+        const found = list.find((t) => t.id === this.selectedTicket?.id);
+        if (found) this.selectedTicket = found;
+      }
+    } else {
+      this.selectedTicket = null;
+    }
   }
 
   get classTeacherTicketsCount(): number {
@@ -587,10 +686,23 @@ export class ComplaintsComponent implements OnInit {
     return this.complaints.filter((c) => c.isAssignedToMe).length;
   }
 
+  get allAccessibleTicketsCount(): number {
+    return this.complaints.length;
+  }
+
   get filteredComplaints(): ComplaintItem[] {
     return this.complaints.filter((c) => {
+      // 1. Teacher scope filtering
+      if (this.isTeacher() && !this.isAdmin()) {
+        if (this.teacherScope === 'CLASS_TEACHER' && !c.isClassTeacherTicket) return false;
+        if (this.teacherScope === 'ASSIGNED' && !c.isAssignedToMe) return false;
+      }
+
+      // 2. Status & Category filtering
       if (this.statusFilter !== 'ALL' && c.status !== this.statusFilter) return false;
       if (this.categoryFilter !== 'ALL' && c.category !== this.categoryFilter) return false;
+
+      // 3. Search query
       if (this.searchQuery.trim()) {
         const q = this.searchQuery.toLowerCase();
         const num = (c.ticket_number || '').toLowerCase();
@@ -612,13 +724,13 @@ export class ComplaintsComponent implements OnInit {
   }
 
   countStatus(status: string): number {
-    return this.complaints.filter((c) => c.status === status).length;
+    return this.filteredComplaints.filter((c) => c.status === status).length;
   }
 
   get resolutionRate(): string {
-    if (!this.complaints.length) return '100.0';
+    if (!this.filteredComplaints.length) return '100.0';
     const res = this.countStatus('RESOLVED');
-    return ((res / this.complaints.length) * 100).toFixed(1);
+    return ((res / this.filteredComplaints.length) * 100).toFixed(1);
   }
 
   selectTicket(t: ComplaintItem) {
@@ -627,7 +739,200 @@ export class ComplaintsComponent implements OnInit {
 
   isMyMessage(msg: any): boolean {
     const currentUserId = this.auth.currentUser()?.id;
-    return msg.sender?.id === currentUserId || (this.isParent() && !msg.is_internal_note);
+    if (!currentUserId || !msg) return false;
+    return msg.sender?.id === currentUserId || msg.sender_id === currentUserId;
+  }
+
+  // @ Mention Autocomplete Event Handlers
+  onInputKeyUp(event: KeyboardEvent, target: 'reply' | 'modal') {
+    if (['ArrowUp', 'ArrowDown', 'Enter', 'Escape', 'Tab'].includes(event.key)) {
+      return;
+    }
+    this.checkMention(event.target as HTMLInputElement | HTMLTextAreaElement, target);
+  }
+
+  onInputKeyDown(event: KeyboardEvent, target: 'reply' | 'modal') {
+    if (!this.showMentionSuggestions || this.mentionSuggestions.length === 0) {
+      return;
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.mentionSelectedIndex = (this.mentionSelectedIndex + 1) % this.mentionSuggestions.length;
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.mentionSelectedIndex =
+        (this.mentionSelectedIndex - 1 + this.mentionSuggestions.length) % this.mentionSuggestions.length;
+    } else if (event.key === 'Enter' || event.key === 'Tab') {
+      event.preventDefault();
+      event.stopPropagation();
+      const selected = this.mentionSuggestions[this.mentionSelectedIndex];
+      if (selected) {
+        this.selectMention(selected, target);
+      }
+    } else if (event.key === 'Escape') {
+      this.closeMention();
+    }
+  }
+
+  getMentionParticipants(target: 'reply' | 'modal'): any[] {
+    const currentUserId = this.auth.currentUser()?.id;
+    const currentUserName = `${this.auth.currentUser()?.firstName || ''} ${this.auth.currentUser()?.lastName || ''}`
+      .trim()
+      .toLowerCase();
+
+    const participants: any[] = [];
+    const seen = new Set<string>();
+
+    const addCandidate = (c: {
+      fullName: string;
+      role: string;
+      badgeClass: string;
+      subtext: string;
+      userId?: string;
+      avatarColor: string;
+    }) => {
+      const trimmed = (c.fullName || '').trim();
+      if (!trimmed) return;
+      if (c.userId && currentUserId && c.userId === currentUserId) return;
+      if (currentUserName && trimmed.toLowerCase() === currentUserName) return;
+      if (seen.has(trimmed.toLowerCase())) return;
+
+      seen.add(trimmed.toLowerCase());
+      participants.push(c);
+    };
+
+    if (target === 'reply' && this.selectedTicket) {
+      const t = this.selectedTicket;
+
+      // 1. Linked Student
+      if (t.student) {
+        addCandidate({
+          fullName: `${t.student.first_name} ${t.student.last_name || ''}`.trim(),
+          role: 'Student',
+          badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200/60',
+          subtext: `${this.getStudentClassSection(t)} • Adm: ${t.student.admission_number || 'N/A'}`,
+          avatarColor: 'bg-emerald-50 text-emerald-700 border-emerald-200/60',
+        });
+      }
+
+      // 2. Parent / Guardian (if not self)
+      if (t.guardian) {
+        addCandidate({
+          fullName: `${t.guardian.first_name} ${t.guardian.last_name || ''}`.trim(),
+          role: 'Parent',
+          badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200/60',
+          subtext: `Parent / Guardian`,
+          userId: t.guardian.user_id,
+          avatarColor: 'bg-indigo-50 text-indigo-700 border-indigo-200/60',
+        });
+      }
+
+      // 3. Assigned Faculty / Teacher (if not self)
+      if (t.users) {
+        addCandidate({
+          fullName: `${t.users.first_name} ${t.users.last_name || ''}`.trim(),
+          role: 'Assigned Staff',
+          badgeClass: 'bg-purple-50 text-purple-700 border-purple-200/60',
+          subtext: `Assigned Faculty / Staff`,
+          userId: t.users.id,
+          avatarColor: 'bg-purple-50 text-purple-700 border-purple-200/60',
+        });
+      }
+
+      // 4. All teachers/faculty & participants who sent messages in this chat thread (if not self)
+      if (t.messages && t.messages.length > 0) {
+        for (const msg of t.messages) {
+          if (msg.sender) {
+            addCandidate({
+              fullName: `${msg.sender.first_name} ${msg.sender.last_name || ''}`.trim(),
+              role: 'Staff / Participant',
+              badgeClass: 'bg-blue-50 text-blue-700 border-blue-200/60',
+              subtext: `Chat Participant`,
+              userId: msg.sender.id,
+              avatarColor: 'bg-blue-50 text-blue-700 border-blue-200/60',
+            });
+          }
+        }
+      }
+    }
+
+    // 5. For Parents: include their registered children (e.g. Shivam Dutta, Garima Dutta)
+    if (this.isParent() && this.myChildren && this.myChildren.length > 0) {
+      for (const child of this.myChildren) {
+        const childName = child.fullName || `${child.firstName} ${child.lastName || ''}`.trim();
+        addCandidate({
+          fullName: childName,
+          role: 'Child',
+          badgeClass: 'bg-teal-50 text-teal-700 border-teal-200/60',
+          subtext: `${child.className || ''} - ${child.sectionName || ''} • Adm: ${child.admissionNumber || 'N/A'}`,
+          avatarColor: 'bg-teal-50 text-teal-700 border-teal-200/60',
+        });
+      }
+    }
+
+    return participants;
+  }
+
+  checkMention(inputEl: HTMLInputElement | HTMLTextAreaElement, target: 'reply' | 'modal') {
+    const text = target === 'reply' ? this.replyText : this.newTicket.message;
+    const cursor = inputEl?.selectionStart ?? text.length;
+
+    // Find if there is an '@' before cursor
+    const textBeforeCursor = text.slice(0, cursor);
+    const match = /@([a-zA-Z0-9_\s]*)$/.exec(textBeforeCursor);
+
+    if (match) {
+      const query = match[1].toLowerCase().trim();
+      this.mentionStartIndex = match.index; // position of '@'
+      this.mentionTarget = target;
+
+      const pool = this.getMentionParticipants(target);
+
+      if (!query) {
+        this.mentionSuggestions = pool;
+      } else {
+        this.mentionSuggestions = pool.filter(
+          (c) =>
+            (c.fullName && c.fullName.toLowerCase().includes(query)) ||
+            (c.role && c.role.toLowerCase().includes(query)) ||
+            (c.subtext && c.subtext.toLowerCase().includes(query)),
+        );
+      }
+
+      this.showMentionSuggestions = this.mentionSuggestions.length > 0;
+      this.mentionSelectedIndex = 0;
+    } else {
+      this.closeMention();
+    }
+  }
+
+  selectMention(child: any, target: 'reply' | 'modal') {
+    const text = target === 'reply' ? this.replyText : this.newTicket.message;
+    const mentionName = `@${child.fullName} `;
+
+    if (this.mentionStartIndex >= 0) {
+      const beforeMention = text.slice(0, this.mentionStartIndex);
+      const afterMentionToken = text.slice(this.mentionStartIndex).replace(/^@[a-zA-Z0-9_\s]*/, '');
+      const newText =
+        beforeMention + mentionName + (afterMentionToken.startsWith(' ') ? afterMentionToken.slice(1) : afterMentionToken);
+
+      if (target === 'reply') {
+        this.replyText = newText;
+      } else {
+        this.newTicket.message = newText;
+      }
+    }
+
+    this.closeMention();
+  }
+
+  closeMention() {
+    this.showMentionSuggestions = false;
+    this.mentionSuggestions = [];
+    this.mentionTarget = null;
+    this.mentionStartIndex = -1;
+    this.mentionSelectedIndex = 0;
   }
 
   sendReply() {

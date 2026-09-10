@@ -5,10 +5,12 @@ import { CreateHomeworkDto } from './dto/create-homework.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 import { CurrentUser, AuthenticatedUser } from '../../common/decorators/current-user.decorator';
+import { RequireService } from '../../common/decorators/auth-metadata.decorator';
 
 @ApiTags('Homework')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@RequireService('HOMEWORK')
 @Controller('homework')
 export class HomeworkController {
   constructor(private homeworkService: HomeworkService) {}

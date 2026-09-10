@@ -18,12 +18,12 @@ export declare class DashboardController {
                 last_name: string;
             };
         } & {
-            title: string;
             id: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
+            title: string;
             school_id: string;
             academic_year_id: string;
             content: string;
@@ -33,14 +33,14 @@ export declare class DashboardController {
             expires_at: Date | null;
         })[];
         upcomingExams: {
-            name: string;
             id: string;
+            code: string;
+            name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
             school_id: string;
-            code: string;
             academic_year_id: string;
             start_date: Date;
             end_date: Date;
@@ -50,20 +50,14 @@ export declare class DashboardController {
         parentData: {
             children: any[];
             primaryChild: any;
-            childStats: {
-                attendancePercentage: string;
-                totalDays: number;
-                presentDays: number;
-                pendingHomeworkCount: number;
-                latestGrade: string;
-            };
+            childStats: any;
             recentNotices: {
-                title: string;
                 id: string;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
+                title: string;
                 school_id: string;
                 academic_year_id: string;
                 content: string;
@@ -87,12 +81,12 @@ export declare class DashboardController {
                 last_name: string;
             };
         } & {
-            title: string;
             id: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
+            title: string;
             school_id: string;
             academic_year_id: string;
             content: string;
@@ -102,14 +96,14 @@ export declare class DashboardController {
             expires_at: Date | null;
         })[];
         upcomingExams: {
-            name: string;
             id: string;
+            code: string;
+            name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
             school_id: string;
-            code: string;
             academic_year_id: string;
             start_date: Date;
             end_date: Date;

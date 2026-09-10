@@ -3,12 +3,14 @@ import {
   UnauthorizedException,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
+import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 
 @Injectable()
 export class AuthService {
@@ -107,6 +109,16 @@ export class AuthService {
         throw new BadRequestException(`User is not enrolled in ${schoolName}`);
       }
       targetMembership = match;
+    }
+
+    // Check if school is suspended or deboarded
+    if (
+      (targetMembership.school.status === 'SUSPENDED' || targetMembership.school.status === 'DEBOARDED') &&
+      targetMembership.role.code !== 'SUPER_ADMIN'
+    ) {
+      throw new ForbiddenException(
+        `School "${targetMembership.school.name}" has been suspended or deboarded by platform administration. Access is restricted.`,
+      );
     }
 
     const permissions = targetMembership.role.role_permissions.map((rp) => rp.permission.code);
@@ -265,6 +277,16 @@ export class AuthService {
       ? 'Class Teacher'
       : (schoolRole?.role.name || schoolRole?.role.code);
 
+    let disabledServices: string[] = [];
+    if (schoolRole?.school?.address_line2) {
+      try {
+        const parsed = JSON.parse(schoolRole.school.address_line2);
+        if (Array.isArray(parsed.disabledServices)) {
+          disabledServices = parsed.disabledServices;
+        }
+      } catch {}
+    }
+
     return {
       id: user.id,
       email: user.email,
@@ -277,6 +299,8 @@ export class AuthService {
         id: schoolRole.school.id,
         name: schoolRole.school.name,
         code: schoolRole.school.code,
+        status: schoolRole.school.status,
+        disabledServices,
       } : null,
       permissions,
       children,
@@ -285,5 +309,67 @@ export class AuthService {
         subjectAssignments,
       },
     };
+  }
+
+  async switchSchool(user: AuthenticatedUser, schoolId: string) {
+    if (user.role !== 'SUPER_ADMIN' && user.role !== 'PLATFORM_ADMIN') {
+      throw new UnauthorizedException('Only Super Admin can switch campuses arbitrarily');
+    }
+
+    const school = await this.prisma.school.findUnique({
+      where: { id: schoolId, deleted_at: null },
+    });
+    if (!school) {
+      throw new NotFoundException('School not found');
+    }
+
+    // Ensure super admin user is mapped to this school
+    let role = await this.prisma.role.findFirst({
+      where: { code: 'SUPER_ADMIN' },
+    });
+    if (role) {
+      await this.prisma.userSchoolRole.upsert({
+        where: {
+          user_id_school_id_role_id: {
+            user_id: user.userId,
+            school_id: school.id,
+            role_id: role.id,
+          },
+        },
+        create: {
+          user_id: user.userId,
+          school_id: school.id,
+          role_id: role.id,
+          status: 'ACTIVE',
+        },
+        update: { status: 'ACTIVE' },
+      });
+    }
+
+    const payload = {
+      sub: user.userId,
+      email: user.email,
+      schoolId: school.id,
+      schoolCode: school.code,
+      role: 'SUPER_ADMIN',
+    };
+
+    const accessToken = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_SECRET', 'schoolsense_jwt_super_secret_key_2026_secure'),
+      expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '7d'),
+    });
+
+    const userProfile = await this.getMe(user.userId, school.id);
+
+    return {
+      accessToken,
+      user: userProfile,
+    };
+  }
+
+  async impersonateSchoolAdmin(user: AuthenticatedUser, schoolId: string) {
+    throw new ForbiddenException(
+      'Direct school impersonation is disabled by platform governance. To manage or edit under this school, please sign in through the standard login portal using authorized School Admin credentials.',
+    );
   }
 }

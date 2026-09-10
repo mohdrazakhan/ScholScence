@@ -128,15 +128,14 @@ let DashboardService = class DashboardService {
                 }
             }
         }
-        const primaryChild = children[0] || null;
-        let attendancePercentage = '100.0';
-        let totalDays = 5;
-        let presentDays = 5;
-        let pendingHomeworkCount = 0;
-        if (primaryChild) {
+        const enrichedChildren = await Promise.all(children.map(async (child) => {
+            let attendancePercentage = '100.0';
+            let totalDays = 5;
+            let presentDays = 5;
+            let pendingHomeworkCount = 0;
             const attendance = await this.prisma.attendance.findMany({
                 where: {
-                    student_id: primaryChild.studentId,
+                    student_id: child.studentId,
                     school_id: schoolId,
                     class_subject_id: null,
                     deleted_at: null,
@@ -149,17 +148,28 @@ let DashboardService = class DashboardService {
                 presentDays = attendance.filter((a) => a.status === 'PRESENT' || a.status === 'LATE').length;
                 attendancePercentage = ((presentDays / totalDays) * 100).toFixed(1);
             }
-            if (primaryChild.sectionId) {
+            if (child.sectionId) {
                 pendingHomeworkCount = await this.prisma.homework.count({
                     where: {
-                        section_id: primaryChild.sectionId,
+                        section_id: child.sectionId,
                         school_id: schoolId,
                         status: 'PUBLISHED',
                         deleted_at: null,
                     },
                 });
             }
-        }
+            return {
+                ...child,
+                stats: {
+                    attendancePercentage,
+                    totalDays,
+                    presentDays,
+                    pendingHomeworkCount,
+                    latestGrade: 'Grade A1 (92%)',
+                },
+            };
+        }));
+        const primaryChild = enrichedChildren[0] || null;
         const recentNotices = await this.prisma.notice.findMany({
             where: {
                 school_id: schoolId,
@@ -171,13 +181,13 @@ let DashboardService = class DashboardService {
             take: 5,
         });
         return {
-            children,
+            children: enrichedChildren,
             primaryChild,
-            childStats: {
-                attendancePercentage,
-                totalDays,
-                presentDays,
-                pendingHomeworkCount,
+            childStats: primaryChild?.stats || {
+                attendancePercentage: '100.0',
+                totalDays: 5,
+                presentDays: 5,
+                pendingHomeworkCount: 0,
                 latestGrade: 'Grade A1 (92%)',
             },
             recentNotices,
