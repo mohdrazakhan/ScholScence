@@ -57,7 +57,7 @@ import { DashboardStats } from '../../core/models';
                 </svg>
               </div>
             </div>
-            <div class="text-2xl font-black text-slate-900 mt-2">{{ stats?.stats?.totalStudents || 105 }}</div>
+            <div class="text-2xl font-black text-slate-900 mt-2">{{ stats?.stats?.totalStudents ?? 0 }}</div>
             <div class="text-xs text-emerald-600 font-semibold mt-1">Enrolled & Active</div>
           </div>
 
@@ -70,7 +70,7 @@ import { DashboardStats } from '../../core/models';
                 </svg>
               </div>
             </div>
-            <div class="text-2xl font-black text-slate-900 mt-2">{{ stats?.stats?.attendanceTodayPercentage || '98.5' }}%</div>
+            <div class="text-2xl font-black text-slate-900 mt-2">{{ stats?.stats?.attendanceTodayPercentage ?? '0.0' }}%</div>
             <div class="text-xs text-indigo-600 font-semibold mt-1">Multi-Section Average</div>
           </div>
 
@@ -83,7 +83,7 @@ import { DashboardStats } from '../../core/models';
                 </svg>
               </div>
             </div>
-            <div class="text-2xl font-black text-slate-900 mt-2">{{ stats?.stats?.totalTeachers || 10 }} Staff</div>
+            <div class="text-2xl font-black text-slate-900 mt-2">{{ stats?.stats?.totalTeachers ?? 0 }} Staff</div>
             <div class="text-xs text-slate-500 mt-1">Subject & Class Teachers</div>
           </div>
 
@@ -96,7 +96,7 @@ import { DashboardStats } from '../../core/models';
                 </svg>
               </div>
             </div>
-            <div class="text-2xl font-black text-slate-900 mt-2">{{ stats?.stats?.pendingComplaints || 1 }}</div>
+            <div class="text-2xl font-black text-slate-900 mt-2">{{ stats?.stats?.pendingComplaints ?? 0 }}</div>
             <div class="text-xs text-amber-600 font-semibold mt-1">Parent tickets pending</div>
           </div>
         </div>

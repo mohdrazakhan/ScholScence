@@ -52,7 +52,7 @@ let ServiceEnabledGuard = class ServiceEnabledGuard {
             }
         }
         if (user?.role === 'SUPER_ADMIN' || user?.role === 'PLATFORM_ADMIN') {
-            throw new common_1.ForbiddenException('Super Admin root login is restricted to institutional governance. To perform school operations, please log in with standard school credentials.');
+            return true;
         }
         const schoolId = user?.schoolId || request.headers['x-tenant-id'];
         if (!schoolId) {

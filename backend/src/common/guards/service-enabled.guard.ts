@@ -47,11 +47,9 @@ export class ServiceEnabledGuard implements CanActivate {
       }
     }
 
-    // 1. Super Admin root accounts are not permitted to operate inside tenant services
+    // 1. Super Admin root accounts have universal access across all services
     if (user?.role === 'SUPER_ADMIN' || user?.role === 'PLATFORM_ADMIN') {
-      throw new ForbiddenException(
-        'Super Admin root login is restricted to institutional governance. To perform school operations, please log in with standard school credentials.',
-      );
+      return true;
     }
 
     // 2. Identify School / Campus Context

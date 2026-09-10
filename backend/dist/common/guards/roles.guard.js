@@ -29,7 +29,7 @@ let RolesGuard = class RolesGuard {
         if (!user || !user.role) {
             throw new common_1.ForbiddenException('User has no assigned role');
         }
-        if (user.role === 'SCHOOL_ADMIN') {
+        if (user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN' || user.role === 'SCHOOL_ADMIN') {
             return true;
         }
         const hasRole = requiredRoles.includes(user.role);

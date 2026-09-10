@@ -69,12 +69,12 @@ let DashboardService = class DashboardService {
         ]);
         const presentCount = todayAttendance.filter((a) => a.status === 'PRESENT').length;
         const totalMarked = todayAttendance.length;
-        const attendancePercentage = totalMarked > 0 ? ((presentCount / totalMarked) * 100).toFixed(1) : '95.0';
+        const attendancePercentage = totalMarked > 0 ? ((presentCount / totalMarked) * 100).toFixed(1) : '0.0';
         return {
             stats: {
                 totalStudents,
                 totalClasses,
-                totalTeachers: totalTeachers || 1,
+                totalTeachers: totalTeachers ?? 0,
                 attendanceTodayPercentage: attendancePercentage,
                 attendanceMarkedCount: totalMarked,
                 pendingComplaints,

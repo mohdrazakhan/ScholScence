@@ -670,6 +670,7 @@ export class TimetableComponent implements OnInit {
   }
 
   ngOnInit() {
+    if (!this.auth.isServiceEnabled('TIMETABLE')) return;
     this.route.queryParams.subscribe((params) => {
       if (params['type'] === 'faculty') {
         this.timetableMode = 'FACULTY';

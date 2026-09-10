@@ -53,8 +53,8 @@ export interface NavGroup {
         
         <div class="w-72 flex flex-col h-full flex-shrink-0 bg-white">
           
-          <!-- Brand / Campus Header (Seamless on surface, no card, no >> collapse button) -->
-          <div class="h-16 flex items-center px-4 border-b border-slate-100 bg-white flex-shrink-0">
+          <!-- Brand / Campus Header (Seamless on surface with hamburger after school name) -->
+          <div class="h-16 flex items-center justify-between px-4 border-b border-slate-100 bg-white flex-shrink-0">
             <div class="flex items-center gap-3 min-w-0 flex-1">
               <div class="w-9 h-9 rounded-xl bg-slate-900 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-xs">
                 {{ (auth.currentUser()?.school?.name || 'S').charAt(0).toUpperCase() }}
@@ -70,6 +70,14 @@ export interface NavGroup {
                 </div>
               </div>
             </div>
+
+            <!-- Hamburger Button inside slider after school name -->
+            <button type="button" (click)="toggleSidebar()" title="Collapse Sidebar"
+                    class="p-2 ml-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer flex items-center justify-center border border-slate-200 shadow-xs shrink-0">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
           </div>
 
           <!-- Clean Search Bar -->
@@ -214,16 +222,18 @@ export interface NavGroup {
       <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#edf2f7]">
         <!-- Top Navigation Header (Always Accessible Unhide / Collapse Hamburger) -->
         <header class="h-16 bg-[#ffffff] border-b border-slate-200/80 flex items-center justify-between px-4 sm:px-8 flex-shrink-0 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-          <div class="flex items-center gap-3">
-            <!-- Sidebar Unhide / Toggle Button (Visible on both Desktop and Mobile) -->
-            <button type="button" (click)="toggleSidebar()" title="Toggle Sidebar"
-                    class="p-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer flex items-center justify-center border border-slate-200 shadow-xs">
+          <!-- Top Left: Hamburger & School Name (Visible ONLY when slider is closed) -->
+          <div [ngClass]="isDesktopSidebarCollapsed ? 'flex' : (isMobileSidebarOpen ? 'hidden' : 'flex lg:hidden')"
+               class="items-center gap-3 min-w-0">
+            <!-- Sidebar Unhide Button -->
+            <button type="button" (click)="toggleSidebar()" title="Open Sidebar"
+                    class="p-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer flex items-center justify-center border border-slate-200 shadow-xs shrink-0">
               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
 
-            <div>
+            <div class="min-w-0">
               <h2 class="text-xs sm:text-sm font-bold text-slate-900 truncate">
                 {{ auth.currentUser()?.school?.name || 'SchoolSense Campus' }}
               </h2>
@@ -231,8 +241,8 @@ export interface NavGroup {
             </div>
           </div>
 
-          <!-- Top Right User Profile & Sign Out (Replaced lonely role badge) -->
-          <div class="flex items-center gap-3">
+          <!-- Top Right User Profile & Sign Out (Always pinned to top right) -->
+          <div class="ml-auto flex items-center gap-3">
             <div class="flex items-center gap-2.5 pl-2">
               <!-- Circular Avatar Image -->
               <div class="w-9 h-9 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-xs ring-2 ring-slate-100 overflow-hidden shrink-0">
@@ -347,12 +357,6 @@ export class MainLayoutComponent implements OnInit {
 
   allNavGroups: NavGroup[] = [
     {
-      id: 'dashboard',
-      label: 'Dashboard',
-      route: '/dashboard',
-      roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
-    },
-    {
       id: 'super-admin',
       label: 'Onboarding & Network',
       roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN'],
@@ -363,9 +367,15 @@ export class MainLayoutComponent implements OnInit {
       ],
     },
     {
+      id: 'dashboard',
+      label: 'Dashboard',
+      route: '/dashboard',
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
+    },
+    {
       id: 'academics',
       label: 'Academics & Directory',
-      roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER'],
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER'],
       expanded: true,
       children: [
         { label: 'Classes & Student Roster', route: '/academics', queryParams: { tab: 'students' } },
@@ -377,7 +387,7 @@ export class MainLayoutComponent implements OnInit {
       id: 'timetable',
       label: 'Timetable & Schedule',
       service: 'TIMETABLE',
-      roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
       expanded: true,
       children: [
         { label: 'Student / Class Timetable', route: '/timetable', queryParams: { type: 'student' } },
@@ -388,28 +398,28 @@ export class MainLayoutComponent implements OnInit {
       id: 'attendance',
       label: 'Attendance Register',
       service: 'ATTENDANCE',
-      roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
       route: '/attendance',
     },
     {
       id: 'homework',
       label: 'Homework Center',
       service: 'HOMEWORK',
-      roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
       route: '/homework',
     },
     {
       id: 'exams',
       label: 'Exams & Marksheets',
       service: 'EXAMS',
-      roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
       route: '/exams',
     },
     {
       id: 'communication',
       label: 'Communication & Notices',
       service: 'COMMUNICATION',
-      roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
       expanded: false,
       children: [
         { label: 'Circulars & Notices', route: '/communication' },
@@ -531,11 +541,12 @@ export class MainLayoutComponent implements OnInit {
 
     const allowedGroups = this.allNavGroups
       .filter((g) => {
-        // Super Admin isolation: ONLY super-admin nav group is visible
+        // Super Admin has universal access to all menus
         if (isSuper) {
-          return g.id === 'super-admin';
+          return true;
         }
-        // School users cannot see super-admin root group
+
+        // Regular school users cannot see super-admin root group
         if (g.id === 'super-admin') {
           return false;
         }
@@ -554,9 +565,9 @@ export class MainLayoutComponent implements OnInit {
 
     const result: NavGroup[] = [];
     for (const g of allowedGroups) {
-      // Filter child submenus based on service restrictions
+      // Filter child submenus based on service restrictions (bypassed for Super Admin)
       let children = g.children;
-      if (children) {
+      if (children && !isSuper) {
         children = children.filter((c) => {
           if (c.service && !this.auth.isServiceEnabled(c.service)) {
             return false;

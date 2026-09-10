@@ -17,16 +17,12 @@ export const authGuard: CanActivateFn = (route, state) => {
   const urlPath = (state.url || '').split('?')[0].replace(/^\//, '');
   const primarySegment = urlPath.split('/')[0] || '';
 
-  // 1. Super Admin root accounts are strictly restricted to Super Admin Governance
+  // 1. Super Admin root accounts have universal access across all routes and services
   if (isSuper) {
-    if (primarySegment !== 'super-admin') {
-      router.navigate(['/super-admin']);
-      return false;
-    }
     return true;
   }
 
-  // 2. School members cannot access Super Admin root portal
+  // 2. Regular school members cannot access Super Admin root portal
   if (primarySegment === 'super-admin') {
     router.navigate(['/dashboard']);
     return false;

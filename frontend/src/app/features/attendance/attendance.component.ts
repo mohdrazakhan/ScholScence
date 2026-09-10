@@ -7,6 +7,8 @@ import { ToastService } from '../../core/services/toast.service';
 import { ExportService } from '../../core/services/export.service';
 import { AttendanceRegisterResponse, AttendanceStudent, ClassItem } from '../../core/models';
 
+import { RouterModule } from '@angular/router';
+
 interface FlatSection {
   id: string;
   name: string;
@@ -17,17 +19,35 @@ interface FlatSection {
 @Component({
   selector: 'app-attendance',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="space-y-6">
-      
-      <!-- ============================================================== -->
-      <!-- TEACHER & ADMIN ATTENDANCE REGISTER                            -->
-      <!-- ============================================================== -->
-      <ng-container *ngIf="!auth.isParent()">
+
+      <!-- SERVICE RESTRICTED BANNER -->
+      <div *ngIf="!auth.isServiceEnabled('ATTENDANCE')" class="p-8 bg-white rounded-3xl border border-rose-100 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] text-center max-w-lg mx-auto my-12 space-y-4 animate-fadeIn">
+        <div class="w-16 h-16 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto shadow-inner">
+          <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+          </svg>
+        </div>
+        <h2 class="text-xl font-black text-slate-900">Attendance Service Restricted</h2>
+        <p class="text-xs text-slate-600 leading-relaxed">
+          The <strong>Attendance Register</strong> service has been temporarily restricted for this institution by platform governance.
+        </p>
+        <a routerLink="/dashboard" class="inline-block mt-3 px-5 py-2.5 rounded-2xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-all cursor-pointer">
+          Return to Dashboard
+        </a>
+      </div>
+
+      <ng-container *ngIf="auth.isServiceEnabled('ATTENDANCE')">
         
-        <!-- Top Controls: Class/Section Selector + Date Presets & Export Actions -->
-        <div class="bg-white p-5 sm:p-7 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] space-y-5">
+        <!-- ============================================================== -->
+        <!-- TEACHER & ADMIN ATTENDANCE REGISTER                            -->
+        <!-- ============================================================== -->
+        <ng-container *ngIf="!auth.isParent()">
+          
+          <!-- Top Controls: Class/Section Selector + Date Presets & Export Actions -->
+          <div class="bg-white p-5 sm:p-7 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] space-y-5">
           <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             
             <!-- Section Selector & Active Badge -->
@@ -500,6 +520,7 @@ interface FlatSection {
           </div>
         </div>
       </ng-container>
+      </ng-container>
     </div>
   `,
 })
@@ -532,6 +553,9 @@ export class AttendanceComponent implements OnInit {
   }
 
   ngOnInit() {
+    if (!this.auth.isServiceEnabled('ATTENDANCE')) {
+      return;
+    }
     if (this.auth.isParent()) {
       this.loadParentAttendance();
     } else {
@@ -613,6 +637,7 @@ export class AttendanceComponent implements OnInit {
   }
 
   loadAttendance() {
+    if (!this.auth.isServiceEnabled('ATTENDANCE')) return;
     if (!this.selectedSectionId) return;
 
     this.api

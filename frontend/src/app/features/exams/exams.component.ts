@@ -636,6 +636,7 @@ export class ExamsComponent implements OnInit {
   }
 
   ngOnInit() {
+    if (!this.auth.isServiceEnabled('EXAMS')) return;
     if (this.auth.isParent()) {
       if (this.parentChildren.length > 0) {
         this.selectedChildId = this.parentChildren[0].id;

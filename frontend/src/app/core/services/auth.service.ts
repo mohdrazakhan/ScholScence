@@ -16,7 +16,7 @@ export class AuthService {
   isAuthenticated = computed(() => !!this.currentUser());
   userRole = computed(() => this.currentUser()?.role || '');
 
-  isAdmin = computed(() => ['SCHOOL_ADMIN', 'PRINCIPAL'].includes(this.userRole()));
+  isAdmin = computed(() => ['SCHOOL_ADMIN', 'PRINCIPAL', 'SUPER_ADMIN', 'PLATFORM_ADMIN'].includes(this.userRole()));
   isPrincipal = computed(() => this.userRole() === 'PRINCIPAL');
   isSchoolAdmin = computed(() => this.userRole() === 'SCHOOL_ADMIN');
   isSuperAdmin = computed(() => ['PLATFORM_ADMIN', 'SUPER_ADMIN'].includes(this.userRole()));
@@ -28,6 +28,7 @@ export class AuthService {
   isParent = computed(() => ['GUARDIAN', 'PARENT'].includes(this.userRole()));
 
   isServiceEnabled(serviceCode: string): boolean {
+    if (this.isSuperAdmin()) return true;
     const disabled = this.currentUser()?.school?.disabledServices || [];
     return !disabled.includes(serviceCode);
   }

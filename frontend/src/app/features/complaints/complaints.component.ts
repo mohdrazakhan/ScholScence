@@ -605,6 +605,7 @@ export class ComplaintsComponent implements OnInit {
   assigningFaculty = false;
 
   ngOnInit() {
+    if (!this.auth.isServiceEnabled('COMPLAINTS')) return;
     if (this.isTeacher() && !this.isClassTeacher()) {
       this.teacherScope = 'ASSIGNED';
     }

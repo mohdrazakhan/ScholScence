@@ -212,6 +212,7 @@ export class HomeworkComponent implements OnInit {
   };
 
   ngOnInit() {
+    if (!this.auth.isServiceEnabled('HOMEWORK')) return;
     this.loadSections();
   }
 

@@ -82,7 +82,13 @@ export class SchoolsService {
             students: { where: { deleted_at: null } },
             classes: { where: { deleted_at: null } },
             subjects: { where: { deleted_at: null } },
-            user_school_roles: { where: { status: 'ACTIVE', deleted_at: null } },
+            user_school_roles: {
+              where: {
+                status: 'ACTIVE',
+                deleted_at: null,
+                role: { code: { not: 'SUPER_ADMIN' } },
+              },
+            },
           },
         },
         user_school_roles: {
@@ -301,68 +307,6 @@ export class SchoolsService {
             user_id: devUser.id,
             school_id: school.id,
             role_id: superAdminRole.id,
-            status: 'ACTIVE',
-          },
-        });
-      }
-
-      // Step F: Provision Standard Foundation Classes (Classes 1 to 10 with Section A)
-      const standardClasses = [
-        { name: 'Class 1', code: 'C1', order: 1 },
-        { name: 'Class 2', code: 'C2', order: 2 },
-        { name: 'Class 3', code: 'C3', order: 3 },
-        { name: 'Class 4', code: 'C4', order: 4 },
-        { name: 'Class 5', code: 'C5', order: 5 },
-        { name: 'Class 6', code: 'C6', order: 6 },
-        { name: 'Class 7', code: 'C7', order: 7 },
-        { name: 'Class 8', code: 'C8', order: 8 },
-        { name: 'Class 9', code: 'C9', order: 9 },
-        { name: 'Class 10', code: 'C10', order: 10 },
-      ];
-
-      for (const sc of standardClasses) {
-        const cls = await tx.class.create({
-          data: {
-            school_id: school.id,
-            name: sc.name,
-            code: sc.code,
-            display_order: sc.order,
-            status: 'ACTIVE',
-          },
-        });
-
-        await tx.section.create({
-          data: {
-            school_id: school.id,
-            academic_year_id: academicYear.id,
-            branch_id: branch.id,
-            class_id: cls.id,
-            name: 'A',
-            code: `${sc.code}-A`,
-            capacity: 40,
-            display_order: 1,
-            status: 'ACTIVE',
-          },
-        });
-      }
-
-      // Step G: Provision Core Curriculum Subjects
-      const coreSubjects = [
-        { name: 'Mathematics', code: 'MATH', type: 'ACADEMIC' },
-        { name: 'English Literature & Language', code: 'ENG', type: 'LANGUAGE' },
-        { name: 'General Science', code: 'SCI', type: 'ACADEMIC' },
-        { name: 'Social Studies & History', code: 'SST', type: 'ACADEMIC' },
-        { name: 'Hindi Core', code: 'HIN', type: 'LANGUAGE' },
-        { name: 'Computer Science & AI', code: 'CS', type: 'ACADEMIC' },
-      ];
-
-      for (const sub of coreSubjects) {
-        await tx.subject.create({
-          data: {
-            school_id: school.id,
-            name: sub.name,
-            code: sub.code,
-            subject_type: sub.type,
             status: 'ACTIVE',
           },
         });

@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ExportService } from '../../core/services/export.service';
 import { Notice, SchoolEventItem } from '../../core/models';
@@ -267,6 +268,7 @@ import { Notice, SchoolEventItem } from '../../core/models';
 })
 export class CommunicationComponent implements OnInit {
   api = inject(ApiService);
+  auth = inject(AuthService);
   toast = inject(ToastService);
   exporter = inject(ExportService);
 
@@ -295,6 +297,7 @@ export class CommunicationComponent implements OnInit {
   };
 
   ngOnInit() {
+    if (!this.auth.isServiceEnabled('COMMUNICATION')) return;
     this.loadData();
   }
 
