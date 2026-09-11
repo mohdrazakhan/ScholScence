@@ -1,0 +1,34 @@
+# ============================================================
+# SchoolSense — Root .gitignore
+# ============================================================
+
+# Secrets — NEVER commit
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Build outputs
+dist/
+build/
+
+# Angular cache
+.angular/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
+
+# Prisma
+backend/prisma/migrations/*.sql.bak
