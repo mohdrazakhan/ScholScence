@@ -96,7 +96,7 @@ export class AuthService {
     const isSuperAdminUser =
       user.user_school_roles?.some(
         (usr) => usr.role.code === 'SUPER_ADMIN' || usr.role.code === 'PLATFORM_ADMIN',
-      ) || user.email === 'dev@schoolsense.in';
+      ) || user.email === 'admin@schoolscence.in';
 
     if (!user.user_school_roles || user.user_school_roles.length === 0) {
       if (!isSuperAdminUser) {
@@ -319,7 +319,7 @@ export class AuthService {
     const isSuper =
       schoolRole?.role?.code === 'SUPER_ADMIN' ||
       schoolRole?.role?.code === 'PLATFORM_ADMIN' ||
-      user.email === 'dev@schoolsense.in';
+      user.email === 'admin@schoolscence.in';
 
     const permissions = isSuper
       ? ['*']
