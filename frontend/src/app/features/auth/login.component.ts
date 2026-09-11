@@ -507,11 +507,14 @@ export class LoginComponent implements OnInit {
       next: (data) => {
         this.schoolsLoading = false;
         // Use only real data from API — never hardcoded fallback
-        this.schools = (data || []).map((s) => ({
-          ...s,
-          motto: s.motto || 'Excellence in Academics & Innovation',
-          affiliation: s.affiliation || (s.city ? `${s.city} • Affiliated to Recognized Board` : 'Affiliated to Recognized Board'),
-        }));
+        // Filter out PLATFORM — that is the internal root developer school, not a real institution
+        this.schools = (data || [])
+          .filter((s) => s.code !== 'PLATFORM')
+          .map((s) => ({
+            ...s,
+            motto: s.motto || 'Excellence in Academics & Innovation',
+            affiliation: s.affiliation || (s.city ? `${s.city} • Affiliated to Recognized Board` : 'Affiliated to Recognized Board'),
+          }));
 
         // Restore previously selected school if still in list
         const storedSchoolId = localStorage.getItem('schoolsense_selected_school_id');
@@ -620,7 +623,7 @@ export class LoginComponent implements OnInit {
     this.loading = true;
     this.errorMessage = '';
 
-    const schoolCode = this.isRootLogin ? undefined : this.selectedSchool?.code;
+    const schoolCode = this.isRootLogin ? 'PLATFORM' : this.selectedSchool?.code;
     this.auth.login(this.identifier.trim(), this.password, schoolCode).subscribe({
       next: (res) => {
         this.loading = false;
