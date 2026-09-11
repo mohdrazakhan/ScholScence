@@ -318,24 +318,44 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
                 <div *ngIf="dropdownOpen" (click)="$event.stopPropagation()"
                      class="absolute z-50 left-0 right-0 top-full mt-2 bg-white rounded-2xl border border-slate-200 shadow-[0_12px_28px_rgba(0,0,0,0.12),0_4px_10px_rgba(0,0,0,0.04)] overflow-hidden animate-fadeIn">
                   
-                  <!-- Options List -->
-                  <div class="max-h-56 overflow-y-auto p-1.5 space-y-0.5">
-                    <div *ngIf="filteredSchools.length === 0" class="p-3 text-center text-xs text-slate-400 font-medium">
-                      No schools found matching "{{ searchQuery }}"
-                    </div>
+                   <!-- Options List -->
+                   <div class="max-h-56 overflow-y-auto p-1.5 space-y-0.5">
+                     <!-- Loading state -->
+                     <div *ngIf="schoolsLoading" class="p-4 text-center text-xs text-slate-400 font-medium flex items-center justify-center gap-2">
+                       <svg class="animate-spin w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24">
+                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                       </svg>
+                       Loading schools...
+                     </div>
 
-                    <button *ngFor="let s of filteredSchools" type="button" (click)="selectSchool(s)"
-                            class="w-full text-left p-2.5 rounded-xl transition-all flex items-center justify-between gap-2 cursor-pointer"
-                            [ngClass]="selectedSchoolId === s.id ? 'bg-slate-100 font-bold text-slate-900 shadow-sm' : 'hover:bg-slate-50 text-slate-700 font-medium'">
-                      <div class="truncate">
-                        <div class="text-xs text-slate-900 leading-snug">{{ s.name }}</div>
-                        <div class="text-[10px] text-slate-400 leading-tight">{{ s.city ? s.city + ' • ' : '' }}{{ s.code }}</div>
-                      </div>
-                      <svg *ngIf="selectedSchoolId === s.id" class="w-4 h-4 text-slate-900 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    </button>
-                  </div>
+                     <!-- Error state -->
+                     <div *ngIf="!schoolsLoading && schoolsError" class="p-4 text-center text-xs text-red-400 font-medium">
+                       Could not load schools. Please check your connection.
+                     </div>
+
+                     <!-- Empty state (API returned empty list) -->
+                     <div *ngIf="!schoolsLoading && !schoolsError && schools.length === 0" class="p-4 text-center text-xs text-slate-400 font-medium">
+                       No schools registered yet. Contact your administrator.
+                     </div>
+
+                     <!-- No search match -->
+                     <div *ngIf="!schoolsLoading && !schoolsError && schools.length > 0 && filteredSchools.length === 0" class="p-3 text-center text-xs text-slate-400 font-medium">
+                       No schools found matching "{{ searchQuery }}"
+                     </div>
+
+                     <button *ngFor="let s of filteredSchools" type="button" (click)="selectSchool(s)"
+                             class="w-full text-left p-2.5 rounded-xl transition-all flex items-center justify-between gap-2 cursor-pointer"
+                             [ngClass]="selectedSchoolId === s.id ? 'bg-slate-100 font-bold text-slate-900 shadow-sm' : 'hover:bg-slate-50 text-slate-700 font-medium'">
+                       <div class="truncate">
+                         <div class="text-xs text-slate-900 leading-snug">{{ s.name }}</div>
+                         <div class="text-[10px] text-slate-400 leading-tight">{{ s.city ? s.city + ' • ' : '' }}{{ s.code }}</div>
+                       </div>
+                       <svg *ngIf="selectedSchoolId === s.id" class="w-4 h-4 text-slate-900 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                       </svg>
+                     </button>
+                   </div>
                 </div>
               </div>
 
@@ -442,7 +462,9 @@ export class LoginComponent implements OnInit {
 
   step: 'SELECT_SCHOOL' | 'LOGIN' = 'SELECT_SCHOOL';
   isRootLogin = false;
-  schools: SchoolItem[] = DEFAULT_SCHOOLS;
+  schools: SchoolItem[] = [];
+  schoolsLoading = true;
+  schoolsError = false;
   selectedSchoolId = '';
   selectedSchool: SchoolItem | null = null;
   dropdownOpen = false;
@@ -466,7 +488,6 @@ export class LoginComponent implements OnInit {
 
   get filteredSchools(): SchoolItem[] {
     const q = this.searchQuery.trim().toLowerCase();
-    // If not actively typing a query or if query matches the current selected school name, show ALL schools
     if (!this.isSearching || !q || (this.selectedSchool && q === this.selectedSchool.name.toLowerCase())) {
       return this.schools;
     }
@@ -479,35 +500,35 @@ export class LoginComponent implements OnInit {
   }
 
   ngOnInit() {
-    // Attempt to load live schools from API, fallback to default seed list if offline
+    this.schoolsLoading = true;
+    this.schoolsError = false;
+
     this.auth.getPublicSchools().subscribe({
       next: (data) => {
-        if (data && data.length > 0) {
-          // Merge API schools with existing list metadata
-          this.schools = data.map((s) => {
-            const match = DEFAULT_SCHOOLS.find((d) => d.code === s.code || d.name.toLowerCase() === s.name.toLowerCase());
-            return {
-              ...s,
-              motto: match?.motto || 'Excellence in Academics & Innovation',
-              affiliation: match?.affiliation || `${s.city || 'Campus'} • Affiliated to Recognized Board`,
-            };
-          });
+        this.schoolsLoading = false;
+        // Use only real data from API — never hardcoded fallback
+        this.schools = (data || []).map((s) => ({
+          ...s,
+          motto: s.motto || 'Excellence in Academics & Innovation',
+          affiliation: s.affiliation || (s.city ? `${s.city} • Affiliated to Recognized Board` : 'Affiliated to Recognized Board'),
+        }));
+
+        // Restore previously selected school if still in list
+        const storedSchoolId = localStorage.getItem('schoolsense_selected_school_id');
+        if (storedSchoolId) {
+          this.selectedSchoolId = storedSchoolId;
+          this.selectedSchool = this.schools.find((s) => s.id === storedSchoolId) || null;
+          if (this.selectedSchool) {
+            this.searchQuery = this.selectedSchool.name;
+          }
         }
       },
       error: () => {
-        // Fallback to DEFAULT_SCHOOLS is already set
+        this.schoolsLoading = false;
+        this.schoolsError = true;
+        this.schools = [];
       },
     });
-
-    // If a school was previously selected, restore it
-    const storedSchoolId = localStorage.getItem('schoolsense_selected_school_id');
-    if (storedSchoolId) {
-      this.selectedSchoolId = storedSchoolId;
-      this.selectedSchool = this.schools.find((s) => s.id === storedSchoolId) || null;
-      if (this.selectedSchool) {
-        this.searchQuery = this.selectedSchool.name;
-      }
-    }
   }
 
   onInputFocus() {
