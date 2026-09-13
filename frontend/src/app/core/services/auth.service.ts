@@ -2,7 +2,7 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, from, map, tap, of, throwError } from 'rxjs';
 import { SupabaseService } from './supabase.service';
-import { AuthResponse, User } from '../models';
+import { AuthResponse, User, AcademicSession } from '../models';
 
 @Injectable({
   providedIn: 'root',
@@ -10,6 +10,7 @@ import { AuthResponse, User } from '../models';
 export class AuthService {
   private readonly TOKEN_KEY = 'schoolsense_token';
   private readonly USER_KEY = 'schoolsense_user';
+  private readonly SESSION_KEY = 'schoolsense_active_session';
 
   private supabase = inject(SupabaseService);
   private router = inject(Router);
@@ -18,9 +19,12 @@ export class AuthService {
 
   // Angular Signals for Reactive State
   currentUser = signal<User | null>(this.getStoredUser());
+  activeAcademicSession = signal<AcademicSession | null>(this.getStoredSession());
+  
   isAuthenticated = computed(() => !!this.currentUser());
   userRole = computed(() => this.currentUser()?.role || '');
   isSupportSession = computed(() => !!this.currentUser()?.isSupportSession);
+  activeSessionName = computed(() => this.activeAcademicSession()?.name || '2026–2027');
 
   isAdmin = computed(() => ['SCHOOL_ADMIN', 'PRINCIPAL', 'SUPER_ADMIN', 'PLATFORM_ADMIN'].includes(this.userRole()));
   isPrincipal = computed(() => this.userRole() === 'PRINCIPAL');
@@ -282,16 +286,37 @@ export class AuthService {
     this.logout();
   }
 
+  setActiveSession(session: AcademicSession | null) {
+    if (session) {
+      localStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
+    } else {
+      localStorage.removeItem(this.SESSION_KEY);
+    }
+    this.activeAcademicSession.set(session);
+  }
+
   logout(): void {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
     localStorage.removeItem(this.ROOT_BACKUP_KEY);
+    localStorage.removeItem(this.SESSION_KEY);
     this.currentUser.set(null);
+    this.activeAcademicSession.set(null);
     this.router.navigate(['/login']);
   }
 
   getToken(): string | null {
     return localStorage.getItem(this.TOKEN_KEY);
+  }
+
+  private getStoredSession(): AcademicSession | null {
+    const raw = localStorage.getItem(this.SESSION_KEY);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
   }
 
   private getStoredUser(): User | null {

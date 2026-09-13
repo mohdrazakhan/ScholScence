@@ -1,10 +1,13 @@
-import { Component, inject, OnInit, effect, computed } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, effect, computed } from '@angular/core';
+import { ModalService } from '../core/services/modal.service';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { filter } from 'rxjs/operators';
 import { AuthService } from '../core/services/auth.service';
+import { ApiService } from '../core/services/api.service';
 import { ToastService } from '../core/services/toast.service';
+import { AcademicSession, Notice } from '../core/models';
 
 export interface SubMenuItem {
   label: string;
@@ -220,7 +223,7 @@ export interface NavGroup {
       <!-- ================================================================================== -->
       <!-- MAIN CONTENT AREA                                                                  -->
       <!-- ================================================================================== -->
-      <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#edf2f7]">
+      <div class="flex-1 flex flex-col min-w-0 bg-[#edf2f7]">
         
         <!-- Binary Support Mode Global Banner -->
         <div *ngIf="auth.isSupportSession()"
@@ -260,23 +263,146 @@ export interface NavGroup {
             </div>
           </div>
 
-          <!-- Top Left for School Users & Support Mode (Unhide Hamburger + School Name) -->
-          <div *ngIf="!isSuperAdminOnly()"
-               [ngClass]="isDesktopSidebarCollapsed ? 'flex' : (isMobileSidebarOpen ? 'hidden' : 'flex lg:hidden')"
-               class="items-center gap-3 min-w-0">
-            <!-- Sidebar Unhide Button -->
+          <!-- Top Left for School Users & Support Mode (Header Details) -->
+          <div *ngIf="!isSuperAdminOnly()" class="flex items-center gap-3 min-w-0">
+            <!-- Sidebar Unhide Button (shown when collapsed or on mobile) -->
+            <button *ngIf="isDesktopSidebarCollapsed" type="button" (click)="toggleSidebar()" title="Open Sidebar"
+                    class="p-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer hidden lg:flex items-center justify-center border border-slate-200 shadow-xs shrink-0">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
             <button type="button" (click)="toggleSidebar()" title="Open Sidebar"
-                    class="p-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer flex items-center justify-center border border-slate-200 shadow-xs shrink-0">
+                    class="p-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer flex lg:hidden items-center justify-center border border-slate-200 shadow-xs shrink-0">
               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
 
+            <!-- Campus & Welcome Details in Header Bar -->
             <div class="min-w-0">
-              <h2 class="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                {{ auth.currentUser()?.school?.name || 'SchoolSense Campus' }}
-              </h2>
-              <p class="text-[10px] text-slate-400 font-semibold hidden sm:block">Academic Session 2026-2027</p>
+              <!-- Line 1: User Greeting with Sun/Moon Animated Icon, Date & 12-Hour Live Clock -->
+              <div class="flex items-center gap-2 flex-wrap">
+                <!-- Dynamic Sun / Moon Animated Icon based on Time of Day -->
+                <span *ngIf="timePeriod === 'morning'"
+                      class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-50 text-amber-500 border border-amber-200/80 shadow-2xs shrink-0"
+                      title="Good morning">
+                  <svg class="w-3.5 h-3.5 animate-spin-gentle" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </span>
+
+                <span *ngIf="timePeriod === 'afternoon'"
+                      class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-50 text-amber-500 border border-amber-200/80 shadow-2xs shrink-0"
+                      title="Good afternoon">
+                  <svg class="w-3.5 h-3.5 animate-spin-gentle" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd" />
+                  </svg>
+                </span>
+
+                <span *ngIf="timePeriod === 'evening'"
+                      class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-50 text-orange-500 border border-orange-200/80 shadow-2xs shrink-0"
+                      title="Good evening">
+                  <svg class="w-3.5 h-3.5 animate-float-gentle" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </span>
+
+                <span *ngIf="timePeriod === 'night'"
+                      class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-indigo-500 border border-slate-200/80 shadow-2xs shrink-0"
+                      title="Good evening">
+                  <svg class="w-3.5 h-3.5 animate-float-gentle" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                  </svg>
+                </span>
+
+                <h2 class="text-xs sm:text-sm font-black text-slate-900 tracking-tight leading-tight truncate">
+                  {{ timeGreeting }}, {{ auth.currentUser()?.firstName || 'User' }}
+                </h2>
+
+                <span class="w-1 h-1 rounded-full bg-slate-300 hidden sm:inline-block shrink-0"></span>
+                <span class="text-[11px] font-semibold text-slate-500 hidden sm:inline">{{ formattedToday }}</span>
+
+                <span class="w-1 h-1 rounded-full bg-slate-300 hidden sm:inline-block shrink-0"></span>
+                <!-- Real-time 12-Hour Clock (Hour & Min only) -->
+                <div class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/80 shadow-2xs">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>{{ formattedClockTime }}</span>
+                </div>
+              </div>
+
+              <!-- Line 2: Academic Session Dropdown + Subtitle (Aligned dot, clean UI) -->
+              <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                <!-- Interactive Session Switcher Dropdown -->
+                <div *ngIf="canManageSessions" class="relative inline-block">
+                  <button type="button" (click)="toggleSessionDropdown($event)"
+                          class="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-0.5 rounded-lg bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95"
+                          title="Click to switch academic session">
+                    <span>Session: {{ auth.activeSessionName() }}</span>
+                    <svg class="w-3 h-3 text-slate-500 transition-transform duration-200" [class.rotate-180]="isSessionDropdownOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  <!-- Backdrop to close dropdown -->
+                  <div *ngIf="isSessionDropdownOpen" (click)="closeSessionDropdown()" class="fixed inset-0 z-40"></div>
+
+                  <!-- Dropdown Menu -->
+                  <div *ngIf="isSessionDropdownOpen"
+                       class="absolute left-0 top-full mt-1.5 w-72 bg-white rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-200/90 py-1.5 z-50 animate-fadeIn">
+                    
+                    <div class="px-3 py-1.5 border-b border-slate-100 flex items-center justify-between">
+                      <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Available Sessions</span>
+                      <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-600">
+                        {{ availableSessions.length }}
+                      </span>
+                    </div>
+
+                    <div class="max-h-56 overflow-y-auto py-1 space-y-0.5 custom-clay-scroll">
+                      <button *ngFor="let ses of availableSessions"
+                              type="button"
+                              (click)="selectSession(ses, $event)"
+                              class="w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors hover:bg-slate-50 cursor-pointer"
+                              [ngClass]="isSessionActive(ses) ? 'bg-slate-100 text-slate-900 font-bold' : 'text-slate-700 font-medium'">
+                        <div>
+                          <div class="flex items-center gap-1.5">
+                            <span>{{ ses.name }}</span>
+                            <span *ngIf="ses.is_current" class="text-[9px] font-black px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              CURRENT
+                            </span>
+                          </div>
+                          <div class="text-[10px] text-slate-400 font-normal mt-0.5">
+                            {{ ses.start_date }} ➔ {{ ses.end_date }}
+                          </div>
+                        </div>
+
+                        <div *ngIf="isSessionActive(ses)" class="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-black shadow-xs">
+                          ✓
+                        </div>
+                      </button>
+
+                      <div *ngIf="availableSessions.length === 0" class="px-3 py-3 text-center text-xs text-slate-400">
+                        Loading sessions...
+                      </div>
+                    </div>
+
+                    <!-- Manage Sessions & Rollover link inside dropdown -->
+                    <div class="pt-1 border-t border-slate-100 px-1.5">
+                      <button type="button"
+                              (click)="openManageSessionsFromHeader($event)"
+                              class="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer">
+                        <span>⚡ Manage Sessions & Rollover</span>
+                      </button>
+                    </div>
+
+                  </div>
+                </div>
+
+                <span *ngIf="canManageSessions" class="w-1 h-1 rounded-full bg-slate-300 hidden sm:inline-block shrink-0"></span>
+                <p class="text-[11px] text-slate-500 truncate hidden sm:inline">
+                  Manage campus operations, attendance, and student directory.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -306,6 +432,71 @@ export interface NavGroup {
 
             <!-- Vertical Separator -->
             <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
+
+            <!-- Notification Bell Icon Button with Dropdown -->
+            <div class="relative">
+              <button type="button"
+                      (click)="toggleNotificationDropdown($event)"
+                      title="Notifications & Circulars"
+                      class="relative p-2 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                <!-- Red unread notification indicator if any active notification -->
+                <span *ngIf="activeNotifications.length > 0" class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white"></span>
+              </button>
+
+              <!-- Backdrop to close notifications -->
+              <div *ngIf="isNotificationDropdownOpen" (click)="isNotificationDropdownOpen = false" class="fixed inset-0 z-40"></div>
+
+              <!-- Notifications Menu Dropdown -->
+              <div *ngIf="isNotificationDropdownOpen"
+                   class="absolute right-0 top-full mt-2 w-80 sm:w-88 bg-white rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-200/90 p-3.5 z-50 animate-fadeIn">
+                <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 mb-2.5">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-black text-slate-900">Notifications</span>
+                    <span *ngIf="activeNotifications.length > 0" class="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-rose-100 text-rose-700">
+                      {{ activeNotifications.length }} New
+                    </span>
+                  </div>
+                  <button *ngIf="activeNotifications.length > 0"
+                          type="button"
+                          (click)="clearAllNotifications($event)"
+                          class="text-[10px] font-bold text-rose-600 hover:text-rose-700 transition-colors cursor-pointer hover:underline">
+                    Clear All
+                  </button>
+                </div>
+
+                <!-- Active Notifications List -->
+                <div *ngIf="activeNotifications.length > 0" class="space-y-2 max-h-64 overflow-y-auto custom-clay-scroll pr-0.5">
+                  <div *ngFor="let n of activeNotifications"
+                       class="group relative p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-100 transition-colors">
+                    <div class="flex items-start justify-between gap-2 text-[10px]">
+                      <span class="font-bold text-slate-900 line-clamp-1 flex-1">{{ n.title }}</span>
+                      <div class="flex items-center gap-1.5 shrink-0">
+                        <span class="text-slate-400">{{ formatNoticeTime(n.published_at) }}</span>
+                        <button type="button" (click)="dismissNotification(n.id, $event)" title="Dismiss"
+                                class="text-slate-400 hover:text-rose-600 rounded-md p-0.5 transition-colors cursor-pointer text-xs font-bold leading-none">
+                          &times;
+                        </button>
+                      </div>
+                    </div>
+                    <p class="text-[11px] text-slate-600 mt-1 line-clamp-2 leading-relaxed">{{ n.content }}</p>
+                  </div>
+                </div>
+
+                <!-- Empty State -->
+                <div *ngIf="activeNotifications.length === 0" class="py-6 px-4 text-center">
+                  <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-2 shadow-2xs border border-slate-200/60">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                  </div>
+                  <p class="text-xs font-bold text-slate-700">No new notifications</p>
+                  <p class="text-[10px] text-slate-400 mt-0.5">You're all caught up!</p>
+                </div>
+              </div>
+            </div>
 
             <!-- Sign Out Button -->
             <button (click)="auth.logout()"
@@ -359,6 +550,10 @@ export interface NavGroup {
           <button (click)="toastService.dismiss(t.id)" class="text-slate-400 hover:text-slate-700 font-bold text-lg leading-none cursor-pointer p-1 rounded-lg hover:bg-slate-100 transition-colors">&times;</button>
         </div>
       </div>
+
+      <!-- Global Full Viewport Modal Backdrop Dimmer (Dims entire viewport including header & sidebar) -->
+      <div *ngIf="modalService.isOpen()"
+           class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-[60] animate-fadeIn"></div>
     </div>
   `,
   styles: [`
@@ -383,16 +578,44 @@ export interface NavGroup {
     .custom-clay-scroll::-webkit-scrollbar-thumb:hover {
       background: #94a3b8;
     }
+
+    @keyframes spinGentle {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .animate-spin-gentle {
+      animation: spinGentle 20s linear infinite;
+    }
+
+    @keyframes floatGentle {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-2px) rotate(3deg); }
+    }
+    .animate-float-gentle {
+      animation: floatGentle 3.5s ease-in-out infinite;
+    }
   `],
 })
-export class MainLayoutComponent implements OnInit {
+export class MainLayoutComponent implements OnInit, OnDestroy {
   auth = inject(AuthService);
+  api = inject(ApiService);
   router = inject(Router);
   toastService = inject(ToastService);
+  modalService = inject(ModalService);
   
   isMobileSidebarOpen = false;
   isDesktopSidebarCollapsed = false;
   menuSearchQuery = '';
+
+  isSessionDropdownOpen = false;
+  isNotificationDropdownOpen = false;
+  availableSessions: AcademicSession[] = [];
+  notifications: Notice[] = [];
+  dismissedNoticeIds = new Set<string>();
+
+  get activeNotifications(): Notice[] {
+    return this.notifications.filter((n) => !this.dismissedNoticeIds.has(n.id));
+  }
 
   isSuperAdminOnly = computed(() => this.auth.isSuperAdmin() && !this.auth.isSupportSession());
 
@@ -420,6 +643,7 @@ export class MainLayoutComponent implements OnInit {
       expanded: true,
       children: [
         { label: 'Classes & Student Roster', route: '/academics', queryParams: { tab: 'students' } },
+        { label: 'Alumni Directory', route: '/academics', queryParams: { tab: 'alumni' } },
         { label: 'Faculty & Staff Directory', route: '/academics', queryParams: { tab: 'staff' } },
         { label: 'Curriculum Subjects Master', route: '/academics', queryParams: { tab: 'subjects' } },
       ],
@@ -471,6 +695,10 @@ export class MainLayoutComponent implements OnInit {
 
   visibleNavGroups: NavGroup[] = [];
 
+  get canManageSessions(): boolean {
+    return this.auth.isAdmin() || this.auth.isSuperAdmin() || this.auth.isPrincipal();
+  }
+
   get displayRole(): string {
     const user = this.auth.currentUser();
     if (!user) return '';
@@ -500,17 +728,56 @@ export class MainLayoutComponent implements OnInit {
     return `https://ui-avatars.com/api/?name=${name}&background=0f172a&color=ffffff&bold=true&size=128`;
   }
 
+  currentTime: Date = new Date();
+  clockTimer: any = null;
+
+  get formattedToday(): string {
+    const options: Intl.DateTimeFormatOptions = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+    return this.currentTime.toLocaleDateString('en-US', options);
+  }
+
+  get formattedClockTime(): string {
+    return this.currentTime.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  }
+
+  get timePeriod(): 'morning' | 'afternoon' | 'evening' | 'night' {
+    const hour = this.currentTime.getHours();
+    if (hour >= 5 && hour < 12) return 'morning';
+    if (hour >= 12 && hour < 17) return 'afternoon';
+    if (hour >= 17 && hour < 21) return 'evening';
+    return 'night';
+  }
+
+  get timeGreeting(): string {
+    const p = this.timePeriod;
+    if (p === 'morning') return 'Good morning';
+    if (p === 'afternoon') return 'Good afternoon';
+    return 'Good evening';
+  }
+
   constructor() {
     effect(() => {
       // Re-filter sidebar menus automatically whenever currentUser or support mode changes
       this.auth.currentUser();
       this.filterMenu();
       this.expandActiveGroup();
+      this.loadNotifications();
     });
   }
 
   ngOnInit() {
     this.filterMenu();
+    this.loadSessions();
+    this.loadNotifications();
+
+    // Start 12-hour real-time clock ticker
+    this.clockTimer = setInterval(() => {
+      this.currentTime = new Date();
+    }, 1000);
 
     // Auto expand active parent group on route change
     this.router.events
@@ -519,6 +786,168 @@ export class MainLayoutComponent implements OnInit {
         this.expandActiveGroup();
       });
     this.expandActiveGroup();
+  }
+
+  ngOnDestroy() {
+    if (this.clockTimer) {
+      clearInterval(this.clockTimer);
+      this.clockTimer = null;
+    }
+  }
+
+  loadSessions() {
+    if (!this.isSuperAdminOnly()) {
+      this.api.get<AcademicSession[]>('academics/sessions').subscribe({
+        next: (res) => {
+          this.availableSessions = res || [];
+          if (!this.auth.activeAcademicSession() && this.availableSessions.length > 0) {
+            const current = this.availableSessions.find((s) => s.is_current) || this.availableSessions[0];
+            this.auth.setActiveSession(current);
+          }
+        },
+        error: (err) => console.error('Failed to load sessions', err),
+      });
+    }
+  }
+
+  toggleSessionDropdown(event: Event) {
+    event.stopPropagation();
+    this.isSessionDropdownOpen = !this.isSessionDropdownOpen;
+    if (this.isSessionDropdownOpen) {
+      this.loadSessions();
+    }
+  }
+
+  closeSessionDropdown() {
+    this.isSessionDropdownOpen = false;
+  }
+
+  openManageSessionsFromHeader(event: Event) {
+    event.stopPropagation();
+    this.closeSessionDropdown();
+    this.router.navigate(['/academics'], {
+      queryParams: { tab: 'students', manageSessions: Date.now().toString() },
+    });
+  }
+
+  selectSession(ses: AcademicSession, event: Event) {
+    event.stopPropagation();
+    this.auth.setActiveSession(ses);
+    this.isSessionDropdownOpen = false;
+    this.toastService.success(`Switched active session to "${ses.name}"`);
+
+    const currentUrl = this.router.url;
+    if (currentUrl.includes('/academics') || currentUrl.includes('/dashboard')) {
+      this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
+        this.router.navigateByUrl(currentUrl);
+      });
+    }
+  }
+
+  deleteSession(ses: AcademicSession, event: Event) {
+    event.stopPropagation();
+    if (this.availableSessions.length <= 1) {
+      this.toastService.warning('Cannot delete the only configured session.');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete session "${ses.name}"?`)) {
+      return;
+    }
+
+    this.api.delete(`academics/sessions/${ses.id}`).subscribe({
+      next: () => {
+        this.toastService.success(`Session "${ses.name}" deleted.`);
+        const active = this.auth.activeAcademicSession();
+        if (active && active.id === ses.id) {
+          const remaining = this.availableSessions.filter((s) => s.id !== ses.id);
+          const current = remaining.find((s) => s.is_current) || remaining[0];
+          if (current) {
+            this.auth.setActiveSession(current);
+          }
+        }
+        this.loadSessions();
+      },
+      error: (err: any) => {
+        this.toastService.error(err.message || 'Failed to delete session');
+      },
+    });
+  }
+
+  isSessionActive(ses: AcademicSession): boolean {
+    const active = this.auth.activeAcademicSession();
+    if (active) return active.id === ses.id;
+    return !!ses.is_current;
+  }
+
+  loadNotifications() {
+    if (this.isSuperAdminOnly()) {
+      this.notifications = [];
+      return;
+    }
+
+    const userId = this.auth.currentUser()?.id || 'guest';
+    try {
+      const saved = localStorage.getItem(`dismissed_notices_${userId}`);
+      if (saved) {
+        this.dismissedNoticeIds = new Set(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.warn('Failed to parse saved dismissed notices', e);
+    }
+
+    this.api.get<Notice[]>('communication/notices').subscribe({
+      next: (res) => {
+        this.notifications = res || [];
+      },
+      error: (err) => {
+        console.error('Failed to load notifications', err);
+        this.notifications = [];
+      },
+    });
+  }
+
+  toggleNotificationDropdown(event: Event) {
+    event.stopPropagation();
+    this.isNotificationDropdownOpen = !this.isNotificationDropdownOpen;
+    if (this.isNotificationDropdownOpen) {
+      this.loadNotifications();
+    }
+  }
+
+  dismissNotification(id: string, event?: Event) {
+    if (event) event.stopPropagation();
+    this.dismissedNoticeIds.add(id);
+    this.saveDismissedNotices();
+  }
+
+  clearAllNotifications(event?: Event) {
+    if (event) event.stopPropagation();
+    this.notifications.forEach((n) => this.dismissedNoticeIds.add(n.id));
+    this.saveDismissedNotices();
+    this.toastService.info('All notifications cleared');
+  }
+
+  private saveDismissedNotices() {
+    const userId = this.auth.currentUser()?.id || 'guest';
+    try {
+      localStorage.setItem(`dismissed_notices_${userId}`, JSON.stringify(Array.from(this.dismissedNoticeIds)));
+    } catch (e) {
+      console.warn('Failed to persist dismissed notices', e);
+    }
+  }
+
+  formatNoticeTime(dateStr?: string): string {
+    if (!dateStr) return 'Recent';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Recent';
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays <= 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
   isDirectActive(group: NavGroup): boolean {

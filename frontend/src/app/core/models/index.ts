@@ -65,6 +65,41 @@ export interface DashboardStats {
   upcomingExams: Exam[];
 }
 
+export interface AcademicSession {
+  id: string;
+  school_id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  is_current: boolean;
+  status: string;
+  student_count?: number;
+  section_count?: number;
+  created_at?: string;
+}
+
+export interface AlumniStudent {
+  student_id: string;
+  admission_number: string;
+  first_name: string;
+  last_name?: string;
+  full_name: string;
+  gender?: string;
+  date_of_birth?: string;
+  status: string;
+  last_class_name?: string;
+  last_section_name?: string;
+  graduation_session?: string;
+  last_roll_number?: string | number;
+  primary_contact?: {
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+    email?: string;
+    relationship?: string;
+  };
+}
+
 export interface ClassItem {
   id: string;
   name: string;

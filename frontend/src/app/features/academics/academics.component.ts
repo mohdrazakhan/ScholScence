@@ -6,7 +6,8 @@ import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ExportService } from '../../core/services/export.service';
-import { ClassItem, SubjectItem, StudentItem, SectionItem } from '../../core/models';
+import { ModalService } from '../../core/services/modal.service';
+import { ClassItem, SubjectItem, StudentItem, SectionItem, AcademicSession, AlumniStudent } from '../../core/models';
 
 interface StaffMember {
   id: string;
@@ -39,12 +40,19 @@ interface StaffMember {
             </span>
             <span class="text-xs text-slate-300">•</span>
             <span *ngIf="activeTab === 'STUDENTS'" class="text-xs font-bold text-slate-600">Classes & Student Roster</span>
+            <span *ngIf="activeTab === 'ALUMNI'" class="text-xs font-bold text-amber-700">Alumni Directory</span>
             <span *ngIf="activeTab === 'STAFF'" class="text-xs font-bold text-slate-600">Faculty & Staff Directory</span>
             <span *ngIf="activeTab === 'SUBJECTS'" class="text-xs font-bold text-slate-600">Curriculum Subjects Master</span>
           </div>
 
           <h1 *ngIf="activeTab === 'STUDENTS'" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1">
             Classes & Student Roster
+          </h1>
+          <h1 *ngIf="activeTab === 'ALUMNI'" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1 flex items-center gap-2">
+            <span>Alumni & Graduated Students Directory</span>
+            <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+              Permanent Register
+            </span>
           </h1>
           <h1 *ngIf="activeTab === 'STAFF'" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1">
             Faculty & Staff Directory
@@ -56,6 +64,9 @@ interface StaffMember {
           <p *ngIf="activeTab === 'STUDENTS'" class="text-xs text-slate-500 mt-0.5">
             Manage grade levels, section capacities, student enrollments, and parent guardian records.
           </p>
+          <p *ngIf="activeTab === 'ALUMNI'" class="text-xs text-slate-500 mt-0.5">
+            Permanent register of students who completed their terminal class or graduated from the institution.
+          </p>
           <p *ngIf="activeTab === 'STAFF'" class="text-xs text-slate-500 mt-0.5">
             Manage teaching faculty, staff roles, login credentials, and class teacher allocations.
           </p>
@@ -66,12 +77,30 @@ interface StaffMember {
 
         <!-- Action Buttons Contextual to Active View -->
         <div class="flex items-center gap-2.5 flex-wrap">
+          <!-- Session Pill & Switcher Button -->
+          <button *ngIf="canManage" (click)="openSessionModal()"
+                  class="px-3.5 py-2 bg-white hover:bg-slate-50 text-indigo-700 text-xs font-bold rounded-2xl border border-indigo-200 shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                  title="Switch or create academic sessions and promote students">
+            <span>🎓 Session: {{ auth.activeSessionName() }}</span>
+            <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
           <button *ngIf="canManage && activeTab === 'STUDENTS'" (click)="openAddStudentModal()"
                   class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_12px_#cbd5e1,-4px_-4px_12px_#ffffff] border border-slate-900 transition-all flex items-center gap-2 active:scale-[0.98] cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
             </svg>
             <span>+ Add Student / Child</span>
+          </button>
+
+          <button *ngIf="canManage && (activeTab === 'STUDENTS' || activeTab === 'ALUMNI')" (click)="openSessionModal()"
+                  class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-2xl shadow-md border border-indigo-600 transition-all flex items-center gap-1.5 active:scale-[0.98] cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span>⚡ Rollover & Promote</span>
           </button>
 
           <button *ngIf="canManage && activeTab === 'STAFF'" (click)="openAddStaffModal()"
@@ -93,11 +122,11 @@ interface StaffMember {
       </div>
 
       <!-- ============================================================== -->
-      <!-- TAB 1: CLASSES & STUDENT ROSTER                                -->
+      <!-- TAB 1: CLASSES & STUDENT ROSTER (Mobile-Optimized)             -->
       <!-- ============================================================== -->
-      <div *ngIf="activeTab === 'STUDENTS'" class="space-y-6">
+      <div *ngIf="activeTab === 'STUDENTS'" class="space-y-4 sm:space-y-6">
         <!-- Top Class Cards Quick Selector -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
           <div *ngFor="let c of classes"
                (click)="selectClass(c)"
                [class.bg-slate-900]="selectedClass?.id === c.id"
@@ -107,7 +136,7 @@ interface StaffMember {
                [class.bg-white]="selectedClass?.id !== c.id"
                [class.text-slate-800]="selectedClass?.id !== c.id"
                [class.border-slate-200]="selectedClass?.id !== c.id"
-               class="p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between hover:border-slate-400 shadow-xs">
+               class="p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between hover:border-slate-400 shadow-xs active:scale-[0.97]">
             <div class="text-xs font-black truncate">{{ c.name }}</div>
             <div class="flex items-center justify-between mt-2 pt-2 border-t text-[10px]"
                  [ngClass]="selectedClass?.id === c.id ? 'border-slate-800 text-slate-300' : 'border-slate-100 text-slate-400'">
@@ -117,55 +146,62 @@ interface StaffMember {
           </div>
         </div>
 
-        <!-- Enrolled Students Directory with Clay Table & Pagination -->
+        <!-- Enrolled Students Directory with Clay Table, Mobile Cards & Pagination -->
         <div class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] overflow-hidden">
-          <div class="p-4 sm:px-6 sm:py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#f8fafc]">
-            <div class="flex items-center gap-3 flex-wrap">
-              <h3 class="text-xs sm:text-sm font-black text-slate-900">
-                {{ selectedClass?.name || 'Class' }} - {{ formatSection(selectedSection?.name) }} Roster
-              </h3>
+          <div class="p-4 sm:px-6 sm:py-4 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 bg-[#f8fafc]">
+            
+            <!-- Class Roster Title & Section Switcher -->
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3 flex-wrap">
+              <div class="flex items-center gap-2">
+                <h3 class="text-xs sm:text-sm font-black text-slate-900">
+                  {{ selectedClass?.name || 'Class' }} - {{ formatSection(selectedSection?.name) }} Roster
+                </h3>
+                <span class="text-[11px] text-slate-400 font-bold">({{ filteredStudents.length }})</span>
+              </div>
               
-              <!-- Section switch pills -->
-              <div *ngIf="selectedClass && selectedClass.sections && selectedClass.sections.length > 0" class="flex items-center gap-1 bg-white border border-slate-200 p-1 rounded-2xl shadow-xs">
+              <!-- Section switch pills (Touch-scrollable on mobile) -->
+              <div *ngIf="selectedClass && selectedClass.sections && selectedClass.sections.length > 0"
+                   class="flex items-center gap-1 bg-white border border-slate-200 p-1 rounded-2xl shadow-xs overflow-x-auto max-w-full">
                 <button *ngFor="let sec of selectedClass.sections"
                         (click)="selectSection(sec)"
                         [class.bg-slate-900]="selectedSection?.id === sec.id"
                         [class.text-white]="selectedSection?.id === sec.id"
                         [class.text-slate-600]="selectedSection?.id !== sec.id"
-                        class="px-3 py-1 text-xs font-bold rounded-xl transition-all cursor-pointer">
+                        class="px-3 py-1 text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0">
                   {{ formatSection(sec.name) }}
                 </button>
               </div>
-
-              <span class="text-xs text-slate-400 font-medium">({{ filteredStudents.length }} Students)</span>
             </div>
 
-            <!-- Search filter & Export Buttons -->
-            <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-              <div class="w-full sm:w-56">
+            <!-- Search filter & Export Buttons (Full Width Stack on Mobile) -->
+            <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full lg:w-auto">
+              <div class="w-full sm:w-64">
                 <input type="text" [(ngModel)]="searchQuery" (input)="currentPage = 1" placeholder="Search student name/roll..."
                        class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-2xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-[inset_1px_1px_3px_#e2e8f0,inset_-1px_-1px_3px_#ffffff]" />
               </div>
 
-              <button (click)="exportDirectoryCsv()" [disabled]="students.length === 0"
-                      class="px-3.5 py-2 bg-[#f8fafc] hover:bg-white text-slate-700 border border-slate-300 rounded-2xl text-xs font-bold shadow-[2px_2px_6px_#d9e2ec,-2px_-2px_6px_#ffffff] flex items-center gap-1.5 transition-all flex-shrink-0 cursor-pointer disabled:opacity-40">
-                <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                <span>CSV</span>
-              </button>
-              
-              <button (click)="printStudentDirectory()" [disabled]="students.length === 0"
-                      class="px-3.5 py-2 bg-[#f8fafc] hover:bg-white text-slate-700 border border-slate-300 rounded-2xl text-xs font-bold shadow-[2px_2px_6px_#d9e2ec,-2px_-2px_6px_#ffffff] flex items-center gap-1.5 transition-all flex-shrink-0 cursor-pointer disabled:opacity-40">
-                <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                </svg>
-                <span>Print</span>
-              </button>
+              <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button (click)="exportDirectoryCsv()" [disabled]="students.length === 0"
+                        class="px-3.5 py-2 bg-[#f8fafc] hover:bg-white text-slate-700 border border-slate-300 rounded-2xl text-xs font-bold shadow-[2px_2px_6px_#d9e2ec,-2px_-2px_6px_#ffffff] flex items-center gap-1.5 transition-all flex-1 sm:flex-initial justify-center cursor-pointer disabled:opacity-40 active:scale-95">
+                  <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  <span>CSV</span>
+                </button>
+                
+                <button (click)="printStudentDirectory()" [disabled]="students.length === 0"
+                        class="px-3.5 py-2 bg-[#f8fafc] hover:bg-white text-slate-700 border border-slate-300 rounded-2xl text-xs font-bold shadow-[2px_2px_6px_#d9e2ec,-2px_-2px_6px_#ffffff] flex items-center gap-1.5 transition-all flex-1 sm:flex-initial justify-center cursor-pointer disabled:opacity-40 active:scale-95">
+                  <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                  <span>Print</span>
+                </button>
+              </div>
             </div>
           </div>
 
-          <div class="overflow-x-auto">
+          <!-- VIEW 1: DESKTOP TABLE VIEW (md:block) -->
+          <div class="hidden md:block overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
               <thead class="bg-[#f8fafc] text-slate-600 font-bold uppercase tracking-wider">
                 <tr>
@@ -196,16 +232,59 @@ interface StaffMember {
                 </tr>
                 <tr *ngIf="paginatedStudents.length === 0">
                   <td colspan="7" class="px-6 py-10 text-center text-slate-400 text-xs">
-                    No students found in this section. Click "+ Add Student / Child" to enroll children.
+                    No students enrolled in this section. Click "+ Add Student / Child" to add students.
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
 
+          <!-- VIEW 2: MOBILE CLAYMORPHIC CARDS VIEW (md:hidden) -->
+          <div class="block md:hidden p-3.5 space-y-3">
+            <div *ngFor="let st of paginatedStudents"
+                 class="p-4 rounded-2xl bg-[#f8fafc] border border-slate-200/90 shadow-xs space-y-2.5">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="px-2 py-0.5 rounded-md bg-slate-900 text-white font-black text-[10px] font-mono">
+                      #{{ st.rollNumber || '—' }}
+                    </span>
+                    <span class="px-2 py-0.5 rounded-md bg-slate-200 text-slate-700 font-bold text-[10px] font-mono">
+                      {{ st.admissionNumber }}
+                    </span>
+                    <span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[9px]">
+                      ACTIVE
+                    </span>
+                  </div>
+                  <h4 class="text-sm font-black text-slate-900 mt-1">{{ st.fullName }}</h4>
+                </div>
+                <span class="text-[10px] font-bold text-slate-500 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-xs shrink-0">
+                  {{ st.className }} - {{ formatSection(st.sectionName) }}
+                </span>
+              </div>
+
+              <!-- Guardian Contact Info -->
+              <div class="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-600">
+                <div>
+                  <span class="text-[10px] text-slate-400 font-semibold block">Guardian</span>
+                  <span class="font-bold text-slate-800">{{ st.primaryContact?.first_name }} {{ st.primaryContact?.last_name || '' }}</span>
+                </div>
+                <a *ngIf="st.primaryContact?.phone"
+                   [href]="'tel:' + st.primaryContact.phone"
+                   class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl font-mono text-[11px] font-bold flex items-center gap-1 shadow-xs">
+                  <span>📞 {{ st.primaryContact.phone }}</span>
+                </a>
+              </div>
+            </div>
+
+            <div *ngIf="paginatedStudents.length === 0" class="p-8 text-center text-slate-400 text-xs">
+              No students enrolled in this section. Click "+ Add Student / Child" to add students.
+            </div>
+          </div>
+
           <!-- Table Pagination Footer -->
-          <div class="px-5 py-3.5 border-t border-slate-100 bg-[#f8fafc] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600">
-            <div class="flex items-center gap-2">
+          <div class="px-4 sm:px-5 py-3.5 border-t border-slate-100 bg-[#f8fafc] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600">
+            <div class="flex items-center gap-2 justify-between sm:justify-start w-full sm:w-auto">
               <span>Rows per page:</span>
               <select [(ngModel)]="pageSize" (change)="currentPage = 1"
                       class="px-2.5 py-1 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none shadow-xs">
@@ -214,17 +293,17 @@ interface StaffMember {
                 <option [value]="50">50</option>
                 <option [value]="100">100</option>
               </select>
-              <span class="text-slate-500">Showing {{ startIndex + 1 }}-{{ endIndex }} of {{ filteredStudents.length }} students</span>
+              <span class="text-slate-500 hidden sm:inline">Showing {{ startIndex + 1 }}-{{ endIndex }} of {{ filteredStudents.length }}</span>
             </div>
 
-            <div class="flex items-center gap-1.5 self-end sm:self-auto">
+            <div class="flex items-center justify-between sm:justify-end gap-1.5 w-full sm:w-auto">
               <button (click)="currentPage = currentPage - 1" [disabled]="currentPage === 1"
-                      class="px-3 py-1 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-40 text-xs font-bold transition-all shadow-xs cursor-pointer">
+                      class="px-3.5 py-1.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-40 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95">
                 ‹ Prev
               </button>
-              <span class="px-3 py-1 font-bold text-slate-800">Page {{ currentPage }} of {{ totalPages || 1 }}</span>
+              <span class="px-3 py-1.5 font-bold text-slate-800 text-xs">Page {{ currentPage }} of {{ totalPages || 1 }}</span>
               <button (click)="currentPage = currentPage + 1" [disabled]="currentPage >= totalPages"
-                      class="px-3 py-1 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-40 text-xs font-bold transition-all shadow-xs cursor-pointer">
+                      class="px-3.5 py-1.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-40 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95">
                 Next ›
               </button>
             </div>
@@ -233,7 +312,228 @@ interface StaffMember {
       </div>
 
       <!-- ============================================================== -->
-      <!-- TAB 2: FACULTY & STAFF DIRECTORY (Principals & Teachers)       -->
+      <!-- TAB 2: ALUMNI DIRECTORY (Graduated Students Register)          -->
+      <!-- ============================================================== -->
+      <div *ngIf="activeTab === 'ALUMNI'" class="space-y-4 sm:space-y-6">
+        
+        <!-- Alumni Metrics Summary Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+          <div class="p-4 bg-white rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#e2e8f0,-4px_-4px_12px_#ffffff] flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center font-black text-lg shrink-0 shadow-inner">
+              🎓
+            </div>
+            <div class="min-w-0">
+              <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Alumni Graduated</div>
+              <div class="text-xl font-black text-slate-900 mt-0.5">{{ alumniList.length }}</div>
+            </div>
+          </div>
+
+          <div class="p-4 bg-white rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#e2e8f0,-4px_-4px_12px_#ffffff] flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center font-black text-lg shrink-0 shadow-inner">
+              🏛️
+            </div>
+            <div class="min-w-0">
+              <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">Terminal Exit Grade</div>
+              <div class="text-xl font-black text-slate-900 mt-0.5">Class 12</div>
+            </div>
+          </div>
+
+          <div class="p-4 bg-white rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#e2e8f0,-4px_-4px_12px_#ffffff] flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center font-black text-lg shrink-0 shadow-inner">
+              ⚡
+            </div>
+            <div class="min-w-0">
+              <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">Active Academic Session</div>
+              <div class="text-xl font-black text-slate-900 mt-0.5">{{ auth.activeSessionName() }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alumni Register Card with Claymorphic Table & Mobile Cards -->
+        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] overflow-hidden">
+          <div class="p-4 sm:px-6 sm:py-4 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 bg-[#f8fafc]">
+            
+            <div class="flex items-center gap-3 flex-wrap">
+              <div class="flex items-center gap-2">
+                <h3 class="text-xs sm:text-sm font-black text-slate-900">
+                  Graduated Alumni Register
+                </h3>
+                <span class="text-[11px] text-amber-600 font-bold">({{ filteredAlumni.length }})</span>
+              </div>
+
+              <!-- Session filter dropdown -->
+              <div class="flex items-center gap-1.5 text-xs">
+                <span class="text-[11px] text-slate-400 font-semibold">Graduation Batch:</span>
+                <select [(ngModel)]="selectedGraduationSession" (change)="alumniCurrentPage = 1"
+                        class="px-3 py-1 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-slate-800 shadow-xs cursor-pointer">
+                  <option value="ALL">All Batches</option>
+                  <option *ngFor="let s of availableGraduationSessions" [value]="s">{{ s }}</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Search filter & Export Buttons -->
+            <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full lg:w-auto">
+              <div class="w-full sm:w-64">
+                <input type="text" [(ngModel)]="alumniSearchQuery" (input)="alumniCurrentPage = 1" placeholder="Search alumni name/adm..."
+                       class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-2xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-[inset_1px_1px_3px_#e2e8f0,inset_-1px_-1px_3px_#ffffff]" />
+              </div>
+
+              <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button (click)="exportAlumniCsv()" [disabled]="alumniList.length === 0"
+                        class="px-3.5 py-2 bg-[#f8fafc] hover:bg-white text-slate-700 border border-slate-300 rounded-2xl text-xs font-bold shadow-[2px_2px_6px_#d9e2ec,-2px_-2px_6px_#ffffff] flex items-center gap-1.5 transition-all flex-1 sm:flex-initial justify-center cursor-pointer disabled:opacity-40 active:scale-95">
+                  <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  <span>CSV</span>
+                </button>
+                
+                <button (click)="printAlumniDirectory()" [disabled]="alumniList.length === 0"
+                        class="px-3.5 py-2 bg-[#f8fafc] hover:bg-white text-slate-700 border border-slate-300 rounded-2xl text-xs font-bold shadow-[2px_2px_6px_#d9e2ec,-2px_-2px_6px_#ffffff] flex items-center gap-1.5 transition-all flex-1 sm:flex-initial justify-center cursor-pointer disabled:opacity-40 active:scale-95">
+                  <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                  <span>Print</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- DESKTOP TABLE VIEW (md:block) -->
+          <div class="hidden md:block overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+              <thead class="bg-[#f8fafc] text-slate-600 font-bold uppercase tracking-wider">
+                <tr>
+                  <th class="px-6 py-3.5">Admission No</th>
+                  <th class="px-6 py-3.5">Alumni Student Name</th>
+                  <th class="px-6 py-3.5">Terminal Class & Sec</th>
+                  <th class="px-6 py-3.5">Passing Session</th>
+                  <th class="px-6 py-3.5">Primary Guardian</th>
+                  <th class="px-6 py-3.5">Guardian Phone</th>
+                  <th class="px-6 py-3.5">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-medium">
+                <tr *ngFor="let al of paginatedAlumni" class="hover:bg-amber-50/40 transition-colors">
+                  <td class="px-6 py-3.5 font-mono text-slate-600 font-bold">{{ al.admission_number }}</td>
+                  <td class="px-6 py-3.5 font-bold text-slate-900">
+                    <div class="flex items-center gap-2">
+                      <span class="w-6 h-6 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black flex items-center justify-center">
+                        {{ al.full_name.charAt(0) }}
+                      </span>
+                      <span>{{ al.full_name }}</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-3.5 text-slate-700 font-medium">
+                    {{ al.last_class_name || 'Class 12' }} - {{ formatSection(al.last_section_name) }}
+                  </td>
+                  <td class="px-6 py-3.5">
+                    <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs">
+                      🎓 {{ al.graduation_session || 'Graduated' }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-3.5 text-slate-700 font-semibold">
+                    {{ al.primary_contact?.first_name || '—' }} {{ al.primary_contact?.last_name || '' }}
+                  </td>
+                  <td class="px-6 py-3.5 text-slate-500 font-mono">{{ al.primary_contact?.phone || '—' }}</td>
+                  <td class="px-6 py-3.5">
+                    <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                      ALUMNI
+                    </span>
+                  </td>
+                </tr>
+                <tr *ngIf="filteredAlumni.length === 0">
+                  <td colspan="7" class="px-6 py-14 text-center text-slate-400">
+                    <div class="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-3 font-bold text-2xl shadow-inner">
+                      🎓
+                    </div>
+                    <div class="font-black text-slate-800 text-sm">No Alumni Records Yet</div>
+                    <p class="text-xs text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
+                      Students in the highest grade (Class 12) automatically graduate and enter this Alumni Directory when you perform an annual session rollover.
+                    </p>
+                    <button *ngIf="canManage" (click)="openSessionModal()"
+                            class="mt-4 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all cursor-pointer">
+                      ⚡ Open Session Rollover Engine
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- MOBILE CARD VIEW (md:hidden) -->
+          <div class="block md:hidden p-3.5 space-y-3">
+            <div *ngFor="let al of paginatedAlumni"
+                 class="p-4 bg-white rounded-2xl border border-amber-200/80 shadow-[3px_3px_10px_#e2e8f0,-3px_-3px_10px_#ffffff] space-y-3">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-800 text-xs font-black flex items-center justify-center shrink-0">
+                    {{ al.full_name.charAt(0) }}
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-black text-slate-900">{{ al.full_name }}</h4>
+                    <div class="text-[11px] font-mono text-slate-400">{{ al.admission_number }}</div>
+                  </div>
+                </div>
+                <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 shrink-0">
+                  ALUMNI
+                </span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
+                <div>
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Terminal Class</span>
+                  <span class="font-bold text-slate-800">{{ al.last_class_name || 'Class 12' }} - {{ formatSection(al.last_section_name) }}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Passing Session</span>
+                  <span class="font-mono font-bold text-indigo-700">{{ al.graduation_session || 'Graduated' }}</span>
+                </div>
+              </div>
+
+              <div *ngIf="al.primary_contact?.phone" class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span class="text-[11px] text-slate-400 font-semibold">
+                  Guardian: {{ al.primary_contact?.first_name }}
+                </span>
+                <a [href]="'tel:' + al.primary_contact?.phone" class="font-mono font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                  <span>{{ al.primary_contact?.phone }}</span>
+                </a>
+              </div>
+            </div>
+
+            <div *ngIf="filteredAlumni.length === 0" class="p-8 text-center bg-slate-50/70 rounded-2xl border border-dashed border-slate-200 text-slate-400">
+              <div class="font-bold text-slate-700 text-xs">No Alumni Records Found</div>
+              <p class="text-[11px] text-slate-400 mt-1">Graduated students appear here following an annual session rollover.</p>
+            </div>
+          </div>
+
+          <!-- Alumni Pagination Bar -->
+          <div *ngIf="filteredAlumni.length > alumniPageSize" class="p-3.5 sm:px-6 sm:py-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#f8fafc] text-xs">
+            <div class="text-slate-500 text-[11px] font-semibold text-center sm:text-left">
+              Showing {{ (alumniCurrentPage - 1) * alumniPageSize + 1 }}–{{ Math.min(alumniCurrentPage * alumniPageSize, filteredAlumni.length) }} of {{ filteredAlumni.length }} alumni
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button (click)="alumniCurrentPage = alumniCurrentPage - 1" [disabled]="alumniCurrentPage === 1"
+                      class="px-3 py-1.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 transition-all cursor-pointer shadow-xs">
+                Prev
+              </button>
+              <span class="px-3 py-1.5 font-bold text-slate-800 text-[11px]">
+                {{ alumniCurrentPage }} / {{ alumniTotalPages }}
+              </span>
+              <button (click)="alumniCurrentPage = alumniCurrentPage + 1" [disabled]="alumniCurrentPage === alumniTotalPages"
+                      class="px-3 py-1.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 transition-all cursor-pointer shadow-xs">
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- TAB 3: FACULTY & STAFF DIRECTORY (Principals & Teachers)       -->
       <!-- ============================================================== -->
       <div *ngIf="activeTab === 'STAFF'" class="space-y-6">
         <!-- Faculty Roster Cards / Table -->
@@ -250,7 +550,8 @@ interface StaffMember {
             </div>
           </div>
 
-          <div class="overflow-x-auto">
+          <!-- VIEW 1: DESKTOP TABLE VIEW (md:block) -->
+          <div class="hidden md:block overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
               <thead class="bg-[#f8fafc] text-slate-600 font-bold uppercase tracking-wider">
                 <tr>
@@ -322,6 +623,71 @@ interface StaffMember {
               </tbody>
             </table>
           </div>
+
+          <!-- VIEW 2: MOBILE CLAYMORPHIC CARDS VIEW (md:hidden) -->
+          <div class="block md:hidden p-3.5 space-y-3">
+            <div *ngFor="let staff of filteredStaff"
+                 class="p-4 rounded-2xl bg-[#f8fafc] border border-slate-200/90 shadow-xs space-y-3">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-9 h-9 rounded-xl bg-slate-900 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
+                    {{ staff.firstName.charAt(0) }}
+                  </div>
+                  <div class="min-w-0">
+                    <h4 class="text-xs font-black text-slate-900 truncate">{{ staff.fullName }}</h4>
+                    <div class="text-[10px] text-slate-400 font-mono">ID: {{ staff.id.slice(0, 8) }}...</div>
+                  </div>
+                </div>
+
+                <span class="px-2 py-0.5 rounded-lg text-[10px] font-extrabold border shadow-xs shrink-0"
+                      [ngClass]="{
+                        'bg-purple-50 text-purple-700 border-purple-200': staff.role === 'PRINCIPAL',
+                        'bg-indigo-50 text-indigo-700 border-indigo-200': staff.role === 'SCHOOL_ADMIN',
+                        'bg-emerald-50 text-emerald-700 border-emerald-200': staff.role === 'CLASS_TEACHER' || staff.classTeacherSections?.length,
+                        'bg-blue-50 text-blue-700 border-blue-200': staff.role === 'TEACHER'
+                      }">
+                  {{ staff.role === 'PRINCIPAL' ? 'Principal' : (staff.role === 'SCHOOL_ADMIN' ? 'Admin' : (staff.classTeacherSections?.length ? 'Class Teacher' : 'Teacher')) }}
+                </span>
+              </div>
+
+              <!-- Contact & Phone -->
+              <div class="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-600 gap-2">
+                <div class="min-w-0 truncate">
+                  <span class="text-[10px] text-slate-400 font-semibold block">Email</span>
+                  <span class="font-bold text-slate-800 text-xs truncate block">{{ staff.email }}</span>
+                </div>
+                <a *ngIf="staff.phone"
+                   [href]="'tel:' + staff.phone"
+                   class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl font-mono text-[11px] font-bold flex items-center gap-1 shadow-xs shrink-0">
+                  <span>📞 Call</span>
+                </a>
+              </div>
+
+              <!-- Incharge / Subjects -->
+              <div *ngIf="(staff.classTeacherSections && staff.classTeacherSections.length > 0) || (staff.subjectAssignments && staff.subjectAssignments.length > 0)"
+                   class="pt-2 border-t border-slate-200/60 space-y-1.5 text-[11px]">
+                <div *ngIf="staff.classTeacherSections && staff.classTeacherSections.length > 0" class="flex items-center gap-1 flex-wrap">
+                  <span class="text-[10px] text-slate-500 font-bold">Class Incharge:</span>
+                  <span *ngFor="let cts of staff.classTeacherSections"
+                        class="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                    {{ cts.className }} - {{ cts.sectionName }}
+                  </span>
+                </div>
+
+                <div *ngIf="staff.subjectAssignments && staff.subjectAssignments.length > 0" class="flex items-center gap-1 flex-wrap">
+                  <span class="text-[10px] text-slate-500 font-bold">Subjects:</span>
+                  <span *ngFor="let sa of staff.subjectAssignments"
+                        class="px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[9px] font-semibold border border-slate-200">
+                    {{ sa.subjectName }} ({{ sa.className }}-{{ sa.sectionName }})
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="filteredStaff.length === 0" class="p-8 text-center text-slate-400 text-xs">
+              No faculty staff found. Click "+ Add Faculty / Principal" to register school staff.
+            </div>
+          </div>
         </div>
       </div>
 
@@ -360,24 +726,242 @@ interface StaffMember {
       </div>
 
       <!-- ============================================================== -->
+      <!-- MODAL: ACADEMIC SESSIONS & PROMOTION ROLLOVER ENGINE           -->
+      <!-- ============================================================== -->
+      <!-- Academic Session & Promotion Rollover Modal -->
+      <div *ngIf="showSessionModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-[9999] animate-fadeIn">
+        <div class="bg-white rounded-3xl max-w-2xl w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
+          
+          <!-- Fixed Modal Header (Never scrolls) -->
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center font-black text-base shadow-xs">
+                🎓
+              </div>
+              <div>
+                <h3 class="text-sm sm:text-base font-black text-slate-900 tracking-tight">Academic Sessions & Annual Promotion Engine</h3>
+                <p class="text-[11px] sm:text-xs text-slate-500 mt-0.5">Switch active session or roll over students into a new academic year.</p>
+              </div>
+            </div>
+            <button (click)="closeSessionModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+          </div>
+
+          <!-- Scrollable Modal Body (Only content scrolls) -->
+          <div class="p-5 sm:p-6 space-y-5 overflow-y-auto flex-1 custom-clay-scroll bg-white">
+            
+            <!-- Section 1: Active & Existing Sessions Grid -->
+            <div class="space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-black text-slate-900 uppercase tracking-wider">Campus Academic Sessions</span>
+                <span class="text-[11px] text-slate-400 font-bold">{{ academicSessions.length }} sessions configured</span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div *ngFor="let ses of academicSessions"
+                     [ngClass]="isSessionActive(ses) ? 'border-indigo-600 bg-indigo-50/60 shadow-sm' : 'border-slate-200 bg-white'"
+                     class="p-3.5 rounded-2xl border transition-all flex items-center justify-between shadow-xs">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="font-black text-xs text-slate-900">{{ ses.name }}</span>
+                      <span *ngIf="ses.is_current" class="px-2 py-0.2 rounded-md text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        CURRENT
+                      </span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 font-medium mt-1">
+                      {{ ses.start_date }} ➔ {{ ses.end_date }}
+                    </div>
+                    <div class="text-[10px] text-slate-600 font-bold mt-0.5">
+                      {{ ses.student_count || 0 }} Students • {{ ses.section_count || 0 }} Sections
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-1.5">
+                    <button *ngIf="!isSessionActive(ses)"
+                            (click)="switchAcademicSession(ses)"
+                            class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black rounded-xl transition-all cursor-pointer active:scale-95 shadow-xs">
+                      Switch
+                    </button>
+                    <span *ngIf="isSessionActive(ses)"
+                          class="px-2.5 py-1 rounded-xl bg-indigo-600 text-white text-[10px] font-black shadow-xs">
+                      ACTIVE
+                    </span>
+
+                    <!-- Delete Session Button -->
+                    <button *ngIf="canManage && academicSessions.length > 1"
+                            (click)="promptDeleteSession(ses)"
+                            title="Delete session"
+                            class="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
+                            aria-label="Delete session">
+                      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 2: Create New Session & Annual Student Rollover Form -->
+            <div class="p-4 bg-slate-50/90 border border-slate-200 rounded-2xl space-y-3.5">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-lg bg-slate-900 text-amber-400 font-black text-xs flex items-center justify-center">
+                  ⚡
+                </span>
+                <div>
+                  <h4 class="text-xs font-black text-slate-900">Provision New Session & Annual Student Promotion</h4>
+                  <p class="text-[11px] text-slate-500">Roll over students to the next grade level and transition terminal class to Alumni.</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Session Name *</label>
+                  <input type="text" [(ngModel)]="newSession.name" placeholder="e.g. 2027–2028"
+                         class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-bold focus:outline-none focus:border-slate-800 shadow-inner" />
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Start Date *</label>
+                  <input type="date" [(ngModel)]="newSession.startDate"
+                         class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-inner" />
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">End Date *</label>
+                  <input type="date" [(ngModel)]="newSession.endDate"
+                         class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-inner" />
+                </div>
+              </div>
+
+              <!-- Promotion Checkbox & Rollover Rules Explanation -->
+              <div class="space-y-2 pt-1 border-t border-slate-200/80">
+                <label class="flex items-start gap-2.5 cursor-pointer">
+                  <input type="checkbox" [(ngModel)]="newSession.promoteStudents"
+                         class="w-4 h-4 rounded text-slate-900 focus:ring-slate-900 mt-0.5" />
+                  <div class="text-xs">
+                    <span class="font-black text-slate-900">⚡ Import & Auto-Promote Students from Active Session</span>
+                    <p class="text-[11px] text-slate-500 mt-0.5">
+                      All students advance to the next class automatically. Final grade students move to Alumni Directory.
+                    </p>
+                  </div>
+                </label>
+
+                <!-- Dynamic Rollover Explanatory Callout -->
+                <div *ngIf="newSession.promoteStudents" class="p-3 bg-indigo-50/80 border border-indigo-100 rounded-xl text-indigo-950 text-[11px] space-y-1 animate-fadeIn">
+                  <div class="font-bold flex items-center gap-1.5 text-indigo-900">
+                    <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>How Annual Student Promotion & Rollover Works:</span>
+                  </div>
+                  <ul class="list-disc list-inside space-y-0.5 text-indigo-800 pl-1">
+                    <li><strong>Lower Grades:</strong> Students advance sequentially (e.g. Class 1 ➔ Class 2, Class 9 ➔ Class 10).</li>
+                    <li><strong>Terminal Class:</strong> Students in the highest class (e.g. Class 12) graduate to <strong>ALUMNI</strong> status and are stored in the permanent <strong>Alumni Directory</strong>.</li>
+                    <li><strong>Sections:</strong> All class sections are automatically replicated for the new academic year.</li>
+                  </ul>
+                </div>
+
+                <label class="flex items-center gap-2 cursor-pointer pt-1">
+                  <input type="checkbox" [(ngModel)]="newSession.isCurrent"
+                         class="w-4 h-4 rounded text-slate-900 focus:ring-slate-900" />
+                  <span class="text-xs font-bold text-slate-800">Set as Current School Session</span>
+                </label>
+              </div>
+            </div>
+
+            <div *ngIf="sessionModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+              {{ sessionModalError }}
+            </div>
+          </div>
+
+          <!-- Fixed Modal Footer with Actions (Always fully visible, never cut off) -->
+          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
+            <button type="button" (click)="closeSessionModal()" class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
+              Close
+            </button>
+            <button type="button" (click)="saveSessionAndRollover()" [disabled]="savingSession"
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer flex items-center gap-2 active:scale-95">
+              <svg *ngIf="savingSession" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>{{ savingSession ? 'Executing Rollover...' : 'Create Session & Execute Rollover' }}</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Custom Claymorphic Confirmation Modal for Deleting Academic Session -->
+      <div *ngIf="sessionToDelete" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-[99999] animate-fadeIn">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-slate-200/90 space-y-4 animate-scaleUp">
+          
+          <!-- Header with Warning Icon -->
+          <div class="flex items-start gap-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center font-black text-xl shrink-0 shadow-xs">
+              ⚠️
+            </div>
+            <div>
+              <h3 class="text-base font-black text-slate-900 tracking-tight">Delete Academic Session</h3>
+              <p class="text-xs text-slate-500 mt-0.5">
+                Are you sure you want to permanently delete <span class="font-bold text-slate-900">"{{ sessionToDelete.name }}"</span>?
+              </p>
+            </div>
+          </div>
+
+          <!-- Clear Explanatory Note of What Happens -->
+          <div class="p-3.5 bg-rose-50/70 border border-rose-200 rounded-2xl space-y-2 text-xs">
+            <div class="flex items-center gap-1.5 font-bold text-rose-900 text-[11px] uppercase tracking-wider">
+              <span>📋 What will happen:</span>
+            </div>
+            <ul class="text-[11px] text-rose-800 space-y-1.5 list-disc pl-4 leading-relaxed font-medium">
+              <li>Academic session <strong>"{{ sessionToDelete.name }}"</strong> will be removed from your school configuration.</li>
+              <li>Classes, student enrollments, and sections attached to this session will be unlinked.</li>
+              <li>If <strong>"{{ sessionToDelete.name }}"</strong> is currently active, your campus will automatically switch to the nearest active academic year.</li>
+            </ul>
+          </div>
+
+          <!-- Modal Action Buttons -->
+          <div class="flex items-center justify-end gap-2.5 pt-2">
+            <button type="button"
+                    (click)="cancelDeleteSession()"
+                    [disabled]="isDeletingSession"
+                    class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-all cursor-pointer">
+              Cancel
+            </button>
+            <button type="button"
+                    (click)="executeDeleteSession()"
+                    [disabled]="isDeletingSession"
+                    class="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-2xl shadow-md transition-all cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50">
+              <svg *ngIf="isDeletingSession" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>{{ isDeletingSession ? 'Deleting...' : 'Yes, Delete Session' }}</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
       <!-- MODAL 1: ADD STUDENT / CHILD                                   -->
       <!-- ============================================================== -->
-      <div *ngIf="showAddStudentModal" class="fixed inset-0 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-[10px_10px_30px_rgba(0,0,0,0.15)] border border-slate-200/90 space-y-4 max-h-[90vh] overflow-y-auto">
-          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+      <div *ngIf="showAddStudentModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-[9999] animate-fadeIn">
+        <div class="bg-white rounded-3xl max-w-xl w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
+          
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
             <div>
               <h3 class="text-base font-black text-slate-900 tracking-tight">Enroll New Student / Child</h3>
               <p class="text-xs text-slate-500 mt-0.5">Create student record, assign class section, and link guardian profile.</p>
             </div>
-            <button (click)="showAddStudentModal = false" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+            <button (click)="closeAddStudentModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
           </div>
 
-          <div class="space-y-4 text-xs">
+          <div class="p-5 sm:p-6 space-y-4 text-xs overflow-y-auto flex-1 custom-clay-scroll bg-white">
             <div class="p-3 bg-indigo-50 border border-indigo-100 rounded-2xl text-indigo-900">
               <strong class="font-bold">Student Profile Details</strong>
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label class="block font-bold text-slate-700 mb-1">First Name *</label>
                 <input type="text" [(ngModel)]="newStudent.firstName" placeholder="e.g. Aryan"
@@ -390,7 +974,7 @@ interface StaffMember {
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label class="block font-bold text-slate-700 mb-1">Admission Number *</label>
                 <input type="text" [(ngModel)]="newStudent.admissionNumber" placeholder="e.g. ADM-2026-099"
@@ -403,7 +987,7 @@ interface StaffMember {
               </div>
             </div>
 
-            <div class="grid grid-cols-3 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div class="col-span-1 sm:col-span-2">
                 <label class="block font-bold text-slate-700 mb-1">Enrollment Section *</label>
                 <select [(ngModel)]="newStudent.sectionId"
@@ -426,7 +1010,7 @@ interface StaffMember {
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label class="block font-bold text-slate-700 mb-1">Date of Birth</label>
                 <input type="date" [(ngModel)]="newStudent.dateOfBirth"
@@ -444,7 +1028,7 @@ interface StaffMember {
               <strong class="font-bold">Primary Guardian / Parent Linkage</strong>
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label class="block font-bold text-slate-700 mb-1">Guardian Name</label>
                 <input type="text" [(ngModel)]="newStudent.guardianName" placeholder="e.g. Tariq Khan"
@@ -461,7 +1045,7 @@ interface StaffMember {
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label class="block font-bold text-slate-700 mb-1">Guardian Phone</label>
                 <input type="text" [(ngModel)]="newStudent.guardianPhone" placeholder="+91 98765 43210"
@@ -473,18 +1057,18 @@ interface StaffMember {
                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
               </div>
             </div>
+
+            <div *ngIf="studentModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+              {{ studentModalError }}
+            </div>
           </div>
 
-          <div *ngIf="studentModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
-            {{ studentModalError }}
-          </div>
-
-          <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
-            <button (click)="showAddStudentModal = false" class="px-4 py-2.5 bg-[#f8fafc] hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-300 transition-colors cursor-pointer">
+          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
+            <button (click)="closeAddStudentModal()" class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
               Cancel
             </button>
             <button (click)="saveStudent()" [disabled]="savingStudent"
-                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_12px_#cbd5e1,-4px_-4px_12px_#ffffff] border border-slate-900 transition-all disabled:opacity-50 cursor-pointer">
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95">
               <span *ngIf="!savingStudent">Enroll Student</span>
               <span *ngIf="savingStudent">Saving...</span>
             </button>
@@ -495,18 +1079,19 @@ interface StaffMember {
       <!-- ============================================================== -->
       <!-- MODAL 2: ADD PRINCIPAL / TEACHER / STAFF                       -->
       <!-- ============================================================== -->
-      <div *ngIf="showAddStaffModal" class="fixed inset-0 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-[10px_10px_30px_rgba(0,0,0,0.15)] border border-slate-200/90 space-y-4 max-h-[90vh] overflow-y-auto">
-          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+      <div *ngIf="showAddStaffModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-[9999] animate-fadeIn">
+        <div class="bg-white rounded-3xl max-w-xl w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
+          
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
             <div>
               <h3 class="text-base font-black text-slate-900 tracking-tight">Add Faculty / Principal / Staff</h3>
               <p class="text-xs text-slate-500 mt-0.5">Register staff account, set credentials, and allocate teaching responsibilities.</p>
             </div>
-            <button (click)="showAddStaffModal = false" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+            <button (click)="closeAddStaffModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
           </div>
 
-          <div class="space-y-4 text-xs">
-            <div class="grid grid-cols-2 gap-3">
+          <div class="p-5 sm:px-6 py-4 space-y-4 text-xs overflow-y-auto flex-1 custom-clay-scroll bg-white">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label class="block font-bold text-slate-700 mb-1">First Name *</label>
                 <input type="text" [(ngModel)]="newStaff.firstName" placeholder="e.g. Vikram"
@@ -519,20 +1104,7 @@ interface StaffMember {
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">Email (Username) *</label>
-                <input type="email" [(ngModel)]="newStaff.email" placeholder="v.malhotra@demo-school.com"
-                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
-              </div>
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">Phone Number</label>
-                <input type="text" [(ngModel)]="newStaff.phone" placeholder="+91 98765 43210"
-                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label class="block font-bold text-slate-700 mb-1">Role Designation *</label>
                 <select [(ngModel)]="newStaff.role"
@@ -545,8 +1117,8 @@ interface StaffMember {
               </div>
 
               <div>
-                <label class="block font-bold text-slate-700 mb-1">Initial Password</label>
-                <input type="text" [(ngModel)]="newStaff.password" placeholder="password123"
+                <label class="block font-bold text-slate-700 mb-1">Phone Number</label>
+                <input type="text" [(ngModel)]="newStaff.phone" placeholder="+91 98765 43210"
                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
               </div>
             </div>
@@ -564,7 +1136,7 @@ interface StaffMember {
                 </select>
               </div>
 
-              <div class="grid grid-cols-2 gap-2">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label class="block font-bold text-slate-700 mb-1">Assigned Section</label>
                   <select [(ngModel)]="newStaff.sectionId"
@@ -588,18 +1160,31 @@ interface StaffMember {
                 </div>
               </div>
             </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Email (Username) *</label>
+                <input type="email" [(ngModel)]="newStaff.email" placeholder="v.malhotra@demo-school.com"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Initial Password</label>
+                <input type="text" [(ngModel)]="newStaff.password" placeholder="password123"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+            </div>
+
+            <div *ngIf="staffModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+              {{ staffModalError }}
+            </div>
           </div>
 
-          <div *ngIf="staffModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
-            {{ staffModalError }}
-          </div>
-
-          <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
-            <button (click)="showAddStaffModal = false" class="px-4 py-2.5 bg-[#f8fafc] hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-300 transition-colors cursor-pointer">
+          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
+            <button (click)="closeAddStaffModal()" class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
               Cancel
             </button>
             <button (click)="saveStaff()" [disabled]="savingStaff"
-                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_12px_#cbd5e1,-4px_-4px_12px_#ffffff] border border-slate-900 transition-all disabled:opacity-50 cursor-pointer">
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95">
               <span *ngIf="!savingStaff">Register Staff</span>
               <span *ngIf="savingStaff">Saving...</span>
             </button>
@@ -610,24 +1195,25 @@ interface StaffMember {
       <!-- ============================================================== -->
       <!-- MODAL 3: ADD SUBJECT                                           -->
       <!-- ============================================================== -->
-      <div *ngIf="showAddSubjectModal" class="fixed inset-0 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-[10px_10px_30px_rgba(0,0,0,0.15)] border border-slate-200/90 space-y-5">
-          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+      <div *ngIf="showAddSubjectModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-[9999] animate-fadeIn">
+        <div class="bg-white rounded-3xl max-w-md w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
+          
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
             <div>
               <h3 class="text-base font-black text-slate-900 tracking-tight">Add New Subject</h3>
               <p class="text-xs text-slate-500 mt-0.5">Register a curriculum subject for this campus.</p>
             </div>
-            <button (click)="showAddSubjectModal = false" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+            <button (click)="closeAddSubjectModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
           </div>
 
-          <div class="space-y-3.5">
+          <div class="p-5 sm:px-6 py-4 space-y-3.5 overflow-y-auto flex-1 custom-clay-scroll bg-white">
             <div>
               <label class="block text-xs font-bold text-slate-700 mb-1">Subject Name *</label>
               <input type="text" [(ngModel)]="newSubject.name" placeholder="e.g. Artificial Intelligence & Robotics"
                      class="w-full px-4 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1">Subject Code *</label>
                 <input type="text" [(ngModel)]="newSubject.code" placeholder="e.g. AIR01"
@@ -653,18 +1239,18 @@ interface StaffMember {
               <textarea [(ngModel)]="newSubject.description" rows="2" placeholder="Curriculum syllabus overview..."
                         class="w-full px-4 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner"></textarea>
             </div>
+
+            <div *ngIf="subjectModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+              {{ subjectModalError }}
+            </div>
           </div>
 
-          <div *ngIf="subjectModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
-            {{ subjectModalError }}
-          </div>
-
-          <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
-            <button (click)="showAddSubjectModal = false" class="px-4 py-2.5 bg-[#f8fafc] hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-300 transition-colors cursor-pointer">
+          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
+            <button (click)="closeAddSubjectModal()" class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
               Cancel
             </button>
             <button (click)="saveSubject()" [disabled]="savingSubject"
-                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer">
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95">
               <span *ngIf="!savingSubject">Create Subject</span>
               <span *ngIf="savingSubject">Saving...</span>
             </button>
@@ -679,25 +1265,47 @@ export class AcademicsComponent implements OnInit {
   auth = inject(AuthService);
   toast = inject(ToastService);
   exportService = inject(ExportService);
+  modalService = inject(ModalService);
   route = inject(ActivatedRoute);
   router = inject(Router);
   
-  activeTab: 'STUDENTS' | 'STAFF' | 'SUBJECTS' = 'STUDENTS';
+  Math = Math;
+
+  activeTab: 'STUDENTS' | 'ALUMNI' | 'STAFF' | 'SUBJECTS' = 'STUDENTS';
 
   classes: ClassItem[] = [];
   subjects: SubjectItem[] = [];
   students: StudentItem[] = [];
   staffList: StaffMember[] = [];
+  alumniList: AlumniStudent[] = [];
+  academicSessions: AcademicSession[] = [];
   
   selectedClass: ClassItem | null = null;
   selectedSection: SectionItem | null = null;
   
   searchQuery = '';
   staffSearchQuery = '';
+  alumniSearchQuery = '';
+  selectedGraduationSession = 'ALL';
   currentPage = 1;
   pageSize = 25;
+  alumniCurrentPage = 1;
+  alumniPageSize = 25;
 
   // Modals state
+  showSessionModal = false;
+  savingSession = false;
+  sessionModalError = '';
+  sessionToDelete: AcademicSession | null = null;
+  isDeletingSession = false;
+  newSession = {
+    name: '2027–2028',
+    startDate: '2027-04-01',
+    endDate: '2028-03-31',
+    isCurrent: true,
+    promoteStudents: true,
+  };
+
   showAddSubjectModal = false;
   savingSubject = false;
   subjectModalError = '';
@@ -741,6 +1349,12 @@ export class AcademicsComponent implements OnInit {
     subjectId: '',
   };
 
+  isSessionActive(ses: AcademicSession): boolean {
+    const active = this.auth.activeAcademicSession();
+    if (active) return active.id === ses.id;
+    return !!ses.is_current;
+  }
+
   formatSection(name?: string): string {
     if (!name) return 'Section A';
     const cleaned = name.replace(/^section\s+/i, '').replace(/^sec\s+/i, '').trim();
@@ -773,13 +1387,50 @@ export class AcademicsComponent implements OnInit {
     );
   }
 
-  setTab(tab: 'STUDENTS' | 'STAFF' | 'SUBJECTS') {
+  get availableGraduationSessions(): string[] {
+    const set = new Set<string>();
+    for (const a of this.alumniList) {
+      if (a.graduation_session) set.add(a.graduation_session);
+    }
+    return Array.from(set).sort().reverse();
+  }
+
+  get filteredAlumni(): AlumniStudent[] {
+    return this.alumniList.filter((a) => {
+      if (this.selectedGraduationSession !== 'ALL' && a.graduation_session !== this.selectedGraduationSession) {
+        return false;
+      }
+      if (!this.alumniSearchQuery.trim()) return true;
+      const q = this.alumniSearchQuery.toLowerCase().trim();
+      return (
+        a.full_name.toLowerCase().includes(q) ||
+        a.admission_number.toLowerCase().includes(q) ||
+        (a.last_class_name && a.last_class_name.toLowerCase().includes(q)) ||
+        (a.graduation_session && a.graduation_session.toLowerCase().includes(q)) ||
+        (a.primary_contact?.first_name && a.primary_contact.first_name.toLowerCase().includes(q))
+      );
+    });
+  }
+
+  get paginatedAlumni(): AlumniStudent[] {
+    const start = (this.alumniCurrentPage - 1) * this.alumniPageSize;
+    return this.filteredAlumni.slice(start, start + this.alumniPageSize);
+  }
+
+  get alumniTotalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredAlumni.length / this.alumniPageSize));
+  }
+
+  setTab(tab: 'STUDENTS' | 'ALUMNI' | 'STAFF' | 'SUBJECTS') {
     this.activeTab = tab;
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: { tab: tab.toLowerCase() },
       queryParamsHandling: 'merge',
     });
+    if (tab === 'ALUMNI') {
+      this.loadAlumniList();
+    }
   }
 
   ngOnInit() {
@@ -789,16 +1440,52 @@ export class AcademicsComponent implements OnInit {
         this.activeTab = 'STAFF';
       } else if (tab === 'subjects') {
         this.activeTab = 'SUBJECTS';
+      } else if (tab === 'alumni') {
+        this.activeTab = 'ALUMNI';
       } else if (tab === 'students') {
         this.activeTab = 'STUDENTS';
       }
+
+      if (params['manageSessions'] || params['openSessionModal'] === 'true') {
+        this.openSessionModal();
+      }
     });
+
+    this.loadAcademicSessions();
     this.loadClassesAndSubjects();
     this.loadStaffList();
+    this.loadAlumniList();
+  }
+
+  loadAcademicSessions() {
+    this.api.get<AcademicSession[]>('academics/sessions').subscribe({
+      next: (res) => {
+        this.academicSessions = res || [];
+        if (!this.auth.activeAcademicSession() && this.academicSessions.length > 0) {
+          const current = this.academicSessions.find((s) => s.is_current) || this.academicSessions[0];
+          this.auth.setActiveSession(current);
+        }
+      },
+      error: (err) => console.error('Failed to load academic sessions', err),
+    });
+  }
+
+  loadAlumniList() {
+    this.api.get<AlumniStudent[]>('academics/alumni').subscribe({
+      next: (res) => {
+        this.alumniList = res || [];
+      },
+      error: () => {
+        this.alumniList = [];
+      },
+    });
   }
 
   loadClassesAndSubjects() {
-    this.api.get<ClassItem[]>('academics/classes').subscribe((res) => {
+    const activeSession = this.auth.activeAcademicSession();
+    const params = activeSession ? { academicYearId: activeSession.id } : undefined;
+
+    this.api.get<ClassItem[]>('academics/classes', params).subscribe((res) => {
       // Scope classes for Teacher
       const teacherClassNames = new Set<string>();
       const teachingScope = this.auth.currentUser()?.teachingScope;
@@ -815,6 +1502,10 @@ export class AcademicsComponent implements OnInit {
 
       if (this.classes.length > 0) {
         this.selectClass(this.classes[0]);
+      } else {
+        this.selectedClass = null;
+        this.selectedSection = null;
+        this.students = [];
       }
     });
 
@@ -870,7 +1561,7 @@ export class AcademicsComponent implements OnInit {
   }
 
   get totalPages(): number {
-    return Math.ceil(this.filteredStudents.length / this.pageSize);
+    return Math.max(1, Math.ceil(this.filteredStudents.length / this.pageSize));
   }
 
   get startIndex(): number {
@@ -879,6 +1570,163 @@ export class AcademicsComponent implements OnInit {
 
   get endIndex(): number {
     return Math.min(this.startIndex + this.pageSize, this.filteredStudents.length);
+  }
+
+  // --- Session Management & Promotion Rollover ---
+  openSessionModal() {
+    const currentName = this.auth.activeSessionName();
+    let nextName = '2027–2028';
+    if (currentName && currentName.includes('–')) {
+      const parts = currentName.split('–');
+      const startYear = parseInt(parts[0], 10);
+      const endYear = parseInt(parts[1], 10);
+      if (!isNaN(startYear) && !isNaN(endYear)) {
+        nextName = `${startYear + 1}–${endYear + 1}`;
+      }
+    } else if (currentName && currentName.includes('-')) {
+      const parts = currentName.split('-');
+      const startYear = parseInt(parts[0], 10);
+      const endYear = parseInt(parts[1], 10);
+      if (!isNaN(startYear) && !isNaN(endYear)) {
+        nextName = `${startYear + 1}–${endYear + 1}`;
+      }
+    }
+
+    this.newSession = {
+      name: nextName,
+      startDate: '2027-04-01',
+      endDate: '2028-03-31',
+      isCurrent: true,
+      promoteStudents: true,
+    };
+    this.sessionModalError = '';
+    this.modalService.open('SESSION_MODAL');
+    this.showSessionModal = true;
+  }
+
+  closeSessionModal() {
+    this.modalService.close();
+    this.showSessionModal = false;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { manageSessions: null, openSessionModal: null },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  switchAcademicSession(session: AcademicSession) {
+    this.auth.setActiveSession(session);
+    this.toast.success(`Switched active academic session to "${session.name}"`);
+    this.loadClassesAndSubjects();
+    this.loadAlumniList();
+  }
+
+  promptDeleteSession(session: AcademicSession) {
+    if (this.academicSessions.length <= 1) {
+      this.toast.warning('Cannot delete the only configured academic session.');
+      return;
+    }
+    this.modalService.open('DELETE_SESSION');
+    this.sessionToDelete = session;
+  }
+
+  cancelDeleteSession() {
+    this.modalService.close();
+    this.sessionToDelete = null;
+    this.isDeletingSession = false;
+  }
+
+  executeDeleteSession() {
+    if (!this.sessionToDelete) return;
+    const session = this.sessionToDelete;
+    this.isDeletingSession = true;
+
+    this.api.delete(`academics/sessions/${session.id}`).subscribe({
+      next: () => {
+        this.isDeletingSession = false;
+        this.sessionToDelete = null;
+        this.modalService.close();
+        this.toast.success(`Academic session "${session.name}" deleted successfully.`);
+
+        const active = this.auth.activeAcademicSession();
+        if (active && active.id === session.id) {
+          const remaining = this.academicSessions.filter((s) => s.id !== session.id);
+          const nextCurrent = remaining.find((s) => s.is_current) || remaining[0];
+          if (nextCurrent) {
+            this.auth.setActiveSession(nextCurrent);
+          }
+        }
+
+        this.loadAcademicSessions();
+        this.loadClassesAndSubjects();
+        this.loadAlumniList();
+      },
+      error: (err: any) => {
+        this.isDeletingSession = false;
+        this.toast.error(err.message || 'Failed to delete academic session.');
+      },
+    });
+  }
+
+  saveSessionAndRollover() {
+    if (!this.newSession.name.trim() || !this.newSession.startDate || !this.newSession.endDate) {
+      this.sessionModalError = 'Session Name, Start Date, and End Date are required.';
+      return;
+    }
+
+    this.savingSession = true;
+    this.sessionModalError = '';
+
+    const currentSession = this.auth.activeAcademicSession() || this.academicSessions.find((s) => s.is_current);
+
+    this.api.post<any>('academics/sessions', {
+      name: this.newSession.name,
+      startDate: this.newSession.startDate,
+      endDate: this.newSession.endDate,
+      isCurrent: this.newSession.isCurrent,
+    }).subscribe({
+      next: (created: any) => {
+        const newSessionId = created.session_id || created.id;
+
+        // If promotion requested and we have a previous session to promote from
+        if (this.newSession.promoteStudents && currentSession && newSessionId) {
+          this.api.post<any>('academics/sessions/rollover', {
+            fromSessionId: currentSession.id,
+            toSessionId: newSessionId,
+          }).subscribe({
+            next: (rolloverRes: any) => {
+              this.savingSession = false;
+              this.showSessionModal = false;
+              this.toast.success(
+                `Session ${this.newSession.name} created! Promoted ${rolloverRes.promoted_count || 0} students & moved ${rolloverRes.graduated_alumni_count || 0} graduates to Alumni Directory.`
+              );
+              this.loadAcademicSessions();
+              this.loadClassesAndSubjects();
+              this.loadAlumniList();
+            },
+            error: (err: any) => {
+              this.savingSession = false;
+              this.showSessionModal = false;
+              this.toast.warning(`Session created, but rollover encountered an issue: ${err.message || 'Check database logs'}`);
+              this.loadAcademicSessions();
+              this.loadClassesAndSubjects();
+              this.loadAlumniList();
+            },
+          });
+        } else {
+          this.savingSession = false;
+          this.showSessionModal = false;
+          this.toast.success(`Academic Session "${this.newSession.name}" created successfully!`);
+          this.loadAcademicSessions();
+          this.loadClassesAndSubjects();
+          this.loadAlumniList();
+        }
+      },
+      error: (err: any) => {
+        this.savingSession = false;
+        this.sessionModalError = err.error?.message || err.message || 'Failed to create academic session.';
+      },
+    });
   }
 
   // --- Add Subject ---
@@ -890,7 +1738,13 @@ export class AcademicsComponent implements OnInit {
       description: '',
     };
     this.subjectModalError = '';
+    this.modalService.open('ADD_SUBJECT');
     this.showAddSubjectModal = true;
+  }
+
+  closeAddSubjectModal() {
+    this.modalService.close();
+    this.showAddSubjectModal = false;
   }
 
   saveSubject() {
@@ -904,7 +1758,7 @@ export class AcademicsComponent implements OnInit {
     this.api.post<SubjectItem>('academics/subjects', this.newSubject).subscribe({
       next: (created) => {
         this.savingSubject = false;
-        this.showAddSubjectModal = false;
+        this.closeAddSubjectModal();
         this.subjects.push(created);
         this.toast.success(`Subject "${created.name}" (${created.code}) created successfully!`);
       },
@@ -947,7 +1801,13 @@ export class AcademicsComponent implements OnInit {
       relationship: 'FATHER',
     };
     this.studentModalError = '';
+    this.modalService.open('ADD_STUDENT');
     this.showAddStudentModal = true;
+  }
+
+  closeAddStudentModal() {
+    this.modalService.close();
+    this.showAddStudentModal = false;
   }
 
   saveStudent() {
@@ -961,7 +1821,7 @@ export class AcademicsComponent implements OnInit {
     this.api.post('academics/students', this.newStudent).subscribe({
       next: (res: any) => {
         this.savingStudent = false;
-        this.showAddStudentModal = false;
+        this.closeAddStudentModal();
         this.toast.success(`Student ${res.fullName || this.newStudent.firstName} enrolled successfully!`);
         if (this.selectedSection?.id === this.newStudent.sectionId) {
           this.selectSection(this.selectedSection);
@@ -998,7 +1858,13 @@ export class AcademicsComponent implements OnInit {
       subjectId: '',
     };
     this.staffModalError = '';
+    this.modalService.open('ADD_STAFF');
     this.showAddStaffModal = true;
+  }
+
+  closeAddStaffModal() {
+    this.modalService.close();
+    this.showAddStaffModal = false;
   }
 
   saveStaff() {
@@ -1012,7 +1878,7 @@ export class AcademicsComponent implements OnInit {
     this.api.post('academics/staff', this.newStaff).subscribe({
       next: (res: any) => {
         this.savingStaff = false;
-        this.showAddStaffModal = false;
+        this.closeAddStaffModal();
         this.toast.success(`Staff member ${res.firstName} registered successfully!`);
         this.loadStaffList();
       },
@@ -1023,6 +1889,7 @@ export class AcademicsComponent implements OnInit {
     });
   }
 
+  // --- Exports ---
   exportDirectoryCsv() {
     const className = this.selectedClass?.name || 'Class';
     const sectionName = this.formatSection(this.selectedSection?.name);
@@ -1048,6 +1915,31 @@ export class AcademicsComponent implements OnInit {
       ]
     );
     this.toast.success('Student roster CSV downloaded!');
+  }
+
+  exportAlumniCsv() {
+    const rows = this.filteredAlumni.map((al) => ({
+      admissionNumber: al.admission_number,
+      fullName: al.full_name,
+      lastClass: `${al.last_class_name || 'Class 12'} - ${this.formatSection(al.last_section_name)}`,
+      graduationSession: al.graduation_session || 'Graduated',
+      guardian: `${al.primary_contact?.first_name || ''} ${al.primary_contact?.last_name || ''}`.trim(),
+      phone: al.primary_contact?.phone || '',
+    }));
+
+    this.exportService.exportToCsv(
+      `Alumni_Directory_${this.selectedGraduationSession}`,
+      rows,
+      [
+        { key: 'admissionNumber', label: 'Admission Number' },
+        { key: 'fullName', label: 'Alumni Student Name' },
+        { key: 'lastClass', label: 'Terminal Class & Section' },
+        { key: 'graduationSession', label: 'Passing Academic Session' },
+        { key: 'guardian', label: 'Primary Guardian' },
+        { key: 'phone', label: 'Guardian Phone' },
+      ]
+    );
+    this.toast.success('Alumni register CSV downloaded!');
   }
 
   printStudentDirectory() {
@@ -1091,5 +1983,46 @@ export class AcademicsComponent implements OnInit {
     `;
 
     this.exportService.printReport(`Student Roster - ${className} ${sectionFormatted}`, schoolName, tableHtml);
+  }
+
+  printAlumniDirectory() {
+    const schoolName = this.auth.currentUser()?.school?.name || 'SchoolSense Campus';
+
+    const rowsHtml = this.filteredAlumni
+      .map(
+        (al) => `
+        <tr>
+          <td>${al.admission_number}</td>
+          <td><strong>${al.full_name}</strong></td>
+          <td>${al.last_class_name || 'Class 12'} - ${this.formatSection(al.last_section_name)}</td>
+          <td>${al.graduation_session || 'Graduated'}</td>
+          <td>${al.primary_contact?.first_name || ''} ${al.primary_contact?.last_name || ''}</td>
+          <td>${al.primary_contact?.phone || '—'}</td>
+        </tr>`
+      )
+      .join('');
+
+    const tableHtml = `
+      <div style="margin-bottom: 12px; font-size: 13px;">
+        <strong>Batch / Session:</strong> ${this.selectedGraduationSession} | <strong>Total Alumni:</strong> ${this.filteredAlumni.length}
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Admission No</th>
+            <th>Student Name</th>
+            <th>Terminal Class</th>
+            <th>Passing Session</th>
+            <th>Guardian Name</th>
+            <th>Phone</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    `;
+
+    this.exportService.printReport(`Alumni Register - ${this.selectedGraduationSession}`, schoolName, tableHtml);
   }
 }

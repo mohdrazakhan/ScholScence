@@ -12,6 +12,8 @@ import {
   Notice,
   SchoolEventItem,
   ComplaintItem,
+  AcademicSession,
+  AlumniStudent,
 } from '../models';
 
 @Injectable({
@@ -52,7 +54,17 @@ export class ApiService {
 
     // Academics: Classes
     if (cleanEndpoint === 'academics/classes') {
-      return from(this.getClasses()) as unknown as Observable<T>;
+      return from(this.getClasses(params?.['academicYearId'])) as unknown as Observable<T>;
+    }
+
+    // Academics: Academic Sessions
+    if (cleanEndpoint === 'academics/sessions' || cleanEndpoint === 'academic-years') {
+      return from(this.getAcademicSessions()) as unknown as Observable<T>;
+    }
+
+    // Academics: Alumni
+    if (cleanEndpoint === 'academics/alumni') {
+      return from(this.getAlumniStudents()) as unknown as Observable<T>;
     }
 
     // Academics: Subjects
@@ -130,6 +142,14 @@ export class ApiService {
   post<T>(endpoint: string, body: any): Observable<T> {
     const cleanEndpoint = endpoint.split('?')[0];
 
+    // Academic Sessions & Rollover
+    if (cleanEndpoint === 'academics/sessions' || cleanEndpoint === 'academic-years') {
+      return from(this.createAcademicSession(body)) as unknown as Observable<T>;
+    }
+    if (cleanEndpoint === 'academics/sessions/rollover' || cleanEndpoint === 'academic-years/rollover') {
+      return from(this.rolloverStudents(body)) as unknown as Observable<T>;
+    }
+
     // Create Subject
     if (cleanEndpoint === 'academics/subjects') {
       return from(this.createSubject(body)) as unknown as Observable<T>;
@@ -195,6 +215,11 @@ export class ApiService {
 
   delete<T>(endpoint: string): Observable<T> {
     const cleanEndpoint = endpoint.split('?')[0];
+
+    if (cleanEndpoint.startsWith('academics/sessions/') || cleanEndpoint.startsWith('academic-years/')) {
+      const id = cleanEndpoint.replace('academics/sessions/', '').replace('academic-years/', '');
+      return from(this.deleteAcademicSession(id)) as unknown as Observable<T>;
+    }
 
     if (cleanEndpoint.startsWith('academics/subjects/')) {
       const id = cleanEndpoint.replace('academics/subjects/', '');
@@ -274,7 +299,7 @@ export class ApiService {
     };
   }
 
-  private async getClasses(): Promise<ClassItem[]> {
+  private async getClasses(academicYearId?: string): Promise<ClassItem[]> {
     const schoolId = this.getSchoolId();
     let query = this.supabase.from('classes').select('*, sections(*)').order('display_order');
     if (schoolId) query = query.eq('school_id', schoolId);
@@ -285,15 +310,17 @@ export class ApiService {
       name: c.name,
       code: c.code,
       display_order: c.display_order,
-      sections: (c.sections || []).map((s: any) => ({
-        id: s.id,
-        class_id: s.class_id,
-        academic_year_id: s.academic_year_id,
-        name: s.name,
-        code: s.code,
-        capacity: s.capacity || 40,
-        display_order: s.display_order || 0,
-      })),
+      sections: (c.sections || [])
+        .filter((s: any) => !academicYearId || !s.academic_year_id || s.academic_year_id === academicYearId)
+        .map((s: any) => ({
+          id: s.id,
+          class_id: s.class_id,
+          academic_year_id: s.academic_year_id,
+          name: s.name,
+          code: s.code,
+          capacity: s.capacity || 40,
+          display_order: s.display_order || 0,
+        })),
     }));
   }
 
@@ -782,5 +809,182 @@ export class ApiService {
     const { error } = await this.supabase.from('timetable_periods').delete().eq('id', id);
     if (error) throw error;
     return { success: true };
+  }
+
+  // ============================================================================
+  // Academic Sessions & Rollover / Promotion Handlers
+  // ============================================================================
+
+  private async getAcademicSessions(): Promise<AcademicSession[]> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) return [];
+
+    const { data: sessions, error } = await this.supabase
+      .from('academic_years')
+      .select('*')
+      .eq('school_id', schoolId)
+      .order('start_date', { ascending: false });
+    if (error) {
+      console.warn('Failed to fetch academic_years', error);
+      return [];
+    }
+
+    return (sessions || []).map((s: any) => ({
+      id: s.id,
+      school_id: s.school_id,
+      name: s.name,
+      start_date: s.start_date,
+      end_date: s.end_date,
+      is_current: s.is_current || false,
+      status: s.status || 'ACTIVE',
+      created_at: s.created_at,
+    }));
+  }
+
+  private async createAcademicSession(body: any): Promise<any> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) throw new Error('School context missing');
+
+    if (body.isCurrent || body.is_current) {
+      await this.supabase.from('academic_years').update({ is_current: false }).eq('school_id', schoolId);
+    }
+    const { data, error } = await this.supabase
+      .from('academic_years')
+      .insert({
+        school_id: schoolId,
+        name: body.name?.trim() || '',
+        start_date: body.startDate || body.start_date,
+        end_date: body.endDate || body.end_date,
+        is_current: body.isCurrent ?? body.is_current ?? false,
+        status: 'ACTIVE',
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return { success: true, session_id: data.id, ...data };
+  }
+
+  private async rolloverStudents(body: any): Promise<any> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) throw new Error('School context missing');
+
+    const fromSessionId = body.fromSessionId || body.from_session_id;
+    const toSessionId = body.toSessionId || body.to_session_id;
+
+    // Direct student promotion logic:
+    // 1. Fetch current enrollments with class & section
+    const { data: enrollments, error: eErr } = await this.supabase
+      .from('student_enrollments')
+      .select('*, class:classes(*), section:sections(*)')
+      .eq('academic_year_id', fromSessionId);
+
+    if (eErr) throw eErr;
+
+    // 2. Fetch all classes for progression ordering
+    const { data: allClasses } = await this.supabase
+      .from('classes')
+      .select('*, sections(*)')
+      .eq('school_id', schoolId)
+      .order('display_order', { ascending: true });
+
+    const classList = allClasses || [];
+    let promotedCount = 0;
+    let graduatedCount = 0;
+
+    for (const e of (enrollments || [])) {
+      const currentClassIdx = classList.findIndex((c: any) => c.id === e.class_id);
+      if (currentClassIdx !== -1 && currentClassIdx < classList.length - 1) {
+        // Move to next class
+        const nextClass = classList[currentClassIdx + 1];
+        const nextSection = (nextClass.sections || [])[0] || e.section;
+        if (nextSection) {
+          await this.supabase.from('student_enrollments').insert({
+            student_id: e.student_id,
+            section_id: nextSection.id,
+            academic_year_id: toSessionId,
+            roll_number: e.roll_number,
+          });
+          promotedCount++;
+        }
+      } else {
+        // Final class: Mark student as ALUMNI
+        await this.supabase.from('students').update({ status: 'ALUMNI' }).eq('id', e.student_id);
+        graduatedCount++;
+      }
+    }
+
+    return {
+      success: true,
+      promoted_count: promotedCount,
+      graduated_count: graduatedCount,
+    };
+  }
+
+  private async getAlumniStudents(): Promise<AlumniStudent[]> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) return [];
+
+    try {
+      const { data: students, error } = await this.supabase
+        .from('students')
+        .select('*')
+        .eq('school_id', schoolId)
+        .eq('status', 'ALUMNI');
+
+      if (error || !students) {
+        return [];
+      }
+
+      const studentIds = students.map((s: any) => s.id);
+      let enrollmentsMap: Record<string, any> = {};
+      if (studentIds.length > 0) {
+        const { data: enrolls } = await this.supabase
+          .from('student_enrollments')
+          .select('*, class:classes(name), section:sections(name), academic_year:academic_years(name)')
+          .in('student_id', studentIds);
+        (enrolls || []).forEach((en: any) => {
+          if (!enrollmentsMap[en.student_id]) enrollmentsMap[en.student_id] = en;
+        });
+      }
+
+      return students.map((st: any) => {
+        const lastEnrollment = enrollmentsMap[st.id];
+        return {
+          student_id: st.id,
+          admission_number: st.admission_number,
+          first_name: st.first_name,
+          last_name: st.last_name,
+          full_name: `${st.first_name || ''} ${st.last_name || ''}`.trim(),
+          gender: st.gender,
+          date_of_birth: st.date_of_birth,
+          status: 'ALUMNI',
+          last_class_name: lastEnrollment?.class?.name || 'Class 12',
+          last_section_name: lastEnrollment?.section?.name || 'Section A',
+          graduation_session: lastEnrollment?.academic_year?.name || 'Graduated',
+          last_roll_number: lastEnrollment?.roll_number,
+        };
+      });
+    } catch (e) {
+      console.warn('Failed to load alumni students', e);
+      return [];
+    }
+  }
+
+  private async deleteAcademicSession(sessionId: string): Promise<any> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) throw new Error('School context missing');
+
+    const { error } = await this.supabase
+      .from('academic_years')
+      .delete()
+      .eq('id', sessionId)
+      .eq('school_id', schoolId);
+
+    if (error) {
+      console.warn('Delete session error:', error);
+      throw new Error(error.message || 'Could not delete academic session');
+    }
+
+    return { success: true, message: 'Academic session deleted successfully' };
   }
 }
