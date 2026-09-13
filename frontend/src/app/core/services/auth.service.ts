@@ -117,19 +117,30 @@ export class AuthService {
     const isSuper =
       userSchoolRoles.some(
         (usr: any) => usr.role?.code === 'SUPER_ADMIN' || usr.role?.code === 'PLATFORM_ADMIN'
-      ) || userRecord.email === 'admin@schoolscence.in';
+      ) || userRecord.email?.toLowerCase() === 'admin@schoolscence.in';
 
     let selectedRole = userSchoolRoles[0];
 
-    // If schoolCode supplied and not super admin, match the school
-    if (schoolCode && !isSuper) {
-      const matched = userSchoolRoles.find(
-        (usr: any) => usr.school?.code?.toUpperCase() === schoolCode.toUpperCase()
-      );
-      if (!matched) {
-        throw new Error('User is not assigned to this school');
+    // 1. Root / Platform Console Login (Headphone icon)
+    if (schoolCode === 'PLATFORM') {
+      if (!isSuper) {
+        throw new Error('Access denied. Please sign in through your school portal.');
       }
-      selectedRole = matched;
+    } else {
+      // 2. School Portal Login (e.g. ABC school)
+      if (isSuper) {
+        throw new Error('Root Super Admin must log in using the headphone icon below.');
+      }
+
+      if (schoolCode) {
+        const matched = userSchoolRoles.find(
+          (usr: any) => usr.school?.code?.toUpperCase() === schoolCode.toUpperCase()
+        );
+        if (!matched) {
+          throw new Error('This user account does not belong to this school.');
+        }
+        selectedRole = matched;
+      }
     }
 
     const roleCode = isSuper ? 'SUPER_ADMIN' : selectedRole.role?.code || 'STAFF';
