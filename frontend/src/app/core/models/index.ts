@@ -13,6 +13,7 @@ export interface User {
     status?: string;
     disabledServices?: string[];
   };
+  isSupportSession?: boolean;
   permissions: string[];
   children?: {
     id: string;

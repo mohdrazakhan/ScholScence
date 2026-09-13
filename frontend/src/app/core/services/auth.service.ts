@@ -14,10 +14,13 @@ export class AuthService {
   private supabase = inject(SupabaseService);
   private router = inject(Router);
 
+  private readonly ROOT_BACKUP_KEY = 'schoolsense_root_session';
+
   // Angular Signals for Reactive State
   currentUser = signal<User | null>(this.getStoredUser());
   isAuthenticated = computed(() => !!this.currentUser());
   userRole = computed(() => this.currentUser()?.role || '');
+  isSupportSession = computed(() => !!this.currentUser()?.isSupportSession);
 
   isAdmin = computed(() => ['SCHOOL_ADMIN', 'PRINCIPAL', 'SUPER_ADMIN', 'PLATFORM_ADMIN'].includes(this.userRole()));
   isPrincipal = computed(() => this.userRole() === 'PRINCIPAL');
@@ -229,9 +232,60 @@ export class AuthService {
     );
   }
 
+  enterSupportSession(schoolId: string): Observable<AuthResponse> {
+    const currentSuper = this.currentUser();
+    return from(
+      this.supabase.rpc('support_binary_login', {
+        p_school_id: schoolId,
+        p_root_user_id: currentSuper?.id || null,
+      })
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) {
+          throw new Error(error.message || 'Failed to initiate support session');
+        }
+        return data as AuthResponse;
+      }),
+      tap((res) => {
+        // Backup root session before switching so super admin can return with 1-click
+        if (currentSuper) {
+          localStorage.setItem(
+            this.ROOT_BACKUP_KEY,
+            JSON.stringify({
+              token: localStorage.getItem(this.TOKEN_KEY),
+              user: currentSuper,
+            })
+          );
+        }
+        localStorage.setItem(this.TOKEN_KEY, res.accessToken);
+        localStorage.setItem(this.USER_KEY, JSON.stringify(res.user));
+        this.currentUser.set(res.user);
+      })
+    );
+  }
+
+  exitSupportSession(): void {
+    const backupRaw = localStorage.getItem(this.ROOT_BACKUP_KEY);
+    if (backupRaw) {
+      try {
+        const backup = JSON.parse(backupRaw);
+        localStorage.setItem(this.TOKEN_KEY, backup.token);
+        localStorage.setItem(this.USER_KEY, JSON.stringify(backup.user));
+        localStorage.removeItem(this.ROOT_BACKUP_KEY);
+        this.currentUser.set(backup.user);
+        this.router.navigate(['/super-admin']);
+        return;
+      } catch (e) {
+        console.error('Failed to restore root session', e);
+      }
+    }
+    this.logout();
+  }
+
   logout(): void {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
+    localStorage.removeItem(this.ROOT_BACKUP_KEY);
     this.currentUser.set(null);
     this.router.navigate(['/login']);
   }

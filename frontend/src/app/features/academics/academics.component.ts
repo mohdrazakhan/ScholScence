@@ -32,87 +32,64 @@ interface StaffMember {
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Academic & People Directory</h1>
-          <p class="text-xs text-slate-500 mt-0.5">Manage classes, students, faculty staff (Principals & Teachers), and curriculum subjects.</p>
+          <!-- Dynamic Section Indicator -->
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-xs">
+              Academics & Directory
+            </span>
+            <span class="text-xs text-slate-300">•</span>
+            <span *ngIf="activeTab === 'STUDENTS'" class="text-xs font-bold text-slate-600">Classes & Student Roster</span>
+            <span *ngIf="activeTab === 'STAFF'" class="text-xs font-bold text-slate-600">Faculty & Staff Directory</span>
+            <span *ngIf="activeTab === 'SUBJECTS'" class="text-xs font-bold text-slate-600">Curriculum Subjects Master</span>
+          </div>
+
+          <h1 *ngIf="activeTab === 'STUDENTS'" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1">
+            Classes & Student Roster
+          </h1>
+          <h1 *ngIf="activeTab === 'STAFF'" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1">
+            Faculty & Staff Directory
+          </h1>
+          <h1 *ngIf="activeTab === 'SUBJECTS'" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1">
+            Curriculum Subjects Master
+          </h1>
+
+          <p *ngIf="activeTab === 'STUDENTS'" class="text-xs text-slate-500 mt-0.5">
+            Manage grade levels, section capacities, student enrollments, and parent guardian records.
+          </p>
+          <p *ngIf="activeTab === 'STAFF'" class="text-xs text-slate-500 mt-0.5">
+            Manage teaching faculty, staff roles, login credentials, and class teacher allocations.
+          </p>
+          <p *ngIf="activeTab === 'SUBJECTS'" class="text-xs text-slate-500 mt-0.5">
+            Manage subject codes, theory/practical grading weights, and institutional course masters.
+          </p>
         </div>
 
-        <!-- Action Buttons -->
+        <!-- Action Buttons Contextual to Active View -->
         <div class="flex items-center gap-2.5 flex-wrap">
-          <button *ngIf="canManage" (click)="openAddStudentModal()"
-                  class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_10px_#cbd5e1,-4px_-4px_10px_#ffffff] transition-all flex items-center gap-2 active:scale-[0.99] cursor-pointer">
+          <button *ngIf="canManage && activeTab === 'STUDENTS'" (click)="openAddStudentModal()"
+                  class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_12px_#cbd5e1,-4px_-4px_12px_#ffffff] border border-slate-900 transition-all flex items-center gap-2 active:scale-[0.98] cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
             </svg>
             <span>+ Add Student / Child</span>
           </button>
 
-          <button *ngIf="canManage" (click)="openAddStaffModal()"
-                  class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_10px_#cbd5e1,-4px_-4px_10px_#ffffff] transition-all flex items-center gap-2 active:scale-[0.99] cursor-pointer">
+          <button *ngIf="canManage && activeTab === 'STAFF'" (click)="openAddStaffModal()"
+                  class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_12px_#cbd5e1,-4px_-4px_12px_#ffffff] border border-slate-900 transition-all flex items-center gap-2 active:scale-[0.98] cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
             </svg>
             <span>+ Add Faculty / Principal</span>
           </button>
 
-          <button *ngIf="canManage" (click)="openAddSubjectModal()"
-                  class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_10px_#cbd5e1,-4px_-4px_10px_#ffffff] transition-all flex items-center gap-2 active:scale-[0.99] cursor-pointer">
+          <button *ngIf="canManage && activeTab === 'SUBJECTS'" (click)="openAddSubjectModal()"
+                  class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_12px_#cbd5e1,-4px_-4px_12px_#ffffff] border border-slate-900 transition-all flex items-center gap-2 active:scale-[0.98] cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
             <span>+ Add Subject</span>
           </button>
         </div>
-      </div>
-
-      <!-- Primary Tab Switcher -->
-      <div class="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
-        <button (click)="setTab('STUDENTS')"
-                [class.bg-slate-900]="activeTab === 'STUDENTS'"
-                [class.text-white]="activeTab === 'STUDENTS'"
-                [class.shadow-md]="activeTab === 'STUDENTS'"
-                [class.bg-white]="activeTab !== 'STUDENTS'"
-                [class.text-slate-700]="activeTab !== 'STUDENTS'"
-                class="px-5 py-2.5 rounded-2xl text-xs font-bold border border-slate-200/80 transition-all flex items-center gap-2 cursor-pointer shrink-0">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-          <span>Classes & Student Roster</span>
-          <span class="text-[10px] px-2 py-0.5 rounded-lg" [ngClass]="activeTab === 'STUDENTS' ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-600'">
-            {{ students.length }} Enrolled
-          </span>
-        </button>
-
-        <button (click)="setTab('STAFF')"
-                [class.bg-slate-900]="activeTab === 'STAFF'"
-                [class.text-white]="activeTab === 'STAFF'"
-                [class.shadow-md]="activeTab === 'STAFF'"
-                [class.bg-white]="activeTab !== 'STAFF'"
-                [class.text-slate-700]="activeTab !== 'STAFF'"
-                class="px-5 py-2.5 rounded-2xl text-xs font-bold border border-slate-200/80 transition-all flex items-center gap-2 cursor-pointer shrink-0">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-          <span>Faculty & Staff Directory</span>
-          <span class="text-[10px] px-2 py-0.5 rounded-lg" [ngClass]="activeTab === 'STAFF' ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-600'">
-            {{ staffList.length }} Staff
-          </span>
-        </button>
-
-        <button (click)="setTab('SUBJECTS')"
-                [class.bg-slate-900]="activeTab === 'SUBJECTS'"
-                [class.text-white]="activeTab === 'SUBJECTS'"
-                [class.shadow-md]="activeTab === 'SUBJECTS'"
-                [class.bg-white]="activeTab !== 'SUBJECTS'"
-                [class.text-slate-700]="activeTab !== 'SUBJECTS'"
-                class="px-5 py-2.5 rounded-2xl text-xs font-bold border border-slate-200/80 transition-all flex items-center gap-2 cursor-pointer shrink-0">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-          </svg>
-          <span>Curriculum Subjects</span>
-          <span class="text-[10px] px-2 py-0.5 rounded-lg" [ngClass]="activeTab === 'SUBJECTS' ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-600'">
-            {{ subjects.length }} Subjects
-          </span>
-        </button>
       </div>
 
       <!-- ============================================================== -->
@@ -507,7 +484,7 @@ interface StaffMember {
               Cancel
             </button>
             <button (click)="saveStudent()" [disabled]="savingStudent"
-                    class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer">
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_12px_#cbd5e1,-4px_-4px_12px_#ffffff] border border-slate-900 transition-all disabled:opacity-50 cursor-pointer">
               <span *ngIf="!savingStudent">Enroll Student</span>
               <span *ngIf="savingStudent">Saving...</span>
             </button>
@@ -622,7 +599,7 @@ interface StaffMember {
               Cancel
             </button>
             <button (click)="saveStaff()" [disabled]="savingStaff"
-                    class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer">
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_12px_#cbd5e1,-4px_-4px_12px_#ffffff] border border-slate-900 transition-all disabled:opacity-50 cursor-pointer">
               <span *ngIf="!savingStaff">Register Staff</span>
               <span *ngIf="savingStaff">Saving...</span>
             </button>

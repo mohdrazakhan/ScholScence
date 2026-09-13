@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -37,9 +37,10 @@ export interface NavGroup {
            class="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs lg:hidden animate-fadeIn"></div>
 
       <!-- ================================================================================== -->
-      <!-- UNIFIED CLAYMORPHIC COLLAPSIBLE SIDEBAR                                            -->
+      <!-- UNIFIED CLAYMORPHIC COLLAPSIBLE SIDEBAR (Hidden for Root Super Admin outside Support) -->
       <!-- ================================================================================== -->
-      <aside [ngClass]="{
+      <aside *ngIf="!isSuperAdminOnly()"
+             [ngClass]="{
                'translate-x-0': isMobileSidebarOpen,
                '-translate-x-full': !isMobileSidebarOpen,
                'lg:translate-x-0': true,
@@ -220,10 +221,48 @@ export interface NavGroup {
       <!-- MAIN CONTENT AREA                                                                  -->
       <!-- ================================================================================== -->
       <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#edf2f7]">
-        <!-- Top Navigation Header (Always Accessible Unhide / Collapse Hamburger) -->
+        
+        <!-- Binary Support Mode Global Banner -->
+        <div *ngIf="auth.isSupportSession()"
+             class="bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 px-4 sm:px-8 py-2.5 text-xs font-bold flex flex-wrap items-center justify-between gap-3 shadow-md shrink-0 border-b border-amber-600/30 animate-fadeIn z-30">
+          <div class="flex items-center gap-2.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-slate-950 animate-pulse"></span>
+            <span>
+              🎧 <strong>BINARY SUPPORT MODE ACTIVE:</strong> You are managing <u>{{ auth.currentUser()?.school?.name }}</u> as Delegated Administrator.
+            </span>
+          </div>
+          <button (click)="exitSupportMode()"
+                  class="px-3.5 py-1.5 bg-slate-950 hover:bg-slate-800 text-white rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 shadow-sm active:scale-95">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span>Exit Support & Return to Platform Console</span>
+          </button>
+        </div>
+
+        <!-- Top Navigation Header -->
         <header class="h-16 bg-[#ffffff] border-b border-slate-200/80 flex items-center justify-between px-4 sm:px-8 flex-shrink-0 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-          <!-- Top Left: Hamburger & School Name (Visible ONLY when slider is closed) -->
-          <div [ngClass]="isDesktopSidebarCollapsed ? 'flex' : (isMobileSidebarOpen ? 'hidden' : 'flex lg:hidden')"
+          <!-- Top Left for Root Super Admin (Full Width Console Branding) -->
+          <div *ngIf="isSuperAdminOnly()" class="flex items-center gap-3 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-slate-900 text-amber-400 font-black text-sm flex items-center justify-center shrink-0 shadow-xs border border-slate-800">
+              ⚡
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <h2 class="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
+                  SchoolSense Platform Console
+                </h2>
+                <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200">
+                  Root Multi-Tenant Engine
+                </span>
+              </div>
+              <p class="text-[10px] text-slate-400 font-semibold hidden sm:block">Campus Onboarding & Service Governance</p>
+            </div>
+          </div>
+
+          <!-- Top Left for School Users & Support Mode (Unhide Hamburger + School Name) -->
+          <div *ngIf="!isSuperAdminOnly()"
+               [ngClass]="isDesktopSidebarCollapsed ? 'flex' : (isMobileSidebarOpen ? 'hidden' : 'flex lg:hidden')"
                class="items-center gap-3 min-w-0">
             <!-- Sidebar Unhide Button -->
             <button type="button" (click)="toggleSidebar()" title="Open Sidebar"
@@ -355,6 +394,8 @@ export class MainLayoutComponent implements OnInit {
   isDesktopSidebarCollapsed = false;
   menuSearchQuery = '';
 
+  isSuperAdminOnly = computed(() => this.auth.isSuperAdmin() && !this.auth.isSupportSession());
+
   allNavGroups: NavGroup[] = [
     {
       id: 'super-admin',
@@ -459,6 +500,15 @@ export class MainLayoutComponent implements OnInit {
     return `https://ui-avatars.com/api/?name=${name}&background=0f172a&color=ffffff&bold=true&size=128`;
   }
 
+  constructor() {
+    effect(() => {
+      // Re-filter sidebar menus automatically whenever currentUser or support mode changes
+      this.auth.currentUser();
+      this.filterMenu();
+      this.expandActiveGroup();
+    });
+  }
+
   ngOnInit() {
     this.filterMenu();
 
@@ -535,13 +585,20 @@ export class MainLayoutComponent implements OnInit {
   }
 
   filterMenu() {
-    const isSuper = this.auth.isSuperAdmin();
-    const userRole = this.auth.currentUser()?.role || '';
+    const isSupport = this.auth.isSupportSession();
+    const isSuper = this.auth.isSuperAdmin() && !isSupport;
+    const userRole = this.auth.currentUser()?.role || (isSupport ? 'SCHOOL_ADMIN' : '');
     const q = this.menuSearchQuery.trim().toLowerCase();
 
     const allowedGroups = this.allNavGroups
       .filter((g) => {
-        // Super Admin only manages platform onboarding, network & services
+        // In binary support mode, Super Admin is managing the campus as School Admin:
+        if (isSupport) {
+          if (g.id === 'super-admin') return false; // Hide platform console
+          return true; // Show all school services (Dashboard, Academics, Timetable, Attendance, Homework, Exams, etc.)
+        }
+
+        // Super Admin (outside support mode) only manages platform onboarding, network & services
         if (isSuper) {
           return g.id === 'super-admin';
         }
@@ -565,9 +622,9 @@ export class MainLayoutComponent implements OnInit {
 
     const result: NavGroup[] = [];
     for (const g of allowedGroups) {
-      // Filter child submenus based on service restrictions (bypassed for Super Admin)
+      // Filter child submenus based on service restrictions (bypassed for Super Admin and Support Admin)
       let children = g.children;
-      if (children && !isSuper) {
+      if (children && !isSuper && !isSupport) {
         children = children.filter((c) => {
           if (c.service && !this.auth.isServiceEnabled(c.service)) {
             return false;
@@ -592,5 +649,10 @@ export class MainLayoutComponent implements OnInit {
     }
 
     this.visibleNavGroups = result.filter((g) => !g.children || g.children.length > 0);
+  }
+
+  exitSupportMode() {
+    this.auth.exitSupportSession();
+    this.toastService.info('Exited Support Mode. Returned to Platform Console.');
   }
 }

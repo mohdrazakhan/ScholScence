@@ -250,8 +250,19 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
                 <p class="text-xs text-slate-500">{{ s.addressLine1 ? s.addressLine1 + ', ' : '' }}{{ s.city }}{{ s.state ? ', ' + s.state : '' }}</p>
               </div>
 
-              <!-- Root Governance Actions: Services & Deboard -->
-              <div class="flex items-center gap-2">
+              <!-- Root Governance Actions: Services, Deboard, Binary Support -->
+              <div class="flex items-center gap-2 flex-wrap">
+                <!-- Binary Support Login Button -->
+                <button (click)="enterSupportLogin(s)"
+                        [disabled]="s.status !== 'ACTIVE'"
+                        title="Instant binary support login to configure faculty, timetable, classes without school credentials"
+                        class="px-3 py-2 bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-900 border border-amber-300 rounded-2xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:pointer-events-none">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                  </svg>
+                  <span>🎧 Support Login</span>
+                </button>
+
                 <!-- Manage Services Button -->
                 <button (click)="openServicesModal(s)"
                         title="Manage and restrict community services for this school"
@@ -346,24 +357,31 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
           <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
               <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-indigo-100 text-indigo-800">
-                Tenant Onboarding
+                Tenant Onboarding Engine
               </span>
               <h3 class="text-base font-black text-slate-900 tracking-tight mt-1">Onboard New Institution & Provision Admin</h3>
-              <p class="text-xs text-slate-500">Creates isolated school database schema, foundation classes, and root school administrator account.</p>
+              <p class="text-xs text-slate-500">Creates a clean, isolated school workspace and provisions the primary School Administrator account.</p>
             </div>
-            <button (click)="showOnboardModal = false" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+            <div class="flex items-center gap-2">
+              <button type="button" (click)="autoFillSampleSchool()"
+                      class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-[11px] font-black transition-all cursor-pointer shadow-xs flex items-center gap-1.5">
+                <span>⚡ Auto-Fill Sample</span>
+              </button>
+              <button (click)="showOnboardModal = false" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+            </div>
           </div>
 
           <div class="space-y-4 text-xs">
             <!-- SECTION 1: INSTITUTION PROFILE -->
-            <div class="p-3 bg-indigo-50 border border-indigo-100 rounded-2xl text-indigo-900 font-bold">
-              1. Institutional Identity & Campus Details
+            <div class="p-3 bg-indigo-50 border border-indigo-100 rounded-2xl text-indigo-900 font-bold flex items-center justify-between">
+              <span>1. Institutional Identity & Campus Details</span>
+              <span class="text-[10px] text-indigo-600 font-medium">Session 2026-2027 Auto-Linked</span>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label class="block font-bold text-slate-700 mb-1">School Name *</label>
-                <input type="text" [(ngModel)]="newSchool.name" placeholder="e.g. St. Xavier International School"
+                <input type="text" [(ngModel)]="newSchool.name" (input)="onSchoolNameChange()" placeholder="e.g. St. Xavier International School"
                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
               </div>
 
@@ -677,6 +695,50 @@ export class SuperAdminComponent implements OnInit {
     this.showOnboardModal = true;
   }
 
+  onSchoolNameChange() {
+    const name = this.newSchool.name.trim();
+    if (!name) return;
+
+    // Generate acronym from capital letters or words
+    const words = name.split(/\s+/).filter(Boolean);
+    let code = '';
+    if (words.length >= 2) {
+      code = words.map(w => w[0]).join('').toUpperCase().slice(0, 4);
+    } else {
+      code = name.slice(0, 4).toUpperCase();
+    }
+    
+    // Append 01 or current count
+    this.newSchool.code = `${code}01`;
+
+    if (!this.newSchool.adminEmail || this.newSchool.adminEmail.includes('@')) {
+      const cleanDomain = words.map(w => w.toLowerCase().replace(/[^a-z0-9]/g, '')).join('');
+      this.newSchool.adminEmail = `admin@${cleanDomain || 'school'}.edu.in`;
+    }
+  }
+
+  autoFillSampleSchool() {
+    const randomSuffix = Math.floor(10 + Math.random() * 90);
+    this.newSchool = {
+      name: `Delhi Heritage Academy`,
+      code: `DHA${randomSuffix}`,
+      affiliation: 'CBSE',
+      city: 'New Delhi',
+      state: 'Delhi',
+      addressLine1: 'Sector 21, Rohini',
+      email: `contact@dha${randomSuffix}.edu.in`,
+      phone: '+91 98765 43210',
+      postalCode: '110085',
+      adminFirstName: 'Rajesh',
+      adminLastName: 'Gupta',
+      adminEmail: `admin@dha${randomSuffix}.edu.in`,
+      adminPhone: '+91 98765 12345',
+      adminPassword: 'password123',
+    };
+    this.onboardError = '';
+    this.toast.info('⚡ Auto-filled sample school data!');
+  }
+
   submitOnboardSchool() {
     if (!this.newSchool.name.trim() || !this.newSchool.code.trim() || !this.newSchool.city.trim()) {
       this.onboardError = 'Please provide School Name, Unique Code, and City.';
@@ -765,6 +827,23 @@ export class SuperAdminComponent implements OnInit {
   getActiveServicesCount(school: SchoolItemWithStats): number {
     const disabledCount = school.disabledServices?.length || 0;
     return Math.max(0, this.availableServices.length - disabledCount);
+  }
+
+  enterSupportLogin(school: SchoolItemWithStats) {
+    if (school.status !== 'ACTIVE') {
+      this.toast.error('Cannot enter support session for a suspended institution.');
+      return;
+    }
+
+    this.auth.enterSupportSession(school.id).subscribe({
+      next: () => {
+        this.toast.success(`Binary Support Active: Switched to "${school.name}"`);
+        this.router.navigate(['/dashboard']);
+      },
+      error: (err) => {
+        this.toast.error(err.message || 'Failed to initiate support session');
+      },
+    });
   }
 
   copyCredentials(email: string) {
