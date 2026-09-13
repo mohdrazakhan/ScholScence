@@ -311,3 +311,66 @@ export interface ComplaintItem {
   }[];
 }
 
+export interface SchoolSubscription {
+  id: string;
+  per_student_fee: number;
+  billing_cycle: string;
+  currency: string;
+  status: string;
+  next_billing_date: string;
+  last_billed_date?: string;
+  created_at: string;
+}
+
+export interface SchoolWallet {
+  id: string;
+  balance: number;
+  credit_limit: number;
+  currency: string;
+  status: string;
+}
+
+export interface WalletTransaction {
+  id: string;
+  amount: number;
+  transaction_type: 'CREDIT' | 'DEBIT';
+  category: 'TOP_UP' | 'SUBSCRIPTION_FEE' | 'ADJUSTMENT' | 'REFUND';
+  balance_after: number;
+  reference_id: string;
+  description?: string;
+  student_count?: number;
+  payment_method?: string;
+  created_at: string;
+}
+
+export interface StudentBillingBreakdownItem {
+  student_id: string;
+  admission_number: string;
+  student_name: string;
+  enrollment_date: string;
+  status: string;
+  class_name?: string;
+  section_name?: string;
+  student_fee: number;
+  billing_note: string;
+}
+
+export interface SubscriptionDetailsResponse {
+  subscription: SchoolSubscription;
+  wallet: SchoolWallet;
+  stats: {
+    active_students: number;
+    estimated_monthly_fee: number;
+  };
+  transactions: WalletTransaction[];
+}
+
+export interface MonthlyCalculationResponse {
+  school_id: string;
+  per_student_rate: number;
+  total_students: number;
+  total_calculated_fee: number;
+  billing_cycle: string;
+  cycle_month: string;
+  students_breakdown: StudentBillingBreakdownItem[];
+}

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 
 interface SchoolItemWithStats {
@@ -23,6 +24,17 @@ interface SchoolItemWithStats {
     classesCount: number;
     subjectsCount: number;
     totalStaffCount: number;
+  };
+  subscription?: {
+    perStudentFee: number;
+    billingCycle: string;
+    status: string;
+    nextBillingDate?: string;
+  };
+  wallet?: {
+    balance: number;
+    currency: string;
+    status: string;
   };
   admin?: {
     id: string;
@@ -245,12 +257,27 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
                   <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
                     {{ getActiveServicesCount(s) }}/7 Services Allowed
                   </span>
+
+                  <!-- SaaS Subscription Rate Badge -->
+                  <span class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                    <span>🏷️</span>
+                    <span>₹{{ s.subscription?.perStudentFee || 20 }}/student/mo</span>
+                  </span>
+
+                  <!-- Wallet Balance Badge -->
+                  <span class="px-2 py-0.5 rounded-lg text-[10px] font-black border flex items-center gap-1"
+                        [ngClass]="(s.wallet?.balance || 0) < 0 
+                          ? 'bg-rose-50 text-rose-800 border-rose-200' 
+                          : 'bg-slate-50 text-slate-800 border-slate-200'">
+                    <span>💳 Wallet: ₹{{ (s.wallet?.balance || 0) | number:'1.2-2' }}</span>
+                    <span *ngIf="(s.wallet?.balance || 0) < 0" class="text-[9px] uppercase px-1 rounded bg-rose-200 text-rose-900 font-bold">Arrears</span>
+                  </span>
                 </div>
                 <h3 class="text-base font-black text-slate-900 mt-1.5">{{ s.name }}</h3>
                 <p class="text-xs text-slate-500">{{ s.addressLine1 ? s.addressLine1 + ', ' : '' }}{{ s.city }}{{ s.state ? ', ' + s.state : '' }}</p>
               </div>
 
-              <!-- Root Governance Actions: Services, Deboard, Binary Support -->
+              <!-- Root Governance Actions: Services, Pricing & Wallet, Deboard, Binary Support -->
               <div class="flex items-center gap-2 flex-wrap">
                 <!-- Binary Support Login Button -->
                 <button (click)="enterSupportLogin(s)"
@@ -271,6 +298,16 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                   </svg>
                   <span>Services</span>
+                </button>
+
+                <!-- Edit SaaS Pricing & Wallet Button -->
+                <button (click)="openPricingModal(s)"
+                        title="Configure per-student subscription rate and adjust school prepaid/postpaid wallet"
+                        class="px-3 py-2 bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-800 border border-emerald-300 rounded-2xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <span>Pricing & Wallet</span>
                 </button>
 
                 <!-- Deboard / Reactivate Button -->
@@ -471,6 +508,37 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
               <p class="text-[10px] text-slate-400 mt-1">Default is 'password123'. School admin can change it upon initial login.</p>
             </div>
+
+            <!-- SECTION 3: SAAS SUBSCRIPTION & PER-STUDENT PRICING -->
+            <div class="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-amber-950 font-bold mt-3 flex items-center justify-between">
+              <span>3. SaaS Subscription & Per-Student Rate</span>
+              <span class="text-[10px] text-amber-800 font-medium">B2B Monthly License</span>
+            </div>
+
+            <div class="space-y-2">
+              <label class="block font-bold text-slate-700 mb-1">Per-Student Monthly Fee (₹) *</label>
+              <div class="flex items-center gap-3">
+                <div class="relative flex-1">
+                  <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                  <input type="number" [(ngModel)]="newSchool.perStudentFee" min="1" step="1"
+                         class="w-full pl-8 pr-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 font-bold focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+                </div>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <button type="button" *ngFor="let rate of [15, 20, 25, 30, 50]"
+                          (click)="newSchool.perStudentFee = rate"
+                          [class.bg-slate-900]="newSchool.perStudentFee === rate"
+                          [class.text-white]="newSchool.perStudentFee === rate"
+                          [class.bg-slate-100]="newSchool.perStudentFee !== rate"
+                          [class.text-slate-700]="newSchool.perStudentFee !== rate"
+                          class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer">
+                    ₹{{ rate }}
+                  </button>
+                </div>
+              </div>
+              <p class="text-[10px] text-slate-500">
+                The school's monthly subscription will automatically calculate as <code>Total Active Students × ₹{{ newSchool.perStudentFee }}/mo</code>.
+              </p>
+            </div>
           </div>
 
           <div *ngIf="onboardError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
@@ -592,11 +660,102 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
         </div>
       </div>
 
+      <!-- ============================================================== -->
+      <!-- MODAL 3: CONFIGURE SAAS PRICING & WALLET ADJUSTMENT             -->
+      <!-- ============================================================== -->
+      <div *ngIf="showPricingModal && selectedSchoolForPricing" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-[10px_10px_30px_rgba(0,0,0,0.15)] border border-slate-200/90 space-y-4 max-h-[90vh] overflow-y-auto">
+          
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+              <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-emerald-100 text-emerald-800">
+                SaaS Monetization Engine
+              </span>
+              <h3 class="text-base font-black text-slate-900 tracking-tight mt-1">
+                Configure Pricing & Wallet — {{ selectedSchoolForPricing.name }}
+              </h3>
+              <p class="text-xs text-slate-500">
+                Update the contracted per-student rate and manually credit or debit this campus's billing wallet.
+              </p>
+            </div>
+            <button (click)="showPricingModal = false" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+          </div>
+
+          <!-- Current School Summary -->
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+              <div class="text-[10px] text-slate-400 font-bold uppercase">Active Students</div>
+              <div class="text-base font-black text-slate-900 mt-0.5">{{ selectedSchoolForPricing.stats.studentsCount }} Students</div>
+            </div>
+            <div class="p-3 border rounded-2xl"
+                 [ngClass]="(selectedSchoolForPricing.wallet?.balance || 0) < 0 ? 'bg-rose-50 border-rose-200 text-rose-900' : 'bg-emerald-50 border-emerald-200 text-emerald-900'">
+              <div class="text-[10px] font-bold uppercase opacity-75">Current Wallet Balance</div>
+              <div class="text-base font-black mt-0.5">₹{{ (selectedSchoolForPricing.wallet?.balance || 0) | number:'1.2-2' }}</div>
+            </div>
+          </div>
+
+          <!-- Rate Setting Field -->
+          <div class="space-y-1.5 text-xs">
+            <label class="block font-bold text-slate-700">Contracted Per-Student Monthly Fee (₹) *</label>
+            <div class="flex items-center gap-3">
+              <div class="relative flex-1">
+                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                <input type="number" [(ngModel)]="editingRate" min="1" step="1"
+                       class="w-full pl-8 pr-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 font-bold focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <button type="button" *ngFor="let rate of [15, 20, 25, 30, 50]"
+                        (click)="editingRate = rate"
+                        [class.bg-slate-900]="editingRate === rate"
+                        [class.text-white]="editingRate === rate"
+                        [class.bg-slate-100]="editingRate !== rate"
+                        [class.text-slate-700]="editingRate !== rate"
+                        class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer">
+                  ₹{{ rate }}
+                </button>
+              </div>
+            </div>
+            <p class="text-[10px] text-slate-500">
+              Projected Monthly Invoicing: <strong>{{ selectedSchoolForPricing.stats.studentsCount }} students × ₹{{ editingRate }} = ₹{{ selectedSchoolForPricing.stats.studentsCount * editingRate | number:'1.2-2' }} / month</strong>.
+            </p>
+          </div>
+
+          <!-- Wallet Manual Adjustment -->
+          <div class="space-y-1.5 text-xs pt-2 border-t border-slate-100">
+            <label class="block font-bold text-slate-700">Wallet Balance Adjustment (₹) <span class="text-slate-400 font-normal">(Optional)</span></label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">±₹</span>
+              <input type="number" [(ngModel)]="walletAdjustment" placeholder="0 (Positive to add credit, Negative to debit)"
+                     class="w-full pl-10 pr-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+            </div>
+            <p class="text-[10px] text-slate-400">Use positive value (e.g. +500) to credit payment or negative (e.g. -200) to debit.</p>
+          </div>
+
+          <div *ngIf="walletAdjustment !== 0" class="space-y-1.5 text-xs">
+            <label class="block font-bold text-slate-700">Adjustment Audit Reason *</label>
+            <input type="text" [(ngModel)]="adjustmentReason" placeholder="e.g. Offline Cheque Received / Promotional Credit"
+                   class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
+            <button (click)="showPricingModal = false" class="px-4 py-2.5 bg-[#f8fafc] hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-300 transition-colors cursor-pointer">
+              Cancel
+            </button>
+            <button (click)="savePricing()" [disabled]="savingPricing"
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer">
+              <span *ngIf="!savingPricing">Save Pricing & Update Wallet</span>
+              <span *ngIf="savingPricing">Saving...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
   `,
 })
 export class SuperAdminComponent implements OnInit {
   auth = inject(AuthService);
+  api = inject(ApiService);
   toast = inject(ToastService);
   router = inject(Router);
 
@@ -613,6 +772,13 @@ export class SuperAdminComponent implements OnInit {
   savingServices = false;
   availableServices = AVAILABLE_SERVICES;
 
+  showPricingModal = false;
+  selectedSchoolForPricing: SchoolItemWithStats | null = null;
+  editingRate = 20;
+  walletAdjustment = 0;
+  adjustmentReason = '';
+  savingPricing = false;
+
   newSchool = {
     name: '',
     code: '',
@@ -628,6 +794,7 @@ export class SuperAdminComponent implements OnInit {
     adminEmail: '',
     adminPhone: '',
     adminPassword: 'password123',
+    perStudentFee: 20,
   };
 
   get totalStudents(): number {
@@ -690,6 +857,7 @@ export class SuperAdminComponent implements OnInit {
       adminEmail: '',
       adminPhone: '',
       adminPassword: 'password123',
+      perStudentFee: 20,
     };
     this.onboardError = '';
     this.showOnboardModal = true;
@@ -734,6 +902,7 @@ export class SuperAdminComponent implements OnInit {
       adminEmail: `admin@dha${randomSuffix}.edu.in`,
       adminPhone: '+91 98765 12345',
       adminPassword: 'password123',
+      perStudentFee: 20,
     };
     this.onboardError = '';
     this.toast.info('⚡ Auto-filled sample school data!');
@@ -842,6 +1011,59 @@ export class SuperAdminComponent implements OnInit {
       },
       error: (err) => {
         this.toast.error(err.message || 'Failed to initiate support session');
+      },
+    });
+  }
+
+  openPricingModal(school: SchoolItemWithStats) {
+    this.selectedSchoolForPricing = school;
+    this.editingRate = school.subscription?.perStudentFee || 20;
+    this.walletAdjustment = 0;
+    this.adjustmentReason = '';
+    this.showPricingModal = true;
+  }
+
+  savePricing() {
+    if (!this.selectedSchoolForPricing) return;
+    if (this.editingRate <= 0) {
+      this.toast.error('Per-student fee must be greater than zero.');
+      return;
+    }
+    if (this.walletAdjustment !== 0 && !this.adjustmentReason.trim()) {
+      this.toast.error('Please specify an audit reason for the wallet adjustment.');
+      return;
+    }
+
+    this.savingPricing = true;
+    this.api.post('subscription/rate/update', {
+      schoolId: this.selectedSchoolForPricing.id,
+      perStudentFee: this.editingRate,
+      walletAdjustment: this.walletAdjustment,
+      reason: this.adjustmentReason || 'Super Admin Pricing Update',
+    }).subscribe({
+      next: (res: any) => {
+        this.savingPricing = false;
+        this.toast.success(`SaaS pricing for ${this.selectedSchoolForPricing?.name} updated to ₹${this.editingRate}/student!`);
+        if (this.selectedSchoolForPricing) {
+          if (!this.selectedSchoolForPricing.subscription) {
+            this.selectedSchoolForPricing.subscription = {
+              perStudentFee: this.editingRate,
+              billingCycle: 'MONTHLY',
+              status: 'ACTIVE',
+            };
+          } else {
+            this.selectedSchoolForPricing.subscription.perStudentFee = this.editingRate;
+          }
+          if (this.selectedSchoolForPricing.wallet && this.walletAdjustment !== 0) {
+            this.selectedSchoolForPricing.wallet.balance += this.walletAdjustment;
+          }
+        }
+        this.showPricingModal = false;
+        this.loadSchools();
+      },
+      error: (err) => {
+        this.savingPricing = false;
+        this.toast.error(err.error?.message || 'Failed to update subscription pricing');
       },
     });
   }

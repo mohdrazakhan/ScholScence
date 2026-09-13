@@ -729,7 +729,7 @@ interface StaffMember {
       <!-- MODAL: ACADEMIC SESSIONS & PROMOTION ROLLOVER ENGINE           -->
       <!-- ============================================================== -->
       <!-- Academic Session & Promotion Rollover Modal -->
-      <div *ngIf="showSessionModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-[9999] animate-fadeIn">
+      <div *ngIf="showSessionModal" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[70] animate-fadeIn">
         <div class="bg-white rounded-3xl max-w-2xl w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
           
           <!-- Fixed Modal Header (Never scrolls) -->
@@ -891,7 +891,7 @@ interface StaffMember {
       </div>
 
       <!-- Custom Claymorphic Confirmation Modal for Deleting Academic Session -->
-      <div *ngIf="sessionToDelete" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-[99999] animate-fadeIn">
+      <div *ngIf="sessionToDelete" class="fixed inset-0 flex items-center justify-center p-4 z-[80] animate-fadeIn">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-slate-200/90 space-y-4 animate-scaleUp">
           
           <!-- Header with Warning Icon -->
@@ -945,7 +945,7 @@ interface StaffMember {
       <!-- ============================================================== -->
       <!-- MODAL 1: ADD STUDENT / CHILD                                   -->
       <!-- ============================================================== -->
-      <div *ngIf="showAddStudentModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-[9999] animate-fadeIn">
+      <div *ngIf="showAddStudentModal" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[70] animate-fadeIn">
         <div class="bg-white rounded-3xl max-w-xl w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
           
           <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
@@ -1076,10 +1076,7 @@ interface StaffMember {
         </div>
       </div>
 
-      <!-- ============================================================== -->
-      <!-- MODAL 2: ADD PRINCIPAL / TEACHER / STAFF                       -->
-      <!-- ============================================================== -->
-      <div *ngIf="showAddStaffModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-[9999] animate-fadeIn">
+      <div *ngIf="showAddStaffModal" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[70] animate-fadeIn">
         <div class="bg-white rounded-3xl max-w-xl w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
           
           <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
@@ -1192,10 +1189,7 @@ interface StaffMember {
         </div>
       </div>
 
-      <!-- ============================================================== -->
-      <!-- MODAL 3: ADD SUBJECT                                           -->
-      <!-- ============================================================== -->
-      <div *ngIf="showAddSubjectModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-[9999] animate-fadeIn">
+      <div *ngIf="showAddSubjectModal" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[70] animate-fadeIn">
         <div class="bg-white rounded-3xl max-w-md w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
           
           <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">

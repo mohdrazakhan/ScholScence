@@ -11,6 +11,7 @@ import { ComplaintsComponent } from './features/complaints/complaints.component'
 import { MyClassComponent } from './features/my-class/my-class.component';
 import { TimetableComponent } from './features/timetable/timetable.component';
 import { SuperAdminComponent } from './features/super-admin/super-admin.component';
+import { SubscriptionComponent } from './features/subscription/subscription.component';
 import { authGuard, authChildGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -24,6 +25,7 @@ export const routes: Routes = [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },
       { path: 'super-admin', component: SuperAdminComponent, canActivate: [authGuard] },
+      { path: 'subscription', component: SubscriptionComponent, canActivate: [authGuard] },
       { path: 'my-class', component: MyClassComponent, canActivate: [authGuard] },
       { path: 'timetable', component: TimetableComponent, canActivate: [authGuard] },
       { path: 'attendance', component: AttendanceComponent, canActivate: [authGuard] },

@@ -278,7 +278,7 @@ import { StudentItem, AttendanceRegisterResponse } from '../../core/models';
       <!-- ============================================================== -->
       <!-- STUDENT 360 DETAIL MODAL                                       -->
       <!-- ============================================================== -->
-      <div *ngIf="selectedModalStudent" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+      <div *ngIf="selectedModalStudent" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl border border-slate-200/80 shadow-[10px_10px_30px_#cbd5e1,-10px_-10px_30px_#ffffff] max-w-lg w-full p-6 sm:p-7 space-y-5 animate-scaleUp">
           
           <div class="flex items-start justify-between border-b border-slate-100 pb-4">

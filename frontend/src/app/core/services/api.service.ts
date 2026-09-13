@@ -52,6 +52,18 @@ export class ApiService {
       return from(this.getDashboardOverview()) as unknown as Observable<T>;
     }
 
+    // SaaS Subscription & Wallet Overview
+    if (cleanEndpoint === 'subscription/overview' || cleanEndpoint === 'subscription') {
+      const targetSchoolId = params?.['schoolId'] || this.getSchoolId();
+      return from(this.getSubscriptionDetails(targetSchoolId)) as unknown as Observable<T>;
+    }
+
+    // SaaS Monthly Calculation & Proration Roster
+    if (cleanEndpoint === 'subscription/calculate') {
+      const targetSchoolId = params?.['schoolId'] || this.getSchoolId();
+      return from(this.calculateMonthlySubscription(targetSchoolId)) as unknown as Observable<T>;
+    }
+
     // Academics: Classes
     if (cleanEndpoint === 'academics/classes') {
       return from(this.getClasses(params?.['academicYearId'])) as unknown as Observable<T>;
@@ -194,9 +206,20 @@ export class ApiService {
       return from(this.createComplaint(body)) as unknown as Observable<T>;
     }
 
-    // Timetable
-    if (cleanEndpoint === 'timetable/periods') {
-      return from(this.createTimetablePeriod(body)) as unknown as Observable<T>;
+    // Create Student
+    if (cleanEndpoint === 'academics/students') {
+      return from(this.createStudent(body)) as unknown as Observable<T>;
+    }
+
+    // SaaS Subscription & Wallet Actions
+    if (cleanEndpoint === 'subscription/wallet/top-up' || cleanEndpoint === 'wallet/top-up') {
+      return from(this.topUpWallet(body)) as unknown as Observable<T>;
+    }
+    if (cleanEndpoint === 'subscription/billing/run' || cleanEndpoint === 'subscription/bill') {
+      return from(this.executeMonthlyBilling(body)) as unknown as Observable<T>;
+    }
+    if (cleanEndpoint === 'subscription/rate' || cleanEndpoint === 'subscription/rate/update') {
+      return from(this.updateSubscriptionRate(body)) as unknown as Observable<T>;
     }
 
     return of({ success: true, ...body } as unknown as T);
@@ -986,5 +1009,552 @@ export class ApiService {
     }
 
     return { success: true, message: 'Academic session deleted successfully' };
+  }
+
+  // ============================================================================
+  // Student Enrollment Handler
+  // ============================================================================
+
+  private async createStudent(body: any): Promise<any> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) throw new Error('School context missing');
+
+    const admissionNumber = (body.admissionNumber || `ADM-${Date.now().toString().slice(-4)}`).trim();
+    const firstName = (body.firstName || '').trim();
+    const lastName = (body.lastName || '').trim();
+
+    const { data: student, error: sErr } = await this.supabase
+      .from('students')
+      .insert({
+        school_id: schoolId,
+        admission_number: admissionNumber,
+        first_name: firstName,
+        last_name: lastName || null,
+        gender: body.gender || 'OTHER',
+        date_of_birth: body.dateOfBirth || null,
+        emergency_contact_name: body.emergencyContactName || null,
+        emergency_contact_phone: body.emergencyContactPhone || null,
+        status: 'ACTIVE',
+      })
+      .select()
+      .single();
+
+    if (sErr) throw sErr;
+
+    // Determine target session
+    let academicYearId = body.academicYearId;
+    if (!academicYearId) {
+      const { data: currYear } = await this.supabase
+        .from('academic_years')
+        .select('id')
+        .eq('school_id', schoolId)
+        .eq('is_current', true)
+        .maybeSingle();
+      academicYearId = currYear?.id;
+    }
+
+    // Determine target class & section
+    if (body.sectionId) {
+      let classId = body.classId;
+      if (!classId) {
+        const { data: sec } = await this.supabase
+          .from('sections')
+          .select('id, class_id')
+          .eq('id', body.sectionId)
+          .single();
+        classId = sec?.class_id;
+      }
+
+      await this.supabase.from('student_enrollments').insert({
+        student_id: student.id,
+        section_id: body.sectionId,
+        class_id: classId,
+        academic_year_id: academicYearId,
+        roll_number: body.rollNumber ? String(body.rollNumber) : '1',
+        status: 'ACTIVE',
+      });
+    }
+
+    return {
+      success: true,
+      ...student,
+      fullName: `${student.first_name || ''} ${student.last_name || ''}`.trim(),
+    };
+  }
+
+  // ============================================================================
+  // SaaS Subscription & School Wallet Handlers (Hybrid Supabase + LocalStorage Fallback)
+  // ============================================================================
+
+  private getLocalSubscriptions(): Record<string, any> {
+    try {
+      return JSON.parse(localStorage.getItem('schoolsense_saas_subscriptions') || '{}');
+    } catch {
+      return {};
+    }
+  }
+
+  private saveLocalSubscription(schoolId: string, data: any) {
+    try {
+      const subs = this.getLocalSubscriptions();
+      subs[schoolId] = { ...(subs[schoolId] || {}), ...data, school_id: schoolId, updated_at: new Date().toISOString() };
+      localStorage.setItem('schoolsense_saas_subscriptions', JSON.stringify(subs));
+    } catch {}
+  }
+
+  private getLocalWallets(): Record<string, any> {
+    try {
+      return JSON.parse(localStorage.getItem('schoolsense_saas_wallets') || '{}');
+    } catch {
+      return {};
+    }
+  }
+
+  private saveLocalWallet(schoolId: string, data: any) {
+    try {
+      const wallets = this.getLocalWallets();
+      wallets[schoolId] = { ...(wallets[schoolId] || {}), ...data, school_id: schoolId, updated_at: new Date().toISOString() };
+      localStorage.setItem('schoolsense_saas_wallets', JSON.stringify(wallets));
+    } catch {}
+  }
+
+  private getLocalWalletTransactions(schoolId: string): any[] {
+    try {
+      const allTxns = JSON.parse(localStorage.getItem('schoolsense_wallet_txns') || '{}');
+      return allTxns[schoolId] || [];
+    } catch {
+      return [];
+    }
+  }
+
+  private addLocalWalletTransaction(schoolId: string, txn: any) {
+    try {
+      const allTxns = JSON.parse(localStorage.getItem('schoolsense_wallet_txns') || '{}');
+      if (!allTxns[schoolId]) allTxns[schoolId] = [];
+      allTxns[schoolId].unshift(txn);
+      localStorage.setItem('schoolsense_wallet_txns', JSON.stringify(allTxns));
+    } catch {}
+  }
+
+  private async getSubscriptionDetails(targetSchoolId?: string): Promise<any> {
+    const schoolId = targetSchoolId || this.getSchoolId();
+    if (!schoolId) throw new Error('School context missing');
+
+    // 1. Try RPC get_school_subscription_details
+    try {
+      const { data, error } = await this.supabase.rpc('get_school_subscription_details', {
+        p_school_id: schoolId,
+      });
+      if (!error && data) {
+        return data;
+      }
+    } catch (e) {
+      console.warn('RPC get_school_subscription_details unavailable, using fallback', e);
+    }
+
+    // 2. Direct Query Fallback
+    let subData: any = null;
+    let walletData: any = null;
+    let activeStudents = 0;
+    let txnsList: any[] = [];
+
+    try {
+      const [subRes, walletRes, studentCountRes, txnsRes] = await Promise.all([
+        this.supabase.from('school_subscriptions').select('*').eq('school_id', schoolId).maybeSingle(),
+        this.supabase.from('school_wallets').select('*').eq('school_id', schoolId).maybeSingle(),
+        this.supabase.from('students').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).eq('status', 'ACTIVE'),
+        this.supabase.from('wallet_transactions').select('*').eq('school_id', schoolId).order('created_at', { ascending: false }).limit(25),
+      ]);
+
+      if (subRes?.data) subData = subRes.data;
+      if (walletRes?.data) walletData = walletRes.data;
+      if (studentCountRes?.count !== undefined && studentCountRes.count !== null) activeStudents = studentCountRes.count;
+      if (txnsRes?.data && Array.isArray(txnsRes.data)) txnsList = txnsRes.data;
+    } catch (dbErr) {
+      console.warn('Supabase subscription tables direct query failed, falling back to local cache', dbErr);
+    }
+
+    // Local Storage Cache Fallback / Merging
+    const localSubs = this.getLocalSubscriptions();
+    const localWallets = this.getLocalWallets();
+    const localTxns = this.getLocalWalletTransactions(schoolId);
+
+    const mergedSub = subData || localSubs[schoolId] || {};
+    const mergedWallet = walletData || localWallets[schoolId] || {};
+    const mergedTxns = txnsList.length > 0 ? txnsList : localTxns;
+
+    const perStudentFee = Number(mergedSub.per_student_fee ?? mergedSub.perStudentFee) || 20.00;
+    const monthlyEst = activeStudents * perStudentFee;
+
+    const subscription = {
+      id: mergedSub.id || `sub-${schoolId}`,
+      school_id: schoolId,
+      per_student_fee: perStudentFee,
+      billing_cycle: mergedSub.billing_cycle || 'MONTHLY',
+      currency: mergedSub.currency || 'INR',
+      status: mergedSub.status || 'ACTIVE',
+      next_billing_date: mergedSub.next_billing_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      created_at: mergedSub.created_at || new Date().toISOString(),
+    };
+
+    const wallet = {
+      id: mergedWallet.id || `wallet-${schoolId}`,
+      school_id: schoolId,
+      balance: Number(mergedWallet.balance) || 0.00,
+      credit_limit: Number(mergedWallet.credit_limit) || -5000.00,
+      currency: mergedWallet.currency || 'INR',
+      status: mergedWallet.status || 'ACTIVE',
+    };
+
+    const transactions = mergedTxns.map((t: any) => ({
+      id: t.id || `txn-${Date.now()}-${Math.random()}`,
+      amount: Number(t.amount) || 0,
+      transaction_type: t.transaction_type,
+      category: t.category,
+      balance_after: Number(t.balance_after) || 0,
+      reference_id: t.reference_id,
+      description: t.description,
+      student_count: t.student_count || 0,
+      payment_method: t.payment_method || 'MANUAL',
+      created_at: t.created_at || new Date().toISOString(),
+    }));
+
+    return {
+      subscription,
+      wallet,
+      stats: {
+        active_students: activeStudents,
+        estimated_monthly_fee: monthlyEst,
+      },
+      transactions,
+    };
+  }
+
+  private async topUpWallet(body: any): Promise<any> {
+    const schoolId = body.schoolId || this.getSchoolId();
+    const amount = Number(body.amount);
+    if (!schoolId) throw new Error('School context missing');
+    if (isNaN(amount) || amount <= 0) throw new Error('Top up amount must be greater than zero');
+
+    // 1. Try RPC top_up_school_wallet
+    try {
+      const { data, error } = await this.supabase.rpc('top_up_school_wallet', {
+        p_school_id: schoolId,
+        p_amount: amount,
+        p_method: body.method || 'MANUAL_SIMULATED',
+        p_notes: body.notes || 'School Administrator Top-Up',
+        p_performed_by_id: this.getUserId() || null,
+      });
+      if (!error && data) return data;
+    } catch (e) {
+      console.warn('RPC top_up_school_wallet error, falling back', e);
+    }
+
+    // 2. Direct Fallback with Local Cache Support
+    let oldBalance = 0;
+    const localWallets = this.getLocalWallets();
+    if (localWallets[schoolId]?.balance !== undefined) {
+      oldBalance = Number(localWallets[schoolId].balance) || 0;
+    }
+
+    try {
+      const { data: currWallet } = await this.supabase
+        .from('school_wallets')
+        .select('*')
+        .eq('school_id', schoolId)
+        .maybeSingle();
+
+      if (currWallet) {
+        oldBalance = Number(currWallet.balance) || 0;
+      }
+    } catch {}
+
+    const newBalance = oldBalance + amount;
+    const refId = `TOP-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const txnRecord = {
+      id: `txn-${Date.now()}`,
+      school_id: schoolId,
+      amount: amount,
+      transaction_type: 'CREDIT',
+      category: 'TOP_UP',
+      balance_after: newBalance,
+      reference_id: refId,
+      description: body.notes || 'School Administrator Top-Up',
+      payment_method: body.method || 'MANUAL',
+      performed_by_id: this.getUserId() || null,
+      created_at: new Date().toISOString(),
+    };
+
+    // Save in LocalStorage Cache
+    this.saveLocalWallet(schoolId, { balance: newBalance });
+    this.addLocalWalletTransaction(schoolId, txnRecord);
+
+    // Attempt Supabase Persistence
+    try {
+      const { data: currWallet } = await this.supabase
+        .from('school_wallets')
+        .select('id')
+        .eq('school_id', schoolId)
+        .maybeSingle();
+
+      if (currWallet) {
+        await this.supabase.from('school_wallets').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('id', currWallet.id);
+      } else {
+        await this.supabase.from('school_wallets').insert({ school_id: schoolId, balance: newBalance });
+      }
+
+      await this.supabase.from('wallet_transactions').insert(txnRecord);
+    } catch (dbErr) {
+      console.warn('Supabase direct DB update failed for top-up, cached locally', dbErr);
+    }
+
+    return {
+      success: true,
+      reference_id: refId,
+      amount,
+      old_balance: oldBalance,
+      new_balance: newBalance,
+    };
+  }
+
+  private async calculateMonthlySubscription(targetSchoolId?: string): Promise<any> {
+    const schoolId = targetSchoolId || this.getSchoolId();
+    if (!schoolId) throw new Error('School context missing');
+
+    // 1. Try RPC
+    try {
+      const { data, error } = await this.supabase.rpc('calculate_monthly_subscription', {
+        p_school_id: schoolId,
+      });
+      if (!error && data) return data;
+    } catch (e) {
+      console.warn('RPC calculate_monthly_subscription error, falling back', e);
+    }
+
+    // 2. Fallback Calculation
+    let rate = 20.00;
+    const localSubs = this.getLocalSubscriptions();
+    if (localSubs[schoolId]?.per_student_fee) {
+      rate = Number(localSubs[schoolId].per_student_fee) || 20.00;
+    }
+
+    try {
+      const { data: sub } = await this.supabase
+        .from('school_subscriptions')
+        .select('*')
+        .eq('school_id', schoolId)
+        .maybeSingle();
+
+      if (sub?.per_student_fee) {
+        rate = Number(sub.per_student_fee);
+      }
+    } catch {}
+
+    let students: any[] = [];
+    try {
+      const { data } = await this.supabase
+        .from('students')
+        .select('*, student_enrollments(*, class:classes(name), section:sections(name))')
+        .eq('school_id', schoolId)
+        .eq('status', 'ACTIVE');
+      if (data) students = data;
+    } catch {}
+
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    let totalCalculatedFee = 0;
+    const breakdown = (students || []).map((st: any) => {
+      const enDate = new Date(st.created_at || now);
+      const enEnrollment = st.student_enrollments?.[0];
+      let studentFee = rate;
+      let billingNote = 'Full Month (Enrolled on/before 1st)';
+
+      if (enDate > firstDay) {
+        const daysActive = daysInMonth - enDate.getDate() + 1;
+        if (daysActive < 7) {
+          studentFee = Number(((rate * daysActive) / daysInMonth).toFixed(2));
+          billingNote = `Prorated (${daysActive} days active in cycle)`;
+        } else {
+          billingNote = 'Full Month (Mid-month enrollment)';
+        }
+      }
+
+      totalCalculatedFee += studentFee;
+
+      return {
+        student_id: st.id,
+        admission_number: st.admission_number,
+        student_name: `${st.first_name || ''} ${st.last_name || ''}`.trim(),
+        enrollment_date: st.created_at?.split('T')[0],
+        status: st.status,
+        class_name: enEnrollment?.class?.name || 'Class',
+        section_name: enEnrollment?.section?.name || 'A',
+        student_fee: studentFee,
+        billing_note: billingNote,
+      };
+    });
+
+    return {
+      school_id: schoolId,
+      per_student_rate: rate,
+      total_students: breakdown.length,
+      total_calculated_fee: Number(totalCalculatedFee.toFixed(2)),
+      billing_cycle: 'MONTHLY',
+      cycle_month: now.toLocaleString('en-US', { month: 'long', year: 'numeric' }),
+      students_breakdown: breakdown,
+    };
+  }
+
+  private async executeMonthlyBilling(body: any): Promise<any> {
+    const schoolId = body.schoolId || this.getSchoolId();
+    if (!schoolId) throw new Error('School context missing');
+
+    // 1. Try RPC
+    try {
+      const { data, error } = await this.supabase.rpc('execute_monthly_subscription_billing', {
+        p_school_id: schoolId,
+        p_performed_by_id: this.getUserId() || null,
+      });
+      if (!error && data) return data;
+    } catch (e) {
+      console.warn('RPC execute_monthly_subscription_billing error, falling back', e);
+    }
+
+    // 2. Direct Fallback
+    const calc = await this.calculateMonthlySubscription(schoolId);
+    const fee = calc.total_calculated_fee;
+    const studentCount = calc.total_students;
+    const rate = calc.per_student_rate;
+
+    let oldBalance = 0;
+    const localWallets = this.getLocalWallets();
+    if (localWallets[schoolId]?.balance !== undefined) {
+      oldBalance = Number(localWallets[schoolId].balance) || 0;
+    }
+
+    try {
+      const { data: currWallet } = await this.supabase
+        .from('school_wallets')
+        .select('*')
+        .eq('school_id', schoolId)
+        .maybeSingle();
+      if (currWallet) oldBalance = Number(currWallet.balance) || 0;
+    } catch {}
+
+    const newBalance = oldBalance - fee; // Can be negative!
+    const refId = `SUB-${new Date().toISOString().slice(0, 7).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const txnRecord = {
+      id: `txn-${Date.now()}`,
+      school_id: schoolId,
+      amount: -fee,
+      transaction_type: 'DEBIT',
+      category: 'SUBSCRIPTION_FEE',
+      balance_after: newBalance,
+      reference_id: refId,
+      description: `SaaS Subscription for ${calc.cycle_month} (${studentCount} Students @ ₹${rate}/mo)`,
+      student_count: studentCount,
+      performed_by_id: this.getUserId() || null,
+      created_at: new Date().toISOString(),
+    };
+
+    // Save in LocalStorage Cache
+    this.saveLocalWallet(schoolId, { balance: newBalance });
+    this.addLocalWalletTransaction(schoolId, txnRecord);
+
+    // Attempt Supabase Persistence
+    try {
+      const { data: currWallet } = await this.supabase
+        .from('school_wallets')
+        .select('id')
+        .eq('school_id', schoolId)
+        .maybeSingle();
+
+      if (currWallet) {
+        await this.supabase.from('school_wallets').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('id', currWallet.id);
+      } else {
+        await this.supabase.from('school_wallets').insert({ school_id: schoolId, balance: newBalance });
+      }
+
+      await this.supabase.from('wallet_transactions').insert(txnRecord);
+    } catch (dbErr) {
+      console.warn('Supabase direct DB update failed for billing, cached locally', dbErr);
+    }
+
+    return {
+      success: true,
+      reference_id: refId,
+      amount_debited: fee,
+      student_count: studentCount,
+      old_balance: oldBalance,
+      new_balance: newBalance,
+      cycle_month: calc.cycle_month,
+    };
+  }
+
+  private async updateSubscriptionRate(body: any): Promise<any> {
+    const schoolId = body.schoolId;
+    const rate = Number(body.perStudentFee);
+    const adjustment = Number(body.walletAdjustment || 0);
+    const reason = body.reason || 'Super Admin Rate Adjustment';
+
+    if (!schoolId) throw new Error('School ID is required');
+    if (isNaN(rate) || rate <= 0) throw new Error('Per-student fee must be greater than zero');
+
+    // 1. Save immediately in LocalStorage Cache so UI is guaranteed instant reactivity
+    this.saveLocalSubscription(schoolId, { per_student_fee: rate });
+
+    // 2. Try RPC
+    try {
+      const { data, error } = await this.supabase.rpc('update_school_subscription_rate', {
+        p_school_id: schoolId,
+        p_per_student_fee: rate,
+        p_wallet_adjustment: adjustment,
+        p_adjustment_reason: reason,
+        p_performed_by_id: this.getUserId() || null,
+      });
+      if (!error && data) return data;
+    } catch (e) {
+      console.warn('RPC update_school_subscription_rate error, falling back', e);
+    }
+
+    // 3. Direct Fallback to Supabase (wrapped safely)
+    try {
+      const { data: sub } = await this.supabase
+        .from('school_subscriptions')
+        .select('id')
+        .eq('school_id', schoolId)
+        .maybeSingle();
+
+      if (sub) {
+        await this.supabase.from('school_subscriptions').update({ per_student_fee: rate, updated_at: new Date().toISOString() }).eq('id', sub.id);
+      } else {
+        await this.supabase.from('school_subscriptions').insert({ school_id: schoolId, per_student_fee: rate });
+      }
+    } catch (dbErr) {
+      console.warn('Direct Supabase school_subscriptions update failed, stored in localStorage', dbErr);
+    }
+
+    if (adjustment !== 0) {
+      try {
+        await this.topUpWallet({
+          schoolId,
+          amount: adjustment,
+          method: 'SUPER_ADMIN_ADJUSTMENT',
+          notes: reason,
+        });
+      } catch (adjErr) {
+        console.warn('Wallet adjustment error, recorded locally', adjErr);
+      }
+    }
+
+    return {
+      success: true,
+      school_id: schoolId,
+      new_rate: rate,
+    };
   }
 }

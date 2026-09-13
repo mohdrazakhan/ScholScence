@@ -141,16 +141,37 @@ export class AuthService {
   }
 
   private async fetchSchoolsWithDetails(): Promise<any[]> {
-    // 1. Fetch schools, user_school_roles, users, and roles
+    // 1. Fetch core entities
     const [schoolsRes, usrRes, usersRes, rolesRes, studentsRes, classesRes, subjectsRes] = await Promise.all([
       this.supabase.from('schools').select('*').neq('code', 'PLATFORM').order('created_at', { ascending: false }),
       this.supabase.from('user_school_roles').select('*').eq('status', 'ACTIVE'),
       this.supabase.from('users').select('*'),
       this.supabase.from('roles').select('*'),
-      this.supabase.from('students').select('id, school_id'),
+      this.supabase.from('students').select('id, school_id, status').eq('status', 'ACTIVE'),
       this.supabase.from('classes').select('id, school_id'),
       this.supabase.from('subjects').select('id, school_id'),
     ]);
+
+    // Safe query for subscriptions and wallets (with zero-crash fallback)
+    let subscriptions: any[] = [];
+    let wallets: any[] = [];
+    try {
+      const subsRes = await this.supabase.from('school_subscriptions').select('*');
+      if (subsRes?.data) subscriptions = subsRes.data;
+    } catch {}
+
+    try {
+      const walletsRes = await this.supabase.from('school_wallets').select('*');
+      if (walletsRes?.data) wallets = walletsRes.data;
+    } catch {}
+
+    // Read local cache overrides
+    let localSubs: Record<string, any> = {};
+    let localWallets: Record<string, any> = {};
+    try {
+      localSubs = JSON.parse(localStorage.getItem('schoolsense_saas_subscriptions') || '{}');
+      localWallets = JSON.parse(localStorage.getItem('schoolsense_saas_wallets') || '{}');
+    } catch {}
 
     const schools = schoolsRes.data || [];
     const usrList = usrRes.data || [];
@@ -162,6 +183,8 @@ export class AuthService {
 
     const userMap = new Map(users.map((u: any) => [u.id, u]));
     const roleMap = new Map(roles.map((r: any) => [r.id, r]));
+    const subMap = new Map(subscriptions.map((sb: any) => [sb.school_id, sb]));
+    const walletMap = new Map(wallets.map((w: any) => [w.school_id, w]));
 
     return schools.map((s: any) => {
       const schoolRoles = usrList.filter((usr: any) => usr.school_id === s.id);
@@ -186,6 +209,9 @@ export class AuthService {
       const schoolSubjects = subjects.filter((sb: any) => sb.school_id === s.id).length;
       const schoolStaff = schoolRoles.length;
 
+      const sub = subMap.get(s.id) || localSubs[s.id];
+      const wallet = walletMap.get(s.id) || localWallets[s.id];
+
       return {
         ...s,
         admin: adminUser
@@ -198,6 +224,17 @@ export class AuthService {
               phone: adminUser.phone,
             }
           : null,
+        subscription: {
+          perStudentFee: Number(sub?.per_student_fee ?? sub?.perStudentFee) || 20.00,
+          billingCycle: sub?.billing_cycle || sub?.billingCycle || 'MONTHLY',
+          status: sub?.status || 'ACTIVE',
+          nextBillingDate: sub?.next_billing_date || sub?.nextBillingDate,
+        },
+        wallet: {
+          balance: Number(wallet?.balance) || 0.00,
+          currency: wallet?.currency || 'INR',
+          status: wallet?.status || 'ACTIVE',
+        },
         stats: {
           studentsCount: schoolStudents,
           classesCount: schoolClasses,
@@ -225,10 +262,12 @@ export class AuthService {
         p_admin_email: payload.adminEmail ? payload.adminEmail.trim().toLowerCase() : null,
         p_admin_phone: payload.adminPhone ? payload.adminPhone.trim() : null,
         p_admin_password: payload.adminPassword || 'password123',
+        p_per_student_fee: Number(payload.perStudentFee) || 20.00,
       })
     ).pipe(
       map(({ data, error }) => {
         if (error) {
+          // If RPC with p_per_student_fee fails (e.g. older schema), retry without it or throw
           throw new Error(error.message || 'Failed to onboard school. Please verify code uniqueness.');
         }
         return data || { message: 'School provisioned successfully!' };

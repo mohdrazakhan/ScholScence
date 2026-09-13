@@ -1,6 +1,6 @@
 -- ==============================================================================
 -- Clean & Lightweight School Onboarding Engine
--- Creates ONLY School + Academic Session + School Admin (Clean, Zero Dummy Data)
+-- Creates ONLY School + Academic Session + School Admin + SaaS Subscription & Wallet
 -- ==============================================================================
 
 CREATE OR REPLACE FUNCTION public.onboard_school_tenant(
@@ -17,7 +17,8 @@ CREATE OR REPLACE FUNCTION public.onboard_school_tenant(
   p_admin_last_name TEXT DEFAULT 'Admin',
   p_admin_email TEXT DEFAULT NULL,
   p_admin_phone TEXT DEFAULT NULL,
-  p_admin_password TEXT DEFAULT 'password123'
+  p_admin_password TEXT DEFAULT 'password123',
+  p_per_student_fee NUMERIC DEFAULT 20.00
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -29,6 +30,7 @@ DECLARE
   v_role_id UUID;
   v_academic_year_id UUID;
   v_clean_code TEXT;
+  v_fee NUMERIC(10, 2);
 BEGIN
   -- 1. Validate School Code
   v_clean_code := UPPER(TRIM(p_code));
@@ -38,6 +40,11 @@ BEGIN
 
   IF EXISTS (SELECT 1 FROM public.schools WHERE UPPER(code) = v_clean_code AND deleted_at IS NULL) THEN
     RAISE EXCEPTION 'A school with code "%" already exists. Please choose a different code.', v_clean_code;
+  END IF;
+
+  v_fee := COALESCE(p_per_student_fee, 20.00);
+  IF v_fee <= 0 THEN
+    v_fee := 20.00;
   END IF;
 
   -- 2. Create Clean School Record
@@ -58,7 +65,22 @@ BEGIN
   )
   RETURNING id INTO v_academic_year_id;
 
-  -- 4. Create School Admin User (if email provided)
+  -- 4. Create SaaS Subscription & Wallet Records
+  INSERT INTO public.school_subscriptions (
+    school_id, per_student_fee, billing_cycle, currency, status, next_billing_date
+  ) VALUES (
+    v_school_id, v_fee, 'MONTHLY', 'INR', 'ACTIVE', (CURRENT_DATE + INTERVAL '1 month')::DATE
+  )
+  ON CONFLICT (school_id) DO NOTHING;
+
+  INSERT INTO public.school_wallets (
+    school_id, balance, currency, credit_limit, status
+  ) VALUES (
+    v_school_id, 0.00, 'INR', -5000.00, 'ACTIVE'
+  )
+  ON CONFLICT (school_id) DO NOTHING;
+
+  -- 5. Create School Admin User (if email provided)
   IF p_admin_email IS NOT NULL AND TRIM(p_admin_email) != '' THEN
     SELECT id INTO v_user_id FROM public.users WHERE LOWER(email) = LOWER(TRIM(p_admin_email)) AND deleted_at IS NULL LIMIT 1;
 
@@ -89,14 +111,14 @@ BEGIN
     ON CONFLICT DO NOTHING;
   END IF;
 
-  -- 5. Record Clean Audit Log
+  -- 6. Record Clean Audit Log
   INSERT INTO public.audit_logs (school_id, user_id, action, entity, new_values)
   VALUES (
     v_school_id,
     v_user_id,
     'ONBOARD_SCHOOL_SUCCESS',
     'schools',
-    jsonb_build_object('code', v_clean_code, 'name', p_name, 'timestamp', NOW())
+    jsonb_build_object('code', v_clean_code, 'name', p_name, 'per_student_fee', v_fee, 'timestamp', NOW())
   );
 
   RETURN jsonb_build_object(
@@ -104,11 +126,12 @@ BEGIN
     'schoolId', v_school_id,
     'schoolCode', v_clean_code,
     'schoolName', p_name,
+    'perStudentFee', v_fee,
     'adminUserId', v_user_id,
     'adminEmail', p_admin_email,
-    'message', 'School onboarded successfully with clean slate.'
+    'message', 'School onboarded successfully with clean slate & subscription wallet configured.'
   );
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.onboard_school_tenant(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.onboard_school_tenant(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, NUMERIC) TO anon, authenticated;
