@@ -69,16 +69,22 @@ export class AuthService {
     password: string,
     schoolCode?: string
   ): Promise<AuthResponse> {
-    // 1. Find user by email or phone
-    const { data: userRecord, error: userError } = await this.supabase
-      .from('users')
-      .select('*')
-      .or(`email.ilike.${identifier},phone.eq.${identifier}`)
-      .single();
+    // 1. Find user by email or phone cleanly
+    let userQuery = this.supabase.from('users').select('*');
+    if (identifier.includes('@')) {
+      userQuery = userQuery.ilike('email', identifier.trim());
+    } else {
+      userQuery = userQuery.eq('phone', identifier.trim());
+    }
 
-    if (userError || !userRecord) {
+    const { data: userRecords, error: userError } = await userQuery.limit(1);
+
+    if (userError || !userRecords || userRecords.length === 0) {
+      console.error('User lookup error in Supabase:', userError);
       throw new Error('Invalid email/phone or password');
     }
+
+    const userRecord = userRecords[0];
 
     // 2. Fetch User School Roles + Roles + Schools
     const { data: userSchoolRoles, error: usrError } = await this.supabase

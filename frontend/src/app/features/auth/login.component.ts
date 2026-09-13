@@ -635,7 +635,7 @@ export class LoginComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.errorMessage = err.error?.message || (this.isRootLogin ? 'Invalid ID or password.' : 'Invalid email/phone or password for this school.');
+        this.errorMessage = err.message || err.error?.message || (this.isRootLogin ? 'Invalid ID or password.' : 'Invalid email/phone or password for this school.');
       },
     });
   }
