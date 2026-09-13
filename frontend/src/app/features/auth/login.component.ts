@@ -314,49 +314,47 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
                   </div>
                 </div>
 
-                <!-- Dropdown Popover Menu (Direct School List, No Duplicate Search Bar) -->
-                <div *ngIf="dropdownOpen" (click)="$event.stopPropagation()"
-                     class="absolute z-50 left-0 right-0 top-full mt-2 bg-white rounded-2xl border border-slate-200 shadow-[0_12px_28px_rgba(0,0,0,0.12),0_4px_10px_rgba(0,0,0,0.04)] overflow-hidden animate-fadeIn">
-                  
-                   <!-- Options List -->
-                   <div class="max-h-56 overflow-y-auto p-1.5 space-y-0.5">
-                     <!-- Loading state -->
-                     <div *ngIf="schoolsLoading" class="p-4 text-center text-xs text-slate-400 font-medium flex items-center justify-center gap-2">
-                       <svg class="animate-spin w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24">
-                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                       </svg>
-                       Loading schools...
-                     </div>
+                 <!-- Dropdown Popover Menu (Direct Search Results, Zero Directory Leakage) -->
+                 <div *ngIf="dropdownOpen" (click)="$event.stopPropagation()"
+                      class="absolute z-50 left-0 right-0 top-full mt-2 bg-white rounded-2xl border border-slate-200 shadow-[0_12px_28px_rgba(0,0,0,0.12),0_4px_10px_rgba(0,0,0,0.04)] overflow-hidden animate-fadeIn">
+                   
+                    <!-- Options List -->
+                    <div class="max-h-56 overflow-y-auto p-1.5 space-y-0.5">
+                      <!-- Min 3 characters prompt -->
+                      <div *ngIf="searchQuery.trim().length < 3" class="p-3.5 text-center text-xs text-slate-400 font-medium flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        Type at least 3 characters to search your school...
+                      </div>
 
-                     <!-- Error state -->
-                     <div *ngIf="!schoolsLoading && schoolsError" class="p-4 text-center text-xs text-red-400 font-medium">
-                       Could not load schools. Please check your connection.
-                     </div>
+                      <!-- Loading state -->
+                      <div *ngIf="schoolsLoading" class="p-3.5 text-center text-xs text-slate-400 font-medium flex items-center justify-center gap-2">
+                        <svg class="animate-spin w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                        </svg>
+                        Searching matching campus...
+                      </div>
 
-                     <!-- Empty state (API returned empty list) -->
-                     <div *ngIf="!schoolsLoading && !schoolsError && schools.length === 0" class="p-4 text-center text-xs text-slate-400 font-medium">
-                       No schools registered yet. Contact your administrator.
-                     </div>
+                      <!-- No search match -->
+                      <div *ngIf="!schoolsLoading && searchQuery.trim().length >= 3 && schools.length === 0" class="p-3.5 text-center text-xs text-slate-400 font-medium">
+                        No school found matching "{{ searchQuery }}"
+                      </div>
 
-                     <!-- No search match -->
-                     <div *ngIf="!schoolsLoading && !schoolsError && schools.length > 0 && filteredSchools.length === 0" class="p-3 text-center text-xs text-slate-400 font-medium">
-                       No schools found matching "{{ searchQuery }}"
-                     </div>
-
-                     <button *ngFor="let s of filteredSchools" type="button" (click)="selectSchool(s)"
-                             class="w-full text-left p-2.5 rounded-xl transition-all flex items-center justify-between gap-2 cursor-pointer"
-                             [ngClass]="selectedSchoolId === s.id ? 'bg-slate-100 font-bold text-slate-900 shadow-sm' : 'hover:bg-slate-50 text-slate-700 font-medium'">
-                       <div class="truncate">
-                         <div class="text-xs text-slate-900 leading-snug">{{ s.name }}</div>
-                         <div class="text-[10px] text-slate-400 leading-tight">{{ s.city ? s.city + ' • ' : '' }}{{ s.code }}</div>
-                       </div>
-                       <svg *ngIf="selectedSchoolId === s.id" class="w-4 h-4 text-slate-900 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                       </svg>
-                     </button>
-                   </div>
-                </div>
+                      <button *ngFor="let s of schools" type="button" (click)="selectSchool(s)"
+                              class="w-full text-left p-2.5 rounded-xl transition-all flex items-center justify-between gap-2 cursor-pointer"
+                              [ngClass]="selectedSchoolId === s.id ? 'bg-slate-100 font-bold text-slate-900 shadow-sm' : 'hover:bg-slate-50 text-slate-700 font-medium'">
+                        <div class="truncate">
+                          <div class="text-xs text-slate-900 leading-snug">{{ s.name }}</div>
+                          <div class="text-[10px] text-slate-400 leading-tight">{{ s.city ? s.city + ' • ' : '' }}{{ s.code }}</div>
+                        </div>
+                        <svg *ngIf="selectedSchoolId === s.id" class="w-4 h-4 text-slate-900 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </button>
+                    </div>
+                 </div>
               </div>
 
               <!-- Selected School Preview Card -->
@@ -499,58 +497,60 @@ export class LoginComponent implements OnInit {
     );
   }
 
+  private searchDebounceTimer: any = null;
+
   ngOnInit() {
-    this.schoolsLoading = true;
+    this.schools = [];
+    this.schoolsLoading = false;
     this.schoolsError = false;
 
-    this.auth.getPublicSchools().subscribe({
-      next: (data) => {
-        this.schoolsLoading = false;
-        // Use only real data from API — never hardcoded fallback
-        // Filter out PLATFORM — that is the internal root developer school, not a real institution
-        this.schools = (data || [])
-          .filter((s) => s.code !== 'PLATFORM')
-          .map((s) => ({
-            ...s,
-            motto: s.motto || 'Excellence in Academics & Innovation',
-            affiliation: s.affiliation || (s.city ? `${s.city} • Affiliated to Recognized Board` : 'Affiliated to Recognized Board'),
-          }));
-
-        // Restore previously selected school if still in list
-        const storedSchoolId = localStorage.getItem('schoolsense_selected_school_id');
-        if (storedSchoolId) {
-          this.selectedSchoolId = storedSchoolId;
-          this.selectedSchool = this.schools.find((s) => s.id === storedSchoolId) || null;
-          if (this.selectedSchool) {
-            this.searchQuery = this.selectedSchool.name;
-          }
-        }
-      },
-      error: () => {
-        this.schoolsLoading = false;
-        this.schoolsError = true;
-        this.schools = [];
-      },
-    });
+    // Restore previously selected school code if any
+    const storedSchoolId = localStorage.getItem('schoolsense_selected_school_id');
+    const storedSchoolName = localStorage.getItem('schoolsense_selected_school_name');
+    const storedSchoolCode = localStorage.getItem('schoolsense_selected_school_code');
+    if (storedSchoolId && storedSchoolName) {
+      this.selectedSchoolId = storedSchoolId;
+      this.selectedSchool = {
+        id: storedSchoolId,
+        name: storedSchoolName,
+        code: storedSchoolCode || '',
+        city: '',
+      };
+      this.searchQuery = storedSchoolName;
+    }
   }
 
   onInputFocus() {
-    this.searchQuery = '';
-    this.isSearching = false;
     this.dropdownOpen = true;
   }
 
   onInputChange() {
     this.dropdownOpen = true;
-    this.isSearching = true;
-    const exact = this.schools.find(
-      (s) => s.name.toLowerCase() === this.searchQuery.trim().toLowerCase(),
-    );
-    if (exact) {
-      this.selectedSchoolId = exact.id;
-      this.selectedSchool = exact;
-      localStorage.setItem('schoolsense_selected_school_id', exact.id);
+    const q = this.searchQuery.trim();
+
+    if (q.length < 3) {
+      this.schools = [];
+      this.schoolsLoading = false;
+      return;
     }
+
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+    }
+
+    this.schoolsLoading = true;
+    this.searchDebounceTimer = setTimeout(() => {
+      this.auth.searchSchools(q).subscribe({
+        next: (results) => {
+          this.schoolsLoading = false;
+          this.schools = results || [];
+        },
+        error: () => {
+          this.schoolsLoading = false;
+          this.schools = [];
+        },
+      });
+    }, 250);
   }
 
   clearSelection(event: Event) {
@@ -558,9 +558,11 @@ export class LoginComponent implements OnInit {
     this.selectedSchoolId = '';
     this.selectedSchool = null;
     this.searchQuery = '';
-    this.isSearching = false;
+    this.schools = [];
     this.dropdownOpen = true;
     localStorage.removeItem('schoolsense_selected_school_id');
+    localStorage.removeItem('schoolsense_selected_school_name');
+    localStorage.removeItem('schoolsense_selected_school_code');
   }
 
   @HostListener('document:click')
@@ -590,6 +592,8 @@ export class LoginComponent implements OnInit {
     this.isSearching = false;
     this.dropdownOpen = false;
     localStorage.setItem('schoolsense_selected_school_id', school.id);
+    localStorage.setItem('schoolsense_selected_school_name', school.name);
+    localStorage.setItem('schoolsense_selected_school_code', school.code);
   }
 
   openRootLogin() {

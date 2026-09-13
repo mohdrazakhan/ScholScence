@@ -38,26 +38,37 @@ export class AuthService {
 
   constructor() {}
 
-  getPublicSchools(): Observable<any[]> {
-    return from(this.supabase.rpc('get_public_school_directory')).pipe(
+  searchSchools(query: string): Observable<any[]> {
+    const q = (query || '').trim();
+    if (q.length < 3) {
+      return of([]);
+    }
+    return from(
+      this.supabase.rpc('search_schools', { p_query: q })
+    ).pipe(
       map(({ data, error }) => {
         if (error) {
-          // Fallback query if RPC not yet created in Supabase
-          return this.fallbackGetPublicSchools();
+          // Fallback to query with limit 5 if RPC not run yet
+          return this.fallbackSearchSchools(q);
         }
         return data || [];
       })
     );
   }
 
-  private async fallbackGetPublicSchools(): Promise<any[]> {
+  private async fallbackSearchSchools(query: string): Promise<any[]> {
     const { data } = await this.supabase
       .from('schools')
-      .select('*')
+      .select('id, name, code, city, state')
       .eq('status', 'ACTIVE')
       .neq('code', 'PLATFORM')
-      .order('name', { ascending: true });
+      .or(`name.ilike.%${query}%,code.ilike.%${query}%,city.ilike.%${query}%`)
+      .limit(5);
     return data || [];
+  }
+
+  getPublicSchools(): Observable<any[]> {
+    return of([]);
   }
 
   login(identifier: string, password: string, schoolCode?: string): Observable<AuthResponse> {
