@@ -541,9 +541,9 @@ export class MainLayoutComponent implements OnInit {
 
     const allowedGroups = this.allNavGroups
       .filter((g) => {
-        // Super Admin has universal access to all menus
+        // Super Admin only manages platform onboarding, network & services
         if (isSuper) {
-          return true;
+          return g.id === 'super-admin';
         }
 
         // Regular school users cannot see super-admin root group
