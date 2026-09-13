@@ -183,22 +183,67 @@ export class AuthService {
   }
 
   getAllSchools(): Observable<any[]> {
-    return from(
-      this.supabase
-        .from('schools')
-        .select('*, user_school_roles(id), students(id)')
-        .neq('code', 'PLATFORM')
-        .order('created_at', { ascending: false })
-    ).pipe(
-      map(({ data, error }) => {
-        if (error) throw error;
-        return (data || []).map((s: any) => ({
-          ...s,
-          totalStudents: s.students?.length || 0,
-          totalStaff: s.user_school_roles?.length || 0,
-        }));
-      })
-    );
+    return from(this.fetchSchoolsWithDetails());
+  }
+
+  private async fetchSchoolsWithDetails(): Promise<any[]> {
+    // 1. Fetch schools
+    const { data: schools, error: schoolErr } = await this.supabase
+      .from('schools')
+      .select('*')
+      .neq('code', 'PLATFORM')
+      .order('created_at', { ascending: false });
+
+    if (schoolErr || !schools) return [];
+
+    // 2. Fetch UserSchoolRoles joined with Users and Roles
+    const { data: usrList } = await this.supabase
+      .from('user_school_roles')
+      .select('school_id, user:users(*), role:roles(*)');
+
+    // 3. Fetch counts for stats
+    const [studentsRes, classesRes, subjectsRes] = await Promise.all([
+      this.supabase.from('students').select('id, school_id'),
+      this.supabase.from('classes').select('id, school_id'),
+      this.supabase.from('subjects').select('id, school_id'),
+    ]);
+
+    const students = studentsRes.data || [];
+    const classes = classesRes.data || [];
+    const subjects = subjectsRes.data || [];
+
+    return schools.map((s: any) => {
+      const schoolRoles = (usrList || []).filter((usr: any) => usr.school_id === s.id);
+      const adminRole: any = schoolRoles.find(
+        (usr: any) => usr.role?.code === 'SCHOOL_ADMIN' || usr.role?.code === 'PRINCIPAL'
+      );
+      const adminUser: any = adminRole?.user;
+
+      const schoolStudents = students.filter((st: any) => st.school_id === s.id).length;
+      const schoolClasses = classes.filter((c: any) => c.school_id === s.id).length;
+      const schoolSubjects = subjects.filter((sb: any) => sb.school_id === s.id).length;
+      const schoolStaff = schoolRoles.length;
+
+      return {
+        ...s,
+        admin: adminUser
+          ? {
+              id: adminUser.id,
+              fullName: `${adminUser.first_name || ''} ${adminUser.last_name || ''}`.trim(),
+              firstName: adminUser.first_name,
+              lastName: adminUser.last_name,
+              email: adminUser.email,
+              phone: adminUser.phone,
+            }
+          : null,
+        stats: {
+          studentsCount: schoolStudents,
+          classesCount: schoolClasses,
+          subjectsCount: schoolSubjects,
+          staffCount: schoolStaff,
+        },
+      };
+    });
   }
 
   onboardSchool(payload: any): Observable<any> {
@@ -210,22 +255,23 @@ export class AuthService {
     const { data: newSchool, error: schoolErr } = await this.supabase
       .from('schools')
       .insert({
-        name: payload.name,
-        code: payload.code.toUpperCase(),
-        email: payload.email,
-        phone: payload.phone,
-        address_line1: payload.addressLine1 || payload.address_line1,
-        city: payload.city,
-        state: payload.state,
+        name: payload.name.trim(),
+        code: payload.code.trim().toUpperCase(),
+        email: payload.email || null,
+        phone: payload.phone || null,
+        address_line1: payload.addressLine1 || payload.address_line1 || null,
+        city: payload.city.trim(),
+        state: payload.state || null,
         country: payload.country || 'India',
-        postal_code: payload.postalCode || payload.postal_code,
+        postal_code: payload.postalCode || payload.postal_code || null,
         status: 'ACTIVE',
       })
       .select()
       .single();
 
     if (schoolErr || !newSchool) {
-      throw schoolErr || new Error('Failed to create school');
+      console.error('School creation error:', schoolErr);
+      throw new Error(schoolErr?.message || 'Failed to create school. Please verify code uniqueness.');
     }
 
     // 2. Create School Admin User if email provided
@@ -233,21 +279,42 @@ export class AuthService {
       const { data: adminUser, error: userErr } = await this.supabase
         .from('users')
         .insert({
-          email: payload.adminEmail,
-          first_name: payload.adminFirstName || 'School',
-          last_name: payload.adminLastName || 'Admin',
+          email: payload.adminEmail.trim().toLowerCase(),
+          phone: payload.adminPhone ? payload.adminPhone.trim() : null,
+          first_name: payload.adminFirstName.trim(),
+          last_name: payload.adminLastName ? payload.adminLastName.trim() : '',
+          password_hash: payload.adminPassword || 'password123',
           status: 'ACTIVE',
         })
         .select()
         .single();
 
+      if (userErr) {
+        console.error('Admin user creation error:', userErr);
+      }
+
       if (adminUser) {
-        // Fetch SCHOOL_ADMIN role
-        const { data: adminRole } = await this.supabase
+        // Fetch or create SCHOOL_ADMIN role
+        let { data: adminRole } = await this.supabase
           .from('roles')
           .select('id')
           .eq('code', 'SCHOOL_ADMIN')
-          .single();
+          .maybeSingle();
+
+        if (!adminRole) {
+          const { data: createdRole } = await this.supabase
+            .from('roles')
+            .insert({
+              name: 'School Admin',
+              code: 'SCHOOL_ADMIN',
+              description: 'School Principal or Administrator',
+              is_system_role: true,
+              status: 'ACTIVE',
+            })
+            .select('id')
+            .single();
+          adminRole = createdRole;
+        }
 
         if (adminRole) {
           await this.supabase.from('user_school_roles').insert({
@@ -260,7 +327,10 @@ export class AuthService {
       }
     }
 
-    return newSchool;
+    return {
+      message: 'School and Administrator provisioned successfully!',
+      school: newSchool,
+    };
   }
 
   logout(): void {
