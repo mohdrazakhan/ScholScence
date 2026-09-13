@@ -39,14 +39,18 @@ interface StaffMember {
               Academics & Directory
             </span>
             <span class="text-xs text-slate-300">•</span>
-            <span *ngIf="activeTab === 'STUDENTS'" class="text-xs font-bold text-slate-600">Classes & Student Roster</span>
+            <span *ngIf="activeTab === 'CLASSES'" class="text-xs font-bold text-indigo-800">Manage Classes & Sections</span>
+            <span *ngIf="activeTab === 'STUDENTS'" class="text-xs font-bold text-slate-600">Student Admissions & Roster</span>
             <span *ngIf="activeTab === 'ALUMNI'" class="text-xs font-bold text-amber-700">Alumni Directory</span>
             <span *ngIf="activeTab === 'STAFF'" class="text-xs font-bold text-slate-600">Faculty & Staff Directory</span>
             <span *ngIf="activeTab === 'SUBJECTS'" class="text-xs font-bold text-slate-600">Curriculum Subjects Master</span>
           </div>
 
+          <h1 *ngIf="activeTab === 'CLASSES'" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1">
+            Manage Classes & Grade Sections
+          </h1>
           <h1 *ngIf="activeTab === 'STUDENTS'" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1">
-            Classes & Student Roster
+            Student Admissions & Enrolled Roster
           </h1>
           <h1 *ngIf="activeTab === 'ALUMNI'" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1 flex items-center gap-2">
             <span>Alumni & Graduated Students Directory</span>
@@ -61,8 +65,11 @@ interface StaffMember {
             Curriculum Subjects Master
           </h1>
 
+          <p *ngIf="activeTab === 'CLASSES'" class="text-xs text-slate-500 mt-0.5">
+            Configure institutional grade hierarchy, custom section divisions (e.g. Lotus, Ruby, Section A), and classroom capacities.
+          </p>
           <p *ngIf="activeTab === 'STUDENTS'" class="text-xs text-slate-500 mt-0.5">
-            Manage grade levels, section capacities, student enrollments, and parent guardian records.
+            Manage student admissions, parent guardian records, and view enrolled class rosters.
           </p>
           <p *ngIf="activeTab === 'ALUMNI'" class="text-xs text-slate-500 mt-0.5">
             Permanent register of students who completed their terminal class or graduated from the institution.
@@ -87,6 +94,21 @@ interface StaffMember {
             </svg>
           </button>
 
+          <!-- Buttons for CLASSES tab -->
+          <button *ngIf="canManage && activeTab === 'CLASSES'" (click)="openAddClassModal()"
+                  class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_12px_#cbd5e1,-4px_-4px_12px_#ffffff] border border-slate-900 transition-all flex items-center gap-2 active:scale-[0.98] cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            <span>+ Add Class</span>
+          </button>
+
+          <button *ngIf="canManage && activeTab === 'CLASSES' && classes.length === 0" (click)="seedStandardK12Classes()" [disabled]="seedingClasses"
+                  class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-2xl shadow-md border border-indigo-600 transition-all flex items-center gap-1.5 active:scale-[0.98] cursor-pointer disabled:opacity-50">
+            <span>⚡ {{ seedingClasses ? 'Provisioning Classes...' : '1-Click Standard K-12 Setup' }}</span>
+          </button>
+
+          <!-- Buttons for STUDENTS tab -->
           <button *ngIf="canManage && activeTab === 'STUDENTS'" (click)="openAddStudentModal()"
                   class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_12px_#cbd5e1,-4px_-4px_12px_#ffffff] border border-slate-900 transition-all flex items-center gap-2 active:scale-[0.98] cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -122,11 +144,177 @@ interface StaffMember {
       </div>
 
       <!-- ============================================================== -->
-      <!-- TAB 1: CLASSES & STUDENT ROSTER (Mobile-Optimized)             -->
+      <!-- TAB 1: MANAGE CLASSES & SECTIONS (Dedicated Workspace)          -->
       <!-- ============================================================== -->
-      <div *ngIf="activeTab === 'STUDENTS'" class="space-y-4 sm:space-y-6">
-        <!-- Top Class Cards Quick Selector -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
+      <div *ngIf="activeTab === 'CLASSES'" class="space-y-6 animate-fadeIn">
+        
+        <!-- Summary Stats Metrics -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="p-5 rounded-3xl bg-white border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-black text-xl border border-indigo-100 shrink-0">
+              🏫
+            </div>
+            <div>
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Grade Levels</div>
+              <div class="text-xl font-black text-slate-900 mt-0.5">{{ classes.length }} Classes</div>
+              <div class="text-[10px] text-slate-500">From Nursery to High School</div>
+            </div>
+          </div>
+
+          <div class="p-5 rounded-3xl bg-white border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-black text-xl border border-emerald-100 shrink-0">
+              📑
+            </div>
+            <div>
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active Divisions</div>
+              <div class="text-xl font-black text-emerald-700 mt-0.5">{{ totalSectionsCount }} Sections</div>
+              <div class="text-[10px] text-slate-500">Custom and lettered divisions</div>
+            </div>
+          </div>
+
+          <div class="p-5 rounded-3xl bg-white border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center font-black text-xl border border-purple-100 shrink-0">
+              👥
+            </div>
+            <div>
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Campus Student Capacity</div>
+              <div class="text-xl font-black text-purple-700 mt-0.5">{{ totalCampusCapacity }} Students</div>
+              <div class="text-[10px] text-slate-500">Total classroom seat intake</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Setup Banner when 0 classes exist -->
+        <div *ngIf="classes.length === 0"
+             class="p-8 bg-gradient-to-r from-indigo-50/90 via-purple-50/50 to-white rounded-3xl border border-indigo-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 animate-fadeIn">
+          <div class="flex items-center gap-5">
+            <div class="w-16 h-16 rounded-3xl bg-indigo-600 text-white flex items-center justify-center font-bold text-3xl shadow-md shrink-0">
+              🏫
+            </div>
+            <div>
+              <h3 class="text-base font-black text-slate-900 tracking-tight">No Academic Classes Configured Yet</h3>
+              <p class="text-xs text-slate-500 mt-1 max-w-xl">
+                Set up your school's class and section hierarchy. You can instantly provision the standard K-12 curriculum structure (Nursery to 12th) or create custom grades with your school's custom section names (e.g. Lotus, Ruby, Einstein).
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 shrink-0 flex-wrap">
+            <button (click)="seedStandardK12Classes()" [disabled]="seedingClasses"
+                    class="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-black shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95">
+              <span>⚡ {{ seedingClasses ? 'Provisioning Classes...' : '1-Click Standard K-12 Setup' }}</span>
+            </button>
+            <button (click)="openAddClassModal()"
+                    class="px-5 py-3 bg-white hover:bg-slate-50 text-slate-800 rounded-2xl text-xs font-bold border border-slate-300 shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95">
+              <span>+ Create Custom Class</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Classes & Sections Cards Grid -->
+        <div *ngIf="classes.length > 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div *ngFor="let c of classes"
+               class="bg-white rounded-3xl border border-slate-200/90 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] p-5 flex flex-col justify-between space-y-4 hover:border-slate-300 transition-all">
+            
+            <!-- Class Card Header -->
+            <div>
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-mono font-black bg-slate-900 text-white">
+                      {{ c.code }}
+                    </span>
+                    <span class="text-[10px] font-bold text-slate-400">Order #{{ c.display_order }}</span>
+                  </div>
+                  <h3 class="text-base font-black text-slate-900 tracking-tight mt-1">{{ c.name }}</h3>
+                </div>
+
+                <!-- Class Header Actions -->
+                <div class="flex items-center gap-1.5">
+                  <button (click)="openAddSectionModal(c)" title="Add Section to {{ c.name }}"
+                          class="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer border border-indigo-100 shadow-2xs">
+                    <span>+ Add Section</span>
+                  </button>
+                  <button (click)="deleteClass(c, $event)" title="Delete Class"
+                          class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Sections Container -->
+              <div class="mt-4 pt-3 border-t border-slate-100 space-y-2">
+                <div class="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                  <span>Sections ({{ c.sections.length || 0 }})</span>
+                  <span>Max Capacity: {{ getClassCapacity(c) }}</span>
+                </div>
+
+                <div class="grid grid-cols-1 gap-2 pt-1">
+                  <div *ngFor="let sec of c.sections"
+                       class="p-3 bg-[#f8fafc] hover:bg-white border border-slate-200/80 rounded-2xl flex items-center justify-between transition-all group shadow-2xs">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-7 h-7 rounded-xl bg-indigo-100 text-indigo-800 font-bold text-xs flex items-center justify-center shrink-0">
+                        {{ (sec.code || sec.name).slice(0, 2).toUpperCase() }}
+                      </div>
+                      <div class="min-w-0">
+                        <div class="text-xs font-black text-slate-900 truncate">
+                          {{ formatSection(sec.name) }}
+                        </div>
+                        <div class="text-[10px] text-slate-400 font-medium">
+                          Capacity: <strong class="text-slate-600">{{ sec.capacity || 40 }}</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 shrink-0">
+                      <button (click)="viewStudentsOfSection(c, sec)" title="View Enrolled Students"
+                              class="px-2 py-1 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 rounded-lg text-[10px] font-bold border border-slate-200 transition-all cursor-pointer">
+                        View Roster
+                      </button>
+                      <button (click)="deleteSection(sec, c, $event)" title="Delete Section"
+                              class="text-slate-300 hover:text-rose-600 p-1 rounded-lg transition-colors cursor-pointer text-base leading-none">
+                        &times;
+                      </button>
+                    </div>
+                  </div>
+
+                  <div *ngIf="!c.sections || c.sections.length === 0" class="p-4 text-center text-xs text-slate-400 italic bg-[#f8fafc] rounded-2xl border border-dashed border-slate-200">
+                    No sections added yet. Click "+ Add Section" above.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Bottom Footer -->
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+              <span>Status: <strong class="text-emerald-600">Active</strong></span>
+              <button (click)="openAddSectionModal(c)" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs cursor-pointer">
+                + New Section
+              </button>
+            </div>
+          </div>
+
+          <!-- Add Class Quick Action Card -->
+          <div (click)="openAddClassModal()"
+               class="p-6 rounded-3xl border-2 border-dashed border-slate-300 hover:border-slate-800 bg-[#f8fafc] hover:bg-white transition-all cursor-pointer flex flex-col items-center justify-center text-center text-slate-600 hover:text-slate-900 group min-h-[220px] shadow-xs">
+            <div class="w-12 h-12 rounded-2xl bg-slate-100 group-hover:bg-slate-900 group-hover:text-white text-slate-600 flex items-center justify-center text-xl font-bold transition-all mb-3 shadow-xs">
+              +
+            </div>
+            <span class="text-sm font-black text-slate-800 group-hover:text-slate-900">Add New Class / Grade</span>
+            <span class="text-xs text-slate-400 font-medium mt-1">Configure new grade level and custom sections</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- TAB 2: STUDENT ROSTER (Clean Student Admissions & Roster)      -->
+      <!-- ============================================================== -->
+      <div *ngIf="activeTab === 'STUDENTS'" class="space-y-4 sm:space-y-6 animate-fadeIn">
+        
+        <!-- Top Clean Class Selector (when classes exist) -->
+        <div *ngIf="classes.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
           <div *ngFor="let c of classes"
                (click)="selectClass(c)"
                [class.bg-slate-900]="selectedClass?.id === c.id"
@@ -140,14 +328,30 @@ interface StaffMember {
             <div class="text-xs font-black truncate">{{ c.name }}</div>
             <div class="flex items-center justify-between mt-2 pt-2 border-t text-[10px]"
                  [ngClass]="selectedClass?.id === c.id ? 'border-slate-800 text-slate-300' : 'border-slate-100 text-slate-400'">
-              <span>{{ c.sections.length || 1 }} Sec</span>
+              <span>{{ c.sections.length || 0 }} Sec</span>
               <span class="font-mono font-bold">{{ c.code }}</span>
             </div>
           </div>
         </div>
 
+        <!-- If 0 classes configured: prompt to go to Classes tab -->
+        <div *ngIf="classes.length === 0"
+             class="p-8 bg-white rounded-3xl border border-slate-200/90 shadow-sm flex flex-col items-center justify-center text-center space-y-3">
+          <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center text-2xl font-black">
+            🏫
+          </div>
+          <h3 class="text-base font-black text-slate-900">No Academic Classes Configured Yet</h3>
+          <p class="text-xs text-slate-500 max-w-md">
+            Before enrolling students, please configure your school's classes and sections in the dedicated Classes & Sections management section.
+          </p>
+          <button (click)="setTab('CLASSES')"
+                  class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-xs font-bold shadow-md transition-all cursor-pointer flex items-center gap-2">
+            <span>Manage Classes & Sections →</span>
+          </button>
+        </div>
+
         <!-- Enrolled Students Directory with Clay Table, Mobile Cards & Pagination -->
-        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] overflow-hidden">
+        <div *ngIf="classes.length > 0" class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] overflow-hidden">
           <div class="p-4 sm:px-6 sm:py-4 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 bg-[#f8fafc]">
             
             <!-- Class Roster Title & Section Switcher -->
@@ -159,7 +363,7 @@ interface StaffMember {
                 <span class="text-[11px] text-slate-400 font-bold">({{ filteredStudents.length }})</span>
               </div>
               
-              <!-- Section switch pills (Touch-scrollable on mobile) -->
+              <!-- Section switch pills -->
               <div *ngIf="selectedClass && selectedClass.sections && selectedClass.sections.length > 0"
                    class="flex items-center gap-1 bg-white border border-slate-200 p-1 rounded-2xl shadow-xs overflow-x-auto max-w-full">
                 <button *ngFor="let sec of selectedClass.sections"
@@ -976,8 +1180,14 @@ interface StaffMember {
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label class="block font-bold text-slate-700 mb-1">Admission Number *</label>
-                <input type="text" [(ngModel)]="newStudent.admissionNumber" placeholder="e.g. ADM-2026-099"
+                <div class="flex items-center justify-between mb-1">
+                  <label class="block font-bold text-slate-700">Admission Number *</label>
+                  <button type="button" (click)="newStudent.admissionNumber = generateUniqueAdmissionNumber()"
+                          class="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer">
+                    🔄 Auto-generate
+                  </button>
+                </div>
+                <input type="text" [(ngModel)]="newStudent.admissionNumber" placeholder="e.g. ADM-2026-1049"
                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 uppercase focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
               </div>
               <div>
@@ -988,15 +1198,29 @@ interface StaffMember {
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div class="col-span-1 sm:col-span-2">
-                <label class="block font-bold text-slate-700 mb-1">Enrollment Section *</label>
-                <select [(ngModel)]="newStudent.sectionId"
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Class / Grade *</label>
+                <select [(ngModel)]="studentEnrollClassId" (change)="onStudentEnrollClassChange()"
                         class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
-                  <option value="">-- Select Class Section --</option>
-                  <option *ngFor="let sec of flatSectionsList" [value]="sec.id">
-                    {{ sec.className }} - {{ formatSection(sec.name) }}
+                  <option value="" disabled>-- Select Class --</option>
+                  <option *ngFor="let c of classes" [value]="c.id">
+                    {{ c.name }} ({{ c.code }})
                   </option>
                 </select>
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Section / Division *</label>
+                <select [(ngModel)]="newStudent.sectionId" [disabled]="!studentEnrollClassId"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner disabled:opacity-50">
+                  <option value="" disabled>-- Select Section --</option>
+                  <option *ngFor="let sec of studentEnrollSections" [value]="sec.id">
+                    {{ formatSection(sec.name) }}
+                  </option>
+                </select>
+                <div *ngIf="studentEnrollClassId && studentEnrollSections.length === 0" class="text-[10px] text-rose-500 font-bold mt-1">
+                  No sections in this class.
+                </div>
               </div>
 
               <div>
@@ -1251,6 +1475,193 @@ interface StaffMember {
           </div>
         </div>
       </div>
+
+      <!-- ============================================================== -->
+      <!-- MODAL 4: ADD CLASS / GRADE LEVEL                               -->
+      <!-- ============================================================== -->
+      <div *ngIf="showAddClassModal" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[70] animate-fadeIn">
+        <div class="bg-white rounded-3xl max-w-lg w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+            <div>
+              <h3 class="text-base font-black text-slate-900 tracking-tight">Add New Class / Grade Level</h3>
+              <p class="text-xs text-slate-500 mt-0.5">Provision academic grade level with flexible custom section names.</p>
+            </div>
+            <button (click)="closeAddClassModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+          </div>
+
+          <div class="p-5 sm:p-6 space-y-4 text-xs overflow-y-auto flex-1 custom-clay-scroll bg-white">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Class / Grade Name *</label>
+              <input type="text" [(ngModel)]="newClass.name" (input)="onClassNameChange()" placeholder="e.g. Class 1, Grade 10, UKG, Nursery"
+                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Class Code *</label>
+                <input type="text" [(ngModel)]="newClass.code" placeholder="e.g. CLS-01, NUR"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 uppercase focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Display Order</label>
+                <input type="number" [(ngModel)]="newClass.display_order" min="1" step="1"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+            </div>
+
+            <!-- Sections to Provision (Custom Section Tags & Presets) -->
+            <div class="space-y-2">
+              <label class="block font-bold text-slate-700">Sections to Provision *</label>
+              
+              <!-- Active Section Chips -->
+              <div class="flex items-center gap-1.5 flex-wrap p-2.5 bg-slate-50 border border-slate-200 rounded-2xl min-h-[44px]">
+                <div *ngFor="let s of newClass.sectionsList"
+                     class="px-2.5 py-1 bg-slate-900 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs animate-fadeIn">
+                  <span>{{ formatSection(s) }}</span>
+                  <button type="button" (click)="removeSectionFromNewClass(s)" class="text-slate-400 hover:text-white leading-none font-black text-sm cursor-pointer">&times;</button>
+                </div>
+                <div *ngIf="newClass.sectionsList.length === 0" class="text-xs text-rose-500 font-semibold p-1">
+                  Please add at least 1 section.
+                </div>
+              </div>
+
+              <!-- Custom Name Input Tag -->
+              <div class="flex items-center gap-2 mt-1">
+                <input type="text" [(ngModel)]="customSectionInput" (keydown.enter)="addCustomSectionToNewClass()" placeholder="Type custom name (e.g. Lotus, Ruby, Boys, Commerce) & press Enter..."
+                       class="flex-1 px-3.5 py-2 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+                <button type="button" (click)="addCustomSectionToNewClass()"
+                        class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl text-xs shadow-xs transition-all cursor-pointer">
+                  + Add
+                </button>
+              </div>
+
+              <!-- Quick Preset Categories -->
+              <div class="space-y-1.5 pt-1">
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quick Presets:</div>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <button type="button" *ngFor="let p of ['A', 'B', 'C', 'D', 'E']"
+                          (click)="togglePresetSectionInNewClass(p)"
+                          [class.bg-indigo-100]="newClass.sectionsList.includes('Section ' + p) || newClass.sectionsList.includes(p)"
+                          [class.text-indigo-800]="newClass.sectionsList.includes('Section ' + p) || newClass.sectionsList.includes(p)"
+                          [class.border-indigo-300]="newClass.sectionsList.includes('Section ' + p) || newClass.sectionsList.includes(p)"
+                          class="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold text-slate-600 transition-colors cursor-pointer">
+                    + Sec {{ p }}
+                  </button>
+                  <button type="button" *ngFor="let g of ['Ruby', 'Emerald', 'Sapphire', 'Diamond']"
+                          (click)="togglePresetSectionInNewClass(g)"
+                          [class.bg-amber-100]="newClass.sectionsList.includes(g)"
+                          [class.text-amber-800]="newClass.sectionsList.includes(g)"
+                          [class.border-amber-300]="newClass.sectionsList.includes(g)"
+                          class="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold text-slate-600 transition-colors cursor-pointer">
+                    💎 {{ g }}
+                  </button>
+                  <button type="button" *ngFor="let h of ['Lotus', 'Rose', 'Sunflower', 'Newton', 'Einstein']"
+                          (click)="togglePresetSectionInNewClass(h)"
+                          [class.bg-emerald-100]="newClass.sectionsList.includes(h)"
+                          [class.text-emerald-800]="newClass.sectionsList.includes(h)"
+                          [class.border-emerald-300]="newClass.sectionsList.includes(h)"
+                          class="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold text-slate-600 transition-colors cursor-pointer">
+                    🌿 {{ h }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Default Student Capacity per Section</label>
+              <input type="number" [(ngModel)]="newClass.capacity" min="10" max="100"
+                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+            </div>
+
+            <div *ngIf="classModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+              {{ classModalError }}
+            </div>
+          </div>
+
+          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
+            <button (click)="closeAddClassModal()" class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
+              Cancel
+            </button>
+            <button (click)="submitAddClass()" [disabled]="savingClass || newClass.sectionsList.length === 0"
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95">
+              <span *ngIf="!savingClass">Create Class & Sections</span>
+              <span *ngIf="savingClass">Creating...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- MODAL 5: ADD SECTION TO CLASS                                  -->
+      <!-- ============================================================== -->
+      <div *ngIf="showAddSectionModal" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[70] animate-fadeIn">
+        <div class="bg-white rounded-3xl max-w-md w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+            <div>
+              <h3 class="text-base font-black text-slate-900 tracking-tight">Add New Section</h3>
+              <p class="text-xs text-slate-500 mt-0.5">Attach another section division to an existing class.</p>
+            </div>
+            <button (click)="closeAddSectionModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+          </div>
+
+          <div class="p-5 sm:p-6 space-y-4 text-xs overflow-y-auto flex-1 custom-clay-scroll bg-white">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Parent Class *</label>
+              <select [(ngModel)]="newSection.class_id"
+                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
+                <option value="" disabled>-- Select Class --</option>
+                <option *ngFor="let c of classes" [value]="c.id">{{ c.name }} ({{ c.code }})</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Section Name *</label>
+              <input type="text" [(ngModel)]="newSection.name" (input)="onSectionNameChange()" placeholder="e.g. Section C, Lotus, Ruby, Shift-A"
+                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+            </div>
+
+            <!-- Suggestion Chips for Add Section -->
+            <div class="space-y-1">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quick Suggestions:</span>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <button type="button" *ngFor="let name of ['Section C', 'Section D', 'Ruby', 'Emerald', 'Lotus', 'Rose', 'Einstein', 'Morning', 'Science']"
+                        (click)="setSectionPreset(name)"
+                        class="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-[11px] font-bold text-slate-600 cursor-pointer transition-colors">
+                  {{ name }}
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Section Code *</label>
+                <input type="text" [(ngModel)]="newSection.code" placeholder="e.g. C, RUBY, LOTUS"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 uppercase focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Student Capacity</label>
+                <input type="number" [(ngModel)]="newSection.capacity" min="10" max="100"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+            </div>
+
+            <div *ngIf="sectionModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+              {{ sectionModalError }}
+            </div>
+          </div>
+
+          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
+            <button (click)="closeAddSectionModal()" class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
+              Cancel
+            </button>
+            <button (click)="submitAddSection()" [disabled]="savingSection"
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95">
+              <span *ngIf="!savingSection">Add Section</span>
+              <span *ngIf="savingSection">Adding...</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   `,
 })
@@ -1265,7 +1676,7 @@ export class AcademicsComponent implements OnInit {
   
   Math = Math;
 
-  activeTab: 'STUDENTS' | 'ALUMNI' | 'STAFF' | 'SUBJECTS' = 'STUDENTS';
+  activeTab: 'CLASSES' | 'STUDENTS' | 'ALUMNI' | 'STAFF' | 'SUBJECTS' = 'CLASSES';
 
   classes: ClassItem[] = [];
   subjects: SubjectItem[] = [];
@@ -1285,6 +1696,31 @@ export class AcademicsComponent implements OnInit {
   pageSize = 25;
   alumniCurrentPage = 1;
   alumniPageSize = 25;
+
+  // Class & Section Management
+  showAddClassModal = false;
+  savingClass = false;
+  classModalError = '';
+  customSectionInput = '';
+  newClass = {
+    name: '',
+    code: '',
+    display_order: 1,
+    capacity: 40,
+    sectionsList: ['Section A', 'Section B'],
+  };
+
+  showAddSectionModal = false;
+  savingSection = false;
+  sectionModalError = '';
+  newSection = {
+    class_id: '',
+    name: 'Section B',
+    code: 'B',
+    capacity: 40,
+  };
+
+  seedingClasses = false;
 
   // Modals state
   showSessionModal = false;
@@ -1313,6 +1749,7 @@ export class AcademicsComponent implements OnInit {
   showAddStudentModal = false;
   savingStudent = false;
   studentModalError = '';
+  studentEnrollClassId = '';
   newStudent = {
     firstName: '',
     lastName: '',
@@ -1351,12 +1788,38 @@ export class AcademicsComponent implements OnInit {
 
   formatSection(name?: string): string {
     if (!name) return 'Section A';
-    const cleaned = name.replace(/^section\s+/i, '').replace(/^sec\s+/i, '').trim();
-    return cleaned ? `Section ${cleaned}` : name;
+    const trimmed = name.trim();
+    if (/^[A-Za-z]$/.test(trimmed)) {
+      return `Section ${trimmed.toUpperCase()}`;
+    }
+    return trimmed;
   }
 
   get canManage(): boolean {
     return this.auth.isAdmin() || this.auth.isSuperAdmin() || this.auth.isPrincipal();
+  }
+
+  get totalSectionsCount(): number {
+    return this.classes.reduce((sum, c) => sum + (c.sections?.length || 0), 0);
+  }
+
+  get totalCampusCapacity(): number {
+    return this.classes.reduce((sum, c) => sum + this.getClassCapacity(c), 0);
+  }
+
+  getClassCapacity(c: ClassItem): number {
+    if (!c.sections || c.sections.length === 0) return 0;
+    return c.sections.reduce((sum, s) => sum + (s.capacity || 40), 0);
+  }
+
+  get studentEnrollSections(): SectionItem[] {
+    const cls = this.classes.find((c) => c.id === this.studentEnrollClassId);
+    return cls?.sections || [];
+  }
+
+  onStudentEnrollClassChange() {
+    const sections = this.studentEnrollSections;
+    this.newStudent.sectionId = sections.length > 0 ? sections[0].id : '';
   }
 
   get flatSectionsList(): { id: string; name: string; className: string }[] {
@@ -1415,7 +1878,7 @@ export class AcademicsComponent implements OnInit {
     return Math.max(1, Math.ceil(this.filteredAlumni.length / this.alumniPageSize));
   }
 
-  setTab(tab: 'STUDENTS' | 'ALUMNI' | 'STAFF' | 'SUBJECTS') {
+  setTab(tab: 'CLASSES' | 'STUDENTS' | 'ALUMNI' | 'STAFF' | 'SUBJECTS') {
     this.activeTab = tab;
     this.router.navigate([], {
       relativeTo: this.route,
@@ -1430,7 +1893,9 @@ export class AcademicsComponent implements OnInit {
   ngOnInit() {
     this.route.queryParams.subscribe((params) => {
       const tab = params['tab']?.toLowerCase();
-      if (tab === 'staff') {
+      if (tab === 'classes') {
+        this.activeTab = 'CLASSES';
+      } else if (tab === 'staff') {
         this.activeTab = 'STAFF';
       } else if (tab === 'subjects') {
         this.activeTab = 'SUBJECTS';
@@ -1480,6 +1945,13 @@ export class AcademicsComponent implements OnInit {
     const params = activeSession ? { academicYearId: activeSession.id } : undefined;
 
     this.api.get<ClassItem[]>('academics/classes', params).subscribe((res) => {
+      const sorted = (res || []).sort((a, b) => {
+        if (a.display_order !== undefined && b.display_order !== undefined && a.display_order !== b.display_order) {
+          return a.display_order - b.display_order;
+        }
+        return (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' });
+      });
+
       // Scope classes for Teacher
       const teacherClassNames = new Set<string>();
       const teachingScope = this.auth.currentUser()?.teachingScope;
@@ -1489,13 +1961,14 @@ export class AcademicsComponent implements OnInit {
       }
 
       if (this.auth.isTeacher() && teacherClassNames.size > 0) {
-        this.classes = res.filter((c) => teacherClassNames.has(c.name.toLowerCase()));
+        this.classes = sorted.filter((c) => teacherClassNames.has(c.name.toLowerCase()));
       } else {
-        this.classes = res;
+        this.classes = sorted;
       }
 
       if (this.classes.length > 0) {
-        this.selectClass(this.classes[0]);
+        const stillSelected = this.selectedClass ? this.classes.find((c) => c.id === this.selectedClass?.id) : null;
+        this.selectClass(stillSelected || this.classes[0]);
       } else {
         this.selectedClass = null;
         this.selectedSection = null;
@@ -1779,13 +2252,26 @@ export class AcademicsComponent implements OnInit {
   }
 
   // --- Add Student ---
+  generateUniqueAdmissionNumber(): string {
+    const yr = new Date().getFullYear();
+    const timeSeq = String(Date.now()).slice(-4);
+    const randSeq = Math.floor(100 + Math.random() * 900);
+    return `ADM-${yr}-${timeSeq}${randSeq}`;
+  }
+
   openAddStudentModal() {
+    const initialClass = this.selectedClass || (this.classes.length > 0 ? this.classes[0] : null);
+    this.studentEnrollClassId = initialClass?.id || '';
+    const initialSectionId = (this.selectedSection && this.selectedClass?.id === initialClass?.id)
+      ? this.selectedSection.id
+      : (initialClass?.sections?.[0]?.id || '');
+
     this.newStudent = {
       firstName: '',
       lastName: '',
-      admissionNumber: `ADM-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
+      admissionNumber: this.generateUniqueAdmissionNumber(),
       rollNumber: `${this.students.length + 1}`,
-      sectionId: this.selectedSection?.id || (this.flatSectionsList[0]?.id || ''),
+      sectionId: initialSectionId,
       gender: 'MALE',
       dateOfBirth: '2015-05-15',
       bloodGroup: 'B+',
@@ -1806,29 +2292,36 @@ export class AcademicsComponent implements OnInit {
 
   saveStudent() {
     if (!this.newStudent.firstName.trim() || !this.newStudent.admissionNumber.trim() || !this.newStudent.sectionId) {
-      this.studentModalError = 'First Name, Admission Number, and Section are required.';
+      this.studentModalError = 'First Name, Admission Number, Class, and Section are required.';
       return;
     }
     this.savingStudent = true;
     this.studentModalError = '';
 
-    this.api.post('academics/students', this.newStudent).subscribe({
+    const payload = {
+      ...this.newStudent,
+      classId: this.studentEnrollClassId,
+      academicYearId: this.auth.activeAcademicSession()?.id,
+    };
+
+    this.api.post('academics/students', payload).subscribe({
       next: (res: any) => {
         this.savingStudent = false;
         this.closeAddStudentModal();
         this.toast.success(`Student ${res.fullName || this.newStudent.firstName} enrolled successfully!`);
-        if (this.selectedSection?.id === this.newStudent.sectionId) {
+        
+        // Find target class and section to automatically switch view to the student's section
+        const targetClass = this.classes.find(c => c.id === this.studentEnrollClassId) 
+          || this.classes.find(c => c.sections?.some(s => s.id === this.newStudent.sectionId)) 
+          || this.selectedClass;
+        const targetSection = targetClass?.sections?.find(s => s.id === this.newStudent.sectionId) 
+          || this.selectedSection;
+
+        if (targetClass) this.selectedClass = targetClass;
+        if (targetSection) {
+          this.selectSection(targetSection);
+        } else if (this.selectedSection) {
           this.selectSection(this.selectedSection);
-        } else {
-          const targetSec = this.flatSectionsList.find((s) => s.id === this.newStudent.sectionId);
-          if (targetSec) {
-            const cls = this.classes.find((c) => c.sections.some((s) => s.id === targetSec.id));
-            if (cls) {
-              this.selectedClass = cls;
-              const sec = cls.sections.find((s) => s.id === targetSec.id);
-              if (sec) this.selectSection(sec);
-            }
-          }
         }
       },
       error: (err) => {
@@ -2018,5 +2511,230 @@ export class AcademicsComponent implements OnInit {
     `;
 
     this.exportService.printReport(`Alumni Register - ${this.selectedGraduationSession}`, schoolName, tableHtml);
+  }
+
+  // --- Class & Section Management ---
+  onClassNameChange() {
+    if (!this.newClass.code) {
+      this.newClass.code = this.newClass.name.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8);
+    }
+  }
+
+  openAddClassModal() {
+    this.newClass = {
+      name: '',
+      code: '',
+      display_order: (this.classes.length || 0) + 1,
+      capacity: 40,
+      sectionsList: ['Section A', 'Section B'],
+    };
+    this.customSectionInput = '';
+    this.classModalError = '';
+    this.modalService.open('ADD_CLASS');
+    this.showAddClassModal = true;
+  }
+
+  closeAddClassModal() {
+    this.modalService.close();
+    this.showAddClassModal = false;
+    this.customSectionInput = '';
+  }
+
+  addCustomSectionToNewClass() {
+    const raw = this.customSectionInput.trim();
+    if (!raw) return;
+    if (!this.newClass.sectionsList.includes(raw)) {
+      this.newClass.sectionsList.push(raw);
+    }
+    this.customSectionInput = '';
+  }
+
+  removeSectionFromNewClass(s: string) {
+    const idx = this.newClass.sectionsList.indexOf(s);
+    if (idx >= 0) {
+      if (this.newClass.sectionsList.length > 1) {
+        this.newClass.sectionsList.splice(idx, 1);
+      } else {
+        this.toast.info('At least one section is required for a class.');
+      }
+    }
+  }
+
+  togglePresetSectionInNewClass(s: string) {
+    const formatted = /^[A-Za-z]$/.test(s) ? `Section ${s.toUpperCase()}` : s;
+    const direct = s;
+    const exists = this.newClass.sectionsList.includes(formatted) || this.newClass.sectionsList.includes(direct);
+    if (exists) {
+      this.newClass.sectionsList = this.newClass.sectionsList.filter(item => item !== formatted && item !== direct);
+      if (this.newClass.sectionsList.length === 0) {
+        this.newClass.sectionsList = [formatted];
+      }
+    } else {
+      this.newClass.sectionsList.push(formatted);
+    }
+  }
+
+  toggleSectionInNewClass(sec: string) {
+    const idx = this.newClass.sectionsList.indexOf(sec);
+    if (idx >= 0) {
+      if (this.newClass.sectionsList.length > 1) {
+        this.newClass.sectionsList.splice(idx, 1);
+      } else {
+        this.toast.info('At least one section is required for a class.');
+      }
+    } else {
+      this.newClass.sectionsList.push(sec);
+      this.newClass.sectionsList.sort();
+    }
+  }
+
+  submitAddClass() {
+    if (!this.newClass.name.trim()) {
+      this.classModalError = 'Class / Grade name is required.';
+      return;
+    }
+    if (!this.newClass.sectionsList || this.newClass.sectionsList.length === 0) {
+      this.classModalError = 'Please add at least 1 section.';
+      return;
+    }
+    this.savingClass = true;
+    this.classModalError = '';
+
+    const payload = {
+      name: this.newClass.name.trim(),
+      code: (this.newClass.code || this.newClass.name.replace(/[^a-zA-Z0-9]/g, '')).toUpperCase(),
+      display_order: Number(this.newClass.display_order) || 1,
+      capacity: Number(this.newClass.capacity) || 40,
+      sections: this.newClass.sectionsList,
+    };
+
+    this.api.post('academics/classes', payload).subscribe({
+      next: () => {
+        this.savingClass = false;
+        this.closeAddClassModal();
+        this.toast.success(`Class "${payload.name}" provisioned successfully with sections!`);
+        this.loadClassesAndSubjects();
+      },
+      error: (err) => {
+        this.savingClass = false;
+        this.classModalError = err.error?.message || err.message || 'Failed to create class. Please verify code uniqueness.';
+      },
+    });
+  }
+
+  openAddSectionModal(classItem?: ClassItem) {
+    const targetClass = classItem || this.selectedClass || (this.classes.length > 0 ? this.classes[0] : null);
+    this.newSection = {
+      class_id: targetClass?.id || '',
+      name: 'Section C',
+      code: 'C',
+      capacity: 40,
+    };
+    this.sectionModalError = '';
+    this.modalService.open('ADD_SECTION');
+    this.showAddSectionModal = true;
+  }
+
+  closeAddSectionModal() {
+    this.modalService.close();
+    this.showAddSectionModal = false;
+  }
+
+  onSectionNameChange() {
+    if (!this.newSection.code) {
+      this.newSection.code = this.newSection.name.replace(/Section\s*/i, '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8);
+    }
+  }
+
+  setSectionPreset(name: string, code?: string) {
+    this.newSection.name = name;
+    this.newSection.code = code || name.replace(/Section\s*/i, '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8);
+  }
+
+  submitAddSection() {
+    if (!this.newSection.class_id) {
+      this.sectionModalError = 'Please select a parent class.';
+      return;
+    }
+    if (!this.newSection.name.trim()) {
+      this.sectionModalError = 'Section name is required.';
+      return;
+    }
+    this.savingSection = true;
+    this.sectionModalError = '';
+
+    this.api.post('academics/sections', {
+      class_id: this.newSection.class_id,
+      name: this.newSection.name.trim(),
+      code: (this.newSection.code || this.newSection.name.replace(/Section\s*/i, '')).trim().toUpperCase(),
+      capacity: Number(this.newSection.capacity) || 40,
+    }).subscribe({
+      next: () => {
+        this.savingSection = false;
+        this.closeAddSectionModal();
+        this.toast.success(`Section "${this.newSection.name}" created successfully!`);
+        this.loadClassesAndSubjects();
+      },
+      error: (err) => {
+        this.savingSection = false;
+        this.sectionModalError = err.error?.message || err.message || 'Failed to create section.';
+      },
+    });
+  }
+
+  viewStudentsOfSection(c: ClassItem, sec: SectionItem) {
+    this.selectedClass = c;
+    this.selectedSection = sec;
+    this.setTab('STUDENTS');
+  }
+
+  deleteClass(cls: ClassItem, event: Event) {
+    event.stopPropagation();
+    if (!confirm(`Are you sure you want to delete class "${cls.name}" (${cls.code}) and all its sections?`)) {
+      return;
+    }
+    this.api.delete(`academics/classes/${cls.id}`).subscribe({
+      next: () => {
+        this.toast.success(`Class "${cls.name}" deleted successfully.`);
+        this.loadClassesAndSubjects();
+      },
+      error: (err) => {
+        this.toast.error(err.error?.message || err.message || 'Failed to delete class.');
+      },
+    });
+  }
+
+  deleteSection(sec: SectionItem, cls: ClassItem, event: Event) {
+    event.stopPropagation();
+    if (!confirm(`Are you sure you want to delete section "${this.formatSection(sec.name)}" from ${cls.name}?`)) {
+      return;
+    }
+    this.api.delete(`academics/sections/${sec.id}`).subscribe({
+      next: () => {
+        this.toast.success(`Section "${this.formatSection(sec.name)}" deleted successfully.`);
+        this.loadClassesAndSubjects();
+      },
+      error: (err) => {
+        this.toast.error(err.error?.message || err.message || 'Failed to delete section.');
+      },
+    });
+  }
+
+  seedStandardK12Classes() {
+    if (!confirm('This will auto-generate standard K-12 classes (Nursery, LKG, UKG, Class 1 to 12 with Sections A & B) for this school. Proceed?')) {
+      return;
+    }
+    this.seedingClasses = true;
+    this.api.post('academics/classes/seed-standard', {}).subscribe({
+      next: (res: any) => {
+        this.seedingClasses = false;
+        this.toast.success(res.message || 'Standard school classes provisioned successfully!');
+        this.loadClassesAndSubjects();
+      },
+      error: (err) => {
+        this.seedingClasses = false;
+        this.toast.error(err.error?.message || err.message || 'Failed to provision standard classes.');
+      },
+    });
   }
 }

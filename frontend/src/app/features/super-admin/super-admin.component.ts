@@ -134,6 +134,11 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
         </div>
 
         <div class="flex items-center gap-3 flex-wrap">
+          <button (click)="loadSchools()" [disabled]="loading"
+                  class="px-4 py-3 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-2xl border border-slate-300 shadow-[2px_2px_8px_#cbd5e1,-2px_-2px_8px_#ffffff] transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50">
+            <span [class.animate-spin]="loading">↻</span>
+            <span>Refresh Campus Data</span>
+          </button>
           <button (click)="openOnboardModal()"
                   class="px-5 py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_12px_#cbd5e1,-4px_-4px_12px_#ffffff] transition-all flex items-center gap-2 active:scale-[0.99] cursor-pointer">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -668,14 +673,19 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
           
           <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
-              <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-emerald-100 text-emerald-800">
-                SaaS Monetization Engine
-              </span>
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-emerald-100 text-emerald-800">
+                  SaaS Monetization Engine
+                </span>
+                <span *ngIf="loadingLivePricing" class="text-[10px] text-indigo-600 font-bold animate-pulse flex items-center gap-1">
+                  <span>⚡</span> Fetching real-time balance...
+                </span>
+              </div>
               <h3 class="text-base font-black text-slate-900 tracking-tight mt-1">
                 Configure Pricing & Wallet — {{ selectedSchoolForPricing.name }}
               </h3>
               <p class="text-xs text-slate-500">
-                Update the contracted per-student rate and manually credit or debit this campus's billing wallet.
+                Update the contracted per-student rate and manually credit or debit this campus's billing wallet with full ledger tracking.
               </p>
             </div>
             <button (click)="showPricingModal = false" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
@@ -689,7 +699,7 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
             </div>
             <div class="p-3 border rounded-2xl"
                  [ngClass]="(selectedSchoolForPricing.wallet?.balance || 0) < 0 ? 'bg-rose-50 border-rose-200 text-rose-900' : 'bg-emerald-50 border-emerald-200 text-emerald-900'">
-              <div class="text-[10px] font-bold uppercase opacity-75">Current Wallet Balance</div>
+              <div class="text-[10px] font-bold uppercase opacity-75">Current Live Balance</div>
               <div class="text-base font-black mt-0.5">₹{{ (selectedSchoolForPricing.wallet?.balance || 0) | number:'1.2-2' }}</div>
             </div>
           </div>
@@ -720,31 +730,96 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
             </p>
           </div>
 
-          <!-- Wallet Manual Adjustment -->
-          <div class="space-y-1.5 text-xs pt-2 border-t border-slate-100">
-            <label class="block font-bold text-slate-700">Wallet Balance Adjustment (₹) <span class="text-slate-400 font-normal">(Optional)</span></label>
-            <div class="relative">
-              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">±₹</span>
-              <input type="number" [(ngModel)]="walletAdjustment" placeholder="0 (Positive to add credit, Negative to debit)"
-                     class="w-full pl-10 pr-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
-            </div>
-            <p class="text-[10px] text-slate-400">Use positive value (e.g. +500) to credit payment or negative (e.g. -200) to debit.</p>
-          </div>
+          <!-- Root Wallet Adjustment Control -->
+          <div class="space-y-3 text-xs pt-3 border-t border-slate-100">
+            <div>
+              <label class="block font-bold text-slate-800 mb-1">Root Wallet Balance Adjustment</label>
+              <p class="text-[11px] text-slate-500 mb-2">Adjust balance directly. Any deduction or addition is recorded on the school's ledger with your audit reason.</p>
+              
+              <!-- Mode Selector -->
+              <div class="grid grid-cols-3 gap-2">
+                <button type="button" (click)="adjustmentType = 'NONE'; walletAdjustmentAmount = null"
+                        [class.bg-slate-900]="adjustmentType === 'NONE'"
+                        [class.text-white]="adjustmentType === 'NONE'"
+                        [class.bg-slate-100]="adjustmentType !== 'NONE'"
+                        [class.text-slate-700]="adjustmentType !== 'NONE'"
+                        class="py-2 px-3 rounded-xl font-bold text-xs transition-all cursor-pointer border border-transparent">
+                  No Change
+                </button>
 
-          <div *ngIf="walletAdjustment !== 0" class="space-y-1.5 text-xs">
-            <label class="block font-bold text-slate-700">Adjustment Audit Reason *</label>
-            <input type="text" [(ngModel)]="adjustmentReason" placeholder="e.g. Offline Cheque Received / Promotional Credit"
-                   class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+                <button type="button" (click)="adjustmentType = 'CREDIT'"
+                        [class.bg-emerald-600]="adjustmentType === 'CREDIT'"
+                        [class.text-white]="adjustmentType === 'CREDIT'"
+                        [class.bg-emerald-50]="adjustmentType !== 'CREDIT'"
+                        [class.text-emerald-800]="adjustmentType !== 'CREDIT'"
+                        [class.border-emerald-200]="adjustmentType !== 'CREDIT'"
+                        class="py-2 px-3 rounded-xl font-bold text-xs transition-all cursor-pointer border">
+                  ➕ Credit (+)
+                </button>
+
+                <button type="button" (click)="adjustmentType = 'DEBIT'"
+                        [class.bg-rose-600]="adjustmentType === 'DEBIT'"
+                        [class.text-white]="adjustmentType === 'DEBIT'"
+                        [class.bg-rose-50]="adjustmentType !== 'DEBIT'"
+                        [class.text-rose-800]="adjustmentType !== 'DEBIT'"
+                        [class.border-rose-200]="adjustmentType !== 'DEBIT'"
+                        class="py-2 px-3 rounded-xl font-bold text-xs transition-all cursor-pointer border">
+                  ➖ Debit (-)
+                </button>
+              </div>
+            </div>
+
+            <!-- Adjustment Amount & Mandatory Reason Fields -->
+            <div *ngIf="adjustmentType !== 'NONE'" class="space-y-3 p-3.5 bg-[#f8fafc] border border-slate-200 rounded-2xl animate-fadeIn">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">
+                  {{ adjustmentType === 'CREDIT' ? 'Amount to Add / Credit (₹) *' : 'Amount to Deduct / Debit (₹) *' }}
+                </label>
+                <div class="relative">
+                  <span class="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold"
+                        [ngClass]="adjustmentType === 'CREDIT' ? 'text-emerald-600' : 'text-rose-600'">
+                    {{ adjustmentType === 'CREDIT' ? '+₹' : '-₹' }}
+                  </span>
+                  <input type="number" [(ngModel)]="walletAdjustmentAmount" min="1" step="1" placeholder="Enter amount"
+                         class="w-full pl-10 pr-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-bold focus:outline-none focus:border-slate-800 shadow-xs" />
+                </div>
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">
+                  Mandatory Audit Reason * <span class="text-[10px] text-slate-400 font-normal">(Visible on School's Ledger)</span>
+                </label>
+                <input type="text" [(ngModel)]="adjustmentReason"
+                       placeholder="e.g. Offline Cheque Clearance #94821 / Security Deposit Adjustment / Promotional Waiver"
+                       class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-xs" />
+              </div>
+
+              <!-- Live Balance Projection Banner -->
+              <div *ngIf="(walletAdjustmentAmount || 0) > 0" class="p-3 rounded-xl border flex items-center justify-between"
+                   [ngClass]="projectedWalletBalance < 0 ? 'bg-rose-50 border-rose-200 text-rose-900' : 'bg-emerald-50 border-emerald-200 text-emerald-900'">
+                <div>
+                  <div class="text-[10px] font-bold uppercase opacity-75">Projected New Balance</div>
+                  <div class="text-xs text-slate-600">
+                    ₹{{ (selectedSchoolForPricing.wallet?.balance || 0) | number:'1.2-2' }}
+                    {{ adjustmentType === 'CREDIT' ? '+' : '-' }}
+                    ₹{{ walletAdjustmentAmount | number:'1.2-2' }}
+                  </div>
+                </div>
+                <div class="text-base font-black font-mono">
+                  = ₹{{ projectedWalletBalance | number:'1.2-2' }}
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
             <button (click)="showPricingModal = false" class="px-4 py-2.5 bg-[#f8fafc] hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-300 transition-colors cursor-pointer">
               Cancel
             </button>
-            <button (click)="savePricing()" [disabled]="savingPricing"
+            <button (click)="savePricing()" [disabled]="savingPricing || (adjustmentType !== 'NONE' && (!(walletAdjustmentAmount || 0) || !adjustmentReason.trim()))"
                     class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer">
-              <span *ngIf="!savingPricing">Save Pricing & Update Wallet</span>
-              <span *ngIf="savingPricing">Saving...</span>
+              <span *ngIf="!savingPricing">Save Pricing & Update Ledger</span>
+              <span *ngIf="savingPricing">Recording to Ledger...</span>
             </button>
           </div>
         </div>
@@ -761,6 +836,7 @@ export class SuperAdminComponent implements OnInit {
 
   schools: SchoolItemWithStats[] = [];
   searchQuery = '';
+  loading = false;
 
   showOnboardModal = false;
   onboarding = false;
@@ -775,9 +851,11 @@ export class SuperAdminComponent implements OnInit {
   showPricingModal = false;
   selectedSchoolForPricing: SchoolItemWithStats | null = null;
   editingRate = 20;
-  walletAdjustment = 0;
+  adjustmentType: 'NONE' | 'CREDIT' | 'DEBIT' = 'NONE';
+  walletAdjustmentAmount: number | null = null;
   adjustmentReason = '';
   savingPricing = false;
+  loadingLivePricing = false;
 
   newSchool = {
     name: '',
@@ -796,6 +874,14 @@ export class SuperAdminComponent implements OnInit {
     adminPassword: 'password123',
     perStudentFee: 20,
   };
+
+  get projectedWalletBalance(): number {
+    const current = Number(this.selectedSchoolForPricing?.wallet?.balance || 0);
+    const amount = Number(this.walletAdjustmentAmount || 0);
+    if (this.adjustmentType === 'CREDIT') return current + amount;
+    if (this.adjustmentType === 'DEBIT') return current - amount;
+    return current;
+  }
 
   get totalStudents(): number {
     return this.schools.reduce((acc, s) => acc + (s.stats?.studentsCount || 0), 0);
@@ -831,11 +917,14 @@ export class SuperAdminComponent implements OnInit {
   }
 
   loadSchools() {
+    this.loading = true;
     this.auth.getAllSchools().subscribe({
       next: (data) => {
         this.schools = data;
+        this.loading = false;
       },
       error: (err) => {
+        this.loading = false;
         this.toast.error(err.error?.message || 'Failed to load school network');
       },
     });
@@ -909,12 +998,13 @@ export class SuperAdminComponent implements OnInit {
   }
 
   submitOnboardSchool() {
-    if (!this.newSchool.name.trim() || !this.newSchool.code.trim() || !this.newSchool.city.trim()) {
-      this.onboardError = 'Please provide School Name, Unique Code, and City.';
+    if (!this.newSchool.name.trim() || !this.newSchool.code.trim() || !this.newSchool.adminEmail.trim() || !this.newSchool.adminFirstName.trim()) {
+      this.onboardError = 'Please fill all required fields: School Name, Unique Code, Admin First Name, and Admin Email.';
       return;
     }
-    if (!this.newSchool.adminFirstName.trim() || !this.newSchool.adminEmail.trim()) {
-      this.onboardError = 'Please provide School Admin First Name and Login Email.';
+
+    if (this.newSchool.perStudentFee <= 0) {
+      this.onboardError = 'Contracted per-student fee must be greater than zero.';
       return;
     }
 
@@ -924,13 +1014,13 @@ export class SuperAdminComponent implements OnInit {
     this.auth.onboardSchool(this.newSchool).subscribe({
       next: (res) => {
         this.onboarding = false;
+        this.toast.success(`School "${this.newSchool.name}" successfully onboarded with SaaS rate ₹${this.newSchool.perStudentFee}/student!`);
         this.showOnboardModal = false;
-        this.toast.success(res.message || 'School and Administrator provisioned successfully!');
         this.loadSchools();
       },
       error: (err) => {
         this.onboarding = false;
-        this.onboardError = err.error?.message || 'Failed to onboard school. Please verify code uniqueness.';
+        this.onboardError = err.error?.message || err.message || 'Failed to onboard school';
       },
     });
   }
@@ -1018,9 +1108,29 @@ export class SuperAdminComponent implements OnInit {
   openPricingModal(school: SchoolItemWithStats) {
     this.selectedSchoolForPricing = school;
     this.editingRate = school.subscription?.perStudentFee || 20;
-    this.walletAdjustment = 0;
+    this.adjustmentType = 'NONE';
+    this.walletAdjustmentAmount = null;
     this.adjustmentReason = '';
     this.showPricingModal = true;
+    this.loadingLivePricing = true;
+
+    // Direct live fetch from subscription API so root console always has freshest database balance
+    this.api.get('subscription/overview', { schoolId: school.id }).subscribe({
+      next: (res: any) => {
+        this.loadingLivePricing = false;
+        if (res?.wallet && this.selectedSchoolForPricing) {
+          this.selectedSchoolForPricing.wallet.balance = Number(res.wallet.balance);
+          this.selectedSchoolForPricing.wallet.currency = res.wallet.currency || 'INR';
+        }
+        if (res?.subscription && this.selectedSchoolForPricing) {
+          this.editingRate = Number(res.subscription.per_student_fee) || 20;
+          this.selectedSchoolForPricing.subscription.perStudentFee = this.editingRate;
+        }
+      },
+      error: () => {
+        this.loadingLivePricing = false;
+      },
+    });
   }
 
   savePricing() {
@@ -1029,8 +1139,16 @@ export class SuperAdminComponent implements OnInit {
       this.toast.error('Per-student fee must be greater than zero.');
       return;
     }
-    if (this.walletAdjustment !== 0 && !this.adjustmentReason.trim()) {
-      this.toast.error('Please specify an audit reason for the wallet adjustment.');
+
+    let finalAdjustment = 0;
+    if (this.adjustmentType === 'CREDIT') {
+      finalAdjustment = Math.abs(Number(this.walletAdjustmentAmount || 0));
+    } else if (this.adjustmentType === 'DEBIT') {
+      finalAdjustment = -Math.abs(Number(this.walletAdjustmentAmount || 0));
+    }
+
+    if (finalAdjustment !== 0 && !this.adjustmentReason.trim()) {
+      this.toast.error('Please specify a mandatory audit reason for this wallet adjustment.');
       return;
     }
 
@@ -1038,26 +1156,15 @@ export class SuperAdminComponent implements OnInit {
     this.api.post('subscription/rate/update', {
       schoolId: this.selectedSchoolForPricing.id,
       perStudentFee: this.editingRate,
-      walletAdjustment: this.walletAdjustment,
-      reason: this.adjustmentReason || 'Super Admin Pricing Update',
+      walletAdjustment: finalAdjustment,
+      reason: this.adjustmentReason.trim() || 'Super Admin Pricing & Balance Update',
     }).subscribe({
       next: (res: any) => {
         this.savingPricing = false;
-        this.toast.success(`SaaS pricing for ${this.selectedSchoolForPricing?.name} updated to ₹${this.editingRate}/student!`);
-        if (this.selectedSchoolForPricing) {
-          if (!this.selectedSchoolForPricing.subscription) {
-            this.selectedSchoolForPricing.subscription = {
-              perStudentFee: this.editingRate,
-              billingCycle: 'MONTHLY',
-              status: 'ACTIVE',
-            };
-          } else {
-            this.selectedSchoolForPricing.subscription.perStudentFee = this.editingRate;
-          }
-          if (this.selectedSchoolForPricing.wallet && this.walletAdjustment !== 0) {
-            this.selectedSchoolForPricing.wallet.balance += this.walletAdjustment;
-          }
-        }
+        const adjMsg = finalAdjustment !== 0
+          ? ` and wallet ${finalAdjustment > 0 ? 'credited by ₹' + finalAdjustment : 'debited by ₹' + Math.abs(finalAdjustment)}`
+          : '';
+        this.toast.success(`Pricing updated to ₹${this.editingRate}/student${adjMsg}!`);
         this.showPricingModal = false;
         this.loadSchools();
       },

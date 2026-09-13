@@ -137,7 +137,7 @@ export interface StudentItem {
   firstName: string;
   lastName?: string;
   fullName: string;
-  rollNumber: number;
+  rollNumber?: number | string;
   gender?: string;
   bloodGroup?: string;
   dob?: string;

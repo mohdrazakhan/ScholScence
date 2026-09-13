@@ -645,7 +645,8 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER'],
       expanded: true,
       children: [
-        { label: 'Classes & Student Roster', route: '/academics', queryParams: { tab: 'students' } },
+        { label: 'Manage Classes & Sections', route: '/academics', queryParams: { tab: 'classes' } },
+        { label: 'Student Admissions & Roster', route: '/academics', queryParams: { tab: 'students' } },
         { label: 'Alumni Directory', route: '/academics', queryParams: { tab: 'alumni' } },
         { label: 'Faculty & Staff Directory', route: '/academics', queryParams: { tab: 'staff' } },
         { label: 'Curriculum Subjects Master', route: '/academics', queryParams: { tab: 'subjects' } },

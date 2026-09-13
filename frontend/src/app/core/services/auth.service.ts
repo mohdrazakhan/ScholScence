@@ -157,12 +157,22 @@ export class AuthService {
     let wallets: any[] = [];
     try {
       const subsRes = await this.supabase.from('school_subscriptions').select('*');
-      if (subsRes?.data) subscriptions = subsRes.data;
+      if (subsRes?.data && subsRes.data.length > 0) {
+        subscriptions = subsRes.data;
+        const subsObj: Record<string, any> = {};
+        subscriptions.forEach((sb: any) => { subsObj[sb.school_id] = sb; });
+        try { localStorage.setItem('schoolsense_saas_subscriptions', JSON.stringify(subsObj)); } catch {}
+      }
     } catch {}
 
     try {
       const walletsRes = await this.supabase.from('school_wallets').select('*');
-      if (walletsRes?.data) wallets = walletsRes.data;
+      if (walletsRes?.data && walletsRes.data.length > 0) {
+        wallets = walletsRes.data;
+        const walletsObj: Record<string, any> = {};
+        wallets.forEach((w: any) => { walletsObj[w.school_id] = w; });
+        try { localStorage.setItem('schoolsense_saas_wallets', JSON.stringify(walletsObj)); } catch {}
+      }
     } catch {}
 
     // Read local cache overrides
@@ -225,13 +235,13 @@ export class AuthService {
             }
           : null,
         subscription: {
-          perStudentFee: Number(sub?.per_student_fee ?? sub?.perStudentFee) || 20.00,
+          perStudentFee: sub?.per_student_fee !== undefined ? Number(sub.per_student_fee) : (sub?.perStudentFee !== undefined ? Number(sub.perStudentFee) : 20.00),
           billingCycle: sub?.billing_cycle || sub?.billingCycle || 'MONTHLY',
           status: sub?.status || 'ACTIVE',
           nextBillingDate: sub?.next_billing_date || sub?.nextBillingDate,
         },
         wallet: {
-          balance: Number(wallet?.balance) || 0.00,
+          balance: wallet?.balance !== undefined ? Number(wallet.balance) : 0.00,
           currency: wallet?.currency || 'INR',
           status: wallet?.status || 'ACTIVE',
         },
