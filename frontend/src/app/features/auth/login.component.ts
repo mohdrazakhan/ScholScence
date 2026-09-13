@@ -522,6 +522,9 @@ export class LoginComponent implements OnInit {
 
   onInputFocus() {
     this.dropdownOpen = true;
+    if (this.searchQuery.trim().length >= 3 && this.schools.length === 0) {
+      this.onInputChange();
+    }
   }
 
   onInputChange() {
@@ -544,13 +547,14 @@ export class LoginComponent implements OnInit {
         next: (results) => {
           this.schoolsLoading = false;
           this.schools = results || [];
+          this.dropdownOpen = true;
         },
         error: () => {
           this.schoolsLoading = false;
           this.schools = [];
         },
       });
-    }, 250);
+    }, 200);
   }
 
   clearSelection(event: Event) {
