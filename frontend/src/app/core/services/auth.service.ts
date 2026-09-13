@@ -39,138 +39,47 @@ export class AuthService {
   constructor() {}
 
   getPublicSchools(): Observable<any[]> {
-    return from(
-      this.supabase
-        .from('schools')
-        .select('*')
-        .eq('status', 'ACTIVE')
-        .neq('code', 'PLATFORM')
-        .order('name', { ascending: true })
-    ).pipe(
+    return from(this.supabase.rpc('get_public_school_directory')).pipe(
       map(({ data, error }) => {
-        if (error) throw error;
+        if (error) {
+          // Fallback query if RPC not yet created in Supabase
+          return this.fallbackGetPublicSchools();
+        }
         return data || [];
       })
     );
   }
 
+  private async fallbackGetPublicSchools(): Promise<any[]> {
+    const { data } = await this.supabase
+      .from('schools')
+      .select('*')
+      .eq('status', 'ACTIVE')
+      .neq('code', 'PLATFORM')
+      .order('name', { ascending: true });
+    return data || [];
+  }
+
   login(identifier: string, password: string, schoolCode?: string): Observable<AuthResponse> {
-    return from(this.authenticateWithSupabase(identifier.trim(), password, schoolCode)).pipe(
+    return from(
+      this.supabase.rpc('authenticate_user', {
+        p_identifier: identifier.trim(),
+        p_password: password,
+        p_school_code: schoolCode || null,
+      })
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) {
+          throw new Error(error.message || 'Invalid credentials');
+        }
+        return data as AuthResponse;
+      }),
       tap((res) => {
         localStorage.setItem(this.TOKEN_KEY, res.accessToken);
         localStorage.setItem(this.USER_KEY, JSON.stringify(res.user));
         this.currentUser.set(res.user);
       })
     );
-  }
-
-  private async authenticateWithSupabase(
-    identifier: string,
-    password: string,
-    schoolCode?: string
-  ): Promise<AuthResponse> {
-    // 1. Find user by email or phone cleanly
-    let userQuery = this.supabase.from('users').select('*');
-    if (identifier.includes('@')) {
-      userQuery = userQuery.ilike('email', identifier.trim());
-    } else {
-      userQuery = userQuery.eq('phone', identifier.trim());
-    }
-
-    const { data: userRecords, error: userError } = await userQuery.limit(1);
-
-    if (userError || !userRecords || userRecords.length === 0) {
-      console.error('User lookup error in Supabase:', userError);
-      throw new Error('Invalid email/phone or password');
-    }
-
-    const userRecord = userRecords[0];
-
-    // Verify Password Strictly
-    const isSuperAdminEmail = userRecord.email?.toLowerCase() === 'admin@schoolscence.in';
-    let isPasswordValid = false;
-
-    if (isSuperAdminEmail) {
-      isPasswordValid = (password === 'Mr.786khan@');
-    } else if (userRecord.password_hash) {
-      isPasswordValid = (password === userRecord.password_hash || password === 'password123');
-    } else {
-      isPasswordValid = (password === 'password123');
-    }
-
-    if (!isPasswordValid) {
-      throw new Error('Invalid email/phone or password');
-    }
-
-    // 2. Fetch User School Roles + Roles + Schools
-    const { data: userSchoolRoles, error: usrError } = await this.supabase
-      .from('user_school_roles')
-      .select('*, role:roles(*), school:schools(*)')
-      .eq('user_id', userRecord.id)
-      .eq('status', 'ACTIVE');
-
-    if (usrError || !userSchoolRoles || userSchoolRoles.length === 0) {
-      throw new Error('No active school role found for this user');
-    }
-
-    // Check if Super Admin
-    const isSuper =
-      userSchoolRoles.some(
-        (usr: any) => usr.role?.code === 'SUPER_ADMIN' || usr.role?.code === 'PLATFORM_ADMIN'
-      ) || userRecord.email?.toLowerCase() === 'admin@schoolscence.in';
-
-    let selectedRole = userSchoolRoles[0];
-
-    // 1. Root / Platform Console Login (Headphone icon)
-    if (schoolCode === 'PLATFORM') {
-      if (!isSuper) {
-        throw new Error('Access denied. Please sign in through your school portal.');
-      }
-    } else {
-      // 2. School Portal Login (e.g. ABC school)
-      if (isSuper) {
-        throw new Error('Root Super Admin must log in using the headphone icon below.');
-      }
-
-      if (schoolCode) {
-        const matched = userSchoolRoles.find(
-          (usr: any) => usr.school?.code?.toUpperCase() === schoolCode.toUpperCase()
-        );
-        if (!matched) {
-          throw new Error('This user account does not belong to this school.');
-        }
-        selectedRole = matched;
-      }
-    }
-
-    const roleCode = isSuper ? 'SUPER_ADMIN' : selectedRole.role?.code || 'STAFF';
-    const roleName = isSuper ? 'Super Admin' : selectedRole.role?.name || 'Staff';
-
-    const userObj: User = {
-      id: userRecord.id,
-      email: userRecord.email || '',
-      phone: userRecord.phone || '',
-      firstName: userRecord.first_name,
-      lastName: userRecord.last_name || '',
-      role: roleCode,
-      roleName: roleName,
-      school: selectedRole.school
-        ? {
-            id: selectedRole.school.id,
-            name: selectedRole.school.name,
-            code: selectedRole.school.code,
-            status: selectedRole.school.status,
-            disabledServices: [],
-          }
-        : undefined,
-      permissions: isSuper ? ['*'] : [],
-    };
-
-    return {
-      accessToken: 'supabase-session-' + userRecord.id,
-      refreshToken: 'supabase-refresh-' + userRecord.id,
-      user: userObj,
-    };
   }
 
   fetchProfile(): Observable<User> {
