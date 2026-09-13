@@ -187,37 +187,45 @@ export class AuthService {
   }
 
   private async fetchSchoolsWithDetails(): Promise<any[]> {
-    // 1. Fetch schools
-    const { data: schools, error: schoolErr } = await this.supabase
-      .from('schools')
-      .select('*')
-      .neq('code', 'PLATFORM')
-      .order('created_at', { ascending: false });
-
-    if (schoolErr || !schools) return [];
-
-    // 2. Fetch UserSchoolRoles joined with Users and Roles
-    const { data: usrList } = await this.supabase
-      .from('user_school_roles')
-      .select('school_id, user:users(*), role:roles(*)');
-
-    // 3. Fetch counts for stats
-    const [studentsRes, classesRes, subjectsRes] = await Promise.all([
+    // 1. Fetch schools, user_school_roles, users, and roles
+    const [schoolsRes, usrRes, usersRes, rolesRes, studentsRes, classesRes, subjectsRes] = await Promise.all([
+      this.supabase.from('schools').select('*').neq('code', 'PLATFORM').order('created_at', { ascending: false }),
+      this.supabase.from('user_school_roles').select('*').eq('status', 'ACTIVE'),
+      this.supabase.from('users').select('*'),
+      this.supabase.from('roles').select('*'),
       this.supabase.from('students').select('id, school_id'),
       this.supabase.from('classes').select('id, school_id'),
       this.supabase.from('subjects').select('id, school_id'),
     ]);
 
+    const schools = schoolsRes.data || [];
+    const usrList = usrRes.data || [];
+    const users = usersRes.data || [];
+    const roles = rolesRes.data || [];
     const students = studentsRes.data || [];
     const classes = classesRes.data || [];
     const subjects = subjectsRes.data || [];
 
+    const userMap = new Map(users.map((u: any) => [u.id, u]));
+    const roleMap = new Map(roles.map((r: any) => [r.id, r]));
+
     return schools.map((s: any) => {
-      const schoolRoles = (usrList || []).filter((usr: any) => usr.school_id === s.id);
-      const adminRole: any = schoolRoles.find(
-        (usr: any) => usr.role?.code === 'SCHOOL_ADMIN' || usr.role?.code === 'PRINCIPAL'
-      );
-      const adminUser: any = adminRole?.user;
+      const schoolRoles = usrList.filter((usr: any) => usr.school_id === s.id);
+      
+      // Find admin user for this school
+      let adminUser: any = null;
+      for (const usr of schoolRoles) {
+        const role = roleMap.get(usr.role_id);
+        if (role?.code === 'SCHOOL_ADMIN' || role?.code === 'PRINCIPAL') {
+          adminUser = userMap.get(usr.user_id);
+          if (adminUser) break;
+        }
+      }
+
+      // If no SCHOOL_ADMIN found, check any staff assigned to this school
+      if (!adminUser && schoolRoles.length > 0) {
+        adminUser = userMap.get(schoolRoles[0].user_id);
+      }
 
       const schoolStudents = students.filter((st: any) => st.school_id === s.id).length;
       const schoolClasses = classes.filter((c: any) => c.school_id === s.id).length;
@@ -229,7 +237,7 @@ export class AuthService {
         admin: adminUser
           ? {
               id: adminUser.id,
-              fullName: `${adminUser.first_name || ''} ${adminUser.last_name || ''}`.trim(),
+              fullName: `${adminUser.first_name || ''} ${adminUser.last_name || ''}`.trim() || 'School Admin',
               firstName: adminUser.first_name,
               lastName: adminUser.last_name,
               email: adminUser.email,
