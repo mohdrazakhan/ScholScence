@@ -191,90 +191,31 @@ export class AuthService {
   }
 
   onboardSchool(payload: any): Observable<any> {
-    return from(this.performOnboarding(payload));
-  }
-
-  private async performOnboarding(payload: any) {
-    // 1. Create School
-    const { data: newSchool, error: schoolErr } = await this.supabase
-      .from('schools')
-      .insert({
-        name: payload.name.trim(),
-        code: payload.code.trim().toUpperCase(),
-        email: payload.email || null,
-        phone: payload.phone || null,
-        address_line1: payload.addressLine1 || payload.address_line1 || null,
-        city: payload.city.trim(),
-        state: payload.state || null,
-        country: payload.country || 'India',
-        postal_code: payload.postalCode || payload.postal_code || null,
-        status: 'ACTIVE',
+    return from(
+      this.supabase.rpc('onboard_school_tenant', {
+        p_name: payload.name.trim(),
+        p_code: payload.code.trim().toUpperCase(),
+        p_email: payload.email || null,
+        p_phone: payload.phone || null,
+        p_address_line1: payload.addressLine1 || payload.address_line1 || null,
+        p_city: payload.city.trim(),
+        p_state: payload.state || null,
+        p_country: payload.country || 'India',
+        p_postal_code: payload.postalCode || payload.postal_code || null,
+        p_admin_first_name: payload.adminFirstName.trim(),
+        p_admin_last_name: payload.adminLastName ? payload.adminLastName.trim() : 'Admin',
+        p_admin_email: payload.adminEmail ? payload.adminEmail.trim().toLowerCase() : null,
+        p_admin_phone: payload.adminPhone ? payload.adminPhone.trim() : null,
+        p_admin_password: payload.adminPassword || 'password123',
       })
-      .select()
-      .single();
-
-    if (schoolErr || !newSchool) {
-      console.error('School creation error:', schoolErr);
-      throw new Error(schoolErr?.message || 'Failed to create school. Please verify code uniqueness.');
-    }
-
-    // 2. Create School Admin User if email provided
-    if (payload.adminEmail) {
-      const { data: adminUser, error: userErr } = await this.supabase
-        .from('users')
-        .insert({
-          email: payload.adminEmail.trim().toLowerCase(),
-          phone: payload.adminPhone ? payload.adminPhone.trim() : null,
-          first_name: payload.adminFirstName.trim(),
-          last_name: payload.adminLastName ? payload.adminLastName.trim() : '',
-          password_hash: payload.adminPassword || 'password123',
-          status: 'ACTIVE',
-        })
-        .select()
-        .single();
-
-      if (userErr) {
-        console.error('Admin user creation error:', userErr);
-      }
-
-      if (adminUser) {
-        // Fetch or create SCHOOL_ADMIN role
-        let { data: adminRole } = await this.supabase
-          .from('roles')
-          .select('id')
-          .eq('code', 'SCHOOL_ADMIN')
-          .maybeSingle();
-
-        if (!adminRole) {
-          const { data: createdRole } = await this.supabase
-            .from('roles')
-            .insert({
-              name: 'School Admin',
-              code: 'SCHOOL_ADMIN',
-              description: 'School Principal or Administrator',
-              is_system_role: true,
-              status: 'ACTIVE',
-            })
-            .select('id')
-            .single();
-          adminRole = createdRole;
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) {
+          throw new Error(error.message || 'Failed to onboard school. Please verify code uniqueness.');
         }
-
-        if (adminRole) {
-          await this.supabase.from('user_school_roles').insert({
-            user_id: adminUser.id,
-            school_id: newSchool.id,
-            role_id: adminRole.id,
-            status: 'ACTIVE',
-          });
-        }
-      }
-    }
-
-    return {
-      message: 'School and Administrator provisioned successfully!',
-      school: newSchool,
-    };
+        return data || { message: 'School provisioned successfully!' };
+      })
+    );
   }
 
   logout(): void {
