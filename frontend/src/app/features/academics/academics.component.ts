@@ -18,6 +18,8 @@ interface StaffMember {
   phone?: string;
   role: string;
   roleName?: string;
+  primarySubjectId?: string;
+  primarySubjectName?: string;
   classTeacherSections?: { sectionId: string; sectionName: string; className: string }[];
   subjectAssignments?: { sectionId: string; sectionName: string; className: string; subjectName: string; subjectCode: string }[];
   status: string;
@@ -322,8 +324,18 @@ interface StaffMember {
                         <div class="text-xs font-black text-slate-900 truncate">
                           {{ formatSection(sec.name) }}
                         </div>
-                        <div class="text-[10px] text-slate-400 font-medium">
-                          Capacity: <strong class="text-slate-700">{{ sec.enrolled_count || 0 }} / {{ sec.capacity || 40 }}</strong>
+                        <div class="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 flex-wrap mt-0.5">
+                          <span>Capacity: <strong class="text-slate-700">{{ sec.enrolled_count || 0 }} / {{ sec.capacity || 40 }}</strong></span>
+                          <span class="text-slate-300">•</span>
+                          <span *ngIf="getSectionClassTeacher(sec)" class="text-emerald-700 font-bold inline-flex items-center gap-1">
+                            <svg class="w-3 h-3 text-emerald-600 inline shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            <span>CT: {{ getSectionClassTeacher(sec)?.fullName }}</span>
+                          </span>
+                          <span *ngIf="!getSectionClassTeacher(sec)" class="text-slate-400 italic">
+                            CT: Unassigned
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -1879,9 +1891,16 @@ interface StaffMember {
         <div class="bg-white rounded-3xl max-w-xl w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
           
           <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
-            <div>
-              <h3 class="text-base font-black text-slate-900 tracking-tight">Add Faculty / Principal / Staff</h3>
-              <p class="text-xs text-slate-500 mt-0.5">Register staff account, set credentials, and allocate teaching responsibilities.</p>
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center shrink-0 shadow-xs">
+                <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight">Add Faculty / Teacher</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Register faculty member into school directory. Class teacher & subject roles can be assigned anytime.</p>
+              </div>
             </div>
             <button (click)="closeAddStaffModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
           </div>
@@ -1905,69 +1924,43 @@ interface StaffMember {
                 <label class="block font-bold text-slate-700 mb-1">Role Designation *</label>
                 <select [(ngModel)]="newStaff.role"
                         class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
-                  <option value="PRINCIPAL">Principal</option>
+                  <option value="TEACHER">Teacher / Faculty</option>
                   <option value="CLASS_TEACHER">Class Teacher</option>
-                  <option value="TEACHER">Subject Teacher</option>
+                  <option value="PRINCIPAL">Principal</option>
                   <option value="SCHOOL_ADMIN">School Admin</option>
                 </select>
               </div>
 
               <div>
-                <label class="block font-bold text-slate-700 mb-1">Phone Number</label>
-                <input type="text" [(ngModel)]="newStaff.phone" placeholder="+91 98765 43210"
-                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
-              </div>
-            </div>
-
-            <!-- Optional Class Teacher Section assignment -->
-            <div *ngIf="newStaff.role === 'CLASS_TEACHER' || newStaff.role === 'TEACHER'" class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">Designate as Class Teacher For (Optional)</label>
-                <select [(ngModel)]="newStaff.classTeacherSectionId"
-                        class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-slate-800">
-                  <option value="">-- No Class Teacher Designation --</option>
-                  <option *ngFor="let sec of flatSectionsList" [value]="sec.id">
-                    {{ sec.className }} - {{ formatSection(sec.name) }}
+                <label class="block font-bold text-slate-700 mb-1">Primary Subject Specialization</label>
+                <select [(ngModel)]="newStaff.primarySubjectId"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
+                  <option value="">-- General / Subject Specialist --</option>
+                  <option *ngFor="let sub of subjects" [value]="sub.id">
+                    {{ sub.name }} ({{ sub.code }})
                   </option>
                 </select>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div>
-                  <label class="block font-bold text-slate-700 mb-1">Assigned Section</label>
-                  <select [(ngModel)]="newStaff.sectionId"
-                          class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-slate-800">
-                    <option value="">-- Select Section --</option>
-                    <option *ngFor="let sec of flatSectionsList" [value]="sec.id">
-                      {{ sec.className }} - {{ formatSection(sec.name) }}
-                    </option>
-                  </select>
-                </div>
-
-                <div>
-                  <label class="block font-bold text-slate-700 mb-1">Assigned Subject</label>
-                  <select [(ngModel)]="newStaff.subjectId"
-                          class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-slate-800">
-                    <option value="">-- Select Subject --</option>
-                    <option *ngFor="let sub of subjects" [value]="sub.id">
-                      {{ sub.name }} ({{ sub.code }})
-                    </option>
-                  </select>
-                </div>
               </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label class="block font-bold text-slate-700 mb-1">Email (Username) *</label>
-                <input type="email" [(ngModel)]="newStaff.email" placeholder="v.malhotra@-demoschool.com"
+                <label class="block font-bold text-slate-700 mb-1">Phone Number</label>
+                <input type="text" [(ngModel)]="newStaff.phone" placeholder="+91 98765 43210"
                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
               </div>
+
               <div>
-                <label class="block font-bold text-slate-700 mb-1">Initial Password</label>
-                <input type="text" [(ngModel)]="newStaff.password" placeholder="password123"
+                <label class="block font-bold text-slate-700 mb-1">Email (Username) *</label>
+                <input type="email" [(ngModel)]="newStaff.email" placeholder="v.malhotra@schoolscence.in"
                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
               </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Initial Password</label>
+              <input type="text" [(ngModel)]="newStaff.password" placeholder="password123"
+                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
             </div>
 
             <div *ngIf="staffModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
@@ -2216,6 +2209,18 @@ interface StaffMember {
               </div>
             </div>
 
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Class Teacher (Homeroom In-charge)</label>
+              <select [(ngModel)]="newSection.class_teacher_id"
+                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
+                <option value="">-- No Class Teacher (Assign Later) --</option>
+                <option *ngFor="let t of teachersList" [value]="t.id">
+                  {{ t.fullName }} ({{ t.roleName || t.role }})
+                </option>
+              </select>
+              <p class="text-[10px] text-slate-400 mt-1">Class Teacher takes morning homeroom roll call and attendance.</p>
+            </div>
+
             <div *ngIf="sectionModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
               {{ sectionModalError }}
             </div>
@@ -2329,6 +2334,18 @@ interface StaffMember {
                 <input type="number" [(ngModel)]="editSectionForm.capacity" min="10" max="100"
                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
               </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Class Teacher (Homeroom In-charge)</label>
+              <select [(ngModel)]="editSectionForm.class_teacher_id"
+                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
+                <option value="">-- No Class Teacher Assigned --</option>
+                <option *ngFor="let t of teachersList" [value]="t.id">
+                  {{ t.fullName }} ({{ t.roleName || t.role }})
+                </option>
+              </select>
+              <p class="text-[10px] text-slate-400 mt-1">Class Teacher takes morning homeroom roll call and attendance.</p>
             </div>
 
             <div *ngIf="editSectionModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
@@ -2828,6 +2845,7 @@ export class AcademicsComponent implements OnInit {
     name: 'Section B',
     code: 'B',
     capacity: 40,
+    class_teacher_id: '',
   };
 
   // 3-Dot Action Menus
@@ -2855,6 +2873,7 @@ export class AcademicsComponent implements OnInit {
     code: '',
     capacity: 40,
     display_order: 1,
+    class_teacher_id: '',
   };
 
   // Delete Confirmation Modals
@@ -2918,10 +2937,8 @@ export class AcademicsComponent implements OnInit {
     email: '',
     phone: '',
     role: 'TEACHER',
+    primarySubjectId: '',
     password: 'password123',
-    classTeacherSectionId: '',
-    sectionId: '',
-    subjectId: '',
   };
 
   // Status Management & Deactivation Requests State
@@ -2934,6 +2951,17 @@ export class AcademicsComponent implements OnInit {
   staffRoleFilter: 'ALL' | 'PRINCIPAL' | 'SCHOOL_ADMIN' | 'CLASS_TEACHER' | 'TEACHER' = 'ALL';
   staffCurrentPage = 1;
   staffPageSize = 25;
+
+  get teachersList(): StaffMember[] {
+    return (this.staffList || []).filter(
+      (s) => (s.status || 'ACTIVE').toUpperCase() === 'ACTIVE'
+    );
+  }
+
+  getSectionClassTeacher(sec: SectionItem | null | undefined): StaffMember | undefined {
+    if (!sec || !sec.class_teacher_id) return undefined;
+    return this.staffList.find((s) => s.id === sec.class_teacher_id);
+  }
 
   get activeStaffCount(): number {
     return this.staffList.filter((s) => (s.status || 'ACTIVE').toUpperCase() === 'ACTIVE').length;
@@ -3590,8 +3618,10 @@ export class AcademicsComponent implements OnInit {
 
   selectSection(sec: SectionItem) {
     this.selectedSection = sec;
-    this.api.get<StudentItem[]>(`academics/sections/${sec.id}/students`).subscribe((res) => {
-      this.students = res;
+    const activeSession = this.auth.activeAcademicSession();
+    const params = activeSession ? { academicYearId: activeSession.id } : undefined;
+    this.api.get<StudentItem[]>(`academics/sections/${sec.id}/students`, params).subscribe((res) => {
+      this.students = res || [];
       this.currentPage = 1;
     });
   }
@@ -3738,7 +3768,7 @@ export class AcademicsComponent implements OnInit {
           }).subscribe({
             next: (rolloverRes: any) => {
               this.savingSession = false;
-              this.showSessionModal = false;
+              this.closeSessionModal();
               this.toast.success(
                 `Session ${this.newSession.name} created! Promoted ${rolloverRes.promoted_count || 0} students & moved ${rolloverRes.graduated_alumni_count || 0} graduates to Alumni Directory.`
               );
@@ -3748,7 +3778,7 @@ export class AcademicsComponent implements OnInit {
             },
             error: (err: any) => {
               this.savingSession = false;
-              this.showSessionModal = false;
+              this.closeSessionModal();
               this.toast.warning(`Session created, but rollover encountered an issue: ${err.message || 'Check database logs'}`);
               this.loadAcademicSessions();
               this.loadClassesAndSubjects();
@@ -3757,7 +3787,7 @@ export class AcademicsComponent implements OnInit {
           });
         } else {
           this.savingSession = false;
-          this.showSessionModal = false;
+          this.closeSessionModal();
           this.toast.success(`Academic Session "${this.newSession.name}" created successfully!`);
           this.loadAcademicSessions();
           this.loadClassesAndSubjects();
@@ -3914,10 +3944,8 @@ export class AcademicsComponent implements OnInit {
       email: '',
       phone: '',
       role: 'TEACHER',
+      primarySubjectId: '',
       password: 'password123',
-      classTeacherSectionId: '',
-      sectionId: '',
-      subjectId: '',
     };
     this.staffModalError = '';
     this.modalService.open('ADD_STAFF');
@@ -4236,6 +4264,7 @@ export class AcademicsComponent implements OnInit {
       name: 'Section C',
       code: 'C',
       capacity: 40,
+      class_teacher_id: '',
     };
     this.sectionModalError = '';
     this.modalService.open('ADD_SECTION');
@@ -4275,12 +4304,14 @@ export class AcademicsComponent implements OnInit {
       name: this.newSection.name.trim(),
       code: (this.newSection.code || this.newSection.name.replace(/Section\s*/i, '')).trim().toUpperCase(),
       capacity: Number(this.newSection.capacity) || 40,
+      class_teacher_id: this.newSection.class_teacher_id || null,
     }).subscribe({
       next: () => {
         this.savingSection = false;
         this.closeAddSectionModal();
         this.toast.success(`Section "${this.newSection.name}" created successfully!`);
         this.loadClassesAndSubjects();
+        this.loadStaffList();
       },
       error: (err) => {
         this.savingSection = false;
@@ -4337,10 +4368,12 @@ export class AcademicsComponent implements OnInit {
       display_order: c.display_order || 1,
     };
     this.editClassModalError = '';
+    this.modalService.open('EDIT_CLASS');
     this.showEditClassModal = true;
   }
 
   closeEditClassModal() {
+    this.modalService.close();
     this.showEditClassModal = false;
     this.classToEdit = null;
     this.editClassModalError = '';
@@ -4391,12 +4424,15 @@ export class AcademicsComponent implements OnInit {
       code: sec.code || sec.name.replace(/^section\s+/i, '').trim(),
       capacity: sec.capacity || 40,
       display_order: sec.display_order || 1,
+      class_teacher_id: sec.class_teacher_id || '',
     };
     this.editSectionModalError = '';
+    this.modalService.open('EDIT_SECTION');
     this.showEditSectionModal = true;
   }
 
   closeEditSectionModal() {
+    this.modalService.close();
     this.showEditSectionModal = false;
     this.sectionToEdit = null;
     this.editSectionModalError = '';
@@ -4425,12 +4461,20 @@ export class AcademicsComponent implements OnInit {
     this.savingEditSection = true;
     this.editSectionModalError = '';
 
-    this.api.put(`academics/sections/${this.sectionToEdit.section.id}`, this.editSectionForm).subscribe({
+    const body: any = {
+      name: this.editSectionForm.name.trim(),
+      code: this.editSectionForm.code.trim().toUpperCase(),
+      capacity: this.editSectionForm.capacity,
+      class_teacher_id: this.editSectionForm.class_teacher_id || null,
+    };
+
+    this.api.put(`academics/sections/${this.sectionToEdit.section.id}`, body).subscribe({
       next: () => {
         this.toast.success(`Section "${this.formatSection(this.editSectionForm.name)}" updated successfully.`);
         this.savingEditSection = false;
         this.closeEditSectionModal();
         this.loadClassesAndSubjects();
+        this.loadStaffList();
       },
       error: (err) => {
         this.savingEditSection = false;
@@ -4444,10 +4488,12 @@ export class AcademicsComponent implements OnInit {
     if (event) event.stopPropagation();
     this.activeClassMenuId = null;
     this.classToDelete = c;
+    this.modalService.open('DELETE_CLASS');
     this.showDeleteClassModal = true;
   }
 
   closeDeleteClassModal() {
+    this.modalService.close();
     this.showDeleteClassModal = false;
     this.classToDelete = null;
   }
@@ -4474,10 +4520,12 @@ export class AcademicsComponent implements OnInit {
     if (event) event.stopPropagation();
     this.activeSectionMenuId = null;
     this.sectionToDelete = { section: sec, classItem: c };
+    this.modalService.open('DELETE_SECTION');
     this.showDeleteSectionModal = true;
   }
 
   closeDeleteSectionModal() {
+    this.modalService.close();
     this.showDeleteSectionModal = false;
     this.sectionToDelete = null;
   }
