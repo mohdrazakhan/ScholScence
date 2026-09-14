@@ -26,9 +26,14 @@ build/
 .vscode/
 .idea/
 
-# Logs
+# Logs & NPM
 *.log
 logs/
+.npm/
+npm-debug.log*
+
+# PDF Reports
+*.pdf
 
 # Prisma
 backend/prisma/migrations/*.sql.bak

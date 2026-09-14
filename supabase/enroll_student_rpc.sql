@@ -61,6 +61,12 @@ DECLARE
   v_enrollment_id UUID;
   v_sec_name TEXT;
   v_cls_name TEXT;
+  v_parent_user_id UUID := NULL;
+  v_guardian_role_id UUID := NULL;
+  v_guardian_id UUID := NULL;
+  v_guardian_email TEXT;
+  v_g_first TEXT;
+  v_g_last TEXT;
   v_result JSONB;
 BEGIN
   -- 1. Validate School Context
@@ -165,7 +171,125 @@ BEGIN
     RETURNING id INTO v_enrollment_id;
   END IF;
 
-  -- 7. Build Response Payload
+  -- 7. Auto-Create Parent User Account & Guardian Profile (with default password123)
+  v_guardian_email := LOWER(NULLIF(TRIM(p_guardian_email), ''));
+  IF v_guardian_email IS NOT NULL OR (p_guardian_phone IS NOT NULL AND TRIM(p_guardian_phone) != '') THEN
+    v_g_first := TRIM(SPLIT_PART(COALESCE(NULLIF(TRIM(p_guardian_name), ''), 'Parent'), ' ', 1));
+    v_g_last := NULLIF(TRIM(SUBSTRING(COALESCE(NULLIF(TRIM(p_guardian_name), ''), ''), LENGTH(v_g_first) + 2)), '');
+
+    -- Check if user already exists in public.users by email or phone
+    IF v_guardian_email IS NOT NULL THEN
+      SELECT id INTO v_parent_user_id
+      FROM public.users
+      WHERE LOWER(email) = v_guardian_email
+      LIMIT 1;
+    ELSIF p_guardian_phone IS NOT NULL AND TRIM(p_guardian_phone) != '' THEN
+      SELECT id INTO v_parent_user_id
+      FROM public.users
+      WHERE phone = TRIM(p_guardian_phone)
+      LIMIT 1;
+    END IF;
+
+    -- Create parent user if not found
+    IF v_parent_user_id IS NULL AND v_guardian_email IS NOT NULL THEN
+      INSERT INTO public.users (
+        email,
+        phone,
+        first_name,
+        last_name,
+        password_hash,
+        status
+      ) VALUES (
+        v_guardian_email,
+        NULLIF(TRIM(p_guardian_phone), ''),
+        COALESCE(v_g_first, 'Parent'),
+        v_g_last,
+        crypt('password123', gen_salt('bf', 10)),
+        'ACTIVE'
+      )
+      ON CONFLICT (email) DO UPDATE
+        SET phone = COALESCE(EXCLUDED.phone, public.users.phone),
+            first_name = COALESCE(EXCLUDED.first_name, public.users.first_name),
+            status = 'ACTIVE'
+      RETURNING id INTO v_parent_user_id;
+    END IF;
+
+    -- Find or ensure GUARDIAN role
+    SELECT id INTO v_guardian_role_id
+    FROM public.roles
+    WHERE code IN ('GUARDIAN', 'PARENT')
+    LIMIT 1;
+
+    IF v_guardian_role_id IS NULL THEN
+      INSERT INTO public.roles (
+        name, code, description, is_system_role, status
+      ) VALUES (
+        'Guardian / Parent', 'GUARDIAN', 'Parent or Legal Guardian of Student', TRUE, 'ACTIVE'
+      )
+      RETURNING id INTO v_guardian_role_id;
+    END IF;
+
+    -- Map parent to school in user_school_roles
+    IF v_parent_user_id IS NOT NULL AND v_guardian_role_id IS NOT NULL THEN
+      INSERT INTO public.user_school_roles (
+        user_id,
+        school_id,
+        role_id,
+        status
+      ) VALUES (
+        v_parent_user_id,
+        p_school_id,
+        v_guardian_role_id,
+        'ACTIVE'
+      )
+      ON CONFLICT DO NOTHING;
+
+      -- Create or locate guardian profile
+      SELECT id INTO v_guardian_id
+      FROM public.guardians
+      WHERE school_id = p_school_id AND user_id = v_parent_user_id
+      LIMIT 1;
+
+      IF v_guardian_id IS NULL THEN
+        INSERT INTO public.guardians (
+          school_id,
+          user_id,
+          occupation,
+          relation,
+          status
+        ) VALUES (
+          p_school_id,
+          v_parent_user_id,
+          'Parent',
+          COALESCE(p_relationship, 'Parent'),
+          'ACTIVE'
+        )
+        RETURNING id INTO v_guardian_id;
+      END IF;
+
+      -- Link student to guardian in student_guardians
+      IF v_guardian_id IS NOT NULL AND v_student_id IS NOT NULL THEN
+        INSERT INTO public.student_guardians (
+          student_id,
+          guardian_id,
+          relationship,
+          is_primary_contact,
+          emergency_contact,
+          can_pickup
+        ) VALUES (
+          v_student_id,
+          v_guardian_id,
+          COALESCE(p_relationship, 'Parent'),
+          TRUE,
+          TRUE,
+          TRUE
+        )
+        ON CONFLICT (student_id, guardian_id) DO NOTHING;
+      END IF;
+    END IF;
+  END IF;
+
+  -- 8. Build Response Payload
   v_result := jsonb_build_object(
     'success', true,
     'studentId', v_student_id,
@@ -178,7 +302,9 @@ BEGIN
     'rollNumber', COALESCE(p_roll_number, '1'),
     'className', COALESCE(v_cls_name, ''),
     'sectionName', COALESCE(v_sec_name, ''),
-    'gender', COALESCE(p_gender, 'MALE')
+    'gender', COALESCE(p_gender, 'MALE'),
+    'parentUserId', v_parent_user_id,
+    'guardianEmail', v_guardian_email
   );
 
   RETURN v_result;

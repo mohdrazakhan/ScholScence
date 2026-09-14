@@ -16,6 +16,33 @@ import {
   AlumniStudent,
 } from '../models';
 
+export function getClassPedagogicalRank(name: string, code?: string, displayOrder?: number): number {
+  const norm = (name || '').toLowerCase().trim();
+  const codeNorm = (code || '').toLowerCase().trim();
+
+  // Pre-Nursery / Playgroup
+  if (norm.includes('pre-nur') || norm.includes('pre nur') || norm.includes('prenur') || norm.includes('play') || codeNorm.includes('pre_nur') || codeNorm.includes('prenur')) return 1;
+  // Nursery
+  if (norm === 'nursery' || norm.includes('nur') || codeNorm === 'nur') return 2;
+  // LKG / KG-1 / KG1 / Junior KG
+  if (norm.includes('lkg') || norm.includes('kg-1') || norm.includes('kg 1') || norm.includes('kg1') || norm.includes('jr') || codeNorm.includes('lkg')) return 3;
+  // UKG / KG-2 / KG2 / Senior KG
+  if (norm.includes('ukg') || norm.includes('kg-2') || norm.includes('kg 2') || norm.includes('kg2') || norm.includes('sr') || codeNorm.includes('ukg')) return 4;
+
+  // Numeric Class matching: e.g. "Class 1", "Class 2", "Grade 10", "1", "2", "CLS-1", etc.
+  const numMatch = norm.match(/\d+/);
+  if (numMatch) {
+    return 4 + parseInt(numMatch[0], 10);
+  }
+
+  // Fallback to display_order if valid
+  if (typeof displayOrder === 'number' && displayOrder > 0) {
+    return 100 + displayOrder;
+  }
+
+  return 999;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -34,14 +61,23 @@ export class ApiService {
   }
 
   private getUserId(): string {
+    const u = this.getCurrentUser();
+    return u?.id || '';
+  }
+
+  private getCurrentUser(): any {
     const raw = localStorage.getItem('schoolsense_user');
     if (raw) {
       try {
-        const u = JSON.parse(raw);
-        return u?.id || '';
+        return JSON.parse(raw);
       } catch {}
     }
-    return '';
+    return null;
+  }
+
+  private isParentUser(): boolean {
+    const u = this.getCurrentUser();
+    return u?.role === 'GUARDIAN' || u?.role === 'PARENT';
   }
 
   get<T>(endpoint: string, params?: Record<string, any>): Observable<T> {
@@ -87,6 +123,11 @@ export class ApiService {
     // Academics: Staff
     if (cleanEndpoint === 'academics/staff' || cleanEndpoint === 'complaints/faculty') {
       return from(this.getStaff()) as unknown as Observable<T>;
+    }
+
+    // Academics: Student Deactivation Requests
+    if (cleanEndpoint === 'academics/students/deactivation-requests' || cleanEndpoint === 'students/deactivation-requests') {
+      return from(this.getStudentDeactivationRequests()) as unknown as Observable<T>;
     }
 
     // Academics: Section Students
@@ -135,6 +176,16 @@ export class ApiService {
 
     if (cleanEndpoint === 'complaints/my-children') {
       return from(this.getMyChildren()) as unknown as Observable<T>;
+    }
+
+    // Parent Attendance
+    if (cleanEndpoint === 'attendance/my-children' || cleanEndpoint.startsWith('attendance/my-children')) {
+      return from(this.getMyChildrenAttendance(params?.['studentId'], params?.['academicYearId'])) as unknown as Observable<T>;
+    }
+
+    // Parent Timetable
+    if (cleanEndpoint === 'timetable/my-child' || cleanEndpoint.startsWith('timetable/my-child')) {
+      return from(this.getMyChildTimetable(params?.['studentId'])) as unknown as Observable<T>;
     }
 
     // Timetable
@@ -209,9 +260,19 @@ export class ApiService {
       return from(this.createComplaint(body)) as unknown as Observable<T>;
     }
 
+    // Create Staff / Faculty / Principal
+    if (cleanEndpoint === 'academics/staff' || cleanEndpoint === 'staff') {
+      return from(this.createStaff(body)) as unknown as Observable<T>;
+    }
+
     // Create Student
     if (cleanEndpoint === 'academics/students') {
       return from(this.createStudent(body)) as unknown as Observable<T>;
+    }
+
+    // Student Deactivation Request
+    if (cleanEndpoint === 'academics/students/deactivation-requests' || cleanEndpoint === 'students/deactivation-requests') {
+      return from(this.submitStudentDeactivationRequest(body)) as unknown as Observable<T>;
     }
 
     // SaaS Subscription & Wallet Actions
@@ -236,12 +297,56 @@ export class ApiService {
   patch<T>(endpoint: string, body: any): Observable<T> {
     const cleanEndpoint = endpoint.split('?')[0];
 
+    if (cleanEndpoint.startsWith('academics/classes/')) {
+      const id = cleanEndpoint.replace('academics/classes/', '');
+      return from(this.updateClass(id, body)) as unknown as Observable<T>;
+    }
+
+    if (cleanEndpoint.startsWith('academics/sections/')) {
+      const id = cleanEndpoint.replace('academics/sections/', '');
+      return from(this.updateSection(id, body)) as unknown as Observable<T>;
+    }
+
+    // Staff Status Update (Admin / Principal)
+    const staffStatusMatch = cleanEndpoint.match(/^academics\/staff\/(.+)\/status$/);
+    if (staffStatusMatch) {
+      return from(this.updateStaffStatus(staffStatusMatch[1], body.status)) as unknown as Observable<T>;
+    }
+
+    // Student Status Update (Admin / Principal)
+    const studentStatusMatch = cleanEndpoint.match(/^academics\/students\/(.+)\/status$/);
+    if (studentStatusMatch) {
+      return from(this.updateStudentStatus(studentStatusMatch[1], body.status, body.reason)) as unknown as Observable<T>;
+    }
+
+    // Review Student Deactivation Request (Admin / Principal)
+    const deactReviewMatch = cleanEndpoint.match(/^academics\/students\/deactivation-requests\/(.+)\/review$/);
+    if (deactReviewMatch) {
+      return from(this.reviewStudentDeactivationRequest(deactReviewMatch[1], body.action, body.reviewNotes)) as unknown as Observable<T>;
+    }
+
     if (cleanEndpoint.startsWith('complaints/') && cleanEndpoint.endsWith('/status')) {
       const ticketId = cleanEndpoint.split('/')[1];
       return from(this.updateComplaintStatus(ticketId, body.status)) as unknown as Observable<T>;
     }
 
     return of({ success: true, ...body } as unknown as T);
+  }
+
+  put<T>(endpoint: string, body: any): Observable<T> {
+    const cleanEndpoint = endpoint.split('?')[0];
+
+    if (cleanEndpoint.startsWith('academics/classes/')) {
+      const id = cleanEndpoint.replace('academics/classes/', '');
+      return from(this.updateClass(id, body)) as unknown as Observable<T>;
+    }
+
+    if (cleanEndpoint.startsWith('academics/sections/')) {
+      const id = cleanEndpoint.replace('academics/sections/', '');
+      return from(this.updateSection(id, body)) as unknown as Observable<T>;
+    }
+
+    return this.patch<T>(endpoint, body);
   }
 
   delete<T>(endpoint: string): Observable<T> {
@@ -273,6 +378,55 @@ export class ApiService {
     }
 
     return of({ success: true } as unknown as T);
+  }
+
+  private async updateClass(id: string, body: any) {
+    const updates: any = {};
+    if (body.name !== undefined) updates.name = body.name.trim();
+    if (body.code !== undefined) updates.code = body.code.trim().toUpperCase();
+    if (body.display_order !== undefined) updates.display_order = Number(body.display_order);
+
+    const { data, error } = await this.supabase
+      .from('classes')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
+        throw new Error(`A class named "${body.name || ''}" (code: ${body.code || ''}) already exists in your school.`);
+      }
+      throw error;
+    }
+    return data;
+  }
+
+  private async updateSection(id: string, body: any) {
+    const updates: any = {};
+    if (body.name !== undefined) {
+      let secName = body.name.trim();
+      if (/^[A-Z]$/i.test(secName)) secName = `Section ${secName.toUpperCase()}`;
+      updates.name = secName;
+    }
+    if (body.code !== undefined) updates.code = body.code.trim().toUpperCase();
+    if (body.capacity !== undefined) updates.capacity = Number(body.capacity);
+    if (body.display_order !== undefined) updates.display_order = Number(body.display_order);
+
+    const { data, error } = await this.supabase
+      .from('sections')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
+        throw new Error(`A section with this name or code already exists for this class.`);
+      }
+      throw error;
+    }
+    return data;
   }
 
   private async deleteClass(id: string) {
@@ -325,7 +479,7 @@ export class ApiService {
       .order('start_date', { ascending: true })
       .limit(5);
 
-    return {
+    const overview: DashboardStats = {
       stats: {
         totalStudents: studentCount,
         totalClasses: classCount,
@@ -350,6 +504,16 @@ export class ApiService {
         status: e.status,
       })),
     };
+
+    if (this.isParentUser()) {
+      const myChildren = await this.getMyChildren();
+      (overview as any).parentData = {
+        children: myChildren,
+        activeChild: myChildren[0] || null,
+      };
+    }
+
+    return overview;
   }
 
   private async getClasses(academicYearId?: string): Promise<ClassItem[]> {
@@ -358,23 +522,41 @@ export class ApiService {
     if (schoolId) query = query.eq('school_id', schoolId);
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []).map((c: any) => ({
+
+    let sectionEnrollmentCounts: Record<string, number> = {};
+    try {
+      let enrollQuery = this.supabase.from('student_enrollments').select('section_id, status');
+      if (academicYearId) {
+        enrollQuery = enrollQuery.eq('academic_year_id', academicYearId);
+      }
+      const { data: enrollData } = await enrollQuery;
+      (enrollData || []).forEach((e: any) => {
+        if (e.section_id && e.status !== 'INACTIVE') {
+          sectionEnrollmentCounts[e.section_id] = (sectionEnrollmentCounts[e.section_id] || 0) + 1;
+        }
+      });
+    } catch {}
+
+    const mapped = (data || []).map((c: any) => ({
       id: c.id,
       name: c.name,
       code: c.code,
       display_order: c.display_order,
-      sections: (c.sections || [])
-        .filter((s: any) => !academicYearId || !s.academic_year_id || s.academic_year_id === academicYearId)
-        .map((s: any) => ({
-          id: s.id,
-          class_id: s.class_id,
-          academic_year_id: s.academic_year_id,
-          name: s.name,
-          code: s.code,
-          capacity: s.capacity || 40,
-          display_order: s.display_order || 0,
-        })),
+      sections: (c.sections || []).map((s: any) => ({
+        id: s.id,
+        class_id: s.class_id,
+        academic_year_id: s.academic_year_id,
+        name: s.name,
+        code: s.code,
+        capacity: s.capacity || 40,
+        enrolled_count: sectionEnrollmentCounts[s.id] || 0,
+        display_order: s.display_order || 0,
+      })),
     }));
+
+    return mapped.sort(
+      (a, b) => getClassPedagogicalRank(a.name, a.code, a.display_order) - getClassPedagogicalRank(b.name, b.code, b.display_order)
+    );
   }
 
   private async getSubjects(): Promise<SubjectItem[]> {
@@ -394,23 +576,519 @@ export class ApiService {
 
   private async getStaff(): Promise<any[]> {
     const schoolId = this.getSchoolId();
-    let query = this.supabase
-      .from('user_school_roles')
-      .select('*, user:users(*), role:roles(*)')
-      .eq('status', 'ACTIVE');
-    if (schoolId) query = query.eq('school_id', schoolId);
-    const { data, error } = await query;
-    if (error) throw error;
-    return (data || []).map((usr: any) => ({
-      id: usr.user?.id,
-      name: `${usr.user?.first_name || ''} ${usr.user?.last_name || ''}`.trim(),
-      first_name: usr.user?.first_name,
-      last_name: usr.user?.last_name,
-      email: usr.user?.email,
-      phone: usr.user?.phone,
-      role: usr.role?.name || 'Staff',
-      roleCode: usr.role?.code,
-    }));
+    if (!schoolId) return [];
+
+    try {
+      // 1. Fetch user_school_roles, users, roles, sections, subject teachers, and classes
+      const [usrRes, usersRes, rolesRes, sectionsRes, subjectTeachersRes, classesRes, subjectsRes] = await Promise.all([
+        this.supabase.from('user_school_roles').select('*').eq('school_id', schoolId),
+        this.supabase.from('users').select('*'),
+        this.supabase.from('roles').select('*'),
+        this.supabase.from('sections').select('id, name, class_id, class_teacher_id').eq('school_id', schoolId),
+        this.supabase.from('subject_teachers').select('*'),
+        this.supabase.from('classes').select('id, name').eq('school_id', schoolId),
+        this.supabase.from('subjects').select('id, name, code').eq('school_id', schoolId),
+      ]);
+
+      const userMap = new Map((usersRes.data || []).map((u: any) => [u.id, u]));
+      const roleMap = new Map((rolesRes.data || []).map((r: any) => [r.id, r]));
+      const classMap = new Map((classesRes.data || []).map((c: any) => [c.id, c]));
+      const subjectMap = new Map((subjectsRes.data || []).map((s: any) => [s.id, s]));
+      const sectionMap = new Map((sectionsRes.data || []).map((s: any) => [s.id, s]));
+
+      const staffList: any[] = [];
+      const seenUserIds = new Set<string>();
+
+      // Clean up any stray root admin user_school_roles for this tenant school
+      const rootUser = (usersRes.data || []).find(
+        (u: any) => u.email?.toLowerCase() === 'admin@schoolscence.in' || u.id === '00000000-0000-0000-0000-000000000001'
+      );
+      if (rootUser) {
+        Promise.resolve(
+          this.supabase
+            .from('user_school_roles')
+            .delete()
+            .eq('user_id', rootUser.id)
+            .eq('school_id', schoolId)
+        ).catch(() => {});
+      }
+
+      const usrList = usrRes.data || [];
+      for (const usr of usrList) {
+        const u = userMap.get(usr.user_id);
+        if (!u) continue;
+        const r = roleMap.get(usr.role_id);
+        const roleCode = (r?.code || 'TEACHER').toUpperCase();
+
+        // Exclude STUDENT, PARENT, and platform SUPER_ADMIN / Root Administrator from school staff directory
+        if (roleCode === 'STUDENT' || roleCode === 'PARENT' || roleCode === 'SUPER_ADMIN') continue;
+        if (u.email?.toLowerCase() === 'admin@schoolscence.in' || u.id === '00000000-0000-0000-0000-000000000001') continue;
+
+        seenUserIds.add(u.id);
+
+        // Class teacher sections
+        const cts = (sectionsRes.data || [])
+          .filter((sec: any) => sec.class_teacher_id === u.id)
+          .map((sec: any) => ({
+            sectionId: sec.id,
+            sectionName: sec.name,
+            className: classMap.get(sec.class_id)?.name || 'Class',
+          }));
+
+        // Subject assignments
+        const stAssignments = (subjectTeachersRes.data || [])
+          .filter((st: any) => st.teacher_id === u.id)
+          .map((st: any) => {
+            const sec = sectionMap.get(st.section_id);
+            const sub = subjectMap.get(st.subject_id);
+            return {
+              sectionId: st.section_id,
+              sectionName: sec?.name || '',
+              className: sec ? (classMap.get(sec.class_id)?.name || '') : '',
+              subjectName: sub?.name || 'Subject',
+              subjectCode: sub?.code || '',
+            };
+          });
+
+        staffList.push({
+          id: u.id,
+          firstName: u.first_name || 'Staff',
+          lastName: u.last_name || '',
+          fullName: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'Staff Member',
+          email: u.email,
+          phone: u.phone,
+          role: roleCode,
+          roleName: r?.name || (roleCode === 'SCHOOL_ADMIN' ? 'School Admin' : (roleCode === 'PRINCIPAL' ? 'Principal' : 'Teacher')),
+          classTeacherSections: cts,
+          subjectAssignments: stAssignments,
+          status: usr.status || u.status || 'ACTIVE',
+          createdAt: usr.created_at || u.created_at,
+        });
+      }
+
+      // Self-healing: Find any staff/admin users specifically belonging to this school's domain
+      const schoolData = (await this.supabase.from('schools').select('domain, slug, code').eq('id', schoolId).single()).data;
+      const schoolDomain = (schoolData?.domain || '').toLowerCase().trim();
+
+      if (schoolDomain) {
+        for (const u of (usersRes.data || [])) {
+          if (seenUserIds.has(u.id)) continue;
+          if (!u.email) continue;
+          const uEmail = u.email.toLowerCase();
+
+          // Never attach platform super admin / root user to school staff
+          if (uEmail === 'admin@schoolscence.in' || u.id === '00000000-0000-0000-0000-000000000001') continue;
+
+          // Only match if user email belongs to this school's specific domain
+          if (uEmail.endsWith('@' + schoolDomain)) {
+            const roleCode = uEmail.startsWith('admin@') ? 'SCHOOL_ADMIN' : (uEmail.startsWith('principal@') ? 'PRINCIPAL' : 'TEACHER');
+            const defaultRole = (rolesRes.data || []).find((r: any) => r.code === roleCode || r.code === 'TEACHER');
+            if (defaultRole) {
+              Promise.resolve(
+                this.supabase.from('user_school_roles').insert({
+                  user_id: u.id,
+                  school_id: schoolId,
+                  role_id: defaultRole.id,
+                  status: 'ACTIVE',
+                })
+              ).catch(() => {});
+            }
+
+            staffList.push({
+              id: u.id,
+              firstName: u.first_name || 'Staff',
+              lastName: u.last_name || '',
+              fullName: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'Staff Member',
+              email: u.email,
+              phone: u.phone,
+              role: roleCode,
+              roleName: roleCode === 'SCHOOL_ADMIN' ? 'School Admin' : (roleCode === 'PRINCIPAL' ? 'Principal' : 'Teacher'),
+              classTeacherSections: [],
+              subjectAssignments: [],
+              status: u.status || 'ACTIVE',
+              createdAt: u.created_at,
+            });
+            seenUserIds.add(u.id);
+          }
+        }
+      }
+
+      return staffList;
+    } catch (e) {
+      console.error('getStaff error:', e);
+      return [];
+    }
+  }
+
+  private async createStaff(body: any): Promise<any> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) {
+      throw new Error('No active school context found.');
+    }
+
+    const cleanFirstName = (body.firstName || '').trim();
+    const cleanLastName = (body.lastName || '').trim();
+    const cleanEmail = (body.email || '').trim().toLowerCase();
+    const cleanPhone = body.phone ? body.phone.trim() : null;
+    const password = body.password || 'password123';
+    const rawRole = (body.role || 'TEACHER').trim().toUpperCase();
+
+    let roleCode = 'TEACHER';
+    let roleName = 'Teacher';
+    if (rawRole === 'SCHOOL_ADMIN' || rawRole === 'ADMIN' || rawRole.includes('ADMIN')) {
+      roleCode = 'SCHOOL_ADMIN';
+      roleName = 'School Admin';
+    } else if (rawRole === 'PRINCIPAL' || rawRole.includes('PRINCIPAL')) {
+      roleCode = 'PRINCIPAL';
+      roleName = 'Principal';
+    } else if (rawRole === 'CLASS_TEACHER') {
+      roleCode = 'CLASS_TEACHER';
+      roleName = 'Class Teacher';
+    }
+
+    // 1. Create or update User in `users` table
+    let userId: string | null = null;
+    try {
+      const { data: existingUser } = await this.supabase
+        .from('users')
+        .select('id, email, first_name, last_name')
+        .eq('email', cleanEmail)
+        .maybeSingle();
+
+      if (existingUser) {
+        userId = existingUser.id;
+        await this.supabase
+          .from('users')
+          .update({
+            first_name: cleanFirstName || existingUser.first_name,
+            last_name: cleanLastName || existingUser.last_name,
+            phone: cleanPhone,
+            status: 'ACTIVE',
+          })
+          .eq('id', userId);
+      } else {
+        const { data: newUser, error: uErr } = await this.supabase
+          .from('users')
+          .insert({
+            email: cleanEmail,
+            first_name: cleanFirstName,
+            last_name: cleanLastName,
+            phone: cleanPhone,
+            password_hash: password,
+            status: 'ACTIVE',
+          })
+          .select('id')
+          .single();
+
+        if (uErr) {
+          console.error('User insert error:', uErr);
+          throw uErr;
+        }
+        userId = newUser?.id || null;
+      }
+    } catch (e: any) {
+      console.error('Error creating user for staff:', e);
+      throw new Error(e.message || 'Failed to create user account for staff.');
+    }
+
+    if (!userId) {
+      throw new Error('Failed to create or find staff user record.');
+    }
+
+    // 2. Find or create Role in `roles` table
+    let roleId: string | null = null;
+    try {
+      const { data: roles } = await this.supabase
+        .from('roles')
+        .select('id, code')
+        .or(`code.eq.${roleCode},code.eq.${roleCode === 'CLASS_TEACHER' ? 'TEACHER' : roleCode}`)
+        .limit(1);
+
+      if (roles && roles.length > 0) {
+        roleId = roles[0].id;
+      } else {
+        const { data: newRole } = await this.supabase
+          .from('roles')
+          .insert({
+            name: roleName,
+            code: roleCode,
+            description: `${roleName} role for school operations`,
+            is_system_role: true,
+            status: 'ACTIVE',
+          })
+          .select('id')
+          .single();
+        roleId = newRole?.id || null;
+      }
+    } catch (rErr) {
+      console.warn('Role lookup warning:', rErr);
+    }
+
+    // 3. Link in `user_school_roles`
+    if (roleId) {
+      try {
+        const { data: existingRoleLink } = await this.supabase
+          .from('user_school_roles')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('school_id', schoolId)
+          .limit(1);
+
+        if (existingRoleLink && existingRoleLink.length > 0) {
+          await this.supabase
+            .from('user_school_roles')
+            .update({ role_id: roleId, status: 'ACTIVE' })
+            .eq('id', existingRoleLink[0].id);
+        } else {
+          await this.supabase.from('user_school_roles').insert({
+            user_id: userId,
+            school_id: schoolId,
+            role_id: roleId,
+            status: 'ACTIVE',
+          });
+        }
+      } catch (usrErr) {
+        console.warn('user_school_roles insert warning:', usrErr);
+      }
+    }
+
+    // 4. If class teacher section selected, assign in `sections`
+    const classTeacherSecId = body.classTeacherSectionId || (rawRole === 'CLASS_TEACHER' ? body.sectionId : null);
+    if (classTeacherSecId) {
+      try {
+        await this.supabase
+          .from('sections')
+          .update({ class_teacher_id: userId })
+          .eq('id', classTeacherSecId);
+      } catch (secErr) {
+        console.warn('Class teacher section update warning:', secErr);
+      }
+    }
+
+    // 5. If subject assignment selected, assign in `subject_teachers`
+    if (body.sectionId && body.subjectId) {
+      try {
+        await this.supabase.from('subject_teachers').insert({
+          section_id: body.sectionId,
+          subject_id: body.subjectId,
+          teacher_id: userId,
+        });
+      } catch (stErr) {
+        console.warn('Subject teacher assignment warning:', stErr);
+      }
+    }
+
+    return {
+      success: true,
+      id: userId,
+      firstName: cleanFirstName,
+      lastName: cleanLastName,
+      fullName: `${cleanFirstName} ${cleanLastName}`.trim(),
+      email: cleanEmail,
+      phone: cleanPhone,
+      role: roleCode,
+      status: 'ACTIVE',
+      message: `Staff member ${cleanFirstName} registered successfully!`,
+    };
+  }
+
+  private async updateStaffStatus(staffUserId: string, status: 'ACTIVE' | 'INACTIVE'): Promise<any> {
+    const schoolId = this.getSchoolId();
+    const cleanStatus = status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE';
+
+    if (schoolId) {
+      try {
+        await this.supabase
+          .from('user_school_roles')
+          .update({ status: cleanStatus, updated_at: new Date().toISOString() })
+          .eq('user_id', staffUserId)
+          .eq('school_id', schoolId);
+      } catch (e) {
+        console.warn('Failed to update user_school_roles status:', e);
+      }
+    }
+
+    try {
+      await this.supabase
+        .from('users')
+        .update({ status: cleanStatus, updated_at: new Date().toISOString() })
+        .eq('id', staffUserId);
+    } catch (e) {
+      console.warn('Failed to update users status:', e);
+    }
+
+    return { success: true, status: cleanStatus, message: `Staff member marked as ${cleanStatus}` };
+  }
+
+  private async updateStudentStatus(studentId: string, status: 'ACTIVE' | 'INACTIVE', reason?: string): Promise<any> {
+    const schoolId = this.getSchoolId();
+    const cleanStatus = status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE';
+
+    try {
+      let query = this.supabase
+        .from('students')
+        .update({ status: cleanStatus, updated_at: new Date().toISOString() })
+        .eq('id', studentId);
+      if (schoolId) query = query.eq('school_id', schoolId);
+      await query;
+    } catch (e) {
+      console.warn('Failed to update students table status:', e);
+    }
+
+    try {
+      await this.supabase
+        .from('student_enrollments')
+        .update({ status: cleanStatus, updated_at: new Date().toISOString() })
+        .eq('student_id', studentId);
+    } catch (e) {
+      console.warn('Failed to update student_enrollments status:', e);
+    }
+
+    // Save in local cache overrides for seamless sync
+    try {
+      const raw = localStorage.getItem('schoolsense_student_statuses') || '{}';
+      const map = JSON.parse(raw);
+      map[studentId] = { status: cleanStatus, reason: reason || '', updated_at: new Date().toISOString() };
+      localStorage.setItem('schoolsense_student_statuses', JSON.stringify(map));
+    } catch {}
+
+    return { success: true, status: cleanStatus, message: `Student status updated to ${cleanStatus}` };
+  }
+
+  private async getStudentDeactivationRequests(): Promise<any[]> {
+    const schoolId = this.getSchoolId();
+    let dbRequests: any[] = [];
+    try {
+      let query = this.supabase
+        .from('student_deactivation_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (schoolId) query = query.eq('school_id', schoolId);
+      const { data, error } = await query;
+      if (!error && data) dbRequests = data;
+    } catch (e) {
+      console.warn('Query student_deactivation_requests failed:', e);
+    }
+
+    let localRequests: any[] = [];
+    try {
+      const raw = localStorage.getItem('schoolsense_deactivation_requests');
+      if (raw) localRequests = JSON.parse(raw);
+    } catch {}
+
+    const combinedMap = new Map<string, any>();
+    for (const r of dbRequests) combinedMap.set(r.id, r);
+    for (const r of localRequests) {
+      if (!schoolId || r.school_id === schoolId) {
+        if (!combinedMap.has(r.id)) {
+          combinedMap.set(r.id, r);
+        } else {
+          // Local override if updated
+          const existing = combinedMap.get(r.id);
+          if (r.status !== existing.status || r.reviewed_at) {
+            combinedMap.set(r.id, { ...existing, ...r });
+          }
+        }
+      }
+    }
+
+    return Array.from(combinedMap.values()).sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }
+
+  private async submitStudentDeactivationRequest(payload: any): Promise<any> {
+    const schoolId = this.getSchoolId();
+    const currentUser = this.getCurrentUser();
+
+    const requestObj = {
+      id: `req_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      school_id: schoolId || '',
+      student_id: payload.studentId,
+      student_name: payload.studentName,
+      admission_number: payload.admissionNumber || '',
+      class_name: payload.className || '',
+      section_name: payload.sectionName || '',
+      requested_by_user_id: currentUser?.id || '',
+      requested_by_name: `${currentUser?.firstName || currentUser?.first_name || ''} ${currentUser?.lastName || currentUser?.last_name || ''}`.trim() || 'Teacher',
+      requested_by_role: currentUser?.role || 'TEACHER',
+      reason: payload.reason || 'Other',
+      comments: payload.comments || '',
+      status: 'PENDING',
+      created_at: new Date().toISOString(),
+    };
+
+    try {
+      await this.supabase.from('student_deactivation_requests').insert(requestObj);
+    } catch (e) {
+      console.warn('Direct insert to student_deactivation_requests table failed, caching locally:', e);
+    }
+
+    try {
+      const raw = localStorage.getItem('schoolsense_deactivation_requests');
+      const list = raw ? JSON.parse(raw) : [];
+      list.unshift(requestObj);
+      localStorage.setItem('schoolsense_deactivation_requests', JSON.stringify(list));
+    } catch {}
+
+    return {
+      success: true,
+      request: requestObj,
+      message: 'Student deactivation request submitted to School Administration for review.',
+    };
+  }
+
+  private async reviewStudentDeactivationRequest(
+    requestId: string,
+    action: 'APPROVE' | 'REJECT',
+    reviewNotes?: string
+  ): Promise<any> {
+    const currentUser = this.getCurrentUser();
+    const newStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+    const reviewData = {
+      status: newStatus,
+      reviewed_by_user_id: currentUser?.id || '',
+      reviewed_by_name: `${currentUser?.firstName || currentUser?.first_name || ''} ${currentUser?.lastName || currentUser?.last_name || ''}`.trim() || 'Administrator',
+      reviewed_at: new Date().toISOString(),
+      review_notes: reviewNotes || '',
+    };
+
+    try {
+      await this.supabase
+        .from('student_deactivation_requests')
+        .update(reviewData)
+        .eq('id', requestId);
+    } catch (e) {
+      console.warn('Supabase update student_deactivation_requests failed:', e);
+    }
+
+    let targetStudentId: string | null = null;
+    let targetReason = 'Approved by administration from teacher request';
+    try {
+      const raw = localStorage.getItem('schoolsense_deactivation_requests');
+      if (raw) {
+        const list = JSON.parse(raw);
+        const idx = list.findIndex((r: any) => r.id === requestId);
+        if (idx !== -1) {
+          list[idx] = { ...list[idx], ...reviewData };
+          targetStudentId = list[idx].student_id;
+          targetReason = list[idx].reason || targetReason;
+          localStorage.setItem('schoolsense_deactivation_requests', JSON.stringify(list));
+        }
+      }
+    } catch {}
+
+    if (action === 'APPROVE' && targetStudentId) {
+      await this.updateStudentStatus(targetStudentId, 'INACTIVE', targetReason);
+    }
+
+    return {
+      success: true,
+      status: newStatus,
+      message: `Deactivation request ${newStatus.toLowerCase()} successfully.${
+        action === 'APPROVE' ? ' Student has been marked inactive.' : ''
+      }`,
+    };
   }
 
   // Student Section Mapping Helpers (ensures seamless roster sync across views)
@@ -465,69 +1143,6 @@ export class ApiService {
       clsName = (sec?.class as any)?.name || '';
       classId = sec?.class_id || (sec?.class as any)?.id || '';
     } catch {}
-
-    // 3. Self-healing check: ensure any un-enrolled students in the school get enrolled
-    if (schoolId && sectionId) {
-      try {
-        const { data: schoolStudents } = await this.supabase
-          .from('students')
-          .select('id')
-          .eq('school_id', schoolId)
-          .eq('status', 'ACTIVE');
-
-        if (schoolStudents && schoolStudents.length > 0) {
-          const { data: existingEnrs } = await this.supabase
-            .from('student_enrollments')
-            .select('student_id')
-            .in('student_id', schoolStudents.map((s: any) => s.id));
-
-          const enrolledIds = new Set((existingEnrs || []).map((e: any) => e.student_id));
-          const unlinked = schoolStudents.filter((s: any) => !enrolledIds.has(s.id));
-
-          if (unlinked.length > 0) {
-            let ayId: string | null = null;
-            const { data: currAy } = await this.supabase
-              .from('academic_years')
-              .select('id')
-              .eq('school_id', schoolId)
-              .limit(1)
-              .maybeSingle();
-            ayId = currAy?.id || null;
-
-            if (!ayId) {
-              const { data: newAy } = await this.supabase
-                .from('academic_years')
-                .insert({
-                  school_id: schoolId,
-                  name: '2026–2027',
-                  start_date: '2026-04-01',
-                  end_date: '2027-03-31',
-                  is_current: true,
-                  status: 'ACTIVE',
-                })
-                .select()
-                .single();
-              ayId = newAy?.id;
-            }
-
-            if (ayId && classId) {
-              for (const u of unlinked) {
-                await this.supabase.from('student_enrollments').insert({
-                  student_id: u.id,
-                  section_id: sectionId,
-                  class_id: classId,
-                  academic_year_id: ayId,
-                  roll_number: '1',
-                  status: 'ACTIVE',
-                });
-              }
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('Auto-repair un-enrolled students error', err);
-      }
-    }
 
     let enrollments: any[] = [];
     try {
@@ -588,8 +1203,13 @@ export class ApiService {
           .from('students')
           .select('*')
           .eq('school_id', schoolId)
-          .eq('status', 'ACTIVE')
           .order('created_at', { ascending: true });
+
+        let statusOverrides: Record<string, any> = {};
+        try {
+          const raw = localStorage.getItem('schoolsense_student_statuses');
+          if (raw) statusOverrides = JSON.parse(raw);
+        } catch {}
 
         if (allStudents && allStudents.length > 0) {
           const secMap = this.getStudentSectionMap();
@@ -610,6 +1230,7 @@ export class ApiService {
             });
 
             const fullName = `${st.first_name || ''} ${st.last_name || ''}`.trim() || st.admission_number || 'Student';
+            const ovr = statusOverrides[st.id]?.status;
             return {
               id: st.id,
               enrollmentId: st.id,
@@ -631,7 +1252,7 @@ export class ApiService {
                 email: '',
                 relationship: 'Guardian',
               },
-              status: st.status || 'ACTIVE',
+              status: ovr || st.status || 'ACTIVE',
             };
           });
         }
@@ -843,8 +1464,192 @@ export class ApiService {
     }));
   }
 
+  // Local Parent-Student cache helpers
+  private getLocalParentStudentMap(): Record<string, any> {
+    try {
+      return JSON.parse(localStorage.getItem('schoolsense_parent_students') || '{}');
+    } catch {
+      return {};
+    }
+  }
+
+  private saveLocalParentStudentMap(studentId: string, info: any) {
+    try {
+      const map = this.getLocalParentStudentMap();
+      map[studentId] = { ...(map[studentId] || {}), ...info };
+      localStorage.setItem('schoolsense_parent_students', JSON.stringify(map));
+    } catch {}
+  }
+
   private async getMyChildren(): Promise<any[]> {
+    const currentUser = this.getCurrentUser();
+    const userId = currentUser?.id || this.getUserId();
+    const schoolId = currentUser?.school?.id || this.getSchoolId();
+
+    if (!userId && !currentUser) return [];
+
+    // Check if children are already present on currentUser profile
+    if (currentUser?.children && currentUser.children.length > 0) {
+      return currentUser.children;
+    }
+
+    try {
+      // 1. Query student_guardians joined with guardians and students
+      const { data: sgData, error: sgErr } = await this.supabase
+        .from('student_guardians')
+        .select(`
+          id, relationship, is_primary_contact,
+          guardian:guardians!inner(id, user_id, school_id),
+          student:students!inner(
+            id, first_name, last_name, admission_number, status, emergency_contact_name, emergency_contact_phone,
+            student_enrollments(id, roll_number, status, class:classes(id, name), section:sections(id, name))
+          )
+        `)
+        .eq('guardian.user_id', userId);
+
+      if (!sgErr && sgData && sgData.length > 0) {
+        return sgData.map((sg: any) => {
+          const st = sg.student || {};
+          const enr = st.student_enrollments?.[0];
+          const fullName = `${st.first_name || ''} ${st.last_name || ''}`.trim() || st.admission_number || 'Student';
+          return {
+            id: st.id,
+            studentId: st.id,
+            name: fullName,
+            firstName: st.first_name,
+            lastName: st.last_name || '',
+            admissionNumber: st.admission_number,
+            rollNumber: enr?.roll_number || '1',
+            className: enr?.class?.name || 'Class 1',
+            sectionName: enr?.section?.name || 'Section A',
+            classId: enr?.class?.id,
+            sectionId: enr?.section?.id,
+            relationship: sg.relationship || 'Parent',
+            status: st.status || 'ACTIVE',
+          };
+        });
+      }
+    } catch (e) {
+      console.warn('Query student_guardians error, falling back:', e);
+    }
+
+    // 2. Direct Fallback: match by student emergency contacts or user email/phone in this school
+    if (schoolId) {
+      try {
+        const { data: students } = await this.supabase
+          .from('students')
+          .select('*, student_enrollments(*, class:classes(id, name), section:sections(id, name))')
+          .eq('school_id', schoolId)
+          .eq('status', 'ACTIVE');
+
+        if (students && students.length > 0) {
+          const userEmail = (currentUser?.email || '').toLowerCase();
+          const userPhone = (currentUser?.phone || '').trim();
+          const userFirst = (currentUser?.firstName || '').toLowerCase().trim();
+
+          const parentMap = this.getLocalParentStudentMap();
+
+          // Match by user email/phone in local mapping, or matching phone / name
+          const matched = students.filter((s: any) => {
+            const mapped = parentMap[s.id];
+            if (mapped && (mapped.guardianEmail === userEmail || mapped.parentUserId === userId || (userPhone && mapped.guardianPhone === userPhone))) {
+              return true;
+            }
+            const emPhone = (s.emergency_contact_phone || '').trim();
+            const emName = (s.emergency_contact_name || '').toLowerCase().trim();
+            return (userPhone && emPhone === userPhone) || (userFirst && userFirst !== 'parent' && emName.includes(userFirst));
+          });
+
+          const targetStudents = matched.length > 0 ? matched : students.slice(0, 1);
+          return targetStudents.map((st: any) => {
+            const enr = st.student_enrollments?.[0];
+            const fullName = `${st.first_name || ''} ${st.last_name || ''}`.trim() || st.admission_number || 'Student';
+            return {
+              id: st.id,
+              studentId: st.id,
+              name: fullName,
+              firstName: st.first_name,
+              lastName: st.last_name || '',
+              admissionNumber: st.admission_number,
+              rollNumber: enr?.roll_number || '1',
+              className: enr?.class?.name || 'Class 1',
+              sectionName: enr?.section?.name || 'Section A',
+              classId: enr?.class?.id,
+              sectionId: enr?.section?.id,
+              relationship: 'Parent',
+              status: st.status || 'ACTIVE',
+            };
+          });
+        }
+      } catch (err) {
+        console.warn('Fallback students query failed:', err);
+      }
+    }
+
     return [];
+  }
+
+  private async getMyChildTimetable(studentId?: string): Promise<any> {
+    const children = await this.getMyChildren();
+    const selectedChild = studentId ? children.find((c) => c.studentId === studentId) || children[0] : children[0];
+
+    let periods: any[] = [];
+    let availableSubjects: any[] = [];
+
+    if (selectedChild?.sectionId) {
+      periods = await this.getTimetable(selectedChild.sectionId);
+    } else if (selectedChild) {
+      const sections = await this.getSections();
+      if (sections.length > 0) {
+        periods = await this.getTimetable(sections[0].id);
+      }
+    }
+
+    try {
+      availableSubjects = await this.getSubjects();
+    } catch {}
+
+    return {
+      childrenList: children,
+      selectedChild: selectedChild || null,
+      timetable: {
+        periods,
+        availableSubjects,
+      },
+    };
+  }
+
+  private async getMyChildrenAttendance(studentId?: string, academicYearId?: string): Promise<any> {
+    const children = await this.getMyChildren();
+    const selectedChild = studentId ? children.find((c) => c.studentId === studentId) || children[0] : children[0];
+
+    let records: any[] = [];
+    if (selectedChild) {
+      try {
+        const { data } = await this.supabase
+          .from('attendance')
+          .select('*')
+          .eq('student_id', selectedChild.studentId)
+          .order('date', { ascending: false });
+        records = data || [];
+      } catch {}
+    }
+
+    const presentCount = records.filter((r) => r.status === 'PRESENT').length;
+    const totalDays = records.length || 1;
+    const percentage = ((presentCount / totalDays) * 100).toFixed(1);
+
+    return {
+      childrenList: children,
+      selectedChild: selectedChild || null,
+      stats: {
+        totalDays: records.length,
+        presentDays: presentCount,
+        absentDays: records.filter((r) => r.status === 'ABSENT').length,
+        percentage: Number(percentage),
+      },
+      records,
+    };
   }
 
   private async getTimetable(sectionId: string): Promise<any[]> {
@@ -950,13 +1755,18 @@ export class ApiService {
         school_id: schoolId,
         name: className,
         code: classCode,
-        display_order: Number(body.display_order) || 0,
+        display_order: Number(body.display_order) || getClassPedagogicalRank(className, classCode),
         status: 'ACTIVE',
       })
       .select()
       .single();
 
-    if (classErr) throw classErr;
+    if (classErr) {
+      if (classErr.code === '23505' || classErr.message?.includes('duplicate key') || classErr.message?.includes('unique constraint')) {
+        throw new Error(`A class named "${className}" (code: ${classCode}) already exists in your school.`);
+      }
+      throw classErr;
+    }
 
     // Resolve Academic Year
     const academicYearId = body.academic_year_id || (await this.getActiveAcademicYearId(schoolId));
@@ -988,7 +1798,13 @@ export class ApiService {
     });
 
     if (sectionInserts.length > 0) {
-      await this.supabase.from('sections').insert(sectionInserts);
+      const { error: secErr } = await this.supabase.from('sections').insert(sectionInserts);
+      if (secErr) {
+        if (secErr.code === '23505' || secErr.message?.includes('duplicate key')) {
+          throw new Error(`One or more sections already exist in this class.`);
+        }
+        throw secErr;
+      }
     }
 
     return createdClass;
@@ -1022,7 +1838,12 @@ export class ApiService {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
+        throw new Error(`A section named "${secName}" already exists for this class.`);
+      }
+      throw error;
+    }
     return data;
   }
 
@@ -1321,45 +2142,106 @@ export class ApiService {
     const fromSessionId = body.fromSessionId || body.from_session_id;
     const toSessionId = body.toSessionId || body.to_session_id;
 
-    // Direct student promotion logic:
-    // 1. Fetch current enrollments with class & section
-    const { data: enrollments, error: eErr } = await this.supabase
-      .from('student_enrollments')
-      .select('*, class:classes(*), section:sections(*)')
-      .eq('academic_year_id', fromSessionId);
-
-    if (eErr) throw eErr;
-
-    // 2. Fetch all classes for progression ordering
+    // 1. Fetch all classes for the school ordered by display_order ASC
     const { data: allClasses } = await this.supabase
       .from('classes')
       .select('*, sections(*)')
       .eq('school_id', schoolId)
       .order('display_order', { ascending: true });
 
-    const classList = allClasses || [];
+    const classList = (allClasses || []).sort(
+      (a: any, b: any) => getClassPedagogicalRank(a.name, a.code, a.display_order) - getClassPedagogicalRank(b.name, b.code, b.display_order)
+    );
+    if (classList.length === 0) {
+      return { success: true, promoted_count: 0, graduated_count: 0 };
+    }
+
+    // 2. Fetch current enrollments with section
+    let enrollments: any[] = [];
+    if (fromSessionId) {
+      const { data: sessionEnrolls } = await this.supabase
+        .from('student_enrollments')
+        .select('*, section:sections(*)')
+        .eq('academic_year_id', fromSessionId);
+      if (sessionEnrolls && sessionEnrolls.length > 0) {
+        enrollments = sessionEnrolls;
+      }
+    }
+
+    // Fallback: If no enrollments exist for fromSessionId, query all active students with their latest section
+    if (enrollments.length === 0) {
+      const { data: activeStudents } = await this.supabase
+        .from('students')
+        .select('*, student_enrollments(*, section:sections(*))')
+        .eq('school_id', schoolId)
+        .eq('status', 'ACTIVE');
+
+      enrollments = (activeStudents || []).map((st: any) => {
+        const latestEnr = (st.student_enrollments || [])[0] || {};
+        return {
+          student_id: st.id,
+          roll_number: latestEnr.roll_number || '1',
+          section_id: latestEnr.section_id || null,
+          section: latestEnr.section || null,
+        };
+      }).filter((e: any) => !!e.student_id);
+    }
+
     let promotedCount = 0;
     let graduatedCount = 0;
 
-    for (const e of (enrollments || [])) {
-      const currentClassIdx = classList.findIndex((c: any) => c.id === e.class_id);
-      if (currentClassIdx !== -1 && currentClassIdx < classList.length - 1) {
-        // Move to next class
-        const nextClass = classList[currentClassIdx + 1];
-        const nextSection = (nextClass.sections || [])[0] || e.section;
-        if (nextSection) {
-          await this.supabase.from('student_enrollments').insert({
-            student_id: e.student_id,
-            section_id: nextSection.id,
-            academic_year_id: toSessionId,
-            roll_number: e.roll_number,
-          });
-          promotedCount++;
-        }
-      } else {
-        // Final class: Mark student as ALUMNI
+    for (const e of enrollments) {
+      const classId = e.section?.class_id || e.class_id;
+      const currentClassIdx = classList.findIndex((c: any) => c.id === classId);
+
+      // If student is in the school's terminal / last class, graduate them to ALUMNI
+      if (currentClassIdx === classList.length - 1 || (currentClassIdx === -1 && classList.length === 1)) {
         await this.supabase.from('students').update({ status: 'ALUMNI' }).eq('id', e.student_id);
         graduatedCount++;
+      } else if (currentClassIdx !== -1 && currentClassIdx < classList.length - 1) {
+        // Promote to the next class
+        const nextClass = classList[currentClassIdx + 1];
+        const curSecName = e.section?.name || 'Section A';
+        let targetSection = (nextClass.sections || []).find(
+          (s: any) => s.name?.trim().toLowerCase() === curSecName.trim().toLowerCase()
+        ) || (nextClass.sections || [])[0];
+
+        // Auto-provision section in target class if none exists
+        if (!targetSection) {
+          try {
+            const { data: newSec } = await this.supabase
+              .from('sections')
+              .insert({
+                school_id: schoolId,
+                class_id: nextClass.id,
+                name: curSecName || 'Section A',
+                code: (curSecName || 'A').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4) || 'A',
+                capacity: 40,
+              })
+              .select()
+              .single();
+            targetSection = newSec;
+            if (!nextClass.sections) nextClass.sections = [];
+            if (newSec) nextClass.sections.push(newSec);
+          } catch (secErr) {
+            console.warn('Auto create section on rollover note:', secErr);
+          }
+        }
+
+        if (targetSection?.id && toSessionId) {
+          try {
+            await this.supabase.from('student_enrollments').insert({
+              student_id: e.student_id,
+              section_id: targetSection.id,
+              academic_year_id: toSessionId,
+              roll_number: e.roll_number || '1',
+              status: 'ACTIVE',
+            });
+            promotedCount++;
+          } catch (enrErr) {
+            console.warn('Rollover student enrollment insert note:', enrErr);
+          }
+        }
       }
     }
 
@@ -1390,7 +2272,7 @@ export class ApiService {
       if (studentIds.length > 0) {
         const { data: enrolls } = await this.supabase
           .from('student_enrollments')
-          .select('*, class:classes(name), section:sections(name), academic_year:academic_years(name)')
+          .select('*, section:sections(*, class:classes(*)), academic_year:academic_years(*)')
           .in('student_id', studentIds);
         (enrolls || []).forEach((en: any) => {
           if (!enrollmentsMap[en.student_id]) enrollmentsMap[en.student_id] = en;
@@ -1408,7 +2290,7 @@ export class ApiService {
           gender: st.gender,
           date_of_birth: st.date_of_birth,
           status: 'ALUMNI',
-          last_class_name: lastEnrollment?.class?.name || 'Class 12',
+          last_class_name: lastEnrollment?.section?.class?.name || lastEnrollment?.class?.name || 'Class 12',
           last_section_name: lastEnrollment?.section?.name || 'Section A',
           graduation_session: lastEnrollment?.academic_year?.name || 'Graduated',
           last_roll_number: lastEnrollment?.roll_number,
@@ -1495,6 +2377,7 @@ export class ApiService {
             sectionName: secName || 'Section A',
             rollNumber: body.rollNumber ? String(body.rollNumber) : '1',
           });
+          await this.ensureParentUserAndGuardian(schoolId, sid, body);
         }
         return rpcData;
       }
@@ -1631,11 +2514,176 @@ export class ApiService {
       });
     }
 
+    // Provision parent user account & guardian relationship
+    await this.ensureParentUserAndGuardian(schoolId, student.id, body);
+
     return {
       success: true,
       ...student,
       fullName: `${student.first_name || ''} ${student.last_name || ''}`.trim(),
     };
+  }
+
+  private async ensureParentUserAndGuardian(schoolId: string, studentId: string, body: any): Promise<void> {
+    const guardianEmail = (body.guardianEmail || '').trim().toLowerCase();
+    const guardianPhone = (body.guardianPhone || body.emergencyContactPhone || '').trim();
+    const guardianName = (body.guardianName || body.emergencyContactName || '').trim();
+    const relationship = body.relationship || 'FATHER';
+
+    if (!guardianEmail && !guardianPhone && !guardianName) return;
+
+    const nameParts = (guardianName || 'Parent').split(' ');
+    const firstName = nameParts[0] || 'Parent';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    try {
+      // 1. Check if user already exists
+      let parentUserId: string | null = null;
+      if (guardianEmail) {
+        const { data: existingUser } = await this.supabase
+          .from('users')
+          .select('id, email, password_hash')
+          .eq('email', guardianEmail)
+          .maybeSingle();
+        if (existingUser) {
+          parentUserId = existingUser.id;
+        }
+      } else if (guardianPhone) {
+        const { data: existingUser } = await this.supabase
+          .from('users')
+          .select('id, phone')
+          .eq('phone', guardianPhone)
+          .maybeSingle();
+        if (existingUser) {
+          parentUserId = existingUser.id;
+        }
+      }
+
+      // 2. If user doesn't exist, insert into users table with default password 'password123'
+      if (!parentUserId && (guardianEmail || guardianPhone)) {
+        const { data: newUser, error: uErr } = await this.supabase
+          .from('users')
+          .insert({
+            email: guardianEmail || `parent.${Date.now()}@schoolsense.in`,
+            phone: guardianPhone || null,
+            first_name: firstName,
+            last_name: lastName || null,
+            password_hash: 'password123',
+            status: 'ACTIVE',
+          })
+          .select()
+          .single();
+
+        if (!uErr && newUser) {
+          parentUserId = newUser.id;
+        }
+      }
+
+      if (parentUserId) {
+        // 3. Ensure role GUARDIAN exists
+        let roleId: string | null = null;
+        const { data: roles } = await this.supabase
+          .from('roles')
+          .select('id, code')
+          .in('code', ['GUARDIAN', 'PARENT'])
+          .limit(1);
+
+        if (roles && roles.length > 0) {
+          roleId = roles[0].id;
+        } else {
+          const { data: newRole } = await this.supabase
+            .from('roles')
+            .insert({
+              name: 'Guardian / Parent',
+              code: 'GUARDIAN',
+              description: 'Parent or Legal Guardian of Student',
+              is_system_role: true,
+              status: 'ACTIVE',
+            })
+            .select()
+            .single();
+          roleId = newRole?.id || null;
+        }
+
+        // 4. Ensure user_school_roles
+        if (roleId) {
+          const { data: existingUsr } = await this.supabase
+            .from('user_school_roles')
+            .select('id')
+            .eq('user_id', parentUserId)
+            .eq('school_id', schoolId)
+            .maybeSingle();
+
+          if (!existingUsr) {
+            await this.supabase.from('user_school_roles').insert({
+              user_id: parentUserId,
+              school_id: schoolId,
+              role_id: roleId,
+              status: 'ACTIVE',
+            });
+          }
+        }
+
+        // 5. Ensure guardians profile
+        let guardianId: string | null = null;
+        const { data: existingG } = await this.supabase
+          .from('guardians')
+          .select('id')
+          .eq('school_id', schoolId)
+          .eq('user_id', parentUserId)
+          .maybeSingle();
+
+        if (existingG) {
+          guardianId = existingG.id;
+        } else {
+          const { data: newG } = await this.supabase
+            .from('guardians')
+            .insert({
+              school_id: schoolId,
+              user_id: parentUserId,
+              relation: relationship || 'Parent',
+              status: 'ACTIVE',
+            })
+            .select()
+            .single();
+          guardianId = newG?.id || null;
+        }
+
+        // 6. Link in student_guardians
+        if (guardianId && studentId) {
+          const { data: existingSG } = await this.supabase
+            .from('student_guardians')
+            .select('id')
+            .eq('student_id', studentId)
+            .eq('guardian_id', guardianId)
+            .maybeSingle();
+
+          if (!existingSG) {
+            await this.supabase.from('student_guardians').insert({
+              student_id: studentId,
+              guardian_id: guardianId,
+              relationship: relationship || 'Parent',
+              is_primary_contact: true,
+              emergency_contact: true,
+              can_pickup: true,
+            });
+          }
+        }
+      }
+
+      // Also persist in local parent-student mapping cache
+      this.saveLocalParentStudentMap(studentId, {
+        studentId,
+        guardianEmail,
+        guardianPhone,
+        guardianName,
+        relationship,
+        schoolId,
+        parentUserId,
+      });
+    } catch (err) {
+      console.warn('ensureParentUserAndGuardian background process error:', err);
+    }
   }
 
   // ============================================================================

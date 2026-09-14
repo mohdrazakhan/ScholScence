@@ -17,14 +17,15 @@ export interface User {
   permissions: string[];
   children?: {
     id: string;
+    studentId?: string;
     admissionNumber: string;
     name: string;
     className: string;
     sectionName: string;
-    sectionId: string;
-    rollNumber: number;
-    relationship: string;
-    isPrimaryContact: boolean;
+    sectionId?: string;
+    rollNumber?: number | string;
+    relationship?: string;
+    isPrimaryContact?: boolean;
   }[];
   teachingScope?: {
     classTeacherSections: {
@@ -131,6 +132,7 @@ export interface SubjectItem {
 }
 
 export interface StudentItem {
+  id?: string;
   enrollmentId: string;
   studentId: string;
   admissionNumber: string;
@@ -151,12 +153,34 @@ export interface StudentItem {
     name?: string;
     relationship?: string;
   };
+  status?: string;
   guardians?: {
     name: string;
     relationship?: string;
     phone?: string;
     email?: string;
   }[];
+}
+
+export interface StudentDeactivationRequest {
+  id: string;
+  school_id: string;
+  student_id: string;
+  student_name: string;
+  admission_number: string;
+  class_name: string;
+  section_name: string;
+  requested_by_user_id: string;
+  requested_by_name: string;
+  requested_by_role?: string;
+  reason: string;
+  comments?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewed_by_user_id?: string;
+  reviewed_by_name?: string;
+  reviewed_at?: string;
+  review_notes?: string;
+  created_at: string;
 }
 
 export interface AttendanceStudent {

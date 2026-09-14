@@ -179,6 +179,28 @@ BEGIN
         'status', v_usr.school_status,
         'disabledServices', jsonb_build_array()
       ),
+      'children', (
+        SELECT COALESCE(jsonb_agg(
+          jsonb_build_object(
+            'id', st.id,
+            'studentId', st.id,
+            'name', TRIM(st.first_name || ' ' || COALESCE(st.last_name, '')),
+            'firstName', st.first_name,
+            'lastName', COALESCE(st.last_name, ''),
+            'admissionNumber', st.admission_number,
+            'rollNumber', COALESCE(se.roll_number, '1'),
+            'className', COALESCE(cls.name, 'Class 1'),
+            'sectionName', COALESCE(sec.name, 'Section A')
+          )
+        ), '[]'::jsonb)
+        FROM public.guardians g
+        JOIN public.student_guardians sg ON sg.guardian_id = g.id
+        JOIN public.students st ON st.id = sg.student_id
+        LEFT JOIN public.student_enrollments se ON se.student_id = st.id AND se.status = 'ACTIVE'
+        LEFT JOIN public.classes cls ON cls.id = se.class_id
+        LEFT JOIN public.sections sec ON sec.id = se.section_id
+        WHERE g.user_id = v_user.id AND g.school_id = v_usr.school_id
+      ),
       'permissions', jsonb_build_array()
     )
   );
