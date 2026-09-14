@@ -117,6 +117,7 @@ export interface SectionItem {
   code: string;
   capacity: number;
   display_order: number;
+  class_teacher_id?: string | null;
   class?: ClassItem;
   _count?: {
     student_enrollments: number;
