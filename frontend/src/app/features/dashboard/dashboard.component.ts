@@ -109,7 +109,8 @@ import { DashboardStats } from '../../core/models';
                     </svg>
                   </div>
                   <div>
-                    <h3 class="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider">Campus Circulars & Notices</h3>
+                    <h3 class="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider">Uat testing</h3>
+                    <!-- <h3 class="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider">Campus Circulars & Notices</h3> -->
 
                     <p class="text-[11px] text-slate-400 font-medium">Broadcast announcements, official circulars & student notices</p>
                   </div>
