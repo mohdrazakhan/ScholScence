@@ -32,3 +32,25 @@
   border: 1px solid #e2e8f0;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
 }
+
+/* Tactile Neumorphic / Push-Button Utilities */
+.neu-elevated {
+  background-color: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: 0 4px 10px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.neu-elevated:hover {
+  border-color: rgba(203, 213, 225, 1);
+  box-shadow: 0 6px 14px -1px rgba(0, 0, 0, 0.09), 0 3px 6px -2px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+}
+
+.neu-pushed {
+  background: linear-gradient(180deg, #dbe2eb 0%, #e2e8f0 40%, #e9eff5 100%);
+  border: 1px solid rgba(190, 204, 220, 0.95);
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.18), inset 0 1px 2px rgba(0, 0, 0, 0.14), inset 0 -1.5px 2px rgba(255, 255, 255, 0.85);
+  color: #0f172a;
+  transform: translateY(1px);
+}

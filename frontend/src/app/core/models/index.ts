@@ -56,6 +56,8 @@ export interface AuthResponse {
 export interface DashboardStats {
   stats: {
     totalStudents: number;
+    activeStudents?: number;
+    inactiveStudents?: number;
     totalClasses: number;
     totalTeachers: number;
     attendanceTodayPercentage: string;
@@ -87,6 +89,7 @@ export interface AlumniStudent {
   full_name: string;
   gender?: string;
   date_of_birth?: string;
+  dateOfBirth?: string;
   status: string;
   last_class_name?: string;
   last_section_name?: string;
@@ -152,8 +155,11 @@ export interface StudentItem {
   gender?: string;
   bloodGroup?: string;
   dob?: string;
+  dateOfBirth?: string;
   className: string;
   sectionName: string;
+  classId?: string;
+  sectionId?: string;
   primaryContact?: {
     first_name?: string;
     last_name?: string;
@@ -163,6 +169,10 @@ export interface StudentItem {
     relationship?: string;
   };
   status?: string;
+  activeHours?: number;
+  activeDays?: number;
+  activeTimeFormatted?: string;
+  isBillable?: boolean;
   guardians?: {
     name: string;
     relationship?: string;
@@ -382,6 +392,9 @@ export interface StudentBillingBreakdownItem {
   student_name: string;
   enrollment_date: string;
   status: string;
+  active_hours?: number;
+  active_time_formatted?: string;
+  is_billable?: boolean;
   class_name?: string;
   section_name?: string;
   student_fee: number;
@@ -389,6 +402,11 @@ export interface StudentBillingBreakdownItem {
 }
 
 export interface SubscriptionDetailsResponse {
+  school_id: string;
+  academic_year_id?: string;
+  current_session_name?: string;
+  active_students: number;
+  estimated_monthly_fee: number;
   subscription: SchoolSubscription;
   wallet: SchoolWallet;
   stats: {
@@ -400,6 +418,9 @@ export interface SubscriptionDetailsResponse {
 
 export interface MonthlyCalculationResponse {
   school_id: string;
+  academic_year_id?: string;
+  current_session_name?: string;
+  all_students_count?: number;
   per_student_rate: number;
   total_students: number;
   total_calculated_fee: number;

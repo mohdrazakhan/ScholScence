@@ -12,6 +12,7 @@ import { MyClassComponent } from './features/my-class/my-class.component';
 import { TimetableComponent } from './features/timetable/timetable.component';
 import { SuperAdminComponent } from './features/super-admin/super-admin.component';
 import { SubscriptionComponent } from './features/subscription/subscription.component';
+import { StudentDetailComponent } from './features/academics/student-detail.component';
 import { authGuard, authChildGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -30,6 +31,8 @@ export const routes: Routes = [
       { path: 'timetable', component: TimetableComponent, canActivate: [authGuard] },
       { path: 'attendance', component: AttendanceComponent, canActivate: [authGuard] },
       { path: 'academics', component: AcademicsComponent, canActivate: [authGuard] },
+      { path: 'academics/student/:id', component: StudentDetailComponent, canActivate: [authGuard] },
+      { path: 'students/:id', component: StudentDetailComponent, canActivate: [authGuard] },
       { path: 'homework', component: HomeworkComponent, canActivate: [authGuard] },
       { path: 'exams', component: ExamsComponent, canActivate: [authGuard] },
       { path: 'communication', component: CommunicationComponent, canActivate: [authGuard] },
