@@ -205,8 +205,7 @@ interface StaffMember {
             </div>
             <div>
               <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Grade Levels</div>
-              <div *ngIf="loadingClasses" class="h-6 w-24 bg-slate-200 rounded-lg animate-pulse my-1"></div>
-              <div *ngIf="!loadingClasses" class="text-xl font-black text-slate-900 mt-0.5">{{ classes.length }} Classes</div>
+              <div class="text-xl font-black text-slate-900 mt-0.5">{{ loadingClasses ? '—' : (classes.length + ' Classes') }}</div>
               <div class="text-[10px] text-slate-500">From Pre-Nursery to Grade 12</div>
             </div>
           </div>
@@ -219,8 +218,7 @@ interface StaffMember {
             </div>
             <div>
               <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active Divisions</div>
-              <div *ngIf="loadingClasses" class="h-6 w-24 bg-slate-200 rounded-lg animate-pulse my-1"></div>
-              <div *ngIf="!loadingClasses" class="text-xl font-black text-emerald-700 mt-0.5">{{ totalSectionsCount }} Sections</div>
+              <div class="text-xl font-black text-emerald-700 mt-0.5">{{ loadingClasses ? '—' : (totalSectionsCount + ' Sections') }}</div>
               <div class="text-[10px] text-slate-500">Custom and lettered divisions</div>
             </div>
           </div>
@@ -233,56 +231,26 @@ interface StaffMember {
             </div>
             <div>
               <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Student Intake & Capacity</div>
-              <div *ngIf="loadingClasses" class="h-6 w-24 bg-slate-200 rounded-lg animate-pulse my-1"></div>
-              <div *ngIf="!loadingClasses" class="text-xl font-black text-purple-700 mt-0.5">{{ totalEnrolledStudents }} / {{ totalCampusCapacity }}</div>
+              <div class="text-xl font-black text-purple-700 mt-0.5">{{ loadingClasses ? '—' : (totalEnrolledStudents + ' / ' + totalCampusCapacity) }}</div>
               <div class="text-[10px] text-slate-500">Enrolled out of total classroom capacity</div>
             </div>
           </div>
         </div>
 
-        <!-- Classes Loading Skeleton & Spinner (Shown when data is loading) -->
-        <div *ngIf="loadingClasses" class="space-y-5 animate-fadeIn">
-          <div class="p-5 bg-white/90 backdrop-blur-sm rounded-3xl border border-indigo-100 shadow-[6px_6px_20px_#d9e2ec,-6px_-6px_20px_#ffffff] flex items-center justify-center gap-4 py-7">
-            <div class="relative w-9 h-9 flex items-center justify-center shrink-0">
-              <div class="w-9 h-9 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-              <svg class="w-4 h-4 text-indigo-600 absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+        <!-- Classes Loading State: Modern Animated Circle Loader -->
+        <div *ngIf="loadingClasses" class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] p-16 flex flex-col items-center justify-center text-center space-y-4 animate-fadeIn">
+          <div class="relative w-16 h-16 flex items-center justify-center">
+            <div class="w-16 h-16 rounded-full border-4 border-slate-100 border-t-indigo-600 border-r-indigo-500 animate-spin"></div>
+            <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-50 to-indigo-100 text-indigo-600 flex items-center justify-center absolute shadow-inner">
+              <svg class="w-5 h-5 text-indigo-600" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M11.7 2.805a.75.75 0 01.6 0A60.65 60.65 0 0122.83 8.72a.75.75 0 01-.231 1.337 49.948 49.948 0 00-9.902 3.912l-.003.002c-.114.06-.24.09-.366.09a.747.747 0 01-.366-.09l-.003-.002A49.948 49.948 0 002.062 10.057.75.75 0 011.83 8.72a60.65 60.65 0 0110.47-5.915z" />
+                <path d="M5.68 12.32a.75.75 0 00-.736.638C4.544 15.352 4.148 18.067 4 20.25a.75.75 0 00.75.75h1.5a.75.75 0 00.75-.75c0-1.748.243-3.921.65-6.02a.75.75 0 00-.638-.86l-.332-.05zM12 15.75c-3.14 0-6.035-.873-8.25-2.38v4.38a1 1 0 00.5.866C6.544 19.92 9.172 20.5 12 20.5s5.456-.58 7.75-1.884a1 1 0 00.5-.866v-4.38c-2.215 1.507-5.11 2.38-8.25 2.38z" />
               </svg>
             </div>
-            <div>
-              <h4 class="text-sm font-black text-slate-900">Loading Academic Classes & Curriculum...</h4>
-              <p class="text-xs text-slate-500 mt-0.5">Fetching institutional grade levels, divisions, and subjects</p>
-            </div>
           </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            <div *ngFor="let item of [1, 2, 3]" class="bg-white rounded-3xl border border-slate-200/90 p-5 space-y-4 shadow-sm animate-pulse">
-              <div class="flex items-start justify-between">
-                <div class="space-y-2">
-                  <div class="w-12 h-5 bg-slate-200 rounded-lg"></div>
-                  <div class="w-32 h-6 bg-slate-200 rounded-xl"></div>
-                </div>
-                <div class="w-8 h-8 bg-slate-100 rounded-xl"></div>
-              </div>
-              <div class="pt-3 border-t border-slate-100 space-y-2.5">
-                <div class="flex justify-between">
-                  <div class="w-24 h-4 bg-slate-200 rounded-md"></div>
-                  <div class="w-16 h-4 bg-slate-100 rounded-md"></div>
-                </div>
-                <div class="h-12 bg-slate-100/80 rounded-2xl"></div>
-              </div>
-              <div class="pt-3 border-t border-slate-100 space-y-2">
-                <div class="w-28 h-4 bg-slate-200 rounded-md"></div>
-                <div class="flex gap-1.5">
-                  <div class="w-20 h-6 bg-slate-100 rounded-xl"></div>
-                  <div class="w-24 h-6 bg-slate-100 rounded-xl"></div>
-                </div>
-              </div>
-              <div class="pt-3 border-t border-slate-100 flex justify-between">
-                <div class="w-16 h-4 bg-slate-100 rounded-md"></div>
-                <div class="w-20 h-4 bg-slate-100 rounded-md"></div>
-              </div>
-            </div>
+          <div class="space-y-1">
+            <h4 class="text-sm font-black text-slate-900 tracking-tight">Loading Academic Classes</h4>
+            <p class="text-xs text-slate-400 font-medium">Fetching grade hierarchy, sections, and curriculum...</p>
           </div>
         </div>
 
@@ -568,32 +536,20 @@ interface StaffMember {
       <!-- ============================================================== -->
       <div *ngIf="activeTab === 'STUDENTS'" class="space-y-4 sm:space-y-6 animate-fadeIn">
         
-        <!-- Top Clean Class Selector Skeleton (when loading) -->
-        <div *ngIf="loadingClasses" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3 animate-pulse">
-          <div *ngFor="let i of [1, 2, 3, 4, 5, 6]" class="p-3 sm:p-3.5 rounded-2xl bg-white border border-slate-200 h-16 flex flex-col justify-between">
-            <div class="h-4 w-20 bg-slate-200 rounded"></div>
-            <div class="flex justify-between pt-2 border-t border-slate-100">
-              <div class="h-3 w-10 bg-slate-100 rounded"></div>
-              <div class="h-3 w-8 bg-slate-100 rounded"></div>
-            </div>
-          </div>
-        </div>
-
         <!-- Top Clean Class Selector (when classes exist) -->
-        <div *ngIf="!loadingClasses && classes.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
+        <!-- Top Tactile Neumorphic Class Selector (Push Style on Selected) -->
+        <div *ngIf="!loadingClasses && classes.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-3.5">
           <div *ngFor="let c of classes"
                (click)="selectClass(c)"
-               [class.bg-slate-900]="selectedClass?.id === c.id"
-               [class.text-white]="selectedClass?.id === c.id"
-               [class.border-slate-900]="selectedClass?.id === c.id"
-               [class.shadow-md]="selectedClass?.id === c.id"
-               [class.bg-white]="selectedClass?.id !== c.id"
-               [class.text-slate-800]="selectedClass?.id !== c.id"
-               [class.border-slate-200]="selectedClass?.id !== c.id"
-               class="p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between hover:border-slate-400 shadow-xs active:scale-[0.97]">
-            <div class="text-xs font-black truncate">{{ c.name }}</div>
-            <div class="flex items-center justify-between mt-2 pt-2 border-t text-[10px]"
-                 [ngClass]="selectedClass?.id === c.id ? 'border-slate-800 text-slate-300' : 'border-slate-100 text-slate-400'">
+               [ngClass]="selectedClass?.id === c.id 
+                 ? 'neu-pushed' 
+                 : 'neu-elevated'"
+               class="p-3 sm:p-3.5 rounded-2xl cursor-pointer flex flex-col justify-between select-none">
+            <div class="text-xs font-black truncate" [class.text-slate-900]="selectedClass?.id === c.id" [class.text-slate-800]="selectedClass?.id !== c.id">
+              {{ c.name }}
+            </div>
+            <div class="flex items-center justify-between mt-2.5 pt-2 border-t text-[10px]"
+                 [ngClass]="selectedClass?.id === c.id ? 'border-slate-300/80 text-slate-600 font-bold' : 'border-slate-100 text-slate-400 font-medium'">
               <span>{{ c.sections.length || 0 }} Sec</span>
               <span class="font-mono font-bold">{{ c.code }}</span>
             </div>
@@ -619,9 +575,9 @@ interface StaffMember {
         </div>
 
         <!-- Enrolled Students Directory with Clay Table, Mobile Cards & Pagination -->
-        <div *ngIf="!loadingClasses && classes.length > 0" class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] overflow-hidden">
+        <div *ngIf="!loadingClasses && classes.length > 0" class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff]">
           <!-- Top Section: Class Heading, Section Pills, Status Filters & Action Bar -->
-          <div class="p-3.5 sm:px-6 sm:py-4 border-b border-slate-100 bg-[#f8fafc]/90 space-y-3.5">
+          <div class="p-3.5 sm:px-6 sm:py-4 border-b border-slate-100 bg-[#f8fafc]/90 rounded-t-3xl space-y-3.5">
             <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
               
               <!-- Left: Class Title, Section Switcher Pills, Status Filter Pills -->
@@ -672,6 +628,20 @@ interface StaffMember {
                           [class.text-slate-600]="studentStatusFilter !== 'INACTIVE'"
                           class="px-2.5 py-1 text-[11px] font-bold rounded-xl transition-all cursor-pointer">
                     Inactive
+                  </button>
+                  <button (click)="studentStatusFilter = 'SUSPENDED'; currentPage = 1"
+                          [class.bg-amber-600]="studentStatusFilter === 'SUSPENDED'"
+                          [class.text-white]="studentStatusFilter === 'SUSPENDED'"
+                          [class.text-slate-600]="studentStatusFilter !== 'SUSPENDED'"
+                          class="px-2.5 py-1 text-[11px] font-bold rounded-xl transition-all cursor-pointer">
+                    Suspended
+                  </button>
+                  <button (click)="studentStatusFilter = 'LEFTOUT'; currentPage = 1"
+                          [class.bg-purple-600]="studentStatusFilter === 'LEFTOUT'"
+                          [class.text-white]="studentStatusFilter === 'LEFTOUT'"
+                          [class.text-slate-600]="studentStatusFilter !== 'LEFTOUT'"
+                          class="px-2.5 py-1 text-[11px] font-bold rounded-xl transition-all cursor-pointer">
+                    Leftout / TC
                   </button>
                 </div>
               </div>
@@ -740,19 +710,24 @@ interface StaffMember {
             </div>
           </div>
 
-          <!-- Student Directory Loading State -->
-          <div *ngIf="loadingStudents || loadingClasses" class="p-8 space-y-4 animate-fadeIn">
-            <div class="flex items-center justify-center gap-3 py-6 text-slate-700">
-              <div class="w-7 h-7 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-              <span class="text-xs font-black">Loading student roster and admissions...</span>
+          <!-- Student Directory Loading State: Modern Animated Circle Loader -->
+          <div *ngIf="loadingStudents || loadingClasses" class="p-16 flex flex-col items-center justify-center text-center space-y-4 animate-fadeIn">
+            <div class="relative w-16 h-16 flex items-center justify-center">
+              <div class="w-16 h-16 rounded-full border-4 border-slate-100 border-t-indigo-600 border-r-indigo-500 animate-spin"></div>
+              <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-50 to-indigo-100 text-indigo-600 flex items-center justify-center absolute shadow-inner">
+                <svg class="w-5 h-5 text-indigo-600" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M4.5 6.375a4.125 4.125 0 118.25 0 4.125 4.125 0 01-8.25 0zM14.25 8.625a3.375 3.375 0 116.75 0 3.375 3.375 0 01-6.75 0zM1.5 19.125a7.125 7.125 0 0114.25 0v.003l-.001.119a.75.75 0 01-.363.633 13.067 13.067 0 01-6.761 1.87 13.067 13.067 0 01-6.761-1.87.75.75 0 01-.363-.633l-.001-.122zM16.5 19.128l-.003.043-.012.142-.05.357a8.55 8.55 0 01-.353 1.157c.725.105 1.47.16 2.228.16 2.916 0 5.617-.79 7.9-2.164a.75.75 0 00.39-.656v-.007a6.375 6.375 0 00-10.1-5.195 7.848 7.848 0 010 6.36z" />
+                </svg>
+              </div>
             </div>
-            <div class="space-y-3 animate-pulse">
-              <div *ngFor="let i of [1, 2, 3, 4, 5]" class="h-12 bg-slate-100/90 rounded-2xl"></div>
+            <div class="space-y-1">
+              <h4 class="text-sm font-black text-slate-900 tracking-tight">Loading Student Roster</h4>
+              <p class="text-xs text-slate-400 font-medium">Please wait a moment while admissions and grade rosters synchronize...</p>
             </div>
           </div>
 
           <!-- VIEW 1: DESKTOP CLAY TABLE (md:block) -->
-          <div *ngIf="!loadingStudents && !loadingClasses" class="hidden md:block overflow-x-auto">
+          <div *ngIf="!loadingStudents && !loadingClasses" class="hidden md:block overflow-x-auto min-h-[380px] pb-32">
             <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
               <thead class="bg-[#f8fafc] text-slate-600 font-bold uppercase tracking-wider">
                 <tr>
@@ -767,15 +742,18 @@ interface StaffMember {
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 font-medium">
-                <tr *ngFor="let st of paginatedStudents" class="hover:bg-slate-50/80 transition-colors">
+                <tr *ngFor="let st of paginatedStudents; let idx = index"
+                    class="hover:bg-slate-50/80 transition-colors"
+                    [class.relative]="true"
+                    [class.z-30]="activeStudentMenuId === (st.studentId || st.id)">
                   <td class="px-6 py-3.5 font-bold font-mono text-slate-700">#{{ st.rollNumber || '—' }}</td>
                   <td class="px-6 py-3.5 font-mono text-slate-500 font-semibold">{{ st.admissionNumber }}</td>
                   <td class="px-6 py-3.5 font-bold text-slate-900">
-                    <div class="flex items-center gap-2">
-                      <span class="w-6 h-6 rounded-full bg-slate-900 text-white text-[10px] font-black flex items-center justify-center">
+                    <div (click)="viewStudentDetails(st, $event)" class="flex items-center gap-2 cursor-pointer group hover:text-indigo-600 transition-colors">
+                      <span class="w-6 h-6 rounded-full bg-slate-900 text-white text-[10px] font-black flex items-center justify-center group-hover:bg-indigo-600 transition-colors">
                         {{ st.firstName.charAt(0) }}
                       </span>
-                      <span>{{ st.fullName }}</span>
+                      <span class="group-hover:underline underline-offset-2">{{ st.fullName }}</span>
                     </div>
                   </td>
                   <td class="px-6 py-3.5 text-slate-500 capitalize">
@@ -790,47 +768,103 @@ interface StaffMember {
                   </td>
                   <td class="px-6 py-3.5">
                     <span class="px-2.5 py-1 rounded-full text-[10px] font-bold border shadow-2xs"
-                          [ngClass]="(st.status || 'ACTIVE').toUpperCase() === 'ACTIVE'
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-rose-50 text-rose-700 border-rose-200'">
+                          [ngClass]="{
+                            'bg-emerald-50 text-emerald-700 border-emerald-200': (st.status || 'ACTIVE').toUpperCase() === 'ACTIVE',
+                            'bg-indigo-50 text-indigo-700 border-indigo-200': (st.status || 'ACTIVE').toUpperCase() === 'ALUMNI' || (st.status || 'ACTIVE').toUpperCase() === 'GRADUATED',
+                            'bg-rose-50 text-rose-700 border-rose-200': (st.status || 'ACTIVE').toUpperCase() === 'INACTIVE',
+                            'bg-amber-50 text-amber-800 border-amber-200': (st.status || 'ACTIVE').toUpperCase() === 'SUSPENDED',
+                            'bg-purple-50 text-purple-700 border-purple-200': (st.status || 'ACTIVE').toUpperCase() === 'LEFTOUT' || (st.status || 'ACTIVE').toUpperCase() === 'TRANSFERRED'
+                          }">
                       {{ (st.status || 'ACTIVE').toUpperCase() }}
                     </span>
                   </td>
                   <td class="px-6 py-3.5 text-right">
-                    <!-- Admin / Principal direct status toggle -->
-                    <div *ngIf="canDirectlyDeactivateStudent" class="flex items-center justify-end gap-1.5">
-                      <button *ngIf="(st.status || 'ACTIVE').toUpperCase() === 'ACTIVE'"
-                              (click)="openToggleStudentStatus(st, 'INACTIVE', $event)"
-                              class="px-2.5 py-1 bg-white hover:bg-rose-50 text-rose-700 hover:text-rose-800 border border-rose-200 rounded-xl text-[11px] font-bold transition-all cursor-pointer shadow-2xs">
-                        Deactivate
+                    <div class="relative inline-block text-right">
+                      <!-- 3-Dot Action Button -->
+                      <button type="button" (click)="toggleStudentMenu(st.studentId || st.id, $event)" title="Student Actions"
+                              class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer shadow-2xs">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <circle cx="12" cy="5" r="2"/>
+                          <circle cx="12" cy="12" r="2"/>
+                          <circle cx="12" cy="19" r="2"/>
+                        </svg>
                       </button>
-                      <button *ngIf="(st.status || 'ACTIVE').toUpperCase() === 'INACTIVE'"
-                              (click)="openToggleStudentStatus(st, 'ACTIVE', $event)"
-                              class="px-2.5 py-1 bg-white hover:bg-emerald-50 text-emerald-700 hover:text-emerald-800 border border-emerald-200 rounded-xl text-[11px] font-bold transition-all cursor-pointer shadow-2xs">
-                        Reactivate
-                      </button>
-                    </div>
 
-                    <!-- Teacher request deactivation action -->
-                    <div *ngIf="!canDirectlyDeactivateStudent && canRequestStudentDeactivation" class="flex items-center gap-1.5">
-                      <ng-container *ngIf="(st.status || 'ACTIVE').toUpperCase() === 'ACTIVE'">
-                        <span *ngIf="isStudentDeactivationPending(st.studentId || st.id || st.enrollmentId)"
-                              class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
-                          <svg class="w-3 h-3 text-amber-600 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                      <!-- Student Dropdown Actions List (Viewport Fixed on Top of Everything) -->
+                      <div *ngIf="activeStudentMenuId === (st.studentId || st.id)"
+                           [ngStyle]="studentMenuStyle"
+                           class="fixed w-48 bg-white rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.25)] border border-slate-200 py-1.5 z-[100] animate-fadeIn text-xs text-left">
+                        
+                        <!-- 0. View Details & Logs Option -->
+                        <button type="button" (click)="viewStudentDetails(st, $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-indigo-700 hover:bg-indigo-50 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-slate-100">
+                          <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
-                          <span>Request Pending</span>
-                        </span>
-                        <button *ngIf="!isStudentDeactivationPending(st.studentId || st.id || st.enrollmentId)"
-                                (click)="openTeacherDeactModal(st, $event)"
-                                class="px-2.5 py-1 bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-800 border border-amber-300 rounded-xl text-[11px] font-bold transition-all cursor-pointer shadow-2xs">
-                          Request Inactive
+                          <span>View Details & Logs</span>
                         </button>
-                      </ng-container>
-                      <span *ngIf="(st.status || 'ACTIVE').toUpperCase() === 'INACTIVE'" class="text-slate-400 text-xs">
-                        Inactive
-                      </span>
+
+                        <!-- 1. Edit Option -->
+                        <button *ngIf="canManage" type="button" (click)="openEditStudentModal(st, $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                          <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          <span>Edit Details</span>
+                        </button>
+
+                        <!-- 2. Active / Inactive Option -->
+                        <ng-container *ngIf="canDirectlyDeactivateStudent">
+                          <button *ngIf="(st.status || 'ACTIVE').toUpperCase() === 'ACTIVE'"
+                                  type="button" (click)="openToggleStudentStatus(st, 'INACTIVE', $event)"
+                                  class="w-full px-3.5 py-2 text-left font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                            </svg>
+                            <span>Mark Inactive</span>
+                          </button>
+
+                          <button *ngIf="(st.status || 'ACTIVE').toUpperCase() !== 'ACTIVE'"
+                                  type="button" (click)="openToggleStudentStatus(st, 'ACTIVE', $event)"
+                                  class="w-full px-3.5 py-2 text-left font-bold text-emerald-600 hover:bg-emerald-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>Mark Active</span>
+                          </button>
+                        </ng-container>
+
+                        <!-- Teacher Request Inactive -->
+                        <button *ngIf="!canDirectlyDeactivateStudent && canRequestStudentDeactivation && (st.status || 'ACTIVE').toUpperCase() === 'ACTIVE'"
+                                type="button" (click)="openTeacherDeactModal(st, $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-amber-700 hover:bg-amber-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                          <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <span>Request Inactive</span>
+                        </button>
+
+                        <!-- 3. Suspend Student Option -->
+                        <button *ngIf="canDirectlyDeactivateStudent && (st.status || 'ACTIVE').toUpperCase() !== 'SUSPENDED'"
+                                type="button" (click)="openToggleStudentStatus(st, 'SUSPENDED', $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-amber-700 hover:bg-amber-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                          <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>Suspend Student</span>
+                        </button>
+
+                        <!-- 4. Leftout / TC Option -->
+                        <button *ngIf="canDirectlyDeactivateStudent && (st.status || 'ACTIVE').toUpperCase() !== 'LEFTOUT'"
+                                type="button" (click)="openToggleStudentStatus(st, 'LEFTOUT', $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-purple-700 hover:bg-purple-50 flex items-center gap-2.5 transition-colors cursor-pointer border-t border-slate-100 mt-1 pt-1.5">
+                          <svg class="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                          <span>Mark Leftout / TC</span>
+                        </button>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -845,8 +879,10 @@ interface StaffMember {
 
           <!-- VIEW 2: MOBILE CLAYMORPHIC CARDS VIEW (md:hidden) -->
           <div *ngIf="!loadingStudents && !loadingClasses" class="block md:hidden p-3.5 space-y-3">
-            <div *ngFor="let st of paginatedStudents"
-                 class="p-4 rounded-2xl bg-[#f8fafc] border border-slate-200/90 shadow-xs space-y-2.5">
+            <div *ngFor="let st of paginatedStudents; let idx = index"
+                 class="p-4 rounded-2xl bg-[#f8fafc] border border-slate-200/90 shadow-xs space-y-2.5"
+                 [class.relative]="true"
+                 [class.z-30]="activeStudentMenuId === (st.studentId || st.id)">
               <div class="flex items-start justify-between gap-2">
                 <div>
                   <div class="flex items-center gap-1.5 flex-wrap">
@@ -857,15 +893,112 @@ interface StaffMember {
                       {{ st.admissionNumber }}
                     </span>
                     <span class="px-2 py-0.5 rounded-md border font-bold text-[9px]"
-                          [ngClass]="(st.status || 'ACTIVE').toUpperCase() === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'">
+                          [ngClass]="{
+                            'bg-emerald-50 text-emerald-700 border-emerald-200': (st.status || 'ACTIVE').toUpperCase() === 'ACTIVE',
+                            'bg-indigo-50 text-indigo-700 border-indigo-200': (st.status || 'ACTIVE').toUpperCase() === 'ALUMNI' || (st.status || 'ACTIVE').toUpperCase() === 'GRADUATED',
+                            'bg-rose-50 text-rose-700 border-rose-200': (st.status || 'ACTIVE').toUpperCase() === 'INACTIVE',
+                            'bg-amber-50 text-amber-800 border-amber-200': (st.status || 'ACTIVE').toUpperCase() === 'SUSPENDED',
+                            'bg-purple-50 text-purple-700 border-purple-200': (st.status || 'ACTIVE').toUpperCase() === 'LEFTOUT' || (st.status || 'ACTIVE').toUpperCase() === 'TRANSFERRED'
+                          }">
                       {{ (st.status || 'ACTIVE').toUpperCase() }}
                     </span>
                   </div>
-                  <h4 class="text-sm font-black text-slate-900 mt-1">{{ st.fullName }}</h4>
+                  <h4 (click)="viewStudentDetails(st, $event)" class="text-sm font-black text-slate-900 mt-1 cursor-pointer hover:text-indigo-600 transition-colors hover:underline underline-offset-2">{{ st.fullName }}</h4>
                 </div>
-                <span class="text-[10px] font-bold text-slate-500 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-xs shrink-0">
-                  {{ st.className }} - {{ formatSection(st.sectionName) }}
-                </span>
+
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <span class="text-[10px] font-bold text-slate-500 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-xs">
+                    {{ st.className }} - {{ formatSection(st.sectionName) }}
+                  </span>
+
+                  <!-- Mobile 3-Dot Action Button -->
+                  <div class="relative inline-block text-right">
+                    <button type="button" (click)="toggleStudentMenu(st.studentId || st.id, $event)" title="Student Actions"
+                            class="w-7 h-7 rounded-lg bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 flex items-center justify-center transition-all cursor-pointer shadow-2xs">
+                      <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="5" r="2"/>
+                        <circle cx="12" cy="12" r="2"/>
+                        <circle cx="12" cy="19" r="2"/>
+                      </svg>
+                    </button>
+
+                    <!-- Student Dropdown Actions List (Viewport Fixed on Top of Everything) -->
+                    <div *ngIf="activeStudentMenuId === (st.studentId || st.id)"
+                         [ngStyle]="studentMenuStyle"
+                         class="fixed w-48 bg-white rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.25)] border border-slate-200 py-1.5 z-[100] animate-fadeIn text-xs text-left">
+                      
+                      <!-- 0. View Details & Logs Option -->
+                      <button type="button" (click)="viewStudentDetails(st, $event)"
+                              class="w-full px-3.5 py-2 text-left font-bold text-indigo-700 hover:bg-indigo-50 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-slate-100">
+                        <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <span>View Details & Logs</span>
+                      </button>
+
+                      <!-- 1. Edit Option -->
+                      <button *ngIf="canManage" type="button" (click)="openEditStudentModal(st, $event)"
+                              class="w-full px-3.5 py-2 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                        <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        <span>Edit Details</span>
+                      </button>
+
+                      <!-- 2. Active / Inactive Option -->
+                      <ng-container *ngIf="canDirectlyDeactivateStudent">
+                        <button *ngIf="(st.status || 'ACTIVE').toUpperCase() === 'ACTIVE'"
+                                type="button" (click)="openToggleStudentStatus(st, 'INACTIVE', $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                          <svg class="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                          </svg>
+                          <span>Mark Inactive</span>
+                        </button>
+
+                        <button *ngIf="(st.status || 'ACTIVE').toUpperCase() !== 'ACTIVE'"
+                                type="button" (click)="openToggleStudentStatus(st, 'ACTIVE', $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-emerald-600 hover:bg-emerald-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                          <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>Mark Active</span>
+                        </button>
+                      </ng-container>
+
+                      <!-- Teacher Request Inactive -->
+                      <button *ngIf="!canDirectlyDeactivateStudent && canRequestStudentDeactivation && (st.status || 'ACTIVE').toUpperCase() === 'ACTIVE'"
+                              type="button" (click)="openTeacherDeactModal(st, $event)"
+                              class="w-full px-3.5 py-2 text-left font-bold text-amber-700 hover:bg-amber-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                        <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>Request Inactive</span>
+                      </button>
+
+                      <!-- 3. Suspend Student Option -->
+                      <button *ngIf="canDirectlyDeactivateStudent && (st.status || 'ACTIVE').toUpperCase() !== 'SUSPENDED'"
+                              type="button" (click)="openToggleStudentStatus(st, 'SUSPENDED', $event)"
+                              class="w-full px-3.5 py-2 text-left font-bold text-amber-700 hover:bg-amber-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                        <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Suspend Student</span>
+                      </button>
+
+                      <!-- 4. Leftout / TC Option -->
+                      <button *ngIf="canDirectlyDeactivateStudent && (st.status || 'ACTIVE').toUpperCase() !== 'LEFTOUT'"
+                              type="button" (click)="openToggleStudentStatus(st, 'LEFTOUT', $event)"
+                              class="w-full px-3.5 py-2 text-left font-bold text-purple-700 hover:bg-purple-50 flex items-center gap-2.5 transition-colors cursor-pointer border-t border-slate-100 mt-1 pt-1.5">
+                        <svg class="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        <span>Mark Leftout / TC</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <!-- Guardian Contact Info -->
@@ -882,40 +1015,6 @@ interface StaffMember {
                   </svg>
                   <span>{{ st.primaryContact.phone }}</span>
                 </a>
-              </div>
-
-              <!-- Mobile Actions Footer -->
-              <div class="pt-2 border-t border-slate-200/60 flex items-center justify-end gap-2">
-                <div *ngIf="canDirectlyDeactivateStudent">
-                  <button *ngIf="(st.status || 'ACTIVE').toUpperCase() === 'ACTIVE'"
-                          (click)="openToggleStudentStatus(st, 'INACTIVE', $event)"
-                          class="px-3 py-1 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                    Deactivate Student
-                  </button>
-                  <button *ngIf="(st.status || 'ACTIVE').toUpperCase() === 'INACTIVE'"
-                          (click)="openToggleStudentStatus(st, 'ACTIVE', $event)"
-                          class="px-3 py-1 bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                    Reactivate Student
-                  </button>
-                </div>
-
-                <div *ngIf="!canDirectlyDeactivateStudent && canRequestStudentDeactivation">
-                  <ng-container *ngIf="(st.status || 'ACTIVE').toUpperCase() === 'ACTIVE'">
-                    <span *ngIf="isStudentDeactivationPending(st.studentId || st.id || st.enrollmentId)"
-                          class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
-                      <svg class="w-3 h-3 text-amber-600 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                      </svg>
-                      <span>Request Pending</span>
-                    </span>
-                    <button *ngIf="!isStudentDeactivationPending(st.studentId || st.id || st.enrollmentId)"
-                            (click)="openTeacherDeactModal(st, $event)"
-                            class="px-3 py-1 bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-800 border border-amber-300 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                      Request Inactive
-                    </button>
-                  </ng-container>
-                </div>
               </div>
             </div>
 
@@ -1048,14 +1147,19 @@ interface StaffMember {
             </div>
           </div>
 
-          <!-- Alumni Loading State -->
-          <div *ngIf="loadingAlumni" class="p-8 space-y-4 animate-fadeIn">
-            <div class="flex items-center justify-center gap-3 py-6 text-slate-700">
-              <div class="w-7 h-7 border-3 border-amber-200 border-t-amber-600 rounded-full animate-spin"></div>
-              <span class="text-xs font-black">Loading alumni directory...</span>
+          <!-- Alumni Directory Loading State: Modern Animated Circle Loader -->
+          <div *ngIf="loadingAlumni" class="p-16 flex flex-col items-center justify-center text-center space-y-4 animate-fadeIn">
+            <div class="relative w-16 h-16 flex items-center justify-center">
+              <div class="w-16 h-16 rounded-full border-4 border-slate-100 border-t-amber-600 border-r-amber-500 animate-spin"></div>
+              <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-50 to-amber-100 text-amber-600 flex items-center justify-center absolute shadow-inner">
+                <svg class="w-5 h-5 text-amber-600" viewBox="0 0 24 24" fill="currentColor">
+                  <path fill-rule="evenodd" d="M5.166 2.621v.858c-1.035.148-2.059.33-3.071.543a.75.75 0 00-.584.859 6.753 6.753 0 006.138 5.6 6.73 6.73 0 002.743 1.346A6.707 6.707 0 019.25 14.25v2.308a3.75 3.75 0 00-2.25 3.442v.75a.75.75 0 00.75.75h8.5a.75.75 0 00.75-.75v-.75a3.75 3.75 0 00-2.25-3.442V14.25a6.707 6.707 0 01-1.127-2.426 6.73 6.73 0 002.743-1.346 6.753 6.753 0 006.139-5.6.75.75 0 00-.585-.858 47.077 47.077 0 00-3.07-.543V2.62a.75.75 0 00-.658-.744 49.22 49.22 0 00-6.093 0 .75.75 0 00-.658.744zM4.024 5.061a47.288 47.288 0 012.642-.438v3.446c-.767-.184-1.488-.512-2.126-.963a5.253 5.253 0 01-.516-2.045zm15.952 0c-.067.72-.25 1.411-.516 2.045a6.764 6.764 0 01-2.126.963V4.623a47.288 47.288 0 012.642.438z" clip-rule="evenodd" />
+                </svg>
+              </div>
             </div>
-            <div class="space-y-3 animate-pulse">
-              <div *ngFor="let i of [1, 2, 3, 4, 5]" class="h-12 bg-slate-100/90 rounded-2xl"></div>
+            <div class="space-y-1">
+              <h4 class="text-sm font-black text-slate-900 tracking-tight">Loading Alumni Directory</h4>
+              <p class="text-xs text-slate-400 font-medium">Please wait a moment while graduate records synchronize...</p>
             </div>
           </div>
 
@@ -1369,14 +1473,19 @@ interface StaffMember {
             </div>
           </div>
 
-          <!-- Staff Directory Loading State -->
-          <div *ngIf="loadingStaff" class="p-8 space-y-4 animate-fadeIn">
-            <div class="flex items-center justify-center gap-3 py-6 text-slate-700">
-              <div class="w-7 h-7 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-              <span class="text-xs font-black">Loading faculty & staff directory...</span>
+          <!-- Staff Directory Loading State: Modern Animated Circle Loader -->
+          <div *ngIf="loadingStaff" class="p-16 flex flex-col items-center justify-center text-center space-y-4 animate-fadeIn">
+            <div class="relative w-16 h-16 flex items-center justify-center">
+              <div class="w-16 h-16 rounded-full border-4 border-slate-100 border-t-indigo-600 border-r-indigo-500 animate-spin"></div>
+              <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-50 to-indigo-100 text-indigo-600 flex items-center justify-center absolute shadow-inner">
+                <svg class="w-5 h-5 text-indigo-600" viewBox="0 0 24 24" fill="currentColor">
+                  <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd" />
+                </svg>
+              </div>
             </div>
-            <div class="space-y-3 animate-pulse">
-              <div *ngFor="let i of [1, 2, 3, 4, 5]" class="h-12 bg-slate-100/90 rounded-2xl"></div>
+            <div class="space-y-1">
+              <h4 class="text-sm font-black text-slate-900 tracking-tight">Loading Faculty & Staff</h4>
+              <p class="text-xs text-slate-400 font-medium">Please wait a moment while employee records synchronize...</p>
             </div>
           </div>
 
@@ -1659,34 +1768,19 @@ interface StaffMember {
       <!-- ============================================================== -->
       <div *ngIf="activeTab === 'SUBJECTS'" class="space-y-6">
         
-        <!-- Subjects Loading State -->
-        <div *ngIf="loadingClasses" class="space-y-5 animate-fadeIn">
-          <div class="p-5 bg-white rounded-3xl border border-indigo-100 shadow-[6px_6px_20px_#d9e2ec,-6px_-6px_20px_#ffffff] flex items-center justify-center gap-4 py-7">
-            <div class="relative w-9 h-9 flex items-center justify-center shrink-0">
-              <div class="w-9 h-9 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-              <svg class="w-4 h-4 text-indigo-600 absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        <!-- Subjects Loading State: Modern Animated Circle Loader -->
+        <div *ngIf="loadingClasses" class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] p-16 flex flex-col items-center justify-center text-center space-y-4 animate-fadeIn">
+          <div class="relative w-16 h-16 flex items-center justify-center">
+            <div class="w-16 h-16 rounded-full border-4 border-slate-100 border-t-indigo-600 border-r-indigo-500 animate-spin"></div>
+            <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-50 to-indigo-100 text-indigo-600 flex items-center justify-center absolute shadow-inner">
+              <svg class="w-5 h-5 text-indigo-600" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M11.25 4.533A9.707 9.707 0 006 3a9.735 9.735 0 00-3.25.555.75.75 0 00-.5.707v14.25a.75.75 0 001 .707A8.237 8.237 0 016 18.75c1.995 0 3.823.707 5.25 1.886V4.533zM12.75 20.636A8.214 8.214 0 0118 18.75c.966 0 1.89.166 2.75.47a.75.75 0 001-.708V4.262a.75.75 0 00-.5-.707A9.735 9.735 0 0018 3a9.707 9.707 0 00-5.25 1.533v16.103z" />
               </svg>
             </div>
-            <div>
-              <h4 class="text-sm font-black text-slate-900">Loading Curriculum Subjects...</h4>
-              <p class="text-xs text-slate-500 mt-0.5">Fetching assigned class subjects and institutional master courses</p>
-            </div>
           </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            <div *ngFor="let item of [1, 2, 3]" class="bg-white rounded-3xl border border-slate-200/90 p-5 space-y-3 shadow-sm animate-pulse">
-              <div class="flex items-center justify-between">
-                <div class="w-16 h-5 bg-slate-200 rounded-lg"></div>
-                <div class="w-20 h-5 bg-slate-100 rounded-lg"></div>
-              </div>
-              <div class="w-36 h-6 bg-slate-200 rounded-xl mt-2"></div>
-              <div class="flex gap-1.5 mt-2">
-                <div class="w-16 h-5 bg-indigo-50 rounded-lg"></div>
-                <div class="w-20 h-5 bg-emerald-50 rounded-lg"></div>
-              </div>
-              <div class="h-10 bg-slate-100/70 rounded-xl mt-2"></div>
-            </div>
+          <div class="space-y-1">
+            <h4 class="text-sm font-black text-slate-900 tracking-tight">Loading Curriculum Subjects</h4>
+            <p class="text-xs text-slate-400 font-medium">Please wait a moment while assigned subjects synchronize...</p>
           </div>
         </div>
 
@@ -1856,30 +1950,40 @@ interface StaffMember {
               </div>
 
               <!-- Promotion Checkbox & Rollover Rules Explanation -->
-              <div class="space-y-2 pt-1 border-t border-slate-200/80">
+              <div class="space-y-3 pt-1 border-t border-slate-200/80">
                 <label class="flex items-start gap-2.5 cursor-pointer">
                   <input type="checkbox" [(ngModel)]="newSession.promoteStudents"
                          class="w-4 h-4 rounded text-slate-900 focus:ring-slate-900 mt-0.5" />
                   <div class="text-xs">
-                    <span class="font-black text-slate-900">Import & Auto-Promote Students from Active Session</span>
+                    <span class="font-black text-slate-900">Import & Auto-Promote Students from Previous Session</span>
                     <p class="text-[11px] text-slate-500 mt-0.5">
                       All students advance to the next class automatically. Final grade students move to Alumni Directory.
                     </p>
                   </div>
                 </label>
 
-                <!-- Dynamic Rollover Explanatory Callout -->
-                <div *ngIf="newSession.promoteStudents" class="p-3 bg-indigo-50/80 border border-indigo-100 rounded-xl text-indigo-950 text-[11px] space-y-1 animate-fadeIn">
-                  <div class="font-bold flex items-center gap-1.5 text-indigo-900">
+                <!-- Source Session Selector & Rollover Callout -->
+                <div *ngIf="newSession.promoteStudents" class="p-3 bg-indigo-50/80 border border-indigo-100 rounded-xl text-indigo-950 text-[11px] space-y-2 animate-fadeIn">
+                  <div>
+                    <label class="block font-bold text-indigo-950 mb-1">Source Session to Promote Students From *</label>
+                    <select [(ngModel)]="newSession.fromSessionId"
+                            class="w-full px-3 py-2 bg-white border border-indigo-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-indigo-500 shadow-xs">
+                      <option *ngFor="let s of academicSessions" [value]="s.id">
+                        {{ s.name }} ({{ s.id === auth.activeAcademicSession()?.id ? 'Active' : s.is_current ? 'Current' : 'Session' }})
+                      </option>
+                    </select>
+                  </div>
+
+                  <div class="font-bold flex items-center gap-1.5 text-indigo-900 pt-1 border-t border-indigo-100">
                     <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span>How Annual Student Promotion & Rollover Works:</span>
+                    <span>Annual Promotion & Grade Progression:</span>
                   </div>
                   <ul class="list-disc list-inside space-y-0.5 text-indigo-800 pl-1">
-                    <li><strong>Lower Grades:</strong> Students advance sequentially (e.g. Class 1 ➔ Class 2, Class 9 ➔ Class 10).</li>
-                    <li><strong>Terminal Class:</strong> Students in the highest class (e.g. Class 12) graduate to <strong>ALUMNI</strong> status and are stored in the permanent <strong>Alumni Directory</strong>.</li>
-                    <li><strong>Sections:</strong> All class sections are automatically replicated for the new academic year.</li>
+                    <li><strong>Grades Progression:</strong> Nursery ➔ LKG ➔ UKG ➔ Class 1 ... ➔ Class 12.</li>
+                    <li><strong>Terminal Class:</strong> Class 12 students graduate to <strong>ALUMNI</strong> and appear in Alumni Directory.</li>
+                    <li><strong>Sections:</strong> All class sections are automatically replicated for the new session.</li>
                   </ul>
                 </div>
 
@@ -1888,6 +1992,24 @@ interface StaffMember {
                          class="w-4 h-4 rounded text-slate-900 focus:ring-slate-900" />
                   <span class="text-xs font-bold text-slate-800">Set as Current School Session</span>
                 </label>
+              </div>
+              <!-- Section 3: Reset Database & Start Fresh -->
+              <div *ngIf="canManage" class="p-4 bg-rose-50/70 border border-rose-200/90 rounded-2xl space-y-2.5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div class="flex items-start gap-2.5">
+                    <span class="w-6 h-6 rounded-lg bg-rose-600 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0 mt-0.5">
+                      ⚠️
+                    </span>
+                    <div>
+                      <h4 class="text-xs font-black text-rose-950">Clean Database & Reset All Sessions/Students</h4>
+                      <p class="text-[11px] text-rose-700">Wipe all enrolled students, promotional test sessions, and restart with a single clean 2026–2027 session.</p>
+                    </div>
+                  </div>
+                  <button type="button" (click)="openResetConfirmModal()"
+                          class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black transition-all shadow-xs shrink-0 cursor-pointer active:scale-95 self-end sm:self-auto">
+                    Reset All Data
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1908,6 +2030,51 @@ interface StaffMember {
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
               </svg>
               <span>{{ savingSession ? 'Executing Rollover...' : 'Create Session & Execute Rollover' }}</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Custom Claymorphic Confirmation Modal for Full Database Reset -->
+      <div *ngIf="showResetConfirmModal" class="fixed inset-0 flex items-center justify-center p-4 z-[90] animate-fadeIn">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 space-y-4 animate-scaleUp">
+          
+          <div class="flex items-start gap-3.5">
+            <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center shrink-0 text-xl shadow-xs">
+              ⚠️
+            </div>
+            <div>
+              <h3 class="text-base font-black text-slate-900 tracking-tight">Wipe All Students & Sessions?</h3>
+              <p class="text-xs text-slate-500 mt-0.5">
+                This action is irreversible and prepares your campus for fresh student enrollment.
+              </p>
+            </div>
+          </div>
+
+          <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl space-y-1.5 text-xs text-rose-900">
+            <div class="font-black flex items-center gap-1.5">
+              <span>What will be cleared:</span>
+            </div>
+            <ul class="list-disc list-inside space-y-0.5 text-[11px] text-rose-800 pl-1">
+              <li>All enrolled students across all classes and sections</li>
+              <li>All test academic sessions (reset to single active 2026–2027 session)</li>
+              <li>Attendance logs, exam marks, and alumni history</li>
+            </ul>
+          </div>
+
+          <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+            <button type="button" (click)="cancelResetConfirm()" [disabled]="isResettingDatabase"
+                    class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
+              Cancel
+            </button>
+            <button type="button" (click)="executeResetDatabase()" [disabled]="isResettingDatabase"
+                    class="px-4.5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black rounded-2xl shadow-md transition-all cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50">
+              <svg *ngIf="isResettingDatabase" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>{{ isResettingDatabase ? 'Resetting Database...' : 'Yes, Delete All & Start Fresh' }}</span>
             </button>
           </div>
 
@@ -1979,8 +2146,8 @@ interface StaffMember {
           
           <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
             <div>
-              <h3 class="text-base font-black text-slate-900 tracking-tight">Enroll New Student / Child</h3>
-              <p class="text-xs text-slate-500 mt-0.5">Create student record, assign class section, and link guardian profile.</p>
+              <h3 class="text-base font-black text-slate-900 tracking-tight">{{ isEditingStudent ? 'Edit Student Details' : 'Enroll New Student / Child' }}</h3>
+              <p class="text-xs text-slate-500 mt-0.5">{{ isEditingStudent ? 'Update student profile, roll number, class assignment, or guardian details.' : 'Create student record, assign class section, and link guardian profile.' }}</p>
             </div>
             <button (click)="closeAddStudentModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
           </div>
@@ -2007,7 +2174,7 @@ interface StaffMember {
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <label class="block font-bold text-slate-700">Admission Number *</label>
-                  <button type="button" (click)="newStudent.admissionNumber = generateUniqueAdmissionNumber()"
+                  <button type="button" (click)="autoGenerateAdmissionNumber()"
                           class="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer flex items-center gap-1">
                     <svg class="w-3 h-3 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -2015,7 +2182,7 @@ interface StaffMember {
                     <span>Auto-generate</span>
                   </button>
                 </div>
-                <input type="text" [(ngModel)]="newStudent.admissionNumber" placeholder="e.g. ADM-2026-1049"
+                <input type="text" [(ngModel)]="newStudent.admissionNumber" placeholder="e.g. ADM-DEL-2026-0001"
                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 uppercase focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
               </div>
               <div>
@@ -2121,7 +2288,7 @@ interface StaffMember {
             </button>
             <button (click)="saveStudent()" [disabled]="savingStudent"
                     class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95">
-              <span *ngIf="!savingStudent">Enroll Student</span>
+              <span *ngIf="!savingStudent">{{ isEditingStudent ? 'Save Changes' : 'Enroll Student' }}</span>
               <span *ngIf="savingStudent">Saving...</span>
             </button>
           </div>
@@ -2928,21 +3095,39 @@ interface StaffMember {
       <!-- ============================================================== -->
       <!-- MODAL 7: DIRECT STUDENT STATUS MODAL (Admin / Principal)       -->
       <!-- ============================================================== -->
-      <div *ngIf="showStudentStatusModal && selectedStudentForStatus" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[70] animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 space-y-4 animate-scaleUp">
+      <div *ngIf="showStudentStatusModal && selectedStudentForStatus" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[110] animate-fadeIn">
+        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" (click)="closeStudentStatusModal()"></div>
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 space-y-4 animate-scaleUp relative z-10">
           <div class="flex items-start gap-3.5">
             <div class="w-11 h-11 rounded-2xl flex items-center justify-center font-black text-xl shrink-0 shadow-xs"
-                 [ngClass]="studentStatusAction === 'INACTIVE' ? 'bg-rose-50 text-rose-600 border border-rose-200' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'">
+                 [ngClass]="{
+                   'bg-rose-50 text-rose-600 border border-rose-200': studentStatusAction === 'INACTIVE',
+                   'bg-emerald-50 text-emerald-600 border border-emerald-200': studentStatusAction === 'ACTIVE',
+                   'bg-amber-50 text-amber-600 border border-amber-200': studentStatusAction === 'SUSPENDED',
+                   'bg-purple-50 text-purple-600 border border-purple-200': studentStatusAction === 'LEFTOUT'
+                 }">
+              <!-- Inactive Icon -->
               <svg *ngIf="studentStatusAction === 'INACTIVE'" class="w-6 h-6 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
               </svg>
-              <svg *ngIf="studentStatusAction !== 'INACTIVE'" class="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <!-- Active Icon -->
+              <svg *ngIf="studentStatusAction === 'ACTIVE'" class="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <!-- Suspended Icon -->
+              <svg *ngIf="studentStatusAction === 'SUSPENDED'" class="w-6 h-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <!-- Leftout Icon -->
+              <svg *ngIf="studentStatusAction === 'LEFTOUT'" class="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
             </div>
             <div>
               <h3 class="text-base font-black text-slate-900 tracking-tight">
-                {{ studentStatusAction === 'INACTIVE' ? 'Deactivate Student Record' : 'Reactivate Student Record' }}
+                {{ studentStatusAction === 'INACTIVE' ? 'Deactivate Student Record' : 
+                   studentStatusAction === 'ACTIVE' ? 'Reactivate Student Record' : 
+                   studentStatusAction === 'SUSPENDED' ? 'Suspend Student Enrollment' : 'Mark Student as Leftout / TC' }}
               </h3>
               <p class="text-xs text-slate-500 mt-0.5">
                 Student: <span class="font-bold text-slate-900">{{ selectedStudentForStatus.fullName }}</span> (Adm: {{ selectedStudentForStatus.admissionNumber }})
@@ -2953,20 +3138,30 @@ interface StaffMember {
           <div class="space-y-3 text-xs">
             <div>
               <label class="block font-bold text-slate-700 mb-1">Reason / Notes for Status Change</label>
-              <input type="text" [(ngModel)]="studentStatusReason" placeholder="e.g. Transferred to another institution / Relocated"
+              <input type="text" [(ngModel)]="studentStatusReason" placeholder="e.g. Transferred / Relocated / Administrative"
                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
             </div>
 
             <div class="p-3.5 rounded-2xl space-y-1 text-xs"
-                 [ngClass]="studentStatusAction === 'INACTIVE' ? 'bg-amber-50/80 border border-amber-200 text-amber-900' : 'bg-emerald-50/80 border border-emerald-200 text-emerald-900'">
+                 [ngClass]="{
+                   'bg-rose-50/80 border border-rose-200 text-rose-900': studentStatusAction === 'INACTIVE',
+                   'bg-emerald-50/80 border border-emerald-200 text-emerald-900': studentStatusAction === 'ACTIVE',
+                   'bg-amber-50/80 border border-amber-200 text-amber-900': studentStatusAction === 'SUSPENDED',
+                   'bg-purple-50/80 border border-purple-200 text-purple-900': studentStatusAction === 'LEFTOUT'
+                 }">
               <div class="font-bold text-[11px] flex items-center gap-1.5">
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>{{ studentStatusAction === 'INACTIVE' ? 'Inactive Student Details:' : 'Reactivation Details:' }}</span>
+                <span>{{ studentStatusAction === 'INACTIVE' ? 'Inactive Status Details:' : 
+                         studentStatusAction === 'ACTIVE' ? 'Reactivation Details:' : 
+                         studentStatusAction === 'SUSPENDED' ? 'Suspension Details:' : 'Leftout / TC Details:' }}</span>
               </div>
               <p class="text-[11px] leading-relaxed">
-                {{ studentStatusAction === 'INACTIVE' ? 'Student enrollment will be marked INACTIVE and removed from daily active class rosters unless filtered.' : 'Student enrollment will be restored to ACTIVE status across classroom modules.' }}
+                {{ studentStatusAction === 'INACTIVE' ? 'Student will be marked INACTIVE and excluded from active class rosters and billing unless filtered.' : 
+                   studentStatusAction === 'ACTIVE' ? 'Student will be restored to ACTIVE status across classroom modules and rosters.' : 
+                   studentStatusAction === 'SUSPENDED' ? 'Student will be marked SUSPENDED and restricted from daily class activities until reactivated.' : 
+                   'Student will be marked as LEFTOUT / TC and transferred out of active roster.' }}
               </p>
             </div>
           </div>
@@ -2978,12 +3173,20 @@ interface StaffMember {
             </button>
             <button type="button" (click)="executeToggleStudentStatus()" [disabled]="updatingStudentStatus"
                     class="px-5 py-2.5 text-white text-xs font-bold rounded-2xl shadow-md transition-all cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50"
-                    [ngClass]="studentStatusAction === 'INACTIVE' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700'">
+                    [ngClass]="{
+                      'bg-rose-600 hover:bg-rose-700': studentStatusAction === 'INACTIVE',
+                      'bg-emerald-600 hover:bg-emerald-700': studentStatusAction === 'ACTIVE',
+                      'bg-amber-600 hover:bg-amber-700': studentStatusAction === 'SUSPENDED',
+                      'bg-purple-600 hover:bg-purple-700': studentStatusAction === 'LEFTOUT'
+                    }">
               <svg *ngIf="updatingStudentStatus" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
               </svg>
-              <span>{{ updatingStudentStatus ? 'Updating...' : (studentStatusAction === 'INACTIVE' ? 'Confirm Deactivate' : 'Confirm Reactivate') }}</span>
+              <span>{{ updatingStudentStatus ? 'Updating...' : 
+                       (studentStatusAction === 'INACTIVE' ? 'Confirm Inactive' : 
+                        studentStatusAction === 'ACTIVE' ? 'Confirm Active' : 
+                        studentStatusAction === 'SUSPENDED' ? 'Confirm Suspend' : 'Confirm Leftout / TC') }}</span>
             </button>
           </div>
         </div>
@@ -3318,12 +3521,15 @@ export class AcademicsComponent implements OnInit {
   sessionModalError = '';
   sessionToDelete: AcademicSession | null = null;
   isDeletingSession = false;
+  showResetConfirmModal = false;
+  isResettingDatabase = false;
   newSession = {
     name: '2027–2028',
     startDate: '2027-04-01',
     endDate: '2028-03-31',
     isCurrent: true,
     promoteStudents: true,
+    fromSessionId: '',
   };
 
   showAddSubjectModal = false;
@@ -3387,11 +3593,15 @@ export class AcademicsComponent implements OnInit {
   };
 
   // Status Management & Deactivation Requests State
+  activeStudentMenuId: string | null = null;
+  studentMenuStyle: { [key: string]: string } = {};
+  isEditingStudent = false;
+  editingStudentId: string | null = null;
   deactivationRequests: StudentDeactivationRequest[] = [];
   showDeactivationRequestsModal = false;
   loadingDeactivationRequests = false;
   reviewNotes = '';
-  studentStatusFilter: 'ALL' | 'ACTIVE' | 'INACTIVE' = 'ALL';
+  studentStatusFilter: 'ALL' | 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'LEFTOUT' = 'ACTIVE';
   staffStatusFilter: 'ALL' | 'ACTIVE' | 'INACTIVE' = 'ALL';
   staffRoleFilter: 'ALL' | 'PRINCIPAL' | 'SCHOOL_ADMIN' | 'CLASS_TEACHER' | 'TEACHER' = 'ALL';
   staffCurrentPage = 1;
@@ -3439,7 +3649,7 @@ export class AcademicsComponent implements OnInit {
 
   showStudentStatusModal = false;
   selectedStudentForStatus: StudentItem | null = null;
-  studentStatusAction: 'ACTIVE' | 'INACTIVE' = 'INACTIVE';
+  studentStatusAction: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'LEFTOUT' = 'INACTIVE';
   studentStatusReason = '';
   updatingStudentStatus = false;
 
@@ -3837,11 +4047,18 @@ export class AcademicsComponent implements OnInit {
   }
 
   // --- Student Status Direct Toggle (Admin / Principal) ---
-  openToggleStudentStatus(student: StudentItem, newStatus: 'ACTIVE' | 'INACTIVE', event: Event) {
-    event.stopPropagation();
+  openToggleStudentStatus(student: StudentItem, newStatus: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'LEFTOUT', event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeStudentMenuId = null;
     this.selectedStudentForStatus = student;
     this.studentStatusAction = newStatus;
-    this.studentStatusReason = newStatus === 'INACTIVE' ? 'Administrative deactivation' : 'Re-admitted / Reactivated';
+    const defaultReasons: Record<string, string> = {
+      ACTIVE: 'Re-admitted / Reactivated',
+      INACTIVE: 'Administrative deactivation',
+      SUSPENDED: 'Disciplinary suspension',
+      LEFTOUT: 'Transfer Certificate / Left school',
+    };
+    this.studentStatusReason = defaultReasons[newStatus] || '';
     this.modalService.open('STUDENT_STATUS_MODAL');
     this.showStudentStatusModal = true;
   }
@@ -3970,9 +4187,19 @@ export class AcademicsComponent implements OnInit {
   get filteredStudents(): StudentItem[] {
     let list = this.students;
     if (this.studentStatusFilter === 'ACTIVE') {
-      list = list.filter((s) => (s.status || 'ACTIVE').toUpperCase() === 'ACTIVE');
+      list = list.filter((s) => {
+        const st = (s.status || 'ACTIVE').toUpperCase();
+        return st === 'ACTIVE' || st === 'ALUMNI' || st === 'GRADUATED';
+      });
     } else if (this.studentStatusFilter === 'INACTIVE') {
       list = list.filter((s) => (s.status || 'ACTIVE').toUpperCase() === 'INACTIVE');
+    } else if (this.studentStatusFilter === 'SUSPENDED') {
+      list = list.filter((s) => (s.status || 'ACTIVE').toUpperCase() === 'SUSPENDED');
+    } else if (this.studentStatusFilter === 'LEFTOUT') {
+      list = list.filter((s) => {
+        const st = (s.status || 'ACTIVE').toUpperCase();
+        return st === 'LEFTOUT' || st === 'TRANSFERRED';
+      });
     }
     if (!this.searchQuery.trim()) return list;
     const q = this.searchQuery.toLowerCase().trim();
@@ -3999,7 +4226,9 @@ export class AcademicsComponent implements OnInit {
 
   loadAlumniList() {
     this.loadingAlumni = true;
-    this.api.get<AlumniStudent[]>('academics/alumni').subscribe({
+    const activeSession = this.auth.activeAcademicSession();
+    const params = activeSession ? { academicYearId: activeSession.id } : undefined;
+    this.api.get<AlumniStudent[]>('academics/alumni', params).subscribe({
       next: (res) => {
         this.alumniList = res || [];
         this.loadingAlumni = false;
@@ -4066,12 +4295,17 @@ export class AcademicsComponent implements OnInit {
     this.loadingStaff = true;
     this.api.get<StaffMember[]>('academics/staff').subscribe({
       next: (res) => {
-        this.staffList = (res || []).filter(
-          (s) =>
+        this.staffList = (res || []).filter((s) => {
+          const r = (s.role || '').toUpperCase();
+          return (
             s.email?.toLowerCase() !== 'admin@schoolscence.in' &&
             s.id !== '00000000-0000-0000-0000-000000000001' &&
-            (s.role || '').toUpperCase() !== 'SUPER_ADMIN'
-        );
+            r !== 'SUPER_ADMIN' &&
+            r !== 'GUARDIAN' &&
+            r !== 'PARENT' &&
+            r !== 'STUDENT'
+          );
+        });
         this.loadingStaff = false;
       },
       error: () => {
@@ -4084,7 +4318,8 @@ export class AcademicsComponent implements OnInit {
   selectClass(c: ClassItem) {
     this.selectedClass = c;
     if (c.sections && c.sections.length > 0) {
-      this.selectSection(c.sections[0]);
+      const stillSection = this.selectedSection ? c.sections.find((s) => s.id === this.selectedSection?.id) : null;
+      this.selectSection(stillSection || c.sections[0]);
     } else {
       this.selectedSection = null;
       this.students = [];
@@ -4129,30 +4364,38 @@ export class AcademicsComponent implements OnInit {
 
   // --- Session Management & Promotion Rollover ---
   openSessionModal() {
-    const currentName = this.auth.activeSessionName();
-    let nextName = '2027–2028';
-    if (currentName && currentName.includes('–')) {
-      const parts = currentName.split('–');
+    // Determine the latest existing session chronologically to prefill next session name and source
+    const sorted = [...this.academicSessions].sort((a, b) => {
+      const aStart = a.start_date || a.created_at || '';
+      const bStart = b.start_date || b.created_at || '';
+      return bStart.localeCompare(aStart);
+    });
+
+    const latest = sorted[0];
+    let nextName = '2028–2029';
+    let nextStart = '2028-04-01';
+    let nextEnd = '2029-03-31';
+
+    if (latest?.name) {
+      const parts = latest.name.split(/[–\-]/);
       const startYear = parseInt(parts[0], 10);
       const endYear = parseInt(parts[1], 10);
       if (!isNaN(startYear) && !isNaN(endYear)) {
         nextName = `${startYear + 1}–${endYear + 1}`;
-      }
-    } else if (currentName && currentName.includes('-')) {
-      const parts = currentName.split('-');
-      const startYear = parseInt(parts[0], 10);
-      const endYear = parseInt(parts[1], 10);
-      if (!isNaN(startYear) && !isNaN(endYear)) {
-        nextName = `${startYear + 1}–${endYear + 1}`;
+        nextStart = `${startYear + 1}-04-01`;
+        nextEnd = `${endYear + 1}-03-31`;
       }
     }
 
+    const defaultFromSessionId = latest?.id || this.auth.activeAcademicSession()?.id || this.academicSessions.find((s) => s.is_current)?.id || '';
+
     this.newSession = {
       name: nextName,
-      startDate: '2027-04-01',
-      endDate: '2028-03-31',
+      startDate: nextStart,
+      endDate: nextEnd,
       isCurrent: true,
       promoteStudents: true,
+      fromSessionId: defaultFromSessionId,
     };
     this.sessionModalError = '';
     this.modalService.open('SESSION_MODAL');
@@ -4232,7 +4475,7 @@ export class AcademicsComponent implements OnInit {
     this.savingSession = true;
     this.sessionModalError = '';
 
-    const currentSession = this.auth.activeAcademicSession() || this.academicSessions.find((s) => s.is_current);
+    const fromSessionId = this.newSession.fromSessionId || this.auth.activeAcademicSession()?.id || this.academicSessions.find((s) => s.is_current)?.id;
 
     this.api.post<any>('academics/sessions', {
       name: this.newSession.name,
@@ -4242,18 +4485,31 @@ export class AcademicsComponent implements OnInit {
     }).subscribe({
       next: (created: any) => {
         const newSessionId = created.session_id || created.id;
+        const newSessionObj: AcademicSession = {
+          id: newSessionId,
+          school_id: created.school_id,
+          name: created.name || this.newSession.name,
+          start_date: created.start_date || this.newSession.startDate,
+          end_date: created.end_date || this.newSession.endDate,
+          is_current: this.newSession.isCurrent,
+          status: 'ACTIVE',
+        };
 
-        // If promotion requested and we have a previous session to promote from
-        if (this.newSession.promoteStudents && currentSession && newSessionId) {
+        if (this.newSession.isCurrent) {
+          this.auth.setActiveSession(newSessionObj);
+        }
+
+        // If promotion requested and we have a source session to promote from
+        if (this.newSession.promoteStudents && fromSessionId && newSessionId) {
           this.api.post<any>('academics/sessions/rollover', {
-            fromSessionId: currentSession.id,
+            fromSessionId: fromSessionId,
             toSessionId: newSessionId,
           }).subscribe({
             next: (rolloverRes: any) => {
               this.savingSession = false;
               this.closeSessionModal();
               this.toast.success(
-                `Session ${this.newSession.name} created! Promoted ${rolloverRes.promoted_count || 0} students & moved ${rolloverRes.graduated_alumni_count || 0} graduates to Alumni Directory.`
+                `Session ${this.newSession.name} created! Promoted ${rolloverRes.promoted_count || 0} students & graduated ${rolloverRes.graduated_alumni_count || 0} to Alumni Directory.`
               );
               this.loadAcademicSessions();
               this.loadClassesAndSubjects();
@@ -4280,6 +4536,37 @@ export class AcademicsComponent implements OnInit {
       error: (err: any) => {
         this.savingSession = false;
         this.sessionModalError = this.formatErrorMessage(err, 'Failed to create academic session.');
+      },
+    });
+  }
+
+  openResetConfirmModal() {
+    this.showResetConfirmModal = true;
+  }
+
+  cancelResetConfirm() {
+    this.showResetConfirmModal = false;
+    this.isResettingDatabase = false;
+  }
+
+  executeResetDatabase() {
+    this.isResettingDatabase = true;
+    this.api.post<any>('academics/reset-all', {}).subscribe({
+      next: (res: any) => {
+        this.isResettingDatabase = false;
+        this.showResetConfirmModal = false;
+        this.closeSessionModal();
+        if (res.session) {
+          this.auth.setActiveSession(res.session);
+        }
+        this.toast.success('Database reset completed! All students and test sessions cleared. Clean 2026–2027 session is active.');
+        this.loadAcademicSessions();
+        this.loadClassesAndSubjects();
+        this.loadAlumniList();
+      },
+      error: (err: any) => {
+        this.isResettingDatabase = false;
+        this.toast.error(err.message || 'Failed to reset database.');
       },
     });
   }
@@ -4605,15 +4892,114 @@ export class AcademicsComponent implements OnInit {
     }
   }
 
-  // --- Add Student ---
+  // --- Add / Edit Student ---
+  autoGenerateAdmissionNumber() {
+    this.api.get<{ admissionNumber: string; sequence: number }>('academics/students/next-admission-number').subscribe({
+      next: (res) => {
+        if (res?.admissionNumber) {
+          this.newStudent.admissionNumber = res.admissionNumber;
+        }
+      },
+      error: () => {
+        if (!this.newStudent.admissionNumber) {
+          this.newStudent.admissionNumber = this.generateUniqueAdmissionNumber();
+        }
+      },
+    });
+  }
+
   generateUniqueAdmissionNumber(): string {
+    const user = this.auth.currentUser();
+    const schoolName = user?.school?.name || (user as any)?.school_name || 'DEL';
+    const cleanLetters = (schoolName || 'DEL').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    let schoolPrefix = (cleanLetters.slice(0, 3) || 'DEL').padEnd(3, 'D');
     const yr = new Date().getFullYear();
-    const timeSeq = String(Date.now()).slice(-4);
-    const randSeq = Math.floor(100 + Math.random() * 900);
-    return `ADM-${yr}-${timeSeq}${randSeq}`;
+
+    const existingAdmissionNumbers = new Set<string>();
+    let maxSerial = 0;
+
+    // 1. Scan total enrolled students across campus
+    const totalCampusEnrolled = this.classes.reduce(
+      (sum, c) => sum + (c.sections?.reduce((sSum: number, s: any) => sSum + (Number(s.enrolled_count) || 0), 0) || 0),
+      0
+    );
+    if (totalCampusEnrolled > maxSerial) {
+      maxSerial = totalCampusEnrolled;
+    }
+
+    // 2. Scan currently loaded students for admission numbers
+    (this.students || []).forEach((st: any) => {
+      if (st.admissionNumber) {
+        const raw = String(st.admissionNumber).trim().toUpperCase();
+        const normalized = raw.replace(/[\u2013\u2014\u2212]/g, '-').replace(/\s+/g, '');
+        existingAdmissionNumbers.add(raw);
+        existingAdmissionNumbers.add(normalized);
+
+        const pfxMatch = normalized.match(/^ADM-([A-Z0-9]{2,6})-\d{4}-(\d+)$/i);
+        if (pfxMatch) {
+          if (pfxMatch[1]) schoolPrefix = pfxMatch[1].toUpperCase();
+          if (pfxMatch[2]) {
+            const num = parseInt(pfxMatch[2], 10);
+            if (!isNaN(num) && num > maxSerial) maxSerial = num;
+          }
+        }
+      }
+    });
+
+    let candidateSerial = Math.max(1, maxSerial + 1);
+    let candidate = `ADM-${schoolPrefix}-${yr}-${String(candidateSerial).padStart(4, '0')}`;
+
+    while (
+      existingAdmissionNumbers.has(candidate.toUpperCase()) ||
+      existingAdmissionNumbers.has(candidate.replace(/-/g, '–').toUpperCase())
+    ) {
+      candidateSerial++;
+      candidate = `ADM-${schoolPrefix}-${yr}-${String(candidateSerial).padStart(4, '0')}`;
+    }
+
+    return candidate;
+  }
+
+  toggleStudentMenu(studentId: string, event: Event) {
+    event.stopPropagation();
+    if (this.activeStudentMenuId === studentId) {
+      this.activeStudentMenuId = null;
+      return;
+    }
+
+    const btn = (event.currentTarget || event.target) as HTMLElement;
+    if (btn && typeof btn.getBoundingClientRect === 'function') {
+      const rect = btn.getBoundingClientRect();
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const rightPos = Math.max(12, viewportWidth - rect.right);
+
+      const styleObj: { [key: string]: string } = {
+        right: `${rightPos}px`,
+      };
+
+      // If less than 210px below and space above is sufficient, position above button, else below
+      if (spaceBelow < 210 && spaceAbove > 180) {
+        styleObj['bottom'] = `${viewportHeight - rect.top + 6}px`;
+      } else {
+        styleObj['top'] = `${rect.bottom + 6}px`;
+      }
+
+      this.studentMenuStyle = styleObj;
+    } else {
+      this.studentMenuStyle = {};
+    }
+
+    this.activeStudentMenuId = studentId;
+    this.activeClassMenuId = null;
+    this.activeSectionMenuId = null;
   }
 
   openAddStudentModal() {
+    this.isEditingStudent = false;
+    this.editingStudentId = null;
     const initialClass = this.selectedClass || (this.classes.length > 0 ? this.classes[0] : null);
     this.studentEnrollClassId = initialClass?.id || '';
     const initialSectionId = (this.selectedSection && this.selectedClass?.id === initialClass?.id)
@@ -4635,13 +5021,112 @@ export class AcademicsComponent implements OnInit {
       relationship: 'FATHER',
     };
     this.studentModalError = '';
+    this.autoGenerateAdmissionNumber();
     this.modalService.open('ADD_STUDENT');
+    this.showAddStudentModal = true;
+  }
+
+  viewStudentDetails(student: any, event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeStudentMenuId = null;
+    const targetId = student?.studentId || student?.id || student?.enrollmentId;
+    if (targetId) {
+      this.router.navigate(['/academics/student', targetId]);
+    }
+  }
+
+  openEditStudentModal(student: StudentItem, event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeStudentMenuId = null;
+    this.isEditingStudent = true;
+    this.editingStudentId = student.studentId || student.id || student.enrollmentId;
+
+    // Find class that has this student's section or matches class name
+    let classObj = this.classes.find(c => 
+      c.name === student.className || 
+      (c.sections || []).some(s => s.name === student.sectionName || s.id === student.sectionId)
+    );
+    if (!classObj && this.classes.length > 0) {
+      classObj = this.classes[0];
+    }
+    this.studentEnrollClassId = classObj?.id || '';
+
+    // Split name into first and last name
+    const parts = (student.fullName || '').trim().split(' ');
+    const firstName = parts[0] || '';
+    const lastName = parts.slice(1).join(' ') || '';
+
+    // Find section id
+    const secObj = classObj?.sections?.find(s => s.name === student.sectionName || s.id === student.sectionId);
+
+    let formattedDob = '';
+    const dobRaw = student.dateOfBirth || student.dob;
+    if (dobRaw) {
+      try {
+        const dStr = String(dobRaw).trim();
+        formattedDob = dStr.includes('T') ? dStr.split('T')[0] : dStr;
+      } catch {}
+    }
+
+    this.newStudent = {
+      firstName: firstName,
+      lastName: lastName,
+      admissionNumber: student.admissionNumber || '',
+      rollNumber: student.rollNumber !== undefined && student.rollNumber !== null ? String(student.rollNumber) : '',
+      sectionId: secObj?.id || student.sectionId || (classObj?.sections?.[0]?.id || ''),
+      gender: (student.gender || 'MALE').toUpperCase(),
+      dateOfBirth: formattedDob,
+      bloodGroup: student.bloodGroup || '',
+      guardianName: `${student.primaryContact?.first_name || ''} ${student.primaryContact?.last_name || ''}`.trim(),
+      guardianPhone: student.primaryContact?.phone || '',
+      guardianEmail: student.primaryContact?.email || '',
+      relationship: student.primaryContact?.relationship || 'FATHER',
+    };
+
+    this.studentModalError = '';
+    this.modalService.open('EDIT_STUDENT');
     this.showAddStudentModal = true;
   }
 
   closeAddStudentModal() {
     this.modalService.close();
     this.showAddStudentModal = false;
+    this.isEditingStudent = false;
+    this.editingStudentId = null;
+  }
+
+  changeStudentStatus(student: StudentItem, status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'LEFTOUT' | 'TRANSFERRED', event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeStudentMenuId = null;
+    const targetStudentId = student.studentId || student.id || student.enrollmentId;
+    const actionMap: Record<string, string> = {
+      ACTIVE: 'activate',
+      INACTIVE: 'deactivate',
+      SUSPENDED: 'suspend',
+      LEFTOUT: 'mark as leftout / TC',
+      TRANSFERRED: 'mark as transferred',
+    };
+    const actionLabel = actionMap[status] || 'change status of';
+
+    if (!confirm(`Are you sure you want to ${actionLabel} ${student.fullName}?`)) {
+      return;
+    }
+
+    const payload = {
+      status,
+      reason: `Status changed to ${status} via administration roster panel`,
+    };
+
+    this.api.patch(`academics/students/${targetStudentId}/status`, payload).subscribe({
+      next: () => {
+        student.status = status;
+        this.toast.success(`Student ${student.fullName} status updated to ${status}.`);
+        this.loadClassesAndSubjects();
+      },
+      error: (err: any) => {
+        this.toast.error(this.formatErrorMessage(err, `Failed to update status to ${status}.`));
+      },
+    });
   }
 
   saveStudent() {
@@ -4658,18 +5143,33 @@ export class AcademicsComponent implements OnInit {
       academicYearId: this.auth.activeAcademicSession()?.id,
     };
 
-    this.api.post('academics/students', payload).subscribe({
-      next: (res: any) => {
-        this.savingStudent = false;
-        this.closeAddStudentModal();
-        this.toast.success(`Student ${res.fullName || this.newStudent.firstName} enrolled successfully!`);
-        this.loadClassesAndSubjects();
-      },
-      error: (err) => {
-        this.savingStudent = false;
-        this.studentModalError = this.formatErrorMessage(err, 'Failed to enroll student. Please verify admission number.');
-      },
-    });
+    if (this.isEditingStudent && this.editingStudentId) {
+      this.api.patch(`academics/students/${this.editingStudentId}`, payload).subscribe({
+        next: (res: any) => {
+          this.savingStudent = false;
+          this.closeAddStudentModal();
+          this.toast.success(`Student ${res?.fullName || this.newStudent.firstName} updated successfully!`);
+          this.loadClassesAndSubjects();
+        },
+        error: (err) => {
+          this.savingStudent = false;
+          this.studentModalError = this.formatErrorMessage(err, 'Failed to update student details.');
+        },
+      });
+    } else {
+      this.api.post('academics/students', payload).subscribe({
+        next: (res: any) => {
+          this.savingStudent = false;
+          this.closeAddStudentModal();
+          this.toast.success(`Student ${res.fullName || this.newStudent.firstName} enrolled successfully!`);
+          this.loadClassesAndSubjects();
+        },
+        error: (err) => {
+          this.savingStudent = false;
+          this.studentModalError = this.formatErrorMessage(err, 'Failed to enroll student. Please verify admission number.');
+        },
+      });
+    }
   }
 
   // --- Add Staff ---
@@ -5069,10 +5569,19 @@ export class AcademicsComponent implements OnInit {
     this.activeClassMenuId = null;
   }
 
+  @HostListener('window:scroll')
+  @HostListener('window:resize')
+  onWindowScroll() {
+    if (this.activeStudentMenuId) {
+      this.activeStudentMenuId = null;
+    }
+  }
+
   @HostListener('document:click')
   onDocumentClick() {
     this.activeClassMenuId = null;
     this.activeSectionMenuId = null;
+    this.activeStudentMenuId = null;
     this.isSessionDropdownOpen = false;
   }
 

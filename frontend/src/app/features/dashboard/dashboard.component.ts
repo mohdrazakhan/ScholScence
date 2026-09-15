@@ -19,21 +19,35 @@ import { DashboardStats } from '../../core/models';
         <!-- 4 Primary Stat Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
           
-          <!-- Card 1: Total Students -->
+          <!-- Card 1: Active Students (Active | Inactive | Total) -->
           <a routerLink="/academics" [queryParams]="{tab: 'students'}"
              class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] hover:border-slate-400/80 transition-all flex flex-col justify-between group cursor-pointer">
             <div class="flex items-center justify-between">
-              <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Students</span>
+              <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active Students</span>
               <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center shadow-xs group-hover:bg-slate-900 group-hover:text-white transition-colors">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
               </div>
             </div>
-            <div class="text-2xl sm:text-3xl font-black text-slate-900 mt-2">{{ stats?.stats?.totalStudents ?? 0 }}</div>
-            <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-slate-100">
-              <span class="text-emerald-600 font-bold">Enrolled & Active</span>
-              <span class="text-slate-400 group-hover:text-slate-900 font-bold text-[11px] transition-colors">View Roster &rarr;</span>
+            <div class="text-2xl sm:text-3xl font-black text-slate-900 mt-2">{{ stats?.stats?.activeStudents ?? 0 }}</div>
+            <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-slate-100 flex-wrap gap-1">
+              <div class="flex items-center gap-1.5 text-[11px] font-bold">
+                <span class="text-emerald-600 inline-flex items-center gap-1" title="Active Students">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  {{ stats?.stats?.activeStudents ?? 0 }} Active
+                </span>
+                <span class="text-slate-300 font-normal">|</span>
+                <span class="text-rose-600 inline-flex items-center gap-1" title="Inactive Students">
+                  <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                  {{ stats?.stats?.inactiveStudents ?? 0 }} Inactive
+                </span>
+                <span class="text-slate-300 font-normal">|</span>
+                <span class="text-slate-700" title="Total Enrolled Students">
+                  {{ stats?.stats?.totalStudents ?? 0 }} Total
+                </span>
+              </div>
+              <span class="text-slate-400 group-hover:text-slate-900 font-bold text-[11px] transition-colors ml-auto">&rarr;</span>
             </div>
           </a>
 
@@ -299,8 +313,14 @@ import { DashboardStats } from '../../core/models';
             <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
               {{ classTeacherSection ? classTeacherSection.className + ' - ' + classTeacherSection.sectionName : 'Assigned Class' }} Strength
             </span>
-            <div class="text-2xl font-black text-slate-900 mt-2">{{ stats?.stats?.totalStudents ?? 0 }} Students</div>
-            <div class="text-xs text-slate-500 mt-1">Class Roll Roster</div>
+            <div class="text-2xl font-black text-slate-900 mt-2">{{ stats?.stats?.activeStudents ?? 0 }} Students</div>
+            <div class="flex items-center gap-1.5 text-xs text-slate-500 mt-1">
+              <span class="text-emerald-600 font-bold">{{ stats?.stats?.activeStudents ?? 0 }} Active</span>
+              <span class="text-slate-300">|</span>
+              <span class="text-rose-600 font-bold">{{ stats?.stats?.inactiveStudents ?? 0 }} Inactive</span>
+              <span class="text-slate-300">|</span>
+              <span class="text-slate-700 font-bold">{{ stats?.stats?.totalStudents ?? 0 }} Total</span>
+            </div>
           </div>
           <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff]">
             <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Assigned Subject</span>

@@ -22,12 +22,16 @@ import {
       <!-- Top Header -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             <span class="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-xs">
               SaaS Billing & License
             </span>
             <span class="text-xs text-slate-300">•</span>
             <span class="text-xs font-bold text-slate-600">Institutional School Wallet</span>
+            <span class="text-xs text-slate-300">•</span>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200">
+              Current Session: {{ calcData?.current_session_name || 'Official School Session' }}
+            </span>
           </div>
 
           <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1 flex items-center gap-2">
@@ -206,7 +210,7 @@ import {
         <!-- Tab Headers -->
         <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3 bg-[#fbfcfe]">
           <div class="flex items-center gap-2">
-            <button (click)="activeTab = 'CALCULATION'"
+            <button (click)="activeTab = 'CALCULATION'; currentPage = 1"
                     [class.bg-slate-900]="activeTab === 'CALCULATION'"
                     [class.text-white]="activeTab === 'CALCULATION'"
                     [class.shadow-xs]="activeTab === 'CALCULATION'"
@@ -220,7 +224,7 @@ import {
               </span>
             </button>
 
-            <button (click)="activeTab = 'LEDGER'"
+            <button (click)="activeTab = 'LEDGER'; ledgerCurrentPage = 1"
                     [class.bg-slate-900]="activeTab === 'LEDGER'"
                     [class.text-white]="activeTab === 'LEDGER'"
                     [class.shadow-xs]="activeTab === 'LEDGER'"
@@ -237,7 +241,7 @@ import {
 
           <!-- Tab Search / Export -->
           <div class="flex items-center gap-2">
-            <input type="text" [(ngModel)]="searchQuery" placeholder="Filter records..."
+            <input type="text" [(ngModel)]="searchQuery" (ngModelChange)="currentPage = 1; ledgerCurrentPage = 1" placeholder="Filter records..."
                    class="px-3.5 py-1.5 bg-[#f8fafc] border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:bg-white focus:border-slate-800 shadow-inner w-48 sm:w-60" />
             <button (click)="exportActiveTabCsv()"
                     class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs">
@@ -252,20 +256,21 @@ import {
         <!-- TAB 1 CONTENT: LIVE CALCULATION & PRORATION BREAKDOWN -->
         <div *ngIf="activeTab === 'CALCULATION'" class="p-5 space-y-4">
           
-          <!-- Proration Policy Info Box -->
-          <div class="p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl space-y-2 text-xs">
+          <!-- 3-Day (72 Hours) Fair Billing Policy Info Box -->
+          <div class="p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl space-y-2.5 text-xs">
             <div class="flex items-center justify-between flex-wrap gap-2">
               <div class="flex items-center gap-2 font-black text-indigo-950">
-                <span>📋 Automated Billing & Proration Calculation Engine:</span>
+                <span>📋 Fair 3-Day (72 Hours) Active Billing Policy:</span>
               </div>
               <span class="text-[11px] font-bold text-indigo-700">
                 Cycle: <strong>{{ calcData?.cycle_month || 'Current Month' }}</strong>
               </span>
             </div>
-            <ul class="text-[11px] text-indigo-900 space-y-1 list-disc pl-4 font-medium leading-relaxed">
-              <li><strong>Standard Active Students:</strong> Enrolled on or before the 1st of the month are charged the full monthly contracted fee of <strong>₹{{ subscription?.per_student_fee || 20 }}.00</strong>.</li>
-              <li><strong>Mid-Month Enrollments (> 7 days active):</strong> Charged full monthly rate.</li>
-              <li><strong>Late Enrollments (< 7 days active):</strong> Discounted with pro-rata daily charge so schools never overpay for newly admitted students.</li>
+            <ul class="text-[11px] text-indigo-900 space-y-1.5 list-disc pl-4 font-medium leading-relaxed">
+              <li><strong>3-Day (72 Hours) Standard Rule:</strong> Any student who completes <strong>3 days (72 hours)</strong> of active time in the monthly billing cycle is billed the full monthly fee of <strong>₹{{ subscription?.per_student_fee || 20 }}.00</strong> (whether added on the 1st day or the 27th day of the month).</li>
+              <li><strong>Disciplinary Suspension:</strong> Students marked <strong>SUSPENDED</strong> are on disciplinary punishment while retaining their enrolled seat and license; they are billed as normal (<strong>₹{{ subscription?.per_student_fee || 20 }}.00</strong>).</li>
+              <li><strong>Late-Month Enrollment Free Exemption (&lt; 3 Days):</strong> If a student is added near month-end (such as the 29th or 30th of a 30-day month) and has less than 3 days (72 hours) of active time in this cycle, they cost <strong>₹0.00 (Exempt)</strong> for this month.</li>
+              <li><strong>Status Changes & Inactive Students:</strong> If an active student is later marked inactive after completing &ge; 72 hours (3 days), they remain billable for the month. If deactivated before completing 72 hours, they are completely <strong>exempt (₹0.00)</strong>.</li>
             </ul>
           </div>
 
@@ -277,14 +282,15 @@ import {
                   <th class="py-3 px-4">#</th>
                   <th class="py-3 px-4">Student Name & Admission</th>
                   <th class="py-3 px-4">Class & Section</th>
-                  <th class="py-3 px-4">Enrollment Date</th>
+                  <th class="py-3 px-4">Status</th>
+                  <th class="py-3 px-4">Active Time (Cycle)</th>
                   <th class="py-3 px-4">Billing Rule / Note</th>
                   <th class="py-3 px-4 text-right">Calculated Fee</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 font-medium">
-                <tr *ngFor="let st of filteredBreakdown; let i = index" class="hover:bg-slate-50/70 transition-colors">
-                  <td class="py-3 px-4 text-slate-400 font-mono text-[11px]">{{ i + 1 }}</td>
+                <tr *ngFor="let st of paginatedBreakdown; let i = index" class="hover:bg-slate-50/70 transition-colors">
+                  <td class="py-3 px-4 text-slate-400 font-mono text-[11px]">{{ startIndex + i + 1 }}</td>
                   <td class="py-3 px-4">
                     <div class="font-bold text-slate-900">{{ st.student_name }}</div>
                     <div class="text-[10px] font-mono text-slate-400">{{ st.admission_number }}</div>
@@ -294,31 +300,78 @@ import {
                       {{ st.class_name }} - {{ st.section_name }}
                     </span>
                   </td>
-                  <td class="py-3 px-4 text-slate-600 font-mono text-[11px]">
-                    {{ st.enrollment_date | date:'mediumDate' }}
+                  <td class="py-3 px-4">
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                          [ngClass]="{
+                            'bg-emerald-50 text-emerald-700 border-emerald-200': (st.status || 'ACTIVE').toUpperCase() === 'ACTIVE',
+                            'bg-rose-50 text-rose-700 border-rose-200': (st.status || 'ACTIVE').toUpperCase() === 'INACTIVE',
+                            'bg-amber-50 text-amber-800 border-amber-200': (st.status || 'ACTIVE').toUpperCase() === 'SUSPENDED',
+                            'bg-purple-50 text-purple-700 border-purple-200': (st.status || 'ACTIVE').toUpperCase() === 'LEFTOUT'
+                          }">
+                      {{ (st.status || 'ACTIVE').toUpperCase() }}
+                    </span>
+                  </td>
+                  <td class="py-3 px-4 whitespace-nowrap">
+                    <div class="flex items-center gap-1.5">
+                      <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold border inline-flex items-center gap-1"
+                            [ngClass]="{
+                              'bg-indigo-50 text-indigo-700 border-indigo-200': (st.active_hours || 0) >= 72,
+                              'bg-emerald-50 text-emerald-700 border-emerald-200': (st.active_hours || 0) < 72 && (st.status || 'ACTIVE').toUpperCase() === 'ACTIVE',
+                              'bg-slate-100 text-slate-600 border-slate-200': (st.active_hours || 0) < 72 && (st.status || 'ACTIVE').toUpperCase() !== 'ACTIVE'
+                            }">
+                        <span>⏱️</span>
+                        <span>{{ st.active_time_formatted || (st.active_hours ? st.active_hours + 'h' : '0h') }}</span>
+                      </span>
+                      <span *ngIf="(st.active_hours || 0) >= 72" class="px-1.5 py-0.5 rounded text-[9px] font-black bg-indigo-600 text-white uppercase tracking-wider" title="Active &ge; 72h (3 days): Billable this month">
+                        &ge;72h
+                      </span>
+                    </div>
                   </td>
                   <td class="py-3 px-4">
                     <span class="text-[11px] font-semibold"
-                          [ngClass]="st.billing_note.includes('Prorated') ? 'text-amber-700 font-bold' : 'text-slate-600'">
+                          [ngClass]="{
+                            'text-emerald-700 font-bold': st.student_fee > 0 && !st.billing_note.includes('Prorated'),
+                            'text-amber-700 font-bold': st.billing_note.includes('Prorated'),
+                            'text-slate-500 italic': st.student_fee === 0
+                          }">
                       {{ st.billing_note }}
                     </span>
                   </td>
-                  <td class="py-3 px-4 text-right font-black text-slate-900 font-mono text-sm">
+                  <td class="py-3 px-4 text-right font-black font-mono text-sm"
+                      [ngClass]="st.student_fee > 0 ? 'text-slate-900' : 'text-slate-400'">
                     ₹{{ st.student_fee | number:'1.2-2' }}
                   </td>
                 </tr>
 
                 <tr *ngIf="filteredBreakdown.length === 0">
-                  <td colspan="6" class="py-8 text-center text-slate-400 italic">
-                    No active students enrolled in this school yet. Add students under "Classes & Student Roster" to calculate billing.
+                  <td colspan="7" class="py-8 text-center text-slate-400 italic">
+                    No students enrolled in this school yet. Add students under "Classes & Student Roster" to calculate billing.
                   </td>
                 </tr>
               </tbody>
-              <tfoot *ngIf="filteredBreakdown.length > 0" class="bg-slate-50 font-black text-xs border-t-2 border-slate-200">
+              <tfoot *ngIf="filteredBreakdown.length > 0" class="bg-slate-50 font-black text-xs border-t-2 border-slate-200 divide-y divide-slate-200">
                 <tr>
-                  <td colspan="5" class="py-3 px-4 text-right uppercase text-slate-600">Total Calculated Monthly SaaS Invoicing:</td>
-                  <td class="py-3 px-4 text-right text-indigo-700 text-base font-black font-mono">
+                  <td colspan="6" class="py-2.5 px-4 text-right uppercase text-slate-600 font-bold">
+                    Total Calculated Monthly Invoicing:
+                  </td>
+                  <td class="py-2.5 px-4 text-right text-slate-800 text-sm font-black font-mono">
                     ₹{{ calcData?.total_calculated_fee || 0 | number:'1.2-2' }}
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="6" class="py-2.5 px-4 text-right uppercase text-slate-500 font-bold">
+                    GST Calculation (18%):
+                  </td>
+                  <td class="py-2.5 px-4 text-right text-slate-700 text-sm font-bold font-mono">
+                    ₹{{ (calcData?.total_calculated_fee || 0) * 0.18 | number:'1.2-2' }}
+                  </td>
+                </tr>
+                <tr class="bg-indigo-50/70">
+                  <td colspan="6" class="py-3 px-4 text-right uppercase text-indigo-950 font-black text-xs">
+                    Total Estimated Amount (Including All Taxes):
+                  </td>
+                  <td class="py-3 px-4 text-right text-indigo-700 text-base font-black font-mono">
+                    ₹{{ (calcData?.total_calculated_fee || 0) * 1.18 | number:'1.2-2' }}
                   </td>
                 </tr>
               </tfoot>
@@ -327,15 +380,36 @@ import {
 
           <!-- Mobile Cards for Breakdown -->
           <div class="block md:hidden space-y-2.5">
-            <div *ngFor="let st of filteredBreakdown"
+            <div *ngFor="let st of paginatedBreakdown"
                  class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
               <div class="flex items-start justify-between">
                 <div>
                   <div class="font-bold text-slate-900 text-xs">{{ st.student_name }}</div>
                   <div class="text-[10px] text-slate-400 font-mono">{{ st.admission_number }} • {{ st.class_name }}-{{ st.section_name }}</div>
+                  <div class="flex items-center gap-1.5 mt-1">
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold border"
+                          [ngClass]="{
+                            'bg-emerald-50 text-emerald-700 border-emerald-200': (st.status || 'ACTIVE').toUpperCase() === 'ACTIVE',
+                            'bg-rose-50 text-rose-700 border-rose-200': (st.status || 'ACTIVE').toUpperCase() === 'INACTIVE',
+                            'bg-amber-50 text-amber-800 border-amber-200': (st.status || 'ACTIVE').toUpperCase() === 'SUSPENDED',
+                            'bg-purple-50 text-purple-700 border-purple-200': (st.status || 'ACTIVE').toUpperCase() === 'LEFTOUT'
+                          }">
+                      {{ (st.status || 'ACTIVE').toUpperCase() }}
+                    </span>
+                    <span class="px-2 py-0.5 rounded-lg text-[9px] font-bold border inline-flex items-center gap-0.5"
+                          [ngClass]="{
+                            'bg-indigo-50 text-indigo-700 border-indigo-200': (st.active_hours || 0) >= 72,
+                            'bg-emerald-50 text-emerald-700 border-emerald-200': (st.active_hours || 0) < 72 && (st.status || 'ACTIVE').toUpperCase() === 'ACTIVE',
+                            'bg-slate-100 text-slate-600 border-slate-200': (st.active_hours || 0) < 72 && (st.status || 'ACTIVE').toUpperCase() !== 'ACTIVE'
+                          }">
+                      ⏱️ {{ st.active_time_formatted || (st.active_hours ? st.active_hours + 'h' : '0h') }}
+                    </span>
+                  </div>
                 </div>
                 <div class="text-right">
-                  <div class="font-black text-indigo-700 text-sm">₹{{ st.student_fee | number:'1.2-2' }}</div>
+                  <div class="font-black text-sm" [ngClass]="st.student_fee > 0 ? 'text-indigo-700' : 'text-slate-400'">
+                    ₹{{ st.student_fee | number:'1.2-2' }}
+                  </div>
                   <div class="text-[9px] text-slate-400 uppercase font-bold">This Month</div>
                 </div>
               </div>
@@ -343,6 +417,49 @@ import {
                 <span>Enrolled: {{ st.enrollment_date | date:'shortDate' }}</span>
                 <span class="font-bold text-slate-700">{{ st.billing_note }}</span>
               </div>
+            </div>
+
+            <!-- Mobile Summary Card for Total & Taxes -->
+            <div *ngIf="filteredBreakdown.length > 0" class="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100/90 space-y-2 text-xs mt-3">
+              <div class="flex items-center justify-between text-slate-600">
+                <span class="font-medium">Total Monthly Invoicing:</span>
+                <span class="font-bold font-mono text-slate-900">₹{{ calcData?.total_calculated_fee || 0 | number:'1.2-2' }}</span>
+              </div>
+              <div class="flex items-center justify-between text-slate-500">
+                <span class="font-medium">GST Calculation (18%):</span>
+                <span class="font-bold font-mono text-slate-700">₹{{ (calcData?.total_calculated_fee || 0) * 0.18 | number:'1.2-2' }}</span>
+              </div>
+              <div class="pt-2 border-t border-indigo-200/70 flex items-center justify-between text-indigo-950 font-black">
+                <span>Total Estimated (Incl. All Taxes):</span>
+                <span class="text-indigo-700 font-mono text-sm">₹{{ (calcData?.total_calculated_fee || 0) * 1.18 | number:'1.2-2' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Student Breakdown Pagination Footer -->
+          <div *ngIf="filteredBreakdown.length > 0" class="px-4 sm:px-5 py-3.5 border border-slate-200/80 bg-[#f8fafc] rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600 shadow-2xs">
+            <div class="flex items-center gap-2 justify-between sm:justify-start w-full sm:w-auto">
+              <span class="font-semibold text-slate-700">Students per page:</span>
+              <select [(ngModel)]="pageSize" (change)="currentPage = 1"
+                      class="px-2.5 py-1 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 font-bold focus:outline-none shadow-2xs cursor-pointer">
+                <option [value]="10">10</option>
+                <option [value]="20">20</option>
+                <option [value]="50">50</option>
+                <option [value]="100">100</option>
+              </select>
+              <span class="text-slate-500 hidden sm:inline">Showing {{ startIndex + 1 }}-{{ endIndex }} of {{ filteredBreakdown.length }} students</span>
+            </div>
+
+            <div class="flex items-center justify-between sm:justify-end gap-1.5 w-full sm:w-auto">
+              <button (click)="currentPage = currentPage - 1" [disabled]="currentPage === 1"
+                      class="px-3.5 py-1.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-40 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95">
+                ‹ Prev
+              </button>
+              <span class="px-3 py-1.5 font-bold text-slate-800 text-xs">Page {{ currentPage }} of {{ totalPages || 1 }}</span>
+              <button (click)="currentPage = currentPage + 1" [disabled]="currentPage >= totalPages"
+                      class="px-3.5 py-1.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-40 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95">
+                Next ›
+              </button>
             </div>
           </div>
 
@@ -366,7 +483,7 @@ import {
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 font-medium">
-                <tr *ngFor="let t of filteredTransactions" class="hover:bg-slate-50/70 transition-colors">
+                <tr *ngFor="let t of paginatedTransactions" class="hover:bg-slate-50/70 transition-colors">
                   <td class="py-3 px-4 text-slate-500 text-[11px]">
                     {{ t.created_at | date:'medium' }}
                   </td>
@@ -407,7 +524,7 @@ import {
 
           <!-- Mobile Cards for Transactions -->
           <div class="block md:hidden space-y-2.5">
-            <div *ngFor="let t of filteredTransactions"
+            <div *ngFor="let t of paginatedTransactions"
                  class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
               <div class="flex items-start justify-between">
                 <div>
@@ -431,6 +548,33 @@ import {
               <div class="text-[10px] text-slate-400 pt-1.5 border-t border-slate-200/60">
                 {{ t.created_at | date:'medium' }}
               </div>
+            </div>
+          </div>
+
+          <!-- Ledger Pagination Footer -->
+          <div *ngIf="filteredTransactions.length > 0" class="px-4 sm:px-5 py-3.5 border border-slate-200/80 bg-[#f8fafc] rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600 shadow-2xs">
+            <div class="flex items-center gap-2 justify-between sm:justify-start w-full sm:w-auto">
+              <span class="font-semibold text-slate-700">Records per page:</span>
+              <select [(ngModel)]="ledgerPageSize" (change)="ledgerCurrentPage = 1"
+                      class="px-2.5 py-1 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 font-bold focus:outline-none shadow-2xs cursor-pointer">
+                <option [value]="10">10</option>
+                <option [value]="20">20</option>
+                <option [value]="50">50</option>
+                <option [value]="100">100</option>
+              </select>
+              <span class="text-slate-500 hidden sm:inline">Showing {{ startLedgerIndex + 1 }}-{{ endLedgerIndex }} of {{ filteredTransactions.length }} records</span>
+            </div>
+
+            <div class="flex items-center justify-between sm:justify-end gap-1.5 w-full sm:w-auto">
+              <button (click)="ledgerCurrentPage = ledgerCurrentPage - 1" [disabled]="ledgerCurrentPage === 1"
+                      class="px-3.5 py-1.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-40 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95">
+                ‹ Prev
+              </button>
+              <span class="px-3 py-1.5 font-bold text-slate-800 text-xs">Page {{ ledgerCurrentPage }} of {{ totalLedgerPages || 1 }}</span>
+              <button (click)="ledgerCurrentPage = ledgerCurrentPage + 1" [disabled]="ledgerCurrentPage >= totalLedgerPages"
+                      class="px-3.5 py-1.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-40 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95">
+                Next ›
+              </button>
             </div>
           </div>
 
@@ -556,8 +700,48 @@ export class SubscriptionComponent implements OnInit {
 
   executingBilling = false;
 
+  // Pagination for Student Breakdown
+  pageSize = 10;
+  currentPage = 1;
+
+  // Pagination for Wallet Ledger
+  ledgerPageSize = 10;
+  ledgerCurrentPage = 1;
+
   get canManage(): boolean {
     return this.auth.isAdmin() || this.auth.isSuperAdmin();
+  }
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredBreakdown.length / this.pageSize));
+  }
+
+  get startIndex(): number {
+    return (this.currentPage - 1) * this.pageSize;
+  }
+
+  get endIndex(): number {
+    return Math.min(this.startIndex + this.pageSize, this.filteredBreakdown.length);
+  }
+
+  get paginatedBreakdown(): StudentBillingBreakdownItem[] {
+    return this.filteredBreakdown.slice(this.startIndex, this.startIndex + this.pageSize);
+  }
+
+  get totalLedgerPages(): number {
+    return Math.max(1, Math.ceil(this.filteredTransactions.length / this.ledgerPageSize));
+  }
+
+  get startLedgerIndex(): number {
+    return (this.ledgerCurrentPage - 1) * this.ledgerPageSize;
+  }
+
+  get endLedgerIndex(): number {
+    return Math.min(this.startLedgerIndex + this.ledgerPageSize, this.filteredTransactions.length);
+  }
+
+  get paginatedTransactions(): WalletTransaction[] {
+    return this.filteredTransactions.slice(this.startLedgerIndex, this.startLedgerIndex + this.ledgerPageSize);
   }
 
   get filteredBreakdown(): StudentBillingBreakdownItem[] {
@@ -586,10 +770,7 @@ export class SubscriptionComponent implements OnInit {
   }
 
   constructor() {
-    effect(() => {
-      const activeSession = this.auth.activeAcademicSession();
-      this.loadAllData();
-    });
+    this.loadAllData();
   }
 
   ngOnInit() {
@@ -598,9 +779,7 @@ export class SubscriptionComponent implements OnInit {
 
   loadAllData() {
     this.loading = true;
-    const activeSession = this.auth.activeAcademicSession();
-    const params = activeSession ? { academicYearId: activeSession.id } : undefined;
-    this.api.get<SubscriptionDetailsResponse>('subscription/overview', params).subscribe({
+    this.api.get<SubscriptionDetailsResponse>('subscription/overview').subscribe({
       next: (res: any) => {
         this.subscription = res.subscription;
         this.wallet = res.wallet;
@@ -616,9 +795,7 @@ export class SubscriptionComponent implements OnInit {
   }
 
   loadCalculation() {
-    const activeSession = this.auth.activeAcademicSession();
-    const params = activeSession ? { academicYearId: activeSession.id } : undefined;
-    this.api.get<MonthlyCalculationResponse>('subscription/calculate', params).subscribe({
+    this.api.get<MonthlyCalculationResponse>('subscription/calculate').subscribe({
       next: (calc: any) => {
         this.calcData = calc;
         this.loading = false;
@@ -690,6 +867,8 @@ export class SubscriptionComponent implements OnInit {
         admission_number: st.admission_number,
         student_name: st.student_name,
         class_section: `${st.class_name} - ${st.section_name}`,
+        status: st.status || 'ACTIVE',
+        active_time: st.active_time_formatted || `${st.active_hours || 0}h`,
         enrollment_date: st.enrollment_date,
         billing_rule: st.billing_note,
         fee: st.student_fee,
@@ -698,6 +877,8 @@ export class SubscriptionComponent implements OnInit {
         { key: 'admission_number', label: 'Admission No' },
         { key: 'student_name', label: 'Student Name' },
         { key: 'class_section', label: 'Class & Section' },
+        { key: 'status', label: 'Status' },
+        { key: 'active_time', label: 'Active Time (Cycle)' },
         { key: 'enrollment_date', label: 'Enrollment Date' },
         { key: 'billing_rule', label: 'Billing Note' },
         { key: 'fee', label: 'Calculated Fee (INR)' },

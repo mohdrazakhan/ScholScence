@@ -847,11 +847,9 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     this.toastService.success(`Switched active session to "${ses.name}"`);
 
     const currentUrl = this.router.url;
-    if (currentUrl.includes('/academics') || currentUrl.includes('/dashboard')) {
-      this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
-        this.router.navigateByUrl(currentUrl);
-      });
-    }
+    this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
+      this.router.navigateByUrl(currentUrl);
+    });
   }
 
   deleteSession(ses: AcademicSession, event: Event) {

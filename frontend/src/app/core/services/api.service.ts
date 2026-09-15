@@ -100,6 +100,27 @@ export class ApiService {
       return from(this.calculateMonthlySubscription(targetSchoolId, params?.['academicYearId'])) as unknown as Observable<T>;
     }
 
+    // Academics: Next Unique Admission Number
+    if (cleanEndpoint === 'academics/students/next-admission-number' || cleanEndpoint === 'students/next-admission-number') {
+      return from(this.getNextAdmissionNumber(params?.['schoolId'])) as unknown as Observable<T>;
+    }
+
+    // Academics: Student Deactivation Requests
+    if (cleanEndpoint === 'academics/students/deactivation-requests' || cleanEndpoint === 'students/deactivation-requests') {
+      return from(this.getStudentDeactivationRequests()) as unknown as Observable<T>;
+    }
+
+    // Academics: Student Full Profile & Timeline Logs
+    const studentProfileMatch = cleanEndpoint.match(/^(?:academics\/)?students\/([^\/]+)(?:\/profile)?$/);
+    if (
+      studentProfileMatch &&
+      studentProfileMatch[1] !== 'next-admission-number' &&
+      studentProfileMatch[1] !== 'deactivation-requests' &&
+      !cleanEndpoint.includes('deactivation-requests')
+    ) {
+      return from(this.getStudentFullProfile(studentProfileMatch[1])) as unknown as Observable<T>;
+    }
+
     // Academics: Classes
     if (cleanEndpoint === 'academics/classes') {
       return from(this.getClasses(params?.['academicYearId'])) as unknown as Observable<T>;
@@ -112,7 +133,7 @@ export class ApiService {
 
     // Academics: Alumni
     if (cleanEndpoint === 'academics/alumni') {
-      return from(this.getAlumniStudents()) as unknown as Observable<T>;
+      return from(this.getAlumniStudents(params?.['academicYearId'])) as unknown as Observable<T>;
     }
 
     // Academics: Subjects
@@ -123,11 +144,6 @@ export class ApiService {
     // Academics: Staff
     if (cleanEndpoint === 'academics/staff' || cleanEndpoint === 'complaints/faculty') {
       return from(this.getStaff()) as unknown as Observable<T>;
-    }
-
-    // Academics: Student Deactivation Requests
-    if (cleanEndpoint === 'academics/students/deactivation-requests' || cleanEndpoint === 'students/deactivation-requests') {
-      return from(this.getStudentDeactivationRequests()) as unknown as Observable<T>;
     }
 
     // Academics: Section Students
@@ -156,7 +172,7 @@ export class ApiService {
 
     // Exams
     if (cleanEndpoint === 'exams') {
-      return from(this.getExams()) as unknown as Observable<T>;
+      return from(this.getExams(params?.['academicYearId'])) as unknown as Observable<T>;
     }
 
     // Communication: Notices
@@ -205,7 +221,10 @@ export class ApiService {
   post<T>(endpoint: string, body: any): Observable<T> {
     const cleanEndpoint = endpoint.split('?')[0];
 
-    // Academic Sessions & Rollover
+    // Academic Sessions & Rollover & Full Reset
+    if (cleanEndpoint === 'academics/reset-all' || cleanEndpoint === 'academics/reset-database') {
+      return from(this.resetAllStudentsAndSessions()) as unknown as Observable<T>;
+    }
     if (cleanEndpoint === 'academics/sessions' || cleanEndpoint === 'academic-years') {
       return from(this.createAcademicSession(body)) as unknown as Observable<T>;
     }
@@ -317,6 +336,12 @@ export class ApiService {
     const studentStatusMatch = cleanEndpoint.match(/^academics\/students\/(.+)\/status$/);
     if (studentStatusMatch) {
       return from(this.updateStudentStatus(studentStatusMatch[1], body.status, body.reason)) as unknown as Observable<T>;
+    }
+
+    // Student Update (Edit details)
+    const studentMatch = cleanEndpoint.match(/^academics\/students\/([^/]+)$/);
+    if (studentMatch && !cleanEndpoint.includes('deactivation-requests')) {
+      return from(this.updateStudent(studentMatch[1], body)) as unknown as Observable<T>;
     }
 
     // Review Student Deactivation Request (Admin / Principal)
@@ -448,53 +473,125 @@ export class ApiService {
 
   private async getDashboardOverview(academicYearId?: string): Promise<DashboardStats> {
     const schoolId = this.getSchoolId();
+    if (!schoolId) {
+      return {
+        stats: {
+          totalStudents: 0,
+          activeStudents: 0,
+          inactiveStudents: 0,
+          totalClasses: 0,
+          totalTeachers: 0,
+          attendanceTodayPercentage: '0.0',
+          attendanceMarkedCount: 0,
+          pendingComplaints: 0,
+        },
+        recentNotices: [],
+        upcomingExams: [],
+      };
+    }
+
     const effectiveYearId = academicYearId || (await this.getActiveAcademicYearId(schoolId));
 
-    let studentCount = 0;
+    let activeStudentCount = 0;
+    let inactiveStudentCount = 0;
+    let totalStudentCount = 0;
     let classCount = 0;
     let teacherCount = 0;
     let complaintsCount = 0;
 
-    if (schoolId) {
-      let enrQuery = this.supabase
-        .from('student_enrollments')
-        .select('id', { count: 'exact', head: true })
-        .neq('status', 'INACTIVE');
-      if (effectiveYearId) {
-        enrQuery = enrQuery.eq('academic_year_id', effectiveYearId);
+    const localStatusMap = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('schoolsense_student_statuses') || '{}');
+      } catch {
+        return {};
+      }
+    })();
+
+    const [cRes, staffList, compRes] = await Promise.all([
+      this.supabase.from('classes').select('id', { count: 'exact', head: true }).eq('school_id', schoolId) as any,
+      this.getStaff(),
+      this.supabase.from('complaints').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).eq('status', 'OPEN') as any,
+    ]);
+
+    classCount = cRes.count || 0;
+    teacherCount = (staffList || []).length;
+    complaintsCount = compRes.count || 0;
+
+    if (effectiveYearId) {
+      // 1. Query enrollments strictly for this selected academic session
+      try {
+        const { data: enrData } = await this.supabase
+          .from('student_enrollments')
+          .select('id, status, student_id, student:students(id, status)')
+          .eq('academic_year_id', effectiveYearId);
+
+        const enrollments = (enrData || []).filter((e: any) => !!e.student);
+
+        if (enrollments.length > 0) {
+          enrollments.forEach((e: any) => {
+            const rawStatus = localStatusMap[e.student_id]?.status || localStatusMap[e.id]?.status || e.status || e.student?.status || 'ACTIVE';
+            const stStatus = String(rawStatus).toUpperCase();
+            if (stStatus === 'INACTIVE' || stStatus === 'LEFTOUT') {
+              inactiveStudentCount++;
+            } else {
+              activeStudentCount++;
+            }
+          });
+          totalStudentCount = activeStudentCount + inactiveStudentCount;
+        }
+      } catch (e) {
+        console.warn('Dashboard enrollments query note:', e);
       }
 
-      const [cRes, tRes, compRes, enrRes] = await Promise.all([
-        this.supabase.from('classes').select('id', { count: 'exact', head: true }).eq('school_id', schoolId) as any,
-        this.supabase.from('user_school_roles').select('id', { count: 'exact', head: true }).eq('school_id', schoolId) as any,
-        this.supabase.from('complaints').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).eq('status', 'OPEN') as any,
-        enrQuery as any,
-      ]);
-
-      classCount = cRes.count || 0;
-      teacherCount = tRes.count || 0;
-      complaintsCount = compRes.count || 0;
-      studentCount = enrRes.count || 0;
-
-      // Fallback: If 0 enrollments in DB for base session, check local map & active students
-      if (studentCount === 0 && effectiveYearId) {
+      // 2. Fallback only if 0 total enrollments exist in the entire database (first-time onboarding before sessions)
+      if (totalStudentCount === 0) {
         try {
-          const { data: activeYears } = await this.supabase
-            .from('academic_years')
-            .select('id, is_current')
-            .eq('school_id', schoolId)
-            .eq('is_current', true);
-          const isBase = activeYears && activeYears.length > 0 && activeYears[0].id === effectiveYearId;
-          if (isBase) {
-            const { count: stCount } = await this.supabase
+          const { count: globalEnrCount } = await this.supabase
+            .from('student_enrollments')
+            .select('id', { count: 'exact', head: true });
+
+          if (!globalEnrCount || globalEnrCount === 0) {
+            const { data: allStudents } = await this.supabase
               .from('students')
-              .select('id', { count: 'exact', head: true })
+              .select('id, status')
               .eq('school_id', schoolId)
-              .neq('status', 'INACTIVE');
-            studentCount = stCount || 0;
+              .neq('status', 'ALUMNI');
+
+            if (allStudents && allStudents.length > 0) {
+              allStudents.forEach((st: any) => {
+                const rawStatus = localStatusMap[st.id]?.status || st.status || 'ACTIVE';
+                const stStatus = String(rawStatus).toUpperCase();
+                if (stStatus === 'INACTIVE' || stStatus === 'LEFTOUT') {
+                  inactiveStudentCount++;
+                } else {
+                  activeStudentCount++;
+                }
+              });
+              totalStudentCount = activeStudentCount + inactiveStudentCount;
+            }
           }
         } catch {}
       }
+    }
+
+    // Today's attendance percentage calculation for this session
+    let attendancePercentage = '0.0';
+    let attendanceMarkedCount = 0;
+    if (effectiveYearId && totalStudentCount > 0) {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: attRecords } = await this.supabase
+          .from('attendance')
+          .select('id, status')
+          .eq('school_id', schoolId)
+          .eq('date', today);
+
+        if (attRecords && attRecords.length > 0) {
+          attendanceMarkedCount = attRecords.length;
+          const presentCount = attRecords.filter((a: any) => a.status === 'PRESENT' || a.status === 'LATE').length;
+          attendancePercentage = ((presentCount / totalStudentCount) * 100).toFixed(1);
+        }
+      } catch {}
     }
 
     const { data: notices } = await this.supabase
@@ -511,11 +608,13 @@ export class ApiService {
 
     const overview: DashboardStats = {
       stats: {
-        totalStudents: studentCount,
+        totalStudents: totalStudentCount,
+        activeStudents: activeStudentCount,
+        inactiveStudents: inactiveStudentCount,
         totalClasses: classCount,
         totalTeachers: teacherCount,
-        attendanceTodayPercentage: '0.0',
-        attendanceMarkedCount: 0,
+        attendanceTodayPercentage: attendancePercentage,
+        attendanceMarkedCount: attendanceMarkedCount,
         pendingComplaints: complaintsCount,
       },
       recentNotices: (notices || []).map((n: any) => ({
@@ -581,10 +680,8 @@ export class ApiService {
           .select('id, is_current')
           .eq('school_id', sId)
           .eq('is_current', true);
-        const isCurrentActive = activeYears && activeYears.length > 0 && activeYears[0].id === yearId;
-
-        // Only auto-provision for the base active session or when 0 total enrollments exist in the database
-        if (totalEnrCount && totalEnrCount > 0 && !isCurrentActive) {
+        // Only auto-provision on brand new empty database (0 total enrollments in school)
+        if (totalEnrCount && totalEnrCount > 0) {
           return;
         }
 
@@ -644,6 +741,15 @@ export class ApiService {
           if (existing?.sectionId && validSectionIds.has(existing.sectionId)) {
             targetSec = allSections.find((s) => s.id === existing.sectionId)!;
             rollNo = String(existing.rollNumber || (i % 7) + 1);
+          } else if (existing?.className || existing?.classId) {
+            const matchedCls = allSections.filter(
+              (s) => (existing.classId && s.classId === existing.classId) ||
+                     (existing.className && s.className.toLowerCase() === existing.className.toLowerCase())
+            );
+            targetSec = matchedCls.find(
+              (s) => s.name.toLowerCase() === (existing.sectionName || 'section a').toLowerCase()
+            ) || matchedCls[0] || allSections[0];
+            rollNo = String(existing.rollNumber || '1');
           } else {
             const secIndex = i % allSections.length;
             targetSec = allSections[secIndex];
@@ -653,6 +759,7 @@ export class ApiService {
           enrollmentsToInsert.push({
             student_id: st.id,
             section_id: targetSec.id,
+            class_id: targetSec.classId,
             academic_year_id: yearId,
             roll_number: rollNo,
             status: 'ACTIVE',
@@ -747,14 +854,31 @@ export class ApiService {
 
     let sectionEnrollmentCounts: Record<string, number> = {};
     try {
-      let enrollQuery = this.supabase.from('student_enrollments').select('section_id, status');
+      let enrollQuery = this.supabase
+        .from('student_enrollments')
+        .select('id, section_id, status, section:sections(id, name, class_id)');
       if (effectiveYearId) {
         enrollQuery = enrollQuery.eq('academic_year_id', effectiveYearId);
       }
       const { data: enrollData } = await enrollQuery;
       (enrollData || []).forEach((e: any) => {
-        if (e.section_id && e.status !== 'INACTIVE') {
-          sectionEnrollmentCounts[e.section_id] = (sectionEnrollmentCounts[e.section_id] || 0) + 1;
+        if (e.status !== 'INACTIVE') {
+          // Direct section_id match
+          const directMatch = sectionsData.find((s: any) => s.id === e.section_id);
+          if (directMatch) {
+            sectionEnrollmentCounts[directMatch.id] = (sectionEnrollmentCounts[directMatch.id] || 0) + 1;
+          } else {
+            // Match by class_id and section name
+            const classMatch =
+              sectionsData.find(
+                (s: any) =>
+                  s.class_id === e.section?.class_id &&
+                  (s.name?.trim().toLowerCase() === (e.section?.name || 'section a').trim().toLowerCase() || !e.section?.name)
+              ) || sectionsData.find((s: any) => s.class_id === e.section?.class_id);
+            if (classMatch) {
+              sectionEnrollmentCounts[classMatch.id] = (sectionEnrollmentCounts[classMatch.id] || 0) + 1;
+            }
+          }
         }
       });
     } catch (err) {
@@ -773,8 +897,14 @@ export class ApiService {
         if (isBaseSession) {
           const localMap = this.getStudentSectionMap();
           Object.values(localMap).forEach((info) => {
-            if (info.sectionId) {
-              sectionEnrollmentCounts[info.sectionId] = (sectionEnrollmentCounts[info.sectionId] || 0) + 1;
+            const sec = sectionsData.find(
+              (s: any) =>
+                s.id === info.sectionId ||
+                (s.class_id === info.classId && (s.name || '').toLowerCase() === (info.sectionName || 'section a').toLowerCase())
+            ) || sectionsData.find((s: any) => s.class_id === info.classId);
+
+            if (sec) {
+              sectionEnrollmentCounts[sec.id] = (sectionEnrollmentCounts[sec.id] || 0) + 1;
             }
           });
         }
@@ -863,7 +993,7 @@ export class ApiService {
       const [sectionsRes, classesRes, stRes] = await Promise.all([
         this.supabase.from('sections').select('id, name, class_id').eq('school_id', schoolId),
         this.supabase.from('classes').select('id, name').eq('school_id', schoolId),
-        this.supabase.from('subject_teachers').select('subject_id, section_id'),
+        this.supabase.from('subject_teachers').select('subject_id, section_id').then((res) => res, () => ({ data: [], error: null })),
       ]);
 
       sectionMap = new Map((sectionsRes.data || []).map((s: any) => [s.id, s]));
@@ -922,15 +1052,16 @@ export class ApiService {
     if (!schoolId) return [];
 
     try {
-      // 1. Fetch user_school_roles, users, roles, sections, subject teachers, and classes
-      const [usrRes, usersRes, rolesRes, sectionsRes, subjectTeachersRes, classesRes, subjectsRes] = await Promise.all([
+      // 1. Fetch user_school_roles, users, roles, sections, subject teachers, classes, and guardians
+      const [usrRes, usersRes, rolesRes, sectionsRes, subjectTeachersRes, classesRes, subjectsRes, guardiansRes] = await Promise.all([
         this.supabase.from('user_school_roles').select('*').eq('school_id', schoolId),
         this.supabase.from('users').select('*'),
         this.supabase.from('roles').select('*'),
-        this.supabase.from('sections').select('id, name, class_id, class_teacher_id').eq('school_id', schoolId),
-        this.supabase.from('subject_teachers').select('*'),
+        this.supabase.from('sections').select('id, name, class_id').eq('school_id', schoolId),
+        this.supabase.from('subject_teachers').select('*').then((res) => res, () => ({ data: [], error: null })),
         this.supabase.from('classes').select('id, name').eq('school_id', schoolId),
         this.supabase.from('subjects').select('id, name, code').eq('school_id', schoolId),
+        this.supabase.from('guardians').select('id, user_id, school_id').eq('school_id', schoolId),
       ]);
 
       const userMap = new Map((usersRes.data || []).map((u: any) => [u.id, u]));
@@ -938,6 +1069,7 @@ export class ApiService {
       const classMap = new Map((classesRes.data || []).map((c: any) => [c.id, c]));
       const subjectMap = new Map((subjectsRes.data || []).map((s: any) => [s.id, s]));
       const sectionMap = new Map((sectionsRes.data || []).map((s: any) => [s.id, s]));
+      const guardianUserIdSet = new Set((guardiansRes.data || []).map((g: any) => g.user_id));
 
       const staffList: any[] = [];
       const seenUserIds = new Set<string>();
@@ -956,16 +1088,49 @@ export class ApiService {
         ).catch(() => {});
       }
 
+      const guardianRole = (rolesRes.data || []).find((ro: any) => ro.code === 'GUARDIAN' || ro.code === 'PARENT');
+
       const usrList = usrRes.data || [];
       for (const usr of usrList) {
         const u = userMap.get(usr.user_id);
         if (!u) continue;
         const r = roleMap.get(usr.role_id);
-        const roleCode = (r?.code || 'TEACHER').toUpperCase();
+        const roleCode = (r?.code || '').toUpperCase();
 
-        // Exclude STUDENT, PARENT, and platform SUPER_ADMIN / Root Administrator from school staff directory
-        if (roleCode === 'STUDENT' || roleCode === 'PARENT' || roleCode === 'SUPER_ADMIN') continue;
+        // Strictly exclude Guardians, Parents, Students, and Super Admin from Faculty & Staff directory
+        if (
+          roleCode === 'GUARDIAN' ||
+          roleCode === 'PARENT' ||
+          roleCode === 'STUDENT' ||
+          roleCode === 'SUPER_ADMIN' ||
+          guardianUserIdSet.has(u.id)
+        ) {
+          // If a guardian was mistakenly assigned a non-guardian role, repair their role in background
+          if (guardianUserIdSet.has(u.id) && roleCode !== 'GUARDIAN' && roleCode !== 'PARENT' && guardianRole) {
+            (async () => {
+              try {
+                await this.supabase
+                  .from('user_school_roles')
+                  .update({ role_id: guardianRole.id })
+                  .eq('id', usr.id);
+              } catch {}
+            })();
+          }
+          continue;
+        }
+
         if (u.email?.toLowerCase() === 'admin@schoolscence.in' || u.id === '00000000-0000-0000-0000-000000000001') continue;
+
+        const effectiveRoleCode = roleCode || 'TEACHER';
+        if (
+          effectiveRoleCode !== 'SCHOOL_ADMIN' &&
+          effectiveRoleCode !== 'PRINCIPAL' &&
+          effectiveRoleCode !== 'TEACHER' &&
+          effectiveRoleCode !== 'CLASS_TEACHER' &&
+          effectiveRoleCode !== 'STAFF'
+        ) {
+          continue;
+        }
 
         seenUserIds.add(u.id);
 
@@ -1010,8 +1175,8 @@ export class ApiService {
       }
 
       // Self-healing: Find any staff/admin users specifically belonging to this school's domain
-      const schoolData = (await this.supabase.from('schools').select('domain, slug, code').eq('id', schoolId).single()).data;
-      const schoolDomain = (schoolData?.domain || '').toLowerCase().trim();
+      const { data: schoolData } = await this.supabase.from('schools').select('code, email, name').eq('id', schoolId).maybeSingle();
+      const schoolDomain = (schoolData?.email && schoolData.email.includes('@')) ? schoolData.email.split('@')[1].toLowerCase().trim() : '';
 
       if (schoolDomain) {
         for (const u of (usersRes.data || [])) {
@@ -1263,14 +1428,98 @@ export class ApiService {
     return { success: true, status: cleanStatus, message: `Staff member marked as ${cleanStatus}` };
   }
 
-  private async updateStudentStatus(studentId: string, status: 'ACTIVE' | 'INACTIVE', reason?: string): Promise<any> {
+  /**
+   * Calculates the active duration (in hours) of a student during the current billing month.
+   * If a student was active for >= 72 hours (3 days) in the month, they are marked billable.
+   */
+  public getStudentActiveTimeInfo(studentId: string, createdAt?: string, status?: string): {
+    activeHours: number;
+    activeTimeFormatted: string;
+    isBillable: boolean;
+    activeDays: number;
+  } {
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    const localStatusMap = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('schoolsense_student_statuses') || '{}');
+      } catch {
+        return {};
+      }
+    })();
+
+    const record = localStatusMap[studentId] || {};
+    const resolvedStatus = (record.status || status || 'ACTIVE').toUpperCase();
+    
+    // Authoritative enrollment date: prioritize createdAt passed from student/enrollment DB record, then cache, then month start
+    const createdDate = new Date(createdAt || record.created_at || currentMonthStart);
+    const effectiveStart = createdDate > currentMonthStart ? createdDate : currentMonthStart;
+
+    let accumulatedMs = Number(record.accumulatedActiveMs) || 0;
+    const lastActiveStart = record.lastActiveStartTime ? new Date(record.lastActiveStartTime) : null;
+    const deactivationTime = record.updated_at ? new Date(record.updated_at) : null;
+
+    if (resolvedStatus === 'ACTIVE' || resolvedStatus === 'SUSPENDED') {
+      if (lastActiveStart) {
+        // Student had prior inactive periods and resumed at lastActiveStart
+        const activeFrom = lastActiveStart > effectiveStart ? lastActiveStart : effectiveStart;
+        accumulatedMs += Math.max(0, now.getTime() - activeFrom.getTime());
+      } else {
+        // Student has been active/enrolled continuously since effectiveStart
+        if (accumulatedMs === 0) {
+          accumulatedMs = Math.max(0, now.getTime() - effectiveStart.getTime());
+        }
+      }
+    } else {
+      // If student is INACTIVE / LEFTOUT / TRANSFERRED
+      if (accumulatedMs === 0) {
+        if (deactivationTime && deactivationTime > effectiveStart) {
+          accumulatedMs = Math.max(0, deactivationTime.getTime() - effectiveStart.getTime());
+        }
+      }
+    }
+
+    const activeHours = Number((accumulatedMs / (1000 * 60 * 60)).toFixed(1));
+    const activeDays = Number((activeHours / 24).toFixed(1));
+    const isExceeded72Hours = activeHours >= 72; // 3 days
+
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const daysRemainingFromEnrollment = (createdDate > currentMonthStart)
+      ? Math.max(0, daysInMonth - createdDate.getDate() + 1)
+      : daysInMonth;
+
+    // Fair 3-Day (72 Hours) Billing Rule:
+    // ACTIVE / SUSPENDED (disciplinary hold) students enrolled with >= 3 days in cycle, or any student >= 72h active time
+    const isEnrolledAndActive = resolvedStatus === 'ACTIVE' || resolvedStatus === 'SUSPENDED';
+    const isBillable = isExceeded72Hours || (isEnrolledAndActive && daysRemainingFromEnrollment >= 3);
+
+    let activeTimeFormatted = '';
+    if (activeHours >= 72) {
+      activeTimeFormatted = `${activeHours}h (${activeDays}d)`;
+    } else if (activeHours >= 24) {
+      activeTimeFormatted = `${activeHours}h (${activeDays}d)`;
+    } else {
+      activeTimeFormatted = `${activeHours}h`;
+    }
+
+    return {
+      activeHours,
+      activeDays,
+      activeTimeFormatted,
+      isBillable,
+    };
+  }
+
+  public async updateStudentStatus(studentId: string, status: string, reason?: string): Promise<any> {
     const schoolId = this.getSchoolId();
-    const cleanStatus = status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    const cleanStatus = (status || 'ACTIVE').toUpperCase();
+    const now = new Date();
+    const nowIso = now.toISOString();
 
     try {
       let query = this.supabase
         .from('students')
-        .update({ status: cleanStatus, updated_at: new Date().toISOString() })
+        .update({ status: cleanStatus, updated_at: nowIso })
         .eq('id', studentId);
       if (schoolId) query = query.eq('school_id', schoolId);
       await query;
@@ -1281,21 +1530,498 @@ export class ApiService {
     try {
       await this.supabase
         .from('student_enrollments')
-        .update({ status: cleanStatus, updated_at: new Date().toISOString() })
+        .update({ status: cleanStatus, updated_at: nowIso })
         .eq('student_id', studentId);
     } catch (e) {
       console.warn('Failed to update student_enrollments status:', e);
     }
 
-    // Save in local cache overrides for seamless sync
+    // Save in local cache overrides for seamless sync with active duration tracking
     try {
       const raw = localStorage.getItem('schoolsense_student_statuses') || '{}';
       const map = JSON.parse(raw);
-      map[studentId] = { status: cleanStatus, reason: reason || '', updated_at: new Date().toISOString() };
+      const prev = map[studentId] || {};
+      const prevStatus = (prev.status || 'ACTIVE').toUpperCase();
+
+      // Retrieve student created_at from DB if not in cache
+      let studentCreatedAt = prev.created_at || null;
+      if (!studentCreatedAt) {
+        try {
+          const { data: stData } = await this.supabase
+            .from('students')
+            .select('created_at')
+            .eq('id', studentId)
+            .maybeSingle();
+          if (stData?.created_at) studentCreatedAt = stData.created_at;
+        } catch {}
+      }
+      if (!studentCreatedAt) {
+        studentCreatedAt = nowIso;
+      }
+
+      let accumulatedActiveMs = Number(prev.accumulatedActiveMs) || 0;
+      let lastActiveStartTime = prev.lastActiveStartTime || null;
+
+      const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      const studentCreatedDate = new Date(studentCreatedAt);
+      const effectiveStart = studentCreatedDate > currentMonthStart ? studentCreatedDate : currentMonthStart;
+
+      const isPrevActive = prevStatus === 'ACTIVE' || prevStatus === 'SUSPENDED';
+      const isNewActive = cleanStatus === 'ACTIVE' || cleanStatus === 'SUSPENDED';
+
+      if (isPrevActive && !isNewActive) {
+        // Transitioning from ACTIVE/SUSPENDED to INACTIVE/LEFTOUT: calculate active duration
+        const activeSince = lastActiveStartTime ? new Date(lastActiveStartTime) : effectiveStart;
+        const validActiveSince = activeSince > effectiveStart ? activeSince : effectiveStart;
+        const elapsed = Math.max(0, now.getTime() - validActiveSince.getTime());
+        accumulatedActiveMs += elapsed;
+        lastActiveStartTime = null;
+      } else if (!isPrevActive && isNewActive) {
+        // Transitioning back to ACTIVE/SUSPENDED: start recording new active period
+        lastActiveStartTime = nowIso;
+      }
+
+      const statusHistory = Array.isArray(prev.status_history) ? [...prev.status_history] : [];
+      if (prevStatus !== cleanStatus) {
+        statusHistory.unshift({
+          from_status: prevStatus,
+          status: cleanStatus,
+          reason: reason || '',
+          timestamp: nowIso,
+        });
+      }
+
+      map[studentId] = {
+        status: cleanStatus,
+        reason: reason || '',
+        updated_at: nowIso,
+        created_at: studentCreatedAt,
+        accumulatedActiveMs,
+        lastActiveStartTime,
+        status_history: statusHistory,
+      };
       localStorage.setItem('schoolsense_student_statuses', JSON.stringify(map));
     } catch {}
 
     return { success: true, status: cleanStatus, message: `Student status updated to ${cleanStatus}` };
+  }
+
+  public async getStudentFullProfile(studentId: string): Promise<any> {
+    const schoolId = this.getSchoolId();
+    if (!studentId) throw new Error('Student ID required');
+
+    // 1. Fetch Student Core Info
+    let student: any = null;
+    try {
+      const { data: st, error } = await this.supabase
+        .from('students')
+        .select('*')
+        .eq('id', studentId)
+        .maybeSingle();
+      if (st) student = st;
+    } catch (e) {
+      console.warn('Fetch student details error:', e);
+    }
+
+    if (!student) {
+      // Check if studentId is an enrollment ID or admission number
+      try {
+        const { data: enr } = await this.supabase
+          .from('student_enrollments')
+          .select('*, student:students(*)')
+          .eq('id', studentId)
+          .maybeSingle();
+        if (enr?.student) {
+          student = enr.student;
+        }
+      } catch {}
+    }
+
+    if (!student) {
+      throw new Error('Student not found in database');
+    }
+
+    const actualStudentId = student.id;
+
+    // 2. Fetch Enrollment Records
+    let enrollmentList: any[] = [];
+    let currentEnrollment: any = null;
+    try {
+      const { data: enrs } = await this.supabase
+        .from('student_enrollments')
+        .select('*, section:sections(*, class:classes(*)), academic_year:academic_years(*)')
+        .eq('student_id', actualStudentId)
+        .order('created_at', { ascending: false });
+      if (enrs && enrs.length > 0) {
+        enrollmentList = enrs;
+        currentEnrollment = enrs[0];
+      }
+    } catch {}
+
+    const secMap = this.getStudentSectionMap();
+    const mappedSec = secMap[actualStudentId];
+    const className = currentEnrollment?.section?.class?.name || mappedSec?.className || 'Class 1';
+    const sectionName = currentEnrollment?.section?.name || mappedSec?.sectionName || 'Section A';
+    const academicSession = currentEnrollment?.academic_year?.name || '2028-2029';
+
+    // 3. Status & Active Duration
+    const localStatusMap = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('schoolsense_student_statuses') || '{}');
+      } catch {
+        return {};
+      }
+    })();
+    const statusRecord = localStatusMap[actualStudentId] || localStatusMap[studentId] || {};
+    const resolvedStatus = (statusRecord.status || student.status || currentEnrollment?.status || 'ACTIVE').toUpperCase();
+    const activeInfo = this.getStudentActiveTimeInfo(actualStudentId, student.created_at, resolvedStatus);
+
+    // 4. Fetch Exam Marks & Academic Performance
+    let examMarks: any[] = [];
+    try {
+      const { data: marks } = await this.supabase
+        .from('exam_marks')
+        .select('*, exam:exams(*), subject:subjects(*)')
+        .eq('student_id', actualStudentId)
+        .order('created_at', { ascending: false });
+      if (marks && marks.length > 0) {
+        examMarks = marks.map((m: any) => ({
+          id: m.id,
+          exam_name: m.exam?.name || 'Periodic Assessment',
+          subject_name: m.subject?.name || 'General Subject',
+          marks_obtained: Number(m.marks_obtained || 0),
+          max_marks: Number(m.max_marks || 100),
+          percentage: Number(((Number(m.marks_obtained || 0) / Number(m.max_marks || 100)) * 100).toFixed(1)),
+          grade: m.grade || (Number(m.marks_obtained || 0) >= 80 ? 'A' : (Number(m.marks_obtained || 0) >= 60 ? 'B' : 'C')),
+          remarks: m.remarks || 'Standard evaluation recorded',
+          date: m.created_at || new Date().toISOString(),
+        }));
+      }
+    } catch {}
+
+    // 5. Fetch Attendance History
+    let attendanceRecords: any[] = [];
+    let attendanceStats = {
+      total_days: 0,
+      present_days: 0,
+      absent_days: 0,
+      late_days: 0,
+      excused_days: 0,
+      percentage: 100,
+    };
+    try {
+      const { data: attList } = await this.supabase
+        .from('attendance')
+        .select('*')
+        .eq('student_id', actualStudentId)
+        .order('date', { ascending: false });
+      if (attList && attList.length > 0) {
+        attendanceRecords = attList;
+        attendanceStats.total_days = attList.length;
+        attendanceStats.present_days = attList.filter((a: any) => a.status === 'PRESENT').length;
+        attendanceStats.absent_days = attList.filter((a: any) => a.status === 'ABSENT').length;
+        attendanceStats.late_days = attList.filter((a: any) => a.status === 'LATE').length;
+        attendanceStats.excused_days = attList.filter((a: any) => a.status === 'EXCUSED' || a.status === 'HALF_DAY').length;
+        attendanceStats.percentage = attendanceStats.total_days > 0
+          ? Number(((attendanceStats.present_days / attendanceStats.total_days) * 100).toFixed(1))
+          : 100;
+      }
+    } catch {}
+
+    // 6. Fetch Complaints & Concerns
+    let complaints: any[] = [];
+    try {
+      const { data: compList } = await this.supabase
+        .from('complaints')
+        .select('*')
+        .eq('school_id', schoolId || student.school_id)
+        .order('created_at', { ascending: false });
+      if (compList && compList.length > 0) {
+        const studentName = `${student.first_name || ''} ${student.last_name || ''}`.trim().toLowerCase();
+        complaints = compList.filter((c: any) => {
+          if (c.student_id === actualStudentId) return true;
+          const desc = `${c.title || ''} ${c.description || ''}`.toLowerCase();
+          return desc.includes(studentName) || desc.includes(student.admission_number?.toLowerCase() || '###');
+        });
+      }
+    } catch {}
+
+    // 7. Compile Chronological Activity & Audit Timeline Logs
+    const activityLogs: any[] = [];
+
+    // Milestone A: Enrolment Record
+    const enrolledDate = student.created_at || currentEnrollment?.created_at || new Date().toISOString();
+    activityLogs.push({
+      id: `log-enrolled-${actualStudentId}`,
+      type: 'ENROLLMENT',
+      badge_color: 'emerald',
+      title: 'Student Admitted & Enrolled',
+      timestamp: enrolledDate,
+      summary: `Successfully enrolled in ${className} - ${sectionName} with Admission Number ${student.admission_number || 'N/A'}.`,
+      author: 'School Admissions Registry',
+    });
+
+    // Milestone B: Status Changes History
+    if (statusRecord.status_history && Array.isArray(statusRecord.status_history)) {
+      statusRecord.status_history.forEach((h: any, idx: number) => {
+        const color = h.status === 'ACTIVE' ? 'emerald' : (h.status === 'SUSPENDED' ? 'amber' : 'rose');
+        activityLogs.push({
+          id: `log-status-${idx}`,
+          type: 'STATUS_CHANGE',
+          badge_color: color,
+          title: `Status Changed to ${h.status}`,
+          timestamp: h.timestamp || statusRecord.updated_at,
+          summary: `Status updated from ${h.from_status || 'ACTIVE'} to ${h.status}.${h.reason ? ' Reason: "' + h.reason + '"' : ''}`,
+          author: 'School Administration',
+        });
+      });
+    } else if (statusRecord.updated_at && resolvedStatus !== 'ACTIVE') {
+      const color = resolvedStatus === 'SUSPENDED' ? 'amber' : 'rose';
+      activityLogs.push({
+        id: `log-status-current`,
+        type: 'STATUS_CHANGE',
+        badge_color: color,
+        title: `Status Marked as ${resolvedStatus}`,
+        timestamp: statusRecord.updated_at,
+        summary: `Student marked as ${resolvedStatus}.${statusRecord.reason ? ' Reason: "' + statusRecord.reason + '"' : ''}`,
+        author: 'School Administration',
+      });
+    }
+
+    // Milestone C: Exam Results Recorded
+    examMarks.forEach((em: any, idx: number) => {
+      activityLogs.push({
+        id: `log-exam-${em.id || idx}`,
+        type: 'ACADEMIC_EXAM',
+        badge_color: 'indigo',
+        title: `Exam Score Published: ${em.exam_name}`,
+        timestamp: em.date,
+        summary: `Subject: ${em.subject_name} • Scored: ${em.marks_obtained}/${em.max_marks} (${em.percentage}%, Grade ${em.grade}). Remarks: ${em.remarks}`,
+        author: 'Academic Examination Board',
+      });
+    });
+
+    // Milestone D: Parent / Disciplinary Complaints
+    complaints.forEach((comp: any, idx: number) => {
+      activityLogs.push({
+        id: `log-comp-${comp.id || idx}`,
+        type: 'DISCIPLINARY_COMPLAINT',
+        badge_color: comp.priority === 'HIGH' ? 'rose' : 'amber',
+        title: `Complaint / Parent Concern: ${comp.title}`,
+        timestamp: comp.created_at,
+        summary: `Category: ${comp.category || 'General'} • Priority: ${comp.priority || 'NORMAL'} • Status: ${comp.status}. Description: ${comp.description || 'No description provided'}`,
+        author: comp.created_by_name || 'Parent / Staff Guardian',
+      });
+    });
+
+    // Sort timeline in descending order (latest first)
+    activityLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    // 7. Complete List of All Students across all Classes & Sections for Next / Prev Navigation
+    let navigation = {
+      prevStudentId: null as string | null,
+      prevStudentName: null as string | null,
+      nextStudentId: null as string | null,
+      nextStudentName: null as string | null,
+      currentIndex: 1,
+      totalStudents: 1,
+      allStudents: [] as any[],
+    };
+    try {
+      const activeSessionId = await this.getActiveAcademicYearId(schoolId || student.school_id);
+      let enrQuery = this.supabase
+        .from('student_enrollments')
+        .select('id, roll_number, status, student:students(*), section:sections(*, class:classes(*))');
+      if (activeSessionId) {
+        enrQuery = enrQuery.eq('academic_year_id', activeSessionId);
+      }
+      const { data: enrRows } = await enrQuery;
+
+      let studentRoster: any[] = [];
+      const secMap = this.getStudentSectionMap();
+
+      if (enrRows && enrRows.length > 0) {
+        studentRoster = enrRows
+          .filter((r: any) => !!r.student)
+          .map((r: any) => {
+            const st = r.student;
+            const mapped = secMap[st.id] || {};
+            const cName = r.section?.class?.name || mapped.className || 'Class';
+            const sName = r.section?.name || mapped.sectionName || 'A';
+            return {
+              id: st.id,
+              studentId: st.id,
+              enrollmentId: r.id,
+              fullName: `${st.first_name || ''} ${st.last_name || ''}`.trim() || st.admission_number || 'Student',
+              className: cName,
+              sectionName: sName,
+              rollNumber: r.roll_number || st.roll_number || '1',
+              admissionNumber: st.admission_number || '',
+              status: (r.status || st.status || 'ACTIVE').toUpperCase(),
+              createdAt: st.created_at,
+            };
+          });
+      }
+
+      // Fallback if enrollments empty
+      if (studentRoster.length === 0) {
+        let sq = this.supabase.from('students').select('*');
+        if (schoolId || student.school_id) {
+          sq = sq.eq('school_id', schoolId || student.school_id);
+        }
+        const { data: rawSts } = await sq.order('created_at', { ascending: true });
+        if (rawSts) {
+          studentRoster = rawSts.map((st: any) => {
+            const mapped = secMap[st.id] || {};
+            return {
+              id: st.id,
+              studentId: st.id,
+              fullName: `${st.first_name || ''} ${st.last_name || ''}`.trim() || st.admission_number || 'Student',
+              className: mapped.className || 'Class 1',
+              sectionName: mapped.sectionName || 'Section A',
+              rollNumber: st.roll_number || '1',
+              admissionNumber: st.admission_number || '',
+              status: (st.status || 'ACTIVE').toUpperCase(),
+              createdAt: st.created_at,
+            };
+          });
+        }
+      }
+
+      // Filter roster strictly to the current student's class and section
+      const sameSectionStudents = studentRoster.filter((s: any) => 
+        (s.className === className && s.sectionName === sectionName)
+      );
+
+      const targetList = sameSectionStudents.length > 0 ? sameSectionStudents : studentRoster;
+
+      // Sort by roll number, then name
+      targetList.sort((a, b) => {
+        const rollA = parseInt(String(a.rollNumber), 10) || 0;
+        const rollB = parseInt(String(b.rollNumber), 10) || 0;
+        if (rollA !== rollB) return rollA - rollB;
+        return a.fullName.localeCompare(b.fullName);
+      });
+
+      if (targetList.length > 0) {
+        navigation.allStudents = targetList;
+        const idx = targetList.findIndex((s: any) => s.id === actualStudentId || s.studentId === actualStudentId);
+        if (idx !== -1) {
+          navigation.currentIndex = idx + 1;
+          navigation.totalStudents = targetList.length;
+          if (idx > 0) {
+            navigation.prevStudentId = targetList[idx - 1].id;
+            navigation.prevStudentName = targetList[idx - 1].fullName;
+          }
+          if (idx < targetList.length - 1) {
+            navigation.nextStudentId = targetList[idx + 1].id;
+            navigation.nextStudentName = targetList[idx + 1].fullName;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Navigation lookup error:', e);
+    }
+
+    return {
+      student: {
+        ...student,
+        id: actualStudentId,
+        fullName: `${student.first_name || ''} ${student.last_name || ''}`.trim() || student.admission_number || 'Student',
+        className,
+        sectionName,
+        academicSession,
+        rollNumber: currentEnrollment?.roll_number || student.roll_number || 1,
+        status: resolvedStatus,
+        activeInfo,
+      },
+      navigation,
+      enrollmentHistory: enrollmentList,
+      examMarks,
+      attendanceStats,
+      attendanceRecords: attendanceRecords.slice(0, 30),
+      complaints,
+      activityLogs,
+    };
+  }
+
+  private async updateStudent(studentId: string, body: any): Promise<any> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) throw new Error('School context missing');
+
+    const firstName = (body.firstName || '').trim();
+    const lastName = (body.lastName || '').trim();
+    const admissionNumber = (body.admissionNumber || '').trim();
+    const guardianName = (body.guardianName || body.emergencyContactName || '').trim();
+    const guardianPhone = (body.guardianPhone || body.emergencyContactPhone || '').trim();
+    const guardianEmail = (body.guardianEmail || '').trim().toLowerCase();
+
+    let dob: string | null = null;
+    if (body.dateOfBirth) {
+      try {
+        const dStr = String(body.dateOfBirth).trim();
+        if (dStr.includes('/')) {
+          const parts = dStr.split('/');
+          if (parts.length === 3 && parts[2].length === 4) {
+            dob = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+          }
+        } else {
+          dob = new Date(dStr).toISOString().split('T')[0];
+        }
+      } catch {
+        dob = null;
+      }
+    }
+
+    const updatePayload: any = {
+      first_name: firstName,
+      last_name: lastName || null,
+      gender: body.gender || 'MALE',
+      date_of_birth: dob,
+      blood_group: body.bloodGroup || null,
+      emergency_contact_name: guardianName || null,
+      emergency_contact_phone: guardianPhone || null,
+      updated_at: new Date().toISOString(),
+    };
+    if (admissionNumber) {
+      updatePayload.admission_number = admissionNumber;
+    }
+
+    try {
+      await this.supabase.from('students').update(updatePayload).eq('id', studentId);
+    } catch (e) {
+      console.warn('Update student table note:', e);
+    }
+
+    // Update section and roll number in student_enrollments
+    if (body.sectionId || body.rollNumber) {
+      const enrUpdate: any = {};
+      if (body.sectionId) enrUpdate.section_id = body.sectionId;
+      if (body.rollNumber) enrUpdate.roll_number = String(body.rollNumber);
+      enrUpdate.updated_at = new Date().toISOString();
+
+      try {
+        await this.supabase.from('student_enrollments').update(enrUpdate).eq('student_id', studentId);
+      } catch (e) {
+        console.warn('Update student_enrollments note:', e);
+      }
+    }
+
+    // Update local section map
+    if (body.classId || body.sectionId || body.rollNumber) {
+      this.setStudentSection(studentId, {
+        classId: body.classId,
+        sectionId: body.sectionId,
+        rollNumber: body.rollNumber ? String(body.rollNumber) : undefined,
+      });
+    }
+
+    // Update parent/guardian user if email or phone is updated
+    if (guardianEmail || guardianPhone) {
+      await this.ensureParentUserAndGuardian(schoolId, studentId, body);
+    }
+
+    return { success: true, message: 'Student details updated successfully' };
   }
 
   private async getStudentDeactivationRequests(): Promise<any[]> {
@@ -1434,9 +2160,14 @@ export class ApiService {
     };
   }
 
-  // Student Section Mapping Helpers (ensures seamless roster sync across views)
-  public getStudentSectionMap(): Record<string, { classId?: string; className?: string; sectionId?: string; sectionName?: string; rollNumber?: string }> {
+  // Student Section Mapping Helpers (ensures seamless roster sync across views with strict session partitioning)
+  public getStudentSectionMap(academicYearId?: string): Record<string, { classId?: string; className?: string; sectionId?: string; sectionName?: string; rollNumber?: string }> {
     try {
+      if (academicYearId) {
+        const sessionRaw = localStorage.getItem(`schoolsense_student_sections_${academicYearId}`);
+        if (sessionRaw) return JSON.parse(sessionRaw);
+        return {};
+      }
       const raw = localStorage.getItem('schoolsense_student_sections');
       return raw ? JSON.parse(raw) : {};
     } catch {
@@ -1446,12 +2177,19 @@ export class ApiService {
 
   public setStudentSection(
     studentId: string,
-    info: { classId?: string; className?: string; sectionId?: string; sectionName?: string; rollNumber?: string }
+    info: { classId?: string; className?: string; sectionId?: string; sectionName?: string; rollNumber?: string },
+    academicYearId?: string
   ): void {
     try {
-      const map = this.getStudentSectionMap();
-      map[studentId] = { ...(map[studentId] || {}), ...info };
-      localStorage.setItem('schoolsense_student_sections', JSON.stringify(map));
+      if (academicYearId) {
+        const sessionMap = this.getStudentSectionMap(academicYearId);
+        sessionMap[studentId] = { ...(sessionMap[studentId] || {}), ...info };
+        localStorage.setItem(`schoolsense_student_sections_${academicYearId}`, JSON.stringify(sessionMap));
+      } else {
+        const map = this.getStudentSectionMap();
+        map[studentId] = { ...(map[studentId] || {}), ...info };
+        localStorage.setItem('schoolsense_student_sections', JSON.stringify(map));
+      }
     } catch (e) {
       console.warn('Failed to save student section mapping', e);
     }
@@ -1475,37 +2213,75 @@ export class ApiService {
         .select('id, name, class_id, class:classes(id, name)')
         .eq('id', sectionId)
         .maybeSingle();
-      secName = sec?.name || '';
+      secName = sec?.name || 'Section A';
       clsName = (sec?.class as any)?.name || '';
       classId = sec?.class_id || (sec?.class as any)?.id || '';
     } catch {}
 
+    const localStatusMap = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('schoolsense_student_statuses') || '{}');
+      } catch {
+        return {};
+      }
+    })();
+
+    const localMap = this.getStudentSectionMap(effectiveYearId);
+
     let enrollments: any[] = [];
+
+    // 1. Query student_enrollments strictly for this academic session
     try {
       let query = this.supabase
         .from('student_enrollments')
-        .select('*, student:students(*)')
-        .eq('section_id', sectionId)
-        .neq('status', 'INACTIVE');
+        .select('*, student:students(*), section:sections(id, name, class_id, class:classes(id, name))');
 
       if (effectiveYearId) {
         query = query.eq('academic_year_id', effectiveYearId);
       }
 
-      const { data, error } = await query;
-      if (!error && data) {
-        enrollments = data;
+      const { data: allSessionEnrolls, error } = await query;
+      if (!error && allSessionEnrolls && allSessionEnrolls.length > 0) {
+        // Match direct sectionId or match by classId and section name strictly within this same academic session
+        enrollments = allSessionEnrolls.filter((e: any) => {
+          if (e.section_id === sectionId) return true;
+          const eSecClassId = e.class_id || e.section?.class_id || (e.section?.class as any)?.id;
+          const eSecClassName = (e.section?.class as any)?.name || '';
+          const eSecName = (e.section?.name || 'section a').trim().toLowerCase();
+          const targetSecName = (secName || 'section a').trim().toLowerCase();
+
+          const classMatch = (classId && eSecClassId === classId) ||
+                             (clsName && eSecClassName && eSecClassName.trim().toLowerCase() === clsName.trim().toLowerCase());
+          const secMatch = eSecName === targetSecName;
+          if (classMatch && secMatch) return true;
+
+          // Check session-specific local map assignment only
+          const stInfo = localMap[e.student_id];
+          if (stInfo) {
+            const stClassMatch = (classId && stInfo.classId === classId) ||
+                                 (clsName && stInfo.className && stInfo.className.trim().toLowerCase() === clsName.trim().toLowerCase());
+            const stSecMatch = (stInfo.sectionName || 'section a').trim().toLowerCase() === targetSecName;
+            if (stClassMatch && stSecMatch) return true;
+          }
+          return false;
+        });
       }
     } catch (e) {
       console.warn('Query student_enrollments failed:', e);
     }
 
+    // 2. If enrollments returned results, format and return
     if (enrollments && enrollments.length > 0) {
       return enrollments
-        .filter((e: any) => e.student)
+        .filter((e: any) => !!e.student)
         .map((e: any) => {
           const st = e.student || {};
           const fullName = `${st.first_name || ''} ${st.last_name || ''}`.trim() || st.admission_number || 'Student';
+          const localOverride = localStatusMap[st.id]?.status || localStatusMap[e.id]?.status || (e.student_id ? localStatusMap[e.student_id]?.status : null);
+          const rawStatus = localOverride || (e.status && e.status !== 'ALUMNI' ? e.status : null) || (st.status === 'ALUMNI' ? 'ACTIVE' : st.status) || 'ACTIVE';
+          const stStatus = String(rawStatus).toUpperCase() === 'ALUMNI' ? 'ACTIVE' : String(rawStatus).toUpperCase();
+          const activeInfo = this.getStudentActiveTimeInfo(st.id || e.id, e.created_at || st.created_at, stStatus);
+
           return {
             id: st.id || e.id,
             enrollmentId: e.id,
@@ -1527,39 +2303,84 @@ export class ApiService {
               email: '',
               relationship: 'Guardian',
             },
-            status: e.status || st.status || 'ACTIVE',
+            status: stStatus,
+            activeHours: activeInfo.activeHours,
+            activeDays: activeInfo.activeDays,
+            activeTimeFormatted: activeInfo.activeTimeFormatted,
+            isBillable: activeInfo.isBillable,
           };
         })
         .sort((a, b) => a.rollNumber - b.rollNumber);
     }
 
-    // Fallback: If this is the active/base session and enrollments haven't synced yet, resolve from local mapping & students table
+    // 3. Fallback: ONLY run if 0 enrollments exist in the entire database across ALL sessions (initial bootstrap)
     try {
-      const { data: activeYears } = await this.supabase
-        .from('academic_years')
-        .select('id, is_current')
-        .eq('school_id', schoolId)
-        .eq('is_current', true);
-      const isBaseSession = !effectiveYearId || (activeYears && activeYears.length > 0 && activeYears[0].id === effectiveYearId);
+      const { count: globalEnrCount } = await this.supabase
+        .from('student_enrollments')
+        .select('id', { count: 'exact', head: true });
 
-      if (isBaseSession) {
-        const localMap = this.getStudentSectionMap();
-        const matchedStudentIds = Object.entries(localMap)
-          .filter(([_, info]) => info.sectionId === sectionId)
-          .map(([sid]) => sid);
+      if (!globalEnrCount || globalEnrCount === 0) {
+        const { data: allStudents } = await this.supabase
+          .from('students')
+          .select('*')
+          .eq('school_id', schoolId);
 
-        if (matchedStudentIds.length > 0) {
-          const { data: matchedStudents } = await this.supabase
-            .from('students')
-            .select('*')
-            .in('id', matchedStudentIds)
-            .neq('status', 'INACTIVE');
+        if (allStudents && allStudents.length > 0) {
+          const targetSecName = (secName || 'section a').trim().toLowerCase();
 
-          if (matchedStudents && matchedStudents.length > 0) {
+          const matchedStudents = allStudents.filter((st: any) => {
+            const info = localMap[st.id];
+            if (!info) return false;
+            if (info.sectionId === sectionId) return true;
+
+            const classMatch = (classId && info.classId === classId) ||
+                               (clsName && info.className && info.className.trim().toLowerCase() === clsName.trim().toLowerCase());
+            const secMatch = (info.sectionName || 'section a').trim().toLowerCase() === targetSecName;
+            return classMatch && secMatch;
+          });
+
+          if (matchedStudents.length > 0) {
+            // Auto-persist enrollments into student_enrollments
+            if (effectiveYearId && sectionId) {
+              if (!classId && schoolId) {
+                try {
+                  const { data: cls } = await this.supabase
+                    .from('classes')
+                    .select('id, name')
+                    .eq('school_id', schoolId)
+                    .limit(1)
+                    .maybeSingle();
+                  if (cls) classId = cls.id;
+                } catch {}
+              }
+
+              if (classId) {
+                const enrollmentsToCreate = matchedStudents.map((st: any) => ({
+                  student_id: st.id,
+                  section_id: sectionId,
+                  class_id: classId || localMap[st.id]?.classId,
+                  academic_year_id: effectiveYearId,
+                  roll_number: localMap[st.id]?.rollNumber ? String(localMap[st.id].rollNumber) : '1',
+                  status: 'ACTIVE',
+                })).filter((e: any) => !!e.class_id);
+
+                if (enrollmentsToCreate.length > 0) {
+                  try {
+                    await this.supabase.from('student_enrollments').insert(enrollmentsToCreate);
+                  } catch {}
+                }
+              }
+            }
+
             return matchedStudents
               .map((st: any) => {
                 const info = localMap[st.id] || {};
                 const fullName = `${st.first_name || ''} ${st.last_name || ''}`.trim() || st.admission_number || 'Student';
+                const localOverride = localStatusMap[st.id]?.status;
+                const rawStatus = localOverride || (st.status === 'ALUMNI' ? 'ACTIVE' : st.status) || 'ACTIVE';
+                const stStatus = String(rawStatus).toUpperCase() === 'ALUMNI' ? 'ACTIVE' : String(rawStatus).toUpperCase();
+                const activeInfo = this.getStudentActiveTimeInfo(st.id, st.created_at, stStatus);
+
                 return {
                   id: st.id,
                   enrollmentId: st.id,
@@ -1581,14 +2402,20 @@ export class ApiService {
                     email: '',
                     relationship: 'Guardian',
                   },
-                  status: st.status || 'ACTIVE',
+                  status: stStatus,
+                  activeHours: activeInfo.activeHours,
+                  activeDays: activeInfo.activeDays,
+                  activeTimeFormatted: activeInfo.activeTimeFormatted,
+                  isBillable: activeInfo.isBillable,
                 };
               })
               .sort((a, b) => a.rollNumber - b.rollNumber);
           }
         }
       }
-    } catch {}
+    } catch (fallbackErr) {
+      console.warn('Fallback section student resolution error:', fallbackErr);
+    }
 
     return [];
   }
@@ -1682,10 +2509,12 @@ export class ApiService {
     }));
   }
 
-  private async getExams(): Promise<Exam[]> {
+  private async getExams(academicYearId?: string): Promise<Exam[]> {
     const schoolId = this.getSchoolId();
+    const effectiveYearId = academicYearId || (await this.getActiveAcademicYearId(schoolId));
     let query = this.supabase.from('exams').select('*, exam_schedules(*, subject:subjects(*), class:classes(*))');
     if (schoolId) query = query.eq('school_id', schoolId);
+    if (effectiveYearId) query = query.eq('academic_year_id', effectiveYearId);
     const { data, error } = await query;
     if (error) throw error;
     return (data || []).map((e: any) => ({
@@ -2586,11 +3415,13 @@ export class ApiService {
     }
 
     // 1. Fetch all classes for the school ordered by display_order ASC
-    const { data: allClasses } = await this.supabase
+    const { data: allClasses, error: classErr } = await this.supabase
       .from('classes')
       .select('*, sections(*)')
       .eq('school_id', schoolId)
       .order('display_order', { ascending: true });
+
+    if (classErr) throw classErr;
 
     const classList = (allClasses || []).sort(
       (a: any, b: any) => getClassPedagogicalRank(a.name, a.code, a.display_order) - getClassPedagogicalRank(b.name, b.code, b.display_order)
@@ -2599,12 +3430,75 @@ export class ApiService {
       return { success: true, promoted_count: 0, graduated_alumni_count: 0, graduated_count: 0 };
     }
 
-    // 2. Fetch current enrollments with section
+    // 2. Ensure ALL classes have their sections auto-provisioned/replicated for the target session (toSessionId)
+    const targetSectionsByClass: Record<string, any[]> = {};
+    for (const cls of classList) {
+      targetSectionsByClass[cls.id] = [];
+      const existingSecs = cls.sections || [];
+
+      // Collect distinct section templates for this class (e.g. Section A, Section B...)
+      const distinctSecMap = new Map<string, any>();
+      existingSecs.forEach((s: any) => {
+        const key = (s.name || '').trim().toLowerCase();
+        if (key && !distinctSecMap.has(key)) {
+          distinctSecMap.set(key, s);
+        }
+      });
+
+      // If no section template exists for this class, create default Section A template
+      if (distinctSecMap.size === 0) {
+        distinctSecMap.set('section a', {
+          name: 'Section A',
+          code: 'A',
+          capacity: 40,
+          display_order: 1,
+        });
+      }
+
+      // Check existing sections in target session for this class
+      const targetSecsInClass = existingSecs.filter((s: any) => s.academic_year_id === toSessionId);
+
+      for (const [secKey, secTpl] of distinctSecMap.entries()) {
+        const alreadyExists = targetSecsInClass.find(
+          (s: any) => (s.name || '').trim().toLowerCase() === secKey
+        );
+        if (alreadyExists) {
+          targetSectionsByClass[cls.id].push(alreadyExists);
+        } else {
+          try {
+            const { data: createdSec } = await this.supabase
+              .from('sections')
+              .insert({
+                school_id: schoolId,
+                class_id: cls.id,
+                academic_year_id: toSessionId,
+                name: secTpl.name || 'Section A',
+                code: secTpl.code || (secTpl.name || 'A').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4) || 'A',
+                capacity: secTpl.capacity || 40,
+                display_order: secTpl.display_order || 1,
+                status: 'ACTIVE',
+              })
+              .select()
+              .single();
+
+            if (createdSec) {
+              targetSectionsByClass[cls.id].push(createdSec);
+              if (!cls.sections) cls.sections = [];
+              cls.sections.push(createdSec);
+            }
+          } catch (secInsertErr) {
+            console.warn('Auto-create section for session note:', secInsertErr);
+          }
+        }
+      }
+    }
+
+    // 3. Fetch active enrollments from the source session
     let enrollments: any[] = [];
     if (fromSessionId) {
       const { data: sessionEnrolls } = await this.supabase
         .from('student_enrollments')
-        .select('*, section:sections(*)')
+        .select('*, section:sections(*), student:students(*)')
         .eq('academic_year_id', fromSessionId)
         .neq('status', 'INACTIVE');
       if (sessionEnrolls && sessionEnrolls.length > 0) {
@@ -2619,12 +3513,14 @@ export class ApiService {
         .from('students')
         .select('*')
         .eq('school_id', schoolId)
-        .neq('status', 'INACTIVE');
+        .neq('status', 'INACTIVE')
+        .neq('status', 'ALUMNI');
 
       enrollments = (activeStudents || []).map((st: any) => {
         const info = localMap[st.id];
         return {
           student_id: st.id,
+          student: st,
           roll_number: info?.rollNumber || '1',
           section_id: info?.sectionId || null,
           section: info?.sectionId ? { id: info.sectionId, name: info.sectionName, class_id: info.classId } : null,
@@ -2637,58 +3533,58 @@ export class ApiService {
     const newEnrollmentsToInsert: any[] = [];
     const graduatedStudentIds: string[] = [];
 
-    for (const e of enrollments) {
+    // Filter out any student that is already graduated / ALUMNI
+    const validEnrollments = enrollments.filter(
+      (e: any) => e.student?.status !== 'ALUMNI' && e.status !== 'INACTIVE'
+    );
+
+    for (const e of validEnrollments) {
       const classId = e.section?.class_id || e.class_id;
-      const currentClassIdx = classList.findIndex((c: any) => c.id === classId);
+      let currentClassIdx = classList.findIndex((c: any) => c.id === classId);
+      if (currentClassIdx === -1) {
+        const enrClsName = (e.section?.class?.name || e.class?.name || '').trim().toLowerCase();
+        if (enrClsName) {
+          currentClassIdx = classList.findIndex((c: any) => (c.name || '').trim().toLowerCase() === enrClsName);
+        }
+      }
 
       // If student is in the school's terminal / last class, graduate them to ALUMNI
       if (currentClassIdx === classList.length - 1 || (currentClassIdx === -1 && classList.length === 1)) {
         graduatedStudentIds.push(e.student_id);
         graduatedCount++;
       } else if (currentClassIdx !== -1 && currentClassIdx < classList.length - 1) {
-        // Promote to the next class
+        // Promote to the next sequential class
         const nextClass = classList[currentClassIdx + 1];
+        const nextClassSecs = targetSectionsByClass[nextClass.id] || [];
         const curSecName = e.section?.name || 'Section A';
-        let targetSection = (nextClass.sections || []).find(
-          (s: any) => s.name?.trim().toLowerCase() === curSecName.trim().toLowerCase()
-        ) || (nextClass.sections || [])[0];
 
-        // Auto-provision section in target class if none exists
-        if (!targetSection) {
-          try {
-            const { data: newSec } = await this.supabase
-              .from('sections')
-              .insert({
-                school_id: schoolId,
-                class_id: nextClass.id,
-                name: curSecName || 'Section A',
-                code: (curSecName || 'A').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4) || 'A',
-                capacity: 40,
-              })
-              .select()
-              .single();
-            targetSection = newSec;
-            if (!nextClass.sections) nextClass.sections = [];
-            if (newSec) nextClass.sections.push(newSec);
-          } catch (secErr) {
-            console.warn('Auto create section on rollover note:', secErr);
-          }
-        }
+        // Match same section name (e.g. Section A -> Section A in next class) or fallback to first section
+        let targetSection = nextClassSecs.find(
+          (s: any) => (s.name || '').trim().toLowerCase() === curSecName.trim().toLowerCase()
+        ) || nextClassSecs[0];
 
         if (targetSection?.id) {
           newEnrollmentsToInsert.push({
             student_id: e.student_id,
             section_id: targetSection.id,
+            class_id: nextClass.id,
             academic_year_id: toSessionId,
             roll_number: e.roll_number || '1',
             status: 'ACTIVE',
           });
+          this.setStudentSection(e.student_id, {
+            classId: nextClass.id,
+            className: nextClass.name,
+            sectionId: targetSection.id,
+            sectionName: targetSection.name,
+            rollNumber: e.roll_number ? String(e.roll_number) : '1',
+          }, toSessionId);
           promotedCount++;
         }
       }
     }
 
-    // Update graduated students to ALUMNI in students table
+    // 4. Update graduated students to ALUMNI in students table
     if (graduatedStudentIds.length > 0) {
       try {
         await this.supabase.from('students').update({ status: 'ALUMNI' }).in('id', graduatedStudentIds);
@@ -2697,7 +3593,7 @@ export class ApiService {
       }
     }
 
-    // Insert promoted enrollments into student_enrollments in chunks
+    // 5. Insert promoted enrollments into student_enrollments in chunks
     const CHUNK_SIZE = 50;
     for (let i = 0; i < newEnrollmentsToInsert.length; i += CHUNK_SIZE) {
       const chunk = newEnrollmentsToInsert.slice(i, i + CHUNK_SIZE);
@@ -2712,18 +3608,38 @@ export class ApiService {
     };
   }
 
-  private async getAlumniStudents(): Promise<AlumniStudent[]> {
+  private async getAlumniStudents(academicYearId?: string): Promise<AlumniStudent[]> {
     const schoolId = this.getSchoolId();
     if (!schoolId) return [];
 
     try {
+      const effectiveYearId = academicYearId || (await this.getActiveAcademicYearId(schoolId));
+
+      // 1. Fetch chronological list of academic sessions for this school
+      const { data: allSessions } = await this.supabase
+        .from('academic_years')
+        .select('id, name, start_date, end_date, created_at')
+        .eq('school_id', schoolId)
+        .order('start_date', { ascending: true });
+
+      const sortedSessions = (allSessions || []).sort((a: any, b: any) => {
+        const da = new Date(a.start_date || a.created_at).getTime();
+        const db = new Date(b.start_date || b.created_at).getTime();
+        return da - db;
+      });
+
+      const currentSesIdx = effectiveYearId
+        ? sortedSessions.findIndex((s: any) => s.id === effectiveYearId)
+        : sortedSessions.length - 1;
+
+      // 2. Fetch all students marked ALUMNI
       const { data: students, error } = await this.supabase
         .from('students')
         .select('*')
         .eq('school_id', schoolId)
         .eq('status', 'ALUMNI');
 
-      if (error || !students) {
+      if (error || !students || students.length === 0) {
         return [];
       }
 
@@ -2733,29 +3649,44 @@ export class ApiService {
         const { data: enrolls } = await this.supabase
           .from('student_enrollments')
           .select('*, section:sections(*, class:classes(*)), academic_year:academic_years(*)')
-          .in('student_id', studentIds);
+          .in('student_id', studentIds)
+          .order('created_at', { ascending: false });
         (enrolls || []).forEach((en: any) => {
           if (!enrollmentsMap[en.student_id]) enrollmentsMap[en.student_id] = en;
         });
       }
 
-      return students.map((st: any) => {
+      const list: AlumniStudent[] = [];
+      for (const st of students) {
         const lastEnrollment = enrollmentsMap[st.id];
-        return {
+        const gradSessionId = lastEnrollment?.academic_year_id || lastEnrollment?.academic_year?.id;
+        const gradSessionIdx = gradSessionId
+          ? sortedSessions.findIndex((s: any) => s.id === gradSessionId)
+          : -1;
+
+        // ONLY show in Alumni Directory if graduation session was strictly BEFORE the active session
+        if (currentSesIdx !== -1 && gradSessionIdx !== -1 && gradSessionIdx >= currentSesIdx) {
+          continue; // In this session, they were an active enrolled student (not an alumnus yet)
+        }
+
+        list.push({
           student_id: st.id,
           admission_number: st.admission_number,
           first_name: st.first_name,
           last_name: st.last_name,
           full_name: `${st.first_name || ''} ${st.last_name || ''}`.trim(),
           gender: st.gender,
+          date_of_birth: st.date_of_birth,
           dateOfBirth: st.date_of_birth,
           status: 'ALUMNI',
           last_class_name: lastEnrollment?.section?.class?.name || lastEnrollment?.class?.name || 'Class 12',
           last_section_name: lastEnrollment?.section?.name || 'Section A',
           graduation_session: lastEnrollment?.academic_year?.name || 'Graduated',
           last_roll_number: lastEnrollment?.roll_number,
-        };
-      });
+        });
+      }
+
+      return list;
     } catch (e) {
       console.warn('Failed to load alumni students', e);
       return [];
@@ -2780,33 +3711,233 @@ export class ApiService {
     return { success: true, message: 'Academic session deleted successfully' };
   }
 
+  private async resetAllStudentsAndSessions(): Promise<any> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) throw new Error('School context missing');
+
+    // 1. Delete dependent transactional records
+    try {
+      await this.supabase.from('student_enrollments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    } catch (e) {
+      console.warn('Reset enrollments note:', e);
+    }
+
+    try {
+      await this.supabase.from('attendance').delete().eq('school_id', schoolId);
+    } catch (e) {}
+
+    try {
+      await this.supabase.from('student_deactivation_requests').delete().eq('school_id', schoolId);
+    } catch (e) {}
+
+    try {
+      await this.supabase.from('exam_marks').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    } catch (e) {}
+
+    try {
+      await this.supabase.from('homework_submissions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    } catch (e) {}
+
+    // 2. Delete all students
+    try {
+      await this.supabase.from('students').delete().eq('school_id', schoolId);
+    } catch (e) {
+      console.warn('Reset students note:', e);
+    }
+
+    // 3. Delete all academic sessions
+    try {
+      await this.supabase.from('academic_years').delete().eq('school_id', schoolId);
+    } catch (e) {
+      console.warn('Reset academic_years note:', e);
+    }
+
+    // 4. Create single clean base session (2026–2027)
+    let newBaseSession: any = null;
+    try {
+      const { data: created } = await this.supabase
+        .from('academic_years')
+        .insert({
+          school_id: schoolId,
+          name: '2026–2027',
+          start_date: '2026-04-01',
+          end_date: '2027-03-31',
+          is_current: true,
+          status: 'ACTIVE',
+        })
+        .select()
+        .single();
+      newBaseSession = created;
+    } catch (e) {
+      console.warn('Create base session note:', e);
+    }
+
+    // 5. Re-provision Section A for all classes for the new session
+    try {
+      const { data: classes } = await this.supabase
+        .from('classes')
+        .select('id')
+        .eq('school_id', schoolId);
+
+      if (classes && classes.length > 0 && newBaseSession?.id) {
+        // Clear old session sections
+        await this.supabase.from('sections').delete().eq('school_id', schoolId);
+
+        const newSections = classes.map((c: any) => ({
+          school_id: schoolId,
+          class_id: c.id,
+          academic_year_id: newBaseSession.id,
+          name: 'Section A',
+          code: 'A',
+          capacity: 40,
+          display_order: 1,
+          status: 'ACTIVE',
+        }));
+        await this.supabase.from('sections').insert(newSections);
+      }
+    } catch (e) {
+      console.warn('Re-provision sections note:', e);
+    }
+
+    // 6. Clear local storage caches
+    try {
+      localStorage.removeItem('schoolsense_student_sections');
+      localStorage.removeItem('schoolsense_student_section_map');
+      localStorage.removeItem('schoolsense_student_statuses');
+      localStorage.removeItem('schoolsense_student_profiles');
+      localStorage.removeItem('schoolsense_student_logs');
+      localStorage.removeItem('schoolsense_last_enrollments');
+      // Clear session-specific section maps
+      Object.keys(localStorage).forEach((k) => {
+        if (k.startsWith('schoolsense_student_sections_')) {
+          localStorage.removeItem(k);
+        }
+      });
+    } catch (e) {}
+
+    return {
+      success: true,
+      message: 'All students and sessions reset successfully.',
+      session: newBaseSession,
+    };
+  }
+
   // ============================================================================
-  // Student Enrollment Handler
+  // Student Enrollment Handler & Next Admission Number Generator
   // ============================================================================
+
+  public async getNextAdmissionNumber(targetSchoolId?: string): Promise<{ admissionNumber: string; sequence: number }> {
+    const schoolId = targetSchoolId || this.getSchoolId();
+    let schoolName = '';
+    const user = this.getCurrentUser();
+    if (user?.school?.name) schoolName = user.school.name;
+    else if (user?.school_name) schoolName = user.school_name;
+
+    if (!schoolName && schoolId) {
+      try {
+        const { data: sch } = await this.supabase.from('schools').select('name').eq('id', schoolId).maybeSingle();
+        if (sch?.name) schoolName = sch.name;
+      } catch {}
+    }
+
+    const cleanLetters = (schoolName || 'DEL').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    let schoolPrefix = (cleanLetters.slice(0, 3) || 'DEL').padEnd(3, 'D');
+    const yr = new Date().getFullYear();
+
+    const existingAdmissionNumbers = new Set<string>();
+    let maxSerial = 0;
+
+    if (schoolId) {
+      try {
+        const { data: allSts } = await this.supabase
+          .from('students')
+          .select('id, admission_number')
+          .eq('school_id', schoolId);
+
+        (allSts || []).forEach((st: any) => {
+          if (st.admission_number) {
+            const raw = String(st.admission_number).trim().toUpperCase();
+            const normalized = raw.replace(/[\u2013\u2014\u2212]/g, '-').replace(/\s+/g, '');
+            existingAdmissionNumbers.add(raw);
+            existingAdmissionNumbers.add(normalized);
+
+            // Match pattern ADM-XXX-YYYY-ZZZZ (e.g. ADM-DEL-2026-0001 -> 1)
+            const pfxMatch = normalized.match(/^ADM-([A-Z0-9]{2,6})-\d{4}-(\d+)$/i);
+            if (pfxMatch) {
+              if (pfxMatch[1]) schoolPrefix = pfxMatch[1].toUpperCase();
+              if (pfxMatch[2]) {
+                const num = parseInt(pfxMatch[2], 10);
+                if (!isNaN(num) && num > maxSerial) {
+                  maxSerial = num;
+                }
+              }
+            } else {
+              const genericMatch = normalized.match(/-(\d{1,5})$/);
+              if (genericMatch && genericMatch[1]) {
+                const num = parseInt(genericMatch[1], 10);
+                if (!isNaN(num) && num > maxSerial) {
+                  maxSerial = num;
+                }
+              }
+            }
+          }
+        });
+
+        if (allSts && allSts.length > maxSerial) {
+          maxSerial = allSts.length;
+        }
+      } catch (e) {
+        console.warn('Query students for next admission number note:', e);
+      }
+    }
+
+    let candidateSerial = Math.max(1, maxSerial + 1);
+    let candidateAdmissionNumber = `ADM-${schoolPrefix}-${yr}-${String(candidateSerial).padStart(4, '0')}`;
+
+    while (
+      existingAdmissionNumbers.has(candidateAdmissionNumber.toUpperCase()) ||
+      existingAdmissionNumbers.has(candidateAdmissionNumber.replace(/-/g, '–').toUpperCase())
+    ) {
+      candidateSerial++;
+      candidateAdmissionNumber = `ADM-${schoolPrefix}-${yr}-${String(candidateSerial).padStart(4, '0')}`;
+    }
+
+    return {
+      admissionNumber: candidateAdmissionNumber,
+      sequence: candidateSerial,
+    };
+  }
 
   private async createStudent(body: any): Promise<any> {
     const schoolId = this.getSchoolId();
     if (!schoolId) throw new Error('School context missing');
 
-    let admissionNumber = (body.admissionNumber || `ADM-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`).trim();
+    let admissionNumber = (body.admissionNumber || '').trim();
     const firstName = (body.firstName || '').trim();
     const lastName = (body.lastName || '').trim();
     const guardianName = (body.guardianName || body.emergencyContactName || '').trim();
     const guardianPhone = (body.guardianPhone || body.emergencyContactPhone || '').trim();
 
-    // Check if admission number already exists for this school to prevent unique constraint error
-    try {
-      const { data: existingStudent } = await this.supabase
-        .from('students')
-        .select('id, admission_number')
-        .eq('school_id', schoolId)
-        .eq('admission_number', admissionNumber)
-        .maybeSingle();
+    // Auto-generate if empty or format with guaranteed unique pattern
+    if (!admissionNumber) {
+      const nextInfo = await this.getNextAdmissionNumber(schoolId);
+      admissionNumber = nextInfo.admissionNumber;
+    } else {
+      // Check if admission number already exists for this school to prevent duplicate collision
+      try {
+        const { data: existingStudent } = await this.supabase
+          .from('students')
+          .select('id, admission_number')
+          .eq('school_id', schoolId)
+          .eq('admission_number', admissionNumber)
+          .maybeSingle();
 
-      if (existingStudent) {
-        admissionNumber = `${admissionNumber}-${String(Date.now()).slice(-4)}`;
-      }
-    } catch {}
+        if (existingStudent) {
+          const nextInfo = await this.getNextAdmissionNumber(schoolId);
+          admissionNumber = nextInfo.admissionNumber;
+        }
+      } catch {}
+    }
 
     // Format Date of Birth safely to YYYY-MM-DD
     let dob: string | null = null;
@@ -2920,19 +4051,24 @@ export class ApiService {
       } catch {}
     }
 
-    this.setStudentSection(student.id, {
-      classId: targetClassId,
-      className: resolvedClassName,
-      sectionId: targetSectionId || body.sectionId,
-      sectionName: resolvedSectionName,
-      rollNumber: body.rollNumber ? String(body.rollNumber) : '1',
-    });
+    this.setStudentSection(
+      student.id,
+      {
+        classId: targetClassId,
+        className: resolvedClassName,
+        sectionId: targetSectionId || body.sectionId,
+        sectionName: resolvedSectionName,
+        rollNumber: body.rollNumber ? String(body.rollNumber) : '1',
+      },
+      academicYearId
+    );
 
     if (academicYearId && targetSectionId) {
       try {
         await this.supabase.from('student_enrollments').insert({
           student_id: student.id,
           section_id: targetSectionId,
+          class_id: targetClassId || null,
           academic_year_id: academicYearId,
           roll_number: body.rollNumber ? String(body.rollNumber) : '1',
           status: 'ACTIVE',
@@ -3168,130 +4304,6 @@ export class ApiService {
     } catch {}
   }
 
-  private async getSubscriptionDetails(targetSchoolId?: string, academicYearId?: string): Promise<any> {
-    const schoolId = targetSchoolId || this.getSchoolId();
-    if (!schoolId) throw new Error('School context missing');
-    const effectiveYearId = academicYearId || (await this.getActiveAcademicYearId(schoolId));
-
-    // 1. Try RPC get_school_subscription_details
-    try {
-      const { data, error } = await this.supabase.rpc('get_school_subscription_details', {
-        p_school_id: schoolId,
-        p_academic_year_id: effectiveYearId || null,
-      });
-      if (!error && data) {
-        return data;
-      }
-    } catch (e) {
-      console.warn('RPC get_school_subscription_details unavailable, using fallback', e);
-    }
-
-    // 2. Direct Query Fallback
-    let subData: any = null;
-    let walletData: any = null;
-    let activeStudents = 0;
-    let txnsList: any[] = [];
-
-    try {
-      let enrQuery = this.supabase
-        .from('student_enrollments')
-        .select('id', { count: 'exact', head: true })
-        .neq('status', 'INACTIVE');
-      if (effectiveYearId) {
-        enrQuery = enrQuery.eq('academic_year_id', effectiveYearId);
-      }
-
-      const [subRes, walletRes, studentCountRes, txnsRes] = await Promise.all([
-        this.supabase.from('school_subscriptions').select('*').eq('school_id', schoolId).maybeSingle() as any,
-        this.supabase.from('school_wallets').select('*').eq('school_id', schoolId).maybeSingle() as any,
-        enrQuery as any,
-        this.supabase.from('wallet_transactions').select('*').eq('school_id', schoolId).order('created_at', { ascending: false }).limit(25) as any,
-      ]);
-
-      if (subRes?.data) subData = subRes.data;
-      if (walletRes?.data) walletData = walletRes.data;
-      if (studentCountRes?.count !== undefined && studentCountRes.count !== null) activeStudents = studentCountRes.count;
-      if (txnsRes?.data && Array.isArray(txnsRes.data)) txnsList = txnsRes.data;
-
-      // Fallback: If 0 enrollments in DB for base session, check local map & active students
-      if (activeStudents === 0 && effectiveYearId) {
-        try {
-          const { data: activeYears } = await this.supabase
-            .from('academic_years')
-            .select('id, is_current')
-            .eq('school_id', schoolId)
-            .eq('is_current', true);
-          const isBase = activeYears && activeYears.length > 0 && activeYears[0].id === effectiveYearId;
-          if (isBase) {
-            const { count: stCount } = await this.supabase
-              .from('students')
-              .select('id', { count: 'exact', head: true })
-              .eq('school_id', schoolId)
-              .neq('status', 'INACTIVE');
-            activeStudents = stCount || 0;
-          }
-        } catch {}
-      }
-    } catch (dbErr) {
-      console.warn('Supabase subscription tables direct query failed, falling back to local cache', dbErr);
-    }
-
-    // Local Storage Cache Fallback / Merging
-    const localSubs = this.getLocalSubscriptions();
-    const localWallets = this.getLocalWallets();
-    const localTxns = this.getLocalWalletTransactions(schoolId);
-
-    const mergedSub = subData || localSubs[schoolId] || {};
-    const mergedWallet = walletData || localWallets[schoolId] || {};
-    const mergedTxns = txnsList.length > 0 ? txnsList : localTxns;
-
-    const perStudentFee = Number(mergedSub.per_student_fee ?? mergedSub.perStudentFee) || 20.00;
-    const monthlyEst = activeStudents * perStudentFee;
-
-    const subscription = {
-      id: mergedSub.id || `sub-${schoolId}`,
-      school_id: schoolId,
-      per_student_fee: perStudentFee,
-      billing_cycle: mergedSub.billing_cycle || 'MONTHLY',
-      currency: mergedSub.currency || 'INR',
-      status: mergedSub.status || 'ACTIVE',
-      next_billing_date: mergedSub.next_billing_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      created_at: mergedSub.created_at || new Date().toISOString(),
-    };
-
-    const wallet = {
-      id: mergedWallet.id || `wallet-${schoolId}`,
-      school_id: schoolId,
-      balance: Number(mergedWallet.balance) || 0.00,
-      credit_limit: Number(mergedWallet.credit_limit) || -5000.00,
-      currency: mergedWallet.currency || 'INR',
-      status: mergedWallet.status || 'ACTIVE',
-    };
-
-    const transactions = mergedTxns.map((t: any) => ({
-      id: t.id || `txn-${Date.now()}-${Math.random()}`,
-      amount: Number(t.amount) || 0,
-      transaction_type: t.transaction_type,
-      category: t.category,
-      balance_after: Number(t.balance_after) || 0,
-      reference_id: t.reference_id,
-      description: t.description,
-      student_count: t.student_count || 0,
-      payment_method: t.payment_method || 'MANUAL',
-      created_at: t.created_at || new Date().toISOString(),
-    }));
-
-    return {
-      subscription,
-      wallet,
-      stats: {
-        active_students: activeStudents,
-        estimated_monthly_fee: monthlyEst,
-      },
-      transactions,
-    };
-  }
-
   private async topUpWallet(body: any): Promise<any> {
     const schoolId = body.schoolId || this.getSchoolId();
     const amount = Number(body.amount);
@@ -3384,23 +4396,99 @@ export class ApiService {
     };
   }
 
+  private async getSubscriptionDetails(targetSchoolId?: string, academicYearId?: string): Promise<any> {
+    const schoolId = targetSchoolId || this.getSchoolId();
+    if (!schoolId) throw new Error('School context missing');
+
+    // SaaS Subscription is ALWAYS calculated on the single official current session (is_current: true)
+    const calc = await this.calculateMonthlySubscription(schoolId);
+    let subData: any = null;
+    let walletData: any = null;
+    let txnsList: any[] = [];
+
+    try {
+      const [subRes, walletRes, txnsRes] = await Promise.all([
+        this.supabase.from('school_subscriptions').select('*').eq('school_id', schoolId).maybeSingle() as any,
+        this.supabase.from('school_wallets').select('*').eq('school_id', schoolId).maybeSingle() as any,
+        this.supabase.from('wallet_transactions').select('*').eq('school_id', schoolId).order('created_at', { ascending: false }).limit(25) as any,
+      ]);
+      if (subRes?.data) subData = subRes.data;
+      if (walletRes?.data) walletData = walletRes.data;
+      if (txnsRes?.data && Array.isArray(txnsRes.data)) txnsList = txnsRes.data;
+    } catch (e) {
+      console.warn('Subscription details direct query note:', e);
+    }
+
+    const localSubs = this.getLocalSubscriptions();
+    const localWallets = this.getLocalWallets();
+    const localTxns = this.getLocalWalletTransactions(schoolId);
+
+    const activeStudents = calc.total_students;
+    const rate = calc.per_student_rate;
+    const estimatedMonthlyFee = calc.total_calculated_fee;
+
+    const currentWallet = walletData || localWallets[schoolId] || { balance: 0.00 };
+    const currentSub = subData || localSubs[schoolId] || {
+      plan_tier: 'PRO',
+      status: 'ACTIVE',
+      per_student_fee: rate,
+      currency: 'INR',
+    };
+
+    return {
+      school_id: schoolId,
+      academic_year_id: calc.academic_year_id,
+      current_session_name: calc.current_session_name,
+      active_students: activeStudents,
+      estimated_monthly_fee: estimatedMonthlyFee,
+      subscription: {
+        id: currentSub.id || 'sub-default',
+        school_id: schoolId,
+        plan_tier: currentSub.plan_tier || 'PRO',
+        status: currentSub.status || 'ACTIVE',
+        per_student_fee: rate,
+        currency: currentSub.currency || 'INR',
+        billing_cycle: currentSub.billing_cycle || 'MONTHLY',
+        next_billing_date: currentSub.next_billing_date || new Date(new Date().getFullYear(), new Date().getMonth() + 1, 15).toISOString(),
+        is_auto_debit: currentSub.is_auto_debit ?? true,
+      },
+      wallet: {
+        id: currentWallet.id || 'wallet-default',
+        school_id: schoolId,
+        balance: Number(currentWallet.balance || 0),
+        currency: currentWallet.currency || 'INR',
+        credit_limit: Number(currentWallet.credit_limit || 5000.00),
+        status: currentWallet.status || 'ACTIVE',
+      },
+      recent_transactions: (txnsList && txnsList.length > 0 ? txnsList : localTxns).slice(0, 10),
+    };
+  }
+
   private async calculateMonthlySubscription(targetSchoolId?: string, academicYearId?: string): Promise<any> {
     const schoolId = targetSchoolId || this.getSchoolId();
     if (!schoolId) throw new Error('School context missing');
-    const effectiveYearId = academicYearId || (await this.getActiveAcademicYearId(schoolId));
 
-    // 1. Try RPC
+    // Always find the school's official single CURRENT session (is_current: true)
+    let currentSessionId = '';
+    let currentSessionName = '';
     try {
-      const { data, error } = await this.supabase.rpc('calculate_monthly_subscription', {
-        p_school_id: schoolId,
-        p_academic_year_id: effectiveYearId || null,
-      });
-      if (!error && data) return data;
-    } catch (e) {
-      console.warn('RPC calculate_monthly_subscription error, falling back', e);
+      const { data: currentYears } = await this.supabase
+        .from('academic_years')
+        .select('id, name')
+        .eq('school_id', schoolId)
+        .eq('is_current', true)
+        .limit(1);
+
+      if (currentYears && currentYears.length > 0) {
+        currentSessionId = currentYears[0].id;
+        currentSessionName = currentYears[0].name;
+      }
+    } catch {}
+
+    if (!currentSessionId) {
+      currentSessionId = (await this.getActiveAcademicYearId(schoolId)) || '';
     }
 
-    // 2. Direct Fallback
     const localSubs = this.getLocalSubscriptions();
     let rate = Number(localSubs[schoolId]?.per_student_fee) || 20.00;
 
@@ -3413,14 +4501,21 @@ export class ApiService {
       if (sub?.per_student_fee) rate = Number(sub.per_student_fee);
     } catch {}
 
+    const localStatusMap = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('schoolsense_student_statuses') || '{}');
+      } catch {
+        return {};
+      }
+    })();
+
     let enrollments: any[] = [];
-    if (effectiveYearId) {
+    if (currentSessionId) {
       try {
         const { data: enrollData } = await this.supabase
           .from('student_enrollments')
           .select('*, student:students(*), section:sections(*, class:classes(*))')
-          .eq('academic_year_id', effectiveYearId)
-          .neq('status', 'INACTIVE');
+          .eq('academic_year_id', currentSessionId);
         if (enrollData && enrollData.length > 0) {
           enrollments = enrollData;
         }
@@ -3429,21 +4524,20 @@ export class ApiService {
       }
     }
 
-    // Fallback for base session if enrollments not yet created in DB
-    if (enrollments.length === 0 && effectiveYearId) {
+    // Fallback ONLY if 0 enrollments exist globally across all sessions (initial bootstrap)
+    if (enrollments.length === 0) {
       try {
-        const { data: activeYears } = await this.supabase
-          .from('academic_years')
-          .select('id, is_current')
-          .eq('school_id', schoolId)
-          .eq('is_current', true);
-        const isBase = activeYears && activeYears.length > 0 && activeYears[0].id === effectiveYearId;
-        if (isBase) {
-          const secMap = this.getStudentSectionMap();
+        const { count: globalEnrCount } = await this.supabase
+          .from('student_enrollments')
+          .select('id', { count: 'exact', head: true });
+
+        if (!globalEnrCount || globalEnrCount === 0) {
+          const secMap = this.getStudentSectionMap(currentSessionId);
           const { data: students } = await this.supabase
             .from('students')
             .select('*')
             .eq('school_id', schoolId)
+            .neq('status', 'ALUMNI')
             .neq('status', 'INACTIVE');
 
           enrollments = (students || []).map((st: any) => {
@@ -3464,39 +4558,51 @@ export class ApiService {
     }
 
     const now = new Date();
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-
     let totalCalculatedFee = 0;
     const breakdown = (enrollments || [])
-      .filter((e: any) => e.student)
+      .filter((e: any) => e.student && e.student?.status !== 'ALUMNI')
       .map((e: any) => {
         const st = e.student || {};
-        const enDate = new Date(e.created_at || st.created_at || now);
         const className = e.section?.class?.name || e.class?.name || 'Class 1';
         const sectionName = e.section?.name || 'Section A';
 
-        let studentFee = rate;
-        let billingNote = 'Full Month (Enrolled on/before 1st)';
+        const rawStatus = localStatusMap[st.id]?.status || localStatusMap[e.id]?.status || (e.student_id ? localStatusMap[e.student_id]?.status : null) || e.status || st.status || 'ACTIVE';
+        const stStatus = String(rawStatus).toUpperCase();
 
-        if (enDate > firstDay) {
-          const daysActive = daysInMonth - enDate.getDate() + 1;
-          if (daysActive < 7) {
-            studentFee = Number(((rate * daysActive) / daysInMonth).toFixed(2));
-            billingNote = `Prorated (${daysActive} days active in cycle)`;
-          } else {
-            billingNote = 'Full Month (Mid-month enrollment)';
-          }
+        const activeInfo = this.getStudentActiveTimeInfo(st.id || e.id, e.created_at || st.created_at, stStatus);
+
+        let studentFee = 0;
+        let billingNote = '';
+
+        if (stStatus === 'SUSPENDED') {
+          studentFee = rate;
+          billingNote = `Full Month (SUSPENDED - Disciplinary Action / Seat Held)`;
+        } else if (stStatus === 'INACTIVE' || stStatus === 'ALUMNI') {
+          studentFee = 0.00;
+          billingNote = `Exempt (${stStatus} student)`;
+        } else if (activeInfo.isBillable) {
+          studentFee = rate;
+          billingNote = activeInfo.activeHours >= 72
+            ? `Full Month (Active: ${activeInfo.activeTimeFormatted} ≥ 72h / 3 days)`
+            : `Full Month (Active in cycle ≥ 3 days / 72h)`;
+        } else {
+          studentFee = 0.00;
+          billingNote = `Exempt (Late enrollment, ${activeInfo.activeTimeFormatted} < 3 days / 72h active)`;
         }
 
-        totalCalculatedFee += studentFee;
+        if (studentFee > 0) {
+          totalCalculatedFee += studentFee;
+        }
 
         return {
           student_id: st.id,
           admission_number: st.admission_number || '',
           student_name: `${st.first_name || ''} ${st.last_name || ''}`.trim() || st.admission_number || 'Student',
           enrollment_date: (e.created_at || st.created_at)?.split('T')[0] || now.toISOString().split('T')[0],
-          status: e.status || st.status || 'ACTIVE',
+          status: stStatus,
+          active_hours: activeInfo.activeHours,
+          active_time_formatted: activeInfo.activeTimeFormatted,
+          is_billable: studentFee > 0,
           class_name: className,
           section_name: sectionName,
           student_fee: studentFee,
@@ -3504,11 +4610,15 @@ export class ApiService {
         };
       });
 
+    const billableStudents = breakdown.filter((s: any) => s.student_fee > 0);
+
     return {
       school_id: schoolId,
-      academic_year_id: effectiveYearId,
+      academic_year_id: currentSessionId,
+      current_session_name: currentSessionName || 'Current Session',
       per_student_rate: rate,
-      total_students: breakdown.length,
+      total_students: billableStudents.length,
+      all_students_count: breakdown.length,
       total_calculated_fee: Number(totalCalculatedFee.toFixed(2)),
       billing_cycle: 'MONTHLY',
       cycle_month: now.toLocaleString('en-US', { month: 'long', year: 'numeric' }),
