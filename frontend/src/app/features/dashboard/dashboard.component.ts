@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
@@ -364,6 +364,13 @@ export class DashboardComponent implements OnInit {
   stats: DashboardStats | null = null;
   selectedChildId = '';
 
+  constructor() {
+    effect(() => {
+      const activeSession = this.auth.activeAcademicSession();
+      this.loadDashboardStats(activeSession?.id);
+    });
+  }
+
   get formattedToday(): string {
     const today = new Date();
     const options: Intl.DateTimeFormatOptions = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
@@ -396,7 +403,11 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit() {
     this.auth.fetchProfile().subscribe();
-    this.api.get<DashboardStats>('dashboard/overview').subscribe({
+  }
+
+  loadDashboardStats(academicYearId?: string) {
+    const params = academicYearId ? { academicYearId } : undefined;
+    this.api.get<DashboardStats>('dashboard/overview', params).subscribe({
       next: (res) => (this.stats = res),
     });
   }

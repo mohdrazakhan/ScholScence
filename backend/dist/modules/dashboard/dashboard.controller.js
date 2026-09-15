@@ -23,19 +23,21 @@ let DashboardController = class DashboardController {
     constructor(dashboardService) {
         this.dashboardService = dashboardService;
     }
-    getOverview(schoolId, user) {
-        return this.dashboardService.getOverview(schoolId, user);
+    getOverview(schoolId, user, academicYearId) {
+        return this.dashboardService.getOverview(schoolId, user, academicYearId);
     }
 };
 exports.DashboardController = DashboardController;
 __decorate([
     (0, common_1.Get)('overview'),
     (0, swagger_1.ApiOperation)({ summary: 'Get school overview KPIs, attendance metrics, and role-scoped analytics', description: 'Returns institutional metrics for Admins, teaching routine for Teachers, and child performance KPIs for Parents.' }),
+    (0, swagger_1.ApiQuery)({ name: 'academicYearId', required: false, type: String }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Role-scoped dashboard overview returned' }),
     __param(0, (0, current_tenant_decorator_1.CurrentTenant)()),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __param(2, (0, common_1.Query)('academicYearId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, Object, String]),
     __metadata("design:returntype", void 0)
 ], DashboardController.prototype, "getOverview", null);
 exports.DashboardController = DashboardController = __decorate([

@@ -107,6 +107,7 @@ export interface ClassItem {
   code: string;
   display_order: number;
   sections: SectionItem[];
+  subjects?: SubjectItem[];
 }
 
 export interface SectionItem {
@@ -119,6 +120,7 @@ export interface SectionItem {
   display_order: number;
   class_teacher_id?: string | null;
   class?: ClassItem;
+  subjects?: SubjectItem[];
   _count?: {
     student_enrollments: number;
   };
@@ -130,6 +132,12 @@ export interface SubjectItem {
   code: string;
   subject_type: string;
   display_order: number;
+  description?: string;
+  class_id?: string;
+  class_name?: string;
+  section_ids?: string[];
+  section_names?: string[];
+  is_all_sections?: boolean;
 }
 
 export interface StudentItem {

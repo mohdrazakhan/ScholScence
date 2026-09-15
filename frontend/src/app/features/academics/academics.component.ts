@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, HostListener } from '@angular/core';
+import { Component, OnInit, inject, HostListener, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -205,7 +205,8 @@ interface StaffMember {
             </div>
             <div>
               <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Grade Levels</div>
-              <div class="text-xl font-black text-slate-900 mt-0.5">{{ classes.length }} Classes</div>
+              <div *ngIf="loadingClasses" class="h-6 w-24 bg-slate-200 rounded-lg animate-pulse my-1"></div>
+              <div *ngIf="!loadingClasses" class="text-xl font-black text-slate-900 mt-0.5">{{ classes.length }} Classes</div>
               <div class="text-[10px] text-slate-500">From Pre-Nursery to Grade 12</div>
             </div>
           </div>
@@ -218,7 +219,8 @@ interface StaffMember {
             </div>
             <div>
               <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active Divisions</div>
-              <div class="text-xl font-black text-emerald-700 mt-0.5">{{ totalSectionsCount }} Sections</div>
+              <div *ngIf="loadingClasses" class="h-6 w-24 bg-slate-200 rounded-lg animate-pulse my-1"></div>
+              <div *ngIf="!loadingClasses" class="text-xl font-black text-emerald-700 mt-0.5">{{ totalSectionsCount }} Sections</div>
               <div class="text-[10px] text-slate-500">Custom and lettered divisions</div>
             </div>
           </div>
@@ -231,14 +233,61 @@ interface StaffMember {
             </div>
             <div>
               <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Student Intake & Capacity</div>
-              <div class="text-xl font-black text-purple-700 mt-0.5">{{ totalEnrolledStudents }} / {{ totalCampusCapacity }}</div>
+              <div *ngIf="loadingClasses" class="h-6 w-24 bg-slate-200 rounded-lg animate-pulse my-1"></div>
+              <div *ngIf="!loadingClasses" class="text-xl font-black text-purple-700 mt-0.5">{{ totalEnrolledStudents }} / {{ totalCampusCapacity }}</div>
               <div class="text-[10px] text-slate-500">Enrolled out of total classroom capacity</div>
             </div>
           </div>
         </div>
 
-        <!-- Classes & Sections Cards Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        <!-- Classes Loading Skeleton & Spinner (Shown when data is loading) -->
+        <div *ngIf="loadingClasses" class="space-y-5 animate-fadeIn">
+          <div class="p-5 bg-white/90 backdrop-blur-sm rounded-3xl border border-indigo-100 shadow-[6px_6px_20px_#d9e2ec,-6px_-6px_20px_#ffffff] flex items-center justify-center gap-4 py-7">
+            <div class="relative w-9 h-9 flex items-center justify-center shrink-0">
+              <div class="w-9 h-9 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+              <svg class="w-4 h-4 text-indigo-600 absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-sm font-black text-slate-900">Loading Academic Classes & Curriculum...</h4>
+              <p class="text-xs text-slate-500 mt-0.5">Fetching institutional grade levels, divisions, and subjects</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            <div *ngFor="let item of [1, 2, 3]" class="bg-white rounded-3xl border border-slate-200/90 p-5 space-y-4 shadow-sm animate-pulse">
+              <div class="flex items-start justify-between">
+                <div class="space-y-2">
+                  <div class="w-12 h-5 bg-slate-200 rounded-lg"></div>
+                  <div class="w-32 h-6 bg-slate-200 rounded-xl"></div>
+                </div>
+                <div class="w-8 h-8 bg-slate-100 rounded-xl"></div>
+              </div>
+              <div class="pt-3 border-t border-slate-100 space-y-2.5">
+                <div class="flex justify-between">
+                  <div class="w-24 h-4 bg-slate-200 rounded-md"></div>
+                  <div class="w-16 h-4 bg-slate-100 rounded-md"></div>
+                </div>
+                <div class="h-12 bg-slate-100/80 rounded-2xl"></div>
+              </div>
+              <div class="pt-3 border-t border-slate-100 space-y-2">
+                <div class="w-28 h-4 bg-slate-200 rounded-md"></div>
+                <div class="flex gap-1.5">
+                  <div class="w-20 h-6 bg-slate-100 rounded-xl"></div>
+                  <div class="w-24 h-6 bg-slate-100 rounded-xl"></div>
+                </div>
+              </div>
+              <div class="pt-3 border-t border-slate-100 flex justify-between">
+                <div class="w-16 h-4 bg-slate-100 rounded-md"></div>
+                <div class="w-20 h-4 bg-slate-100 rounded-md"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Classes & Sections Cards Grid (Loaded) -->
+        <div *ngIf="!loadingClasses" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           <div *ngFor="let c of classes"
                class="bg-white rounded-3xl border border-slate-200/90 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] p-5 flex flex-col justify-between space-y-4 hover:border-slate-300 transition-all">
             
@@ -285,9 +334,17 @@ interface StaffMember {
                       <span>Edit Class</span>
                     </button>
 
-                    <button type="button" (click)="openAddSectionModal(c)"
+                    <button type="button" (click)="openAddSubjectToClass(c, $event)"
                             class="w-full px-3.5 py-2 text-left font-bold text-indigo-700 hover:bg-indigo-50 flex items-center gap-2.5 transition-colors cursor-pointer">
-                      <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                      <span>Add Subject</span>
+                    </button>
+
+                    <button type="button" (click)="openAddSectionModal(c)"
+                            class="w-full px-3.5 py-2 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                      <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                       </svg>
                       <span>Add Section</span>
@@ -306,14 +363,26 @@ interface StaffMember {
                 </div>
               </div>
 
-              <!-- Sections Container -->
+              <!-- Sections Container (Collapsible) -->
               <div class="mt-4 pt-3 border-t border-slate-100 space-y-2">
-                <div class="flex items-center justify-between text-[11px] font-bold text-slate-500">
-                  <span>Sections ({{ c.sections.length || 0 }})</span>
+                <div (click)="toggleSectionsCollapse(c.id, $event)"
+                     class="flex items-center justify-between text-[11px] font-bold text-slate-600 hover:text-slate-900 cursor-pointer select-none transition-colors group">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-5 h-5 rounded-lg bg-slate-100 group-hover:bg-indigo-50 text-slate-500 group-hover:text-indigo-600 flex items-center justify-center transition-all shadow-2xs">
+                      <svg *ngIf="isSectionsExpanded(c.id)" class="w-3.5 h-3.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
+                      </svg>
+                      <svg *ngIf="!isSectionsExpanded(c.id)" class="w-3.5 h-3.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </span>
+                    <span>Sections ({{ c.sections.length || 0 }})</span>
+                  </div>
                   <span>Capacity: <strong class="text-slate-700">{{ getClassEnrolledCount(c) }} / {{ getClassCapacity(c) }}</strong></span>
                 </div>
 
-                <div class="grid grid-cols-1 gap-2 pt-1">
+                <!-- Sections list (Collapsible, hidden by default unless expanded) -->
+                <div *ngIf="isSectionsExpanded(c.id)" class="grid grid-cols-1 gap-2 pt-1 animate-fadeIn">
                   <div *ngFor="let sec of c.sections"
                        class="p-3 bg-[#f8fafc] hover:bg-white border border-slate-200/80 rounded-2xl flex items-center justify-between transition-all group shadow-2xs relative">
                     <div class="flex items-center gap-2.5 min-w-0">
@@ -369,6 +438,14 @@ interface StaffMember {
                             <span>View Roster</span>
                           </button>
 
+                          <button type="button" (click)="openAddSubjectToSection(sec, c, $event)"
+                                  class="w-full px-3 py-1.5 text-left font-bold text-indigo-700 hover:bg-indigo-50 flex items-center gap-2 transition-colors cursor-pointer">
+                            <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                            <span>Add Subject</span>
+                          </button>
+
                           <button type="button" (click)="openEditSectionModal(sec, c, $event)"
                                   class="w-full px-3 py-1.5 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors cursor-pointer">
                             <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -393,6 +470,70 @@ interface StaffMember {
 
                   <div *ngIf="!c.sections || c.sections.length === 0" class="p-4 text-center text-xs text-slate-400 italic bg-[#f8fafc] rounded-2xl border border-dashed border-slate-200">
                     No sections added yet. Click "+ Add Section" below.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Class Curriculum Subjects Overview (Collapsible) -->
+              <div class="mt-3.5 pt-3 border-t border-slate-100/90">
+                <div class="flex items-center justify-between text-[11px] font-bold text-slate-600 mb-2">
+                  <div (click)="toggleSubjectsCollapse(c.id, $event)"
+                       class="flex items-center gap-1.5 text-slate-700 hover:text-slate-900 cursor-pointer select-none transition-colors group">
+                    <span class="w-5 h-5 rounded-lg bg-slate-100 group-hover:bg-indigo-50 text-slate-500 group-hover:text-indigo-600 flex items-center justify-center transition-all shadow-2xs">
+                      <svg *ngIf="isSubjectsExpanded(c.id)" class="w-3.5 h-3.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
+                      </svg>
+                      <svg *ngIf="!isSubjectsExpanded(c.id)" class="w-3.5 h-3.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </span>
+                    <svg class="w-3.5 h-3.5 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    <span>Class Subjects ({{ getClassSubjects(c).length }})</span>
+                  </div>
+
+                  <button type="button" (click)="openAddSubjectToClass(c, $event)"
+                          class="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold hover:underline cursor-pointer flex items-center gap-1">
+                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    <span>Add Subject</span>
+                  </button>
+                </div>
+
+                <!-- Subjects list (Collapsible, hidden by default unless expanded) -->
+                <div *ngIf="isSubjectsExpanded(c.id)" class="animate-fadeIn">
+                  <div *ngIf="getClassSubjects(c).length > 0" class="flex flex-wrap gap-1.5 pt-0.5">
+                    <span *ngFor="let sub of getClassSubjects(c)" 
+                          class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-white text-slate-800 border border-slate-200/90 shadow-2xs group/sub hover:border-slate-300 transition-colors">
+                      <span class="font-bold text-slate-900">{{ sub.name }}</span>
+                      <span *ngIf="!sub.is_all_sections && sub.section_names?.length" 
+                            class="text-[9px] px-1.5 py-0.2 rounded-md bg-amber-50 text-amber-900 font-bold border border-amber-200">
+                        {{ sub.section_names.join(', ') }}
+                      </span>
+                      <span *ngIf="sub.is_all_sections || !sub.section_names?.length" 
+                            class="text-[9px] px-1.5 py-0.2 rounded-md bg-emerald-50 text-emerald-800 font-bold border border-emerald-200">
+                        All Sec
+                      </span>
+                      <!-- Remove Subject Button -->
+                      <button *ngIf="canManage"
+                              type="button" 
+                              (click)="promptDeleteSubject(sub, c, $event)" 
+                              title="Remove Subject {{ sub.name }}"
+                              class="w-4 h-4 rounded-md hover:bg-rose-100 text-slate-400 hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer ml-0.5">
+                        <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                      </button>
+                    </span>
+                  </div>
+
+                  <div *ngIf="getClassSubjects(c).length === 0" 
+                       (click)="openAddSubjectToClass(c, $event)"
+                       class="py-2 px-3 bg-slate-50/70 hover:bg-indigo-50/50 border border-dashed border-slate-200 hover:border-indigo-300 rounded-xl text-center cursor-pointer transition-colors group">
+                    <span class="text-[11px] font-medium text-slate-400 group-hover:text-indigo-600 flex items-center justify-center gap-1">
+                      <svg class="w-3 h-3 text-slate-400 group-hover:text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                      No subjects added yet. Click to add.
+                    </span>
                   </div>
                 </div>
               </div>
@@ -427,8 +568,19 @@ interface StaffMember {
       <!-- ============================================================== -->
       <div *ngIf="activeTab === 'STUDENTS'" class="space-y-4 sm:space-y-6 animate-fadeIn">
         
+        <!-- Top Clean Class Selector Skeleton (when loading) -->
+        <div *ngIf="loadingClasses" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3 animate-pulse">
+          <div *ngFor="let i of [1, 2, 3, 4, 5, 6]" class="p-3 sm:p-3.5 rounded-2xl bg-white border border-slate-200 h-16 flex flex-col justify-between">
+            <div class="h-4 w-20 bg-slate-200 rounded"></div>
+            <div class="flex justify-between pt-2 border-t border-slate-100">
+              <div class="h-3 w-10 bg-slate-100 rounded"></div>
+              <div class="h-3 w-8 bg-slate-100 rounded"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- Top Clean Class Selector (when classes exist) -->
-        <div *ngIf="classes.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
+        <div *ngIf="!loadingClasses && classes.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
           <div *ngFor="let c of classes"
                (click)="selectClass(c)"
                [class.bg-slate-900]="selectedClass?.id === c.id"
@@ -449,7 +601,7 @@ interface StaffMember {
         </div>
 
         <!-- If 0 classes configured: prompt to go to Classes tab -->
-        <div *ngIf="classes.length === 0"
+        <div *ngIf="!loadingClasses && classes.length === 0"
              class="p-8 bg-white rounded-3xl border border-slate-200/90 shadow-sm flex flex-col items-center justify-center text-center space-y-3">
           <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-black">
             <svg class="w-7 h-7 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -467,7 +619,7 @@ interface StaffMember {
         </div>
 
         <!-- Enrolled Students Directory with Clay Table, Mobile Cards & Pagination -->
-        <div *ngIf="classes.length > 0" class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] overflow-hidden">
+        <div *ngIf="!loadingClasses && classes.length > 0" class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] overflow-hidden">
           <!-- Top Section: Class Heading, Section Pills, Status Filters & Action Bar -->
           <div class="p-3.5 sm:px-6 sm:py-4 border-b border-slate-100 bg-[#f8fafc]/90 space-y-3.5">
             <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
@@ -588,8 +740,19 @@ interface StaffMember {
             </div>
           </div>
 
+          <!-- Student Directory Loading State -->
+          <div *ngIf="loadingStudents || loadingClasses" class="p-8 space-y-4 animate-fadeIn">
+            <div class="flex items-center justify-center gap-3 py-6 text-slate-700">
+              <div class="w-7 h-7 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+              <span class="text-xs font-black">Loading student roster and admissions...</span>
+            </div>
+            <div class="space-y-3 animate-pulse">
+              <div *ngFor="let i of [1, 2, 3, 4, 5]" class="h-12 bg-slate-100/90 rounded-2xl"></div>
+            </div>
+          </div>
+
           <!-- VIEW 1: DESKTOP CLAY TABLE (md:block) -->
-          <div class="hidden md:block overflow-x-auto">
+          <div *ngIf="!loadingStudents && !loadingClasses" class="hidden md:block overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
               <thead class="bg-[#f8fafc] text-slate-600 font-bold uppercase tracking-wider">
                 <tr>
@@ -681,7 +844,7 @@ interface StaffMember {
           </div>
 
           <!-- VIEW 2: MOBILE CLAYMORPHIC CARDS VIEW (md:hidden) -->
-          <div class="block md:hidden p-3.5 space-y-3">
+          <div *ngIf="!loadingStudents && !loadingClasses" class="block md:hidden p-3.5 space-y-3">
             <div *ngFor="let st of paginatedStudents"
                  class="p-4 rounded-2xl bg-[#f8fafc] border border-slate-200/90 shadow-xs space-y-2.5">
               <div class="flex items-start justify-between gap-2">
@@ -885,8 +1048,19 @@ interface StaffMember {
             </div>
           </div>
 
+          <!-- Alumni Loading State -->
+          <div *ngIf="loadingAlumni" class="p-8 space-y-4 animate-fadeIn">
+            <div class="flex items-center justify-center gap-3 py-6 text-slate-700">
+              <div class="w-7 h-7 border-3 border-amber-200 border-t-amber-600 rounded-full animate-spin"></div>
+              <span class="text-xs font-black">Loading alumni directory...</span>
+            </div>
+            <div class="space-y-3 animate-pulse">
+              <div *ngFor="let i of [1, 2, 3, 4, 5]" class="h-12 bg-slate-100/90 rounded-2xl"></div>
+            </div>
+          </div>
+
           <!-- DESKTOP TABLE VIEW (md:block) -->
-          <div class="hidden md:block overflow-x-auto">
+          <div *ngIf="!loadingAlumni" class="hidden md:block overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
               <thead class="bg-[#f8fafc] text-slate-600 font-bold uppercase tracking-wider">
                 <tr>
@@ -958,7 +1132,7 @@ interface StaffMember {
           </div>
 
           <!-- MOBILE CARD VIEW (md:hidden) -->
-          <div class="block md:hidden p-3.5 space-y-3">
+          <div *ngIf="!loadingAlumni" class="block md:hidden p-3.5 space-y-3">
             <div *ngFor="let al of paginatedAlumni"
                  class="p-4 bg-white rounded-2xl border border-amber-200/80 shadow-[3px_3px_10px_#e2e8f0,-3px_-3px_10px_#ffffff] space-y-3">
               <div class="flex items-start justify-between gap-2">
@@ -1195,8 +1369,19 @@ interface StaffMember {
             </div>
           </div>
 
+          <!-- Staff Directory Loading State -->
+          <div *ngIf="loadingStaff" class="p-8 space-y-4 animate-fadeIn">
+            <div class="flex items-center justify-center gap-3 py-6 text-slate-700">
+              <div class="w-7 h-7 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+              <span class="text-xs font-black">Loading faculty & staff directory...</span>
+            </div>
+            <div class="space-y-3 animate-pulse">
+              <div *ngFor="let i of [1, 2, 3, 4, 5]" class="h-12 bg-slate-100/90 rounded-2xl"></div>
+            </div>
+          </div>
+
           <!-- VIEW 1: DESKTOP TABLE VIEW (md:block) -->
-          <div class="hidden md:block overflow-x-auto">
+          <div *ngIf="!loadingStaff" class="hidden md:block overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
               <thead class="bg-[#f8fafc] text-slate-600 font-bold uppercase tracking-wider">
                 <tr>
@@ -1342,7 +1527,7 @@ interface StaffMember {
           </div>
 
           <!-- VIEW 2: MOBILE CLAYMORPHIC CARDS VIEW (md:hidden) -->
-          <div class="block md:hidden p-3.5 space-y-3">
+          <div *ngIf="!loadingStaff" class="block md:hidden p-3.5 space-y-3">
             <div *ngFor="let staff of paginatedStaff"
                  class="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-[3px_3px_10px_#e2e8f0,-3px_-3px_10px_#ffffff] space-y-3">
               <div class="flex items-start justify-between gap-2">
@@ -1473,7 +1658,40 @@ interface StaffMember {
       <!-- TAB 3: CURRICULUM SUBJECTS MASTER                              -->
       <!-- ============================================================== -->
       <div *ngIf="activeTab === 'SUBJECTS'" class="space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        
+        <!-- Subjects Loading State -->
+        <div *ngIf="loadingClasses" class="space-y-5 animate-fadeIn">
+          <div class="p-5 bg-white rounded-3xl border border-indigo-100 shadow-[6px_6px_20px_#d9e2ec,-6px_-6px_20px_#ffffff] flex items-center justify-center gap-4 py-7">
+            <div class="relative w-9 h-9 flex items-center justify-center shrink-0">
+              <div class="w-9 h-9 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+              <svg class="w-4 h-4 text-indigo-600 absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-sm font-black text-slate-900">Loading Curriculum Subjects...</h4>
+              <p class="text-xs text-slate-500 mt-0.5">Fetching assigned class subjects and institutional master courses</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div *ngFor="let item of [1, 2, 3]" class="bg-white rounded-3xl border border-slate-200/90 p-5 space-y-3 shadow-sm animate-pulse">
+              <div class="flex items-center justify-between">
+                <div class="w-16 h-5 bg-slate-200 rounded-lg"></div>
+                <div class="w-20 h-5 bg-slate-100 rounded-lg"></div>
+              </div>
+              <div class="w-36 h-6 bg-slate-200 rounded-xl mt-2"></div>
+              <div class="flex gap-1.5 mt-2">
+                <div class="w-16 h-5 bg-indigo-50 rounded-lg"></div>
+                <div class="w-20 h-5 bg-emerald-50 rounded-lg"></div>
+              </div>
+              <div class="h-10 bg-slate-100/70 rounded-xl mt-2"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subjects Grid (Loaded) -->
+        <div *ngIf="!loadingClasses" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           <div *ngFor="let s of subjects"
                class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] flex flex-col justify-between">
             <div>
@@ -1486,7 +1704,21 @@ interface StaffMember {
                 </span>
               </div>
               <h3 class="text-sm font-black text-slate-900 mt-1">{{ s.name }}</h3>
-              <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">{{ s.description || 'Standard institutional curriculum subject.' }}</p>
+              
+              <!-- Assigned Class & Sections Tags -->
+              <div *ngIf="s.class_name || (s.section_names && s.section_names.length > 0)" class="mt-2.5 flex flex-wrap items-center gap-1.5">
+                <span *ngIf="s.class_name" class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200">
+                  {{ s.class_name }}
+                </span>
+                <span *ngIf="!s.is_all_sections && s.section_names?.length" class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-50 text-amber-900 border border-amber-200">
+                  Sections: {{ s.section_names.join(', ') }}
+                </span>
+                <span *ngIf="s.is_all_sections" class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  All Sections
+                </span>
+              </div>
+
+              <p class="text-xs text-slate-500 mt-2 leading-relaxed">{{ s.description || 'Standard institutional curriculum subject.' }}</p>
             </div>
 
             <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
@@ -1494,11 +1726,20 @@ interface StaffMember {
                 <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
                 Active Curriculum
               </span>
-              <button *ngIf="canManage" (click)="confirmDeleteSubject(s, $event)"
+              <button *ngIf="canManage" (click)="promptDeleteSubject(s, undefined, $event)"
                       class="text-xs font-bold text-rose-500 hover:text-rose-700 p-1 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer">
                 Delete
               </button>
             </div>
+          </div>
+
+          <div *ngIf="subjects.length === 0" class="col-span-full p-12 text-center bg-white rounded-3xl border border-dashed border-slate-200">
+            <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            <p class="text-sm font-black text-slate-700">No Curriculum Subjects Configured</p>
+            <p class="text-xs text-slate-400 mt-1">Add subjects to your classes or configure campus curriculum.</p>
+            <button (click)="openAddSubjectModal()" class="mt-4 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-sm transition-all cursor-pointer">
+              + Add First Subject
+            </button>
           </div>
         </div>
       </div>
@@ -1981,48 +2222,174 @@ interface StaffMember {
         </div>
       </div>
 
+      <!-- ============================================================== -->
+      <!-- MODAL: ADD / CONFIGURE SUBJECT FOR CLASS & SECTIONS            -->
+      <!-- ============================================================== -->
       <div *ngIf="showAddSubjectModal" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[70] animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-md w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
+        <div class="bg-white rounded-3xl max-w-lg w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
           
+          <!-- Modal Header -->
           <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
-            <div>
-              <h3 class="text-base font-black text-slate-900 tracking-tight">Add New Subject</h3>
-              <p class="text-xs text-slate-500 mt-0.5">Register a curriculum subject for this campus.</p>
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center shrink-0 shadow-xs">
+                <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight">
+                  {{ subjectTargetClass ? 'Add Subject to ' + subjectTargetClass.name : 'Add Subject to Curriculum' }}
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Define subject name, auto-generated code, and section applicability.</p>
+              </div>
             </div>
             <button (click)="closeAddSubjectModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
           </div>
 
-          <div class="p-5 sm:px-6 py-4 space-y-3.5 overflow-y-auto flex-1 custom-clay-scroll bg-white">
+          <!-- Modal Body (Scrollable) -->
+          <div class="p-5 sm:px-6 py-4 space-y-4 overflow-y-auto flex-1 custom-clay-scroll bg-white">
+            
+            <!-- Target Class Selector -->
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Subject Name *</label>
-              <input type="text" [(ngModel)]="newSubject.name" placeholder="e.g. Artificial Intelligence & Robotics"
-                     class="w-full px-4 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              <label class="block text-xs font-bold text-slate-700 mb-1">Target Class / Grade Level *</label>
+              <select [(ngModel)]="selectedSubjectClassId" (change)="onSubjectClassChange(selectedSubjectClassId)"
+                      class="w-full px-4 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner font-semibold">
+                <option value="">-- General / Applicable to All Classes --</option>
+                <option *ngFor="let c of classes" [value]="c.id">{{ c.name }} ({{ c.code }})</option>
+              </select>
             </div>
 
+            <!-- Subject Name & Quick Suggestions -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Subject Name *</label>
+              <input type="text" [(ngModel)]="newSubject.name" (ngModelChange)="onSubjectNameChange()"
+                     placeholder="e.g. Biology, Mathematics, Computer Science"
+                     class="w-full px-4 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 font-semibold focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              
+              <!-- Quick Suggestions Chips -->
+              <div class="mt-2">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Quick Suggestions:</span>
+                <div class="flex flex-wrap gap-1.5">
+                  <button type="button" *ngFor="let sug of quickSubjectSuggestions" (click)="applyQuickSubject(sug)"
+                          class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 transition-colors cursor-pointer">
+                    + {{ sug }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Subject Code (Auto-Generated & Editable) & Subject Type -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Subject Code *</label>
-                <input type="text" [(ngModel)]="newSubject.code" placeholder="e.g. AIR01"
-                       class="w-full px-4 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 uppercase focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-xs font-bold text-slate-700">Subject Code *</label>
+                  <span class="text-[10px] text-emerald-600 font-bold flex items-center gap-0.5">
+                    ✨ Auto-Generated
+                  </span>
+                </div>
+                <div class="relative">
+                  <input type="text" [(ngModel)]="newSubject.code" placeholder="e.g. BIO-10"
+                         class="w-full px-4 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-mono font-bold text-slate-900 uppercase focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+                  <button type="button" (click)="regenerateCode()" title="Regenerate Unique Code"
+                          class="absolute right-2 top-2 px-2 py-1 text-[10px] font-bold text-indigo-600 hover:bg-indigo-50 rounded-lg cursor-pointer">
+                    ↻ Refresh
+                  </button>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-1">Unique campus identifier (fully customizable).</p>
               </div>
 
               <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1">Subject Type</label>
                 <select [(ngModel)]="newSubject.subjectType"
-                        class="w-full px-4 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
-                  <option value="ACADEMIC">Academic / Core</option>
+                        class="w-full px-4 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner font-semibold">
+                  <option value="ACADEMIC">Academic / Theory</option>
+                  <option value="LAB">Lab & Practical</option>
                   <option value="LANGUAGE">Language</option>
                   <option value="ELECTIVE">Elective / Skill</option>
-                  <option value="LAB">Lab & Practical</option>
                   <option value="ACTIVITY">Co-Curricular</option>
                   <option value="VOCATIONAL">Vocational</option>
                 </select>
               </div>
             </div>
 
+            <!-- Section Applicability / Section Selection -->
+            <div *ngIf="subjectTargetClass && subjectTargetClass.sections && subjectTargetClass.sections.length > 0" 
+                 class="p-4 bg-slate-50/90 rounded-2xl border border-slate-200/90 space-y-3">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h4 class="text-xs font-black text-slate-900">Section Applicability</h4>
+                  <p class="text-[11px] text-slate-500 mt-0.5">Is this subject taught across all sections or specific sections only?</p>
+                </div>
+              </div>
+
+              <!-- Option Tabs: All Sections vs Specific Sections -->
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" (click)="selectAllSectionsForSubject()"
+                        [ngClass]="newSubject.isAllSections ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-300' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'"
+                        class="p-2.5 rounded-xl text-left transition-all cursor-pointer">
+                  <div class="flex items-center gap-1.5 font-bold text-xs">
+                    <span class="w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[9px]"
+                          [ngClass]="newSubject.isAllSections ? 'border-white bg-white text-indigo-600' : 'border-slate-400'">
+                      ✓
+                    </span>
+                    <span>All Sections</span>
+                  </div>
+                  <div class="text-[10px] mt-0.5 opacity-80 truncate">
+                    Applicable to all {{ subjectTargetClass.sections.length }} sections
+                  </div>
+                </button>
+
+                <button type="button" (click)="selectSpecificSectionsForSubject()"
+                        [ngClass]="!newSubject.isAllSections ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-300' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'"
+                        class="p-2.5 rounded-xl text-left transition-all cursor-pointer">
+                  <div class="flex items-center gap-1.5 font-bold text-xs">
+                    <span class="w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[9px]"
+                          [ngClass]="!newSubject.isAllSections ? 'border-white bg-white text-indigo-600' : 'border-slate-400'">
+                      ✓
+                    </span>
+                    <span>Specific Sections Only</span>
+                  </div>
+                  <div class="text-[10px] mt-0.5 opacity-80 truncate">
+                    Select individual sections
+                  </div>
+                </button>
+              </div>
+
+              <!-- Specific Section Checkboxes Grid -->
+              <div *ngIf="!newSubject.isAllSections" class="pt-2 border-t border-slate-200/80 space-y-2 animate-fadeIn">
+                <div class="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                  <span>Choose which sections have this subject:</span>
+                  <span class="text-indigo-600">{{ newSubject.selectedSectionIds.length }} / {{ subjectTargetClass.sections.length }} Selected</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div *ngFor="let sec of subjectTargetClass.sections"
+                       (click)="toggleSubjectSection(sec.id)"
+                       [ngClass]="isSectionSelectedForSubject(sec.id) ? 'bg-indigo-50/90 border-indigo-300 text-indigo-950 font-bold' : 'bg-white border-slate-200 text-slate-600 font-medium opacity-75'"
+                       class="p-2.5 rounded-xl border flex items-center justify-between transition-all cursor-pointer select-none">
+                    <div class="flex items-center gap-2">
+                      <div class="w-4 h-4 rounded border flex items-center justify-center text-[10px]"
+                           [ngClass]="isSectionSelectedForSubject(sec.id) ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 bg-white'">
+                        <span *ngIf="isSectionSelectedForSubject(sec.id)">✓</span>
+                      </div>
+                      <span class="text-xs">{{ formatSection(sec.name) }}</span>
+                    </div>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/80 border border-slate-200/80">
+                      {{ sec.code || 'SEC' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div *ngIf="newSubject.selectedSectionIds.length === 0" class="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-[11px] font-medium flex items-center gap-1.5">
+                  <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                  <span>Please check at least one section for this subject.</span>
+                </div>
+              </div>
+            </div>
+
             <div>
               <label class="block text-xs font-bold text-slate-700 mb-1">Description (Optional)</label>
-              <textarea [(ngModel)]="newSubject.description" rows="2" placeholder="Curriculum syllabus overview..."
+              <textarea [(ngModel)]="newSubject.description" rows="2" placeholder="Syllabus overview, topics, or notes..."
                         class="w-full px-4 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner"></textarea>
             </div>
 
@@ -2031,13 +2398,15 @@ interface StaffMember {
             </div>
           </div>
 
+          <!-- Modal Footer -->
           <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
             <button (click)="closeAddSubjectModal()" class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
               Cancel
             </button>
             <button (click)="saveSubject()" [disabled]="savingSubject"
-                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95">
-              <span *ngIf="!savingSubject">Create Subject</span>
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95 flex items-center gap-1.5">
+              <svg *ngIf="!savingSubject" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+              <span *ngIf="!savingSubject">Save & Assign Subject</span>
               <span *ngIf="savingSubject">Saving...</span>
             </button>
           </div>
@@ -2455,6 +2824,50 @@ interface StaffMember {
       </div>
 
       <!-- ============================================================== -->
+      <!-- MODAL: DELETE / REMOVE SUBJECT CONFIRMATION                   -->
+      <!-- ============================================================== -->
+      <div *ngIf="showDeleteSubjectModal && subjectToDelete" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[80] animate-fadeIn">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 space-y-4 animate-scaleUp">
+          <div class="flex items-start gap-3.5">
+            <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center shrink-0 shadow-xs">
+              <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-base font-black text-slate-900 tracking-tight">Remove Subject?</h3>
+              <p class="text-xs text-slate-500 mt-1">
+                You are about to remove <strong class="text-slate-800">{{ subjectToDelete.subject.name }} ({{ subjectToDelete.subject.code }})</strong><span *ngIf="subjectToDelete.classItem"> from <strong class="text-slate-800">{{ subjectToDelete.classItem.name }}</strong></span>.
+              </p>
+            </div>
+          </div>
+
+          <div class="p-4 bg-rose-50/70 border border-rose-200/80 rounded-2xl space-y-2 text-xs text-rose-900">
+            <div class="font-bold flex items-center gap-1.5 text-rose-700">
+              <span>⚠️ What will happen when you remove this subject:</span>
+            </div>
+            <ul class="list-disc pl-4 space-y-1 text-[11px] text-rose-800 leading-relaxed font-medium">
+              <li>This subject will be unlinked from the academic class curriculum.</li>
+              <li>Subject teacher assignments and timetable periods for this subject will be removed.</li>
+              <li>You can re-add or re-configure this subject at any time.</li>
+            </ul>
+          </div>
+
+          <div class="pt-2 border-t border-slate-100 flex items-center justify-end gap-2.5">
+            <button (click)="closeDeleteSubjectModal()" [disabled]="isDeletingSubject"
+                    class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
+              Cancel
+            </button>
+            <button (click)="executeDeleteSubject()" [disabled]="isDeletingSubject"
+                    class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95 flex items-center gap-1.5">
+              <span *ngIf="!isDeletingSubject">Remove Subject</span>
+              <span *ngIf="isDeletingSubject">Removing...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
       <!-- MODAL 6: STAFF STATUS CONFIRMATION MODAL                       -->
       <!-- ============================================================== -->
       <div *ngIf="showStaffStatusModal && selectedStaffForStatus" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[70] animate-fadeIn">
@@ -2848,9 +3261,19 @@ export class AcademicsComponent implements OnInit {
     class_teacher_id: '',
   };
 
+  // Loading state flags
+  loadingClasses = true;
+  loadingStudents = false;
+  loadingStaff = false;
+  loadingAlumni = false;
+
   // 3-Dot Action Menus
   activeClassMenuId: string | null = null;
   activeSectionMenuId: string | null = null;
+
+  // Collapsible Accordion State for Sections & Subjects (Collapsed by default)
+  expandedClassSections = new Set<string>();
+  expandedClassSubjects = new Set<string>();
 
   // Edit Class Modal
   showEditClassModal = false;
@@ -2885,6 +3308,10 @@ export class AcademicsComponent implements OnInit {
   sectionToDelete: { section: SectionItem; classItem: ClassItem } | null = null;
   isDeletingSection = false;
 
+  showDeleteSubjectModal = false;
+  subjectToDelete: { subject: SubjectItem; classItem?: ClassItem } | null = null;
+  isDeletingSubject = false;
+
   // Modals state
   showSessionModal = false;
   savingSession = false;
@@ -2902,11 +3329,29 @@ export class AcademicsComponent implements OnInit {
   showAddSubjectModal = false;
   savingSubject = false;
   subjectModalError = '';
+  subjectTargetClass: ClassItem | null = null;
+  selectedSubjectClassId = '';
+  quickSubjectSuggestions: string[] = [
+    'Mathematics',
+    'English',
+    'Science',
+    'Biology',
+    'Physics',
+    'Chemistry',
+    'Social Studies',
+    'Computer Science',
+    'Hindi',
+    'EVS',
+    'Art & Craft',
+    'General Knowledge',
+  ];
   newSubject = {
     name: '',
     code: '',
     subjectType: 'ACADEMIC',
     description: '',
+    isAllSections: true,
+    selectedSectionIds: [] as string[],
   };
 
   showAddStudentModal = false;
@@ -3291,6 +3736,17 @@ export class AcademicsComponent implements OnInit {
     return Math.max(1, Math.ceil(this.filteredAlumni.length / this.alumniPageSize));
   }
 
+  constructor() {
+    effect(() => {
+      // Triggered reactively whenever user switches active session
+      const activeSes = this.auth.activeAcademicSession();
+      if (activeSes) {
+        this.loadClassesAndSubjects();
+        this.loadAlumniList();
+      }
+    });
+  }
+
   setTab(tab: 'CLASSES' | 'STUDENTS' | 'ALUMNI' | 'STAFF' | 'SUBJECTS') {
     this.activeTab = tab;
     this.router.navigate([], {
@@ -3542,55 +3998,72 @@ export class AcademicsComponent implements OnInit {
   }
 
   loadAlumniList() {
+    this.loadingAlumni = true;
     this.api.get<AlumniStudent[]>('academics/alumni').subscribe({
       next: (res) => {
         this.alumniList = res || [];
+        this.loadingAlumni = false;
       },
       error: () => {
         this.alumniList = [];
+        this.loadingAlumni = false;
       },
     });
   }
 
   loadClassesAndSubjects() {
+    this.loadingClasses = true;
     const activeSession = this.auth.activeAcademicSession();
     const params = activeSession ? { academicYearId: activeSession.id } : undefined;
 
-    this.api.get<ClassItem[]>('academics/classes', params).subscribe((res) => {
-      const sorted = (res || []).sort(
-        (a, b) => this.getClassRank(a.name, a.code, a.display_order) - this.getClassRank(b.name, b.code, b.display_order)
-      );
+    this.api.get<ClassItem[]>('academics/classes', params).subscribe({
+      next: (res) => {
+        const sorted = (res || []).sort(
+          (a, b) => this.getClassRank(a.name, a.code, a.display_order) - this.getClassRank(b.name, b.code, b.display_order)
+        );
 
-      // Scope classes for Teacher
-      const teacherClassNames = new Set<string>();
-      const teachingScope = this.auth.currentUser()?.teachingScope;
-      if (teachingScope) {
-        teachingScope.classTeacherSections?.forEach((cts) => teacherClassNames.add(cts.className.toLowerCase()));
-        teachingScope.subjectAssignments?.forEach((sa) => teacherClassNames.add(sa.className.toLowerCase()));
-      }
+        // Scope classes for Teacher
+        const teacherClassNames = new Set<string>();
+        const teachingScope = this.auth.currentUser()?.teachingScope;
+        if (teachingScope) {
+          teachingScope.classTeacherSections?.forEach((cts) => teacherClassNames.add(cts.className.toLowerCase()));
+          teachingScope.subjectAssignments?.forEach((sa) => teacherClassNames.add(sa.className.toLowerCase()));
+        }
 
-      if (this.auth.isTeacher() && teacherClassNames.size > 0) {
-        this.classes = sorted.filter((c) => teacherClassNames.has(c.name.toLowerCase()));
-      } else {
-        this.classes = sorted;
-      }
+        if (this.auth.isTeacher() && teacherClassNames.size > 0) {
+          this.classes = sorted.filter((c) => teacherClassNames.has(c.name.toLowerCase()));
+        } else {
+          this.classes = sorted;
+        }
 
-      if (this.classes.length > 0) {
-        const stillSelected = this.selectedClass ? this.classes.find((c) => c.id === this.selectedClass?.id) : null;
-        this.selectClass(stillSelected || this.classes[0]);
-      } else {
-        this.selectedClass = null;
-        this.selectedSection = null;
-        this.students = [];
-      }
+        if (this.classes.length > 0) {
+          const stillSelected = this.selectedClass ? this.classes.find((c) => c.id === this.selectedClass?.id) : null;
+          this.selectClass(stillSelected || this.classes[0]);
+        } else {
+          this.selectedClass = null;
+          this.selectedSection = null;
+          this.students = [];
+        }
+        this.loadingClasses = false;
+      },
+      error: () => {
+        this.classes = [];
+        this.loadingClasses = false;
+      },
     });
 
-    this.api.get<SubjectItem[]>('academics/subjects').subscribe((res) => {
-      this.subjects = res;
+    this.api.get<SubjectItem[]>('academics/subjects').subscribe({
+      next: (res) => {
+        this.subjects = res || [];
+      },
+      error: () => {
+        this.subjects = [];
+      },
     });
   }
 
   loadStaffList() {
+    this.loadingStaff = true;
     this.api.get<StaffMember[]>('academics/staff').subscribe({
       next: (res) => {
         this.staffList = (res || []).filter(
@@ -3599,9 +4072,11 @@ export class AcademicsComponent implements OnInit {
             s.id !== '00000000-0000-0000-0000-000000000001' &&
             (s.role || '').toUpperCase() !== 'SUPER_ADMIN'
         );
+        this.loadingStaff = false;
       },
       error: () => {
         this.staffList = [];
+        this.loadingStaff = false;
       },
     });
   }
@@ -3618,11 +4093,19 @@ export class AcademicsComponent implements OnInit {
 
   selectSection(sec: SectionItem) {
     this.selectedSection = sec;
+    this.loadingStudents = true;
     const activeSession = this.auth.activeAcademicSession();
     const params = activeSession ? { academicYearId: activeSession.id } : undefined;
-    this.api.get<StudentItem[]>(`academics/sections/${sec.id}/students`, params).subscribe((res) => {
-      this.students = res || [];
-      this.currentPage = 1;
+    this.api.get<StudentItem[]>(`academics/sections/${sec.id}/students`, params).subscribe({
+      next: (res) => {
+        this.students = res || [];
+        this.currentPage = 1;
+        this.loadingStudents = false;
+      },
+      error: () => {
+        this.students = [];
+        this.loadingStudents = false;
+      },
     });
   }
 
@@ -3801,13 +4284,53 @@ export class AcademicsComponent implements OnInit {
     });
   }
 
-  // --- Add Subject ---
-  openAddSubjectModal() {
+  // --- Add Subject Handlers ---
+  openAddSubjectToClass(c: ClassItem, event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeClassMenuId = null;
+    this.subjectTargetClass = c;
+    this.selectedSubjectClassId = c.id;
     this.newSubject = {
       name: '',
       code: '',
       subjectType: 'ACADEMIC',
       description: '',
+      isAllSections: true,
+      selectedSectionIds: (c.sections || []).map((s) => s.id),
+    };
+    this.subjectModalError = '';
+    this.modalService.open('ADD_SUBJECT');
+    this.showAddSubjectModal = true;
+  }
+
+  openAddSubjectToSection(sec: SectionItem, c: ClassItem, event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeSectionMenuId = null;
+    this.subjectTargetClass = c;
+    this.selectedSubjectClassId = c.id;
+    this.newSubject = {
+      name: '',
+      code: '',
+      subjectType: 'ACADEMIC',
+      description: '',
+      isAllSections: false,
+      selectedSectionIds: [sec.id],
+    };
+    this.subjectModalError = '';
+    this.modalService.open('ADD_SUBJECT');
+    this.showAddSubjectModal = true;
+  }
+
+  openAddSubjectModal() {
+    this.subjectTargetClass = this.selectedClass || (this.classes.length > 0 ? this.classes[0] : null);
+    this.selectedSubjectClassId = this.subjectTargetClass?.id || '';
+    this.newSubject = {
+      name: '',
+      code: '',
+      subjectType: 'ACADEMIC',
+      description: '',
+      isAllSections: true,
+      selectedSectionIds: this.subjectTargetClass ? (this.subjectTargetClass.sections || []).map((s) => s.id) : [],
     };
     this.subjectModalError = '';
     this.modalService.open('ADD_SUBJECT');
@@ -3817,6 +4340,191 @@ export class AcademicsComponent implements OnInit {
   closeAddSubjectModal() {
     this.modalService.close();
     this.showAddSubjectModal = false;
+    this.subjectTargetClass = null;
+    this.selectedSubjectClassId = '';
+    this.subjectModalError = '';
+  }
+
+  onSubjectClassChange(classId: string) {
+    const found = this.classes.find((c) => c.id === classId) || null;
+    this.subjectTargetClass = found;
+    if (found) {
+      if (this.newSubject.isAllSections) {
+        this.newSubject.selectedSectionIds = (found.sections || []).map((s) => s.id);
+      } else {
+        this.newSubject.selectedSectionIds = (found.sections || []).slice(0, 1).map((s) => s.id);
+      }
+      if (this.newSubject.name.trim()) {
+        this.newSubject.code = this.generateSubjectCode(this.newSubject.name, found);
+      }
+    } else {
+      this.newSubject.selectedSectionIds = [];
+      if (this.newSubject.name.trim()) {
+        this.newSubject.code = this.generateSubjectCode(this.newSubject.name, null);
+      }
+    }
+  }
+
+  generateSubjectCode(name: string, targetClass?: ClassItem | null): string {
+    if (!name || !name.trim()) return '';
+    const clean = name.trim();
+
+    let prefix = '';
+    const words = clean.split(/\s+/).filter((w) => w.length > 0);
+    if (words.length === 1) {
+      const w = words[0].toUpperCase();
+      if (w.startsWith('BIO')) prefix = 'BIO';
+      else if (w.startsWith('MATH')) prefix = 'MATH';
+      else if (w.startsWith('PHY')) prefix = 'PHY';
+      else if (w.startsWith('CHEM')) prefix = 'CHEM';
+      else if (w.startsWith('ENG')) prefix = 'ENG';
+      else if (w.startsWith('HIN')) prefix = 'HIN';
+      else if (w.startsWith('SCI')) prefix = 'SCI';
+      else if (w.startsWith('COMP') || w.startsWith('CS')) prefix = 'CS';
+      else if (w.startsWith('HIST')) prefix = 'HIST';
+      else if (w.startsWith('GEO')) prefix = 'GEO';
+      else if (w.startsWith('ECON')) prefix = 'ECON';
+      else if (w.startsWith('ART')) prefix = 'ART';
+      else if (w.startsWith('MUS')) prefix = 'MUS';
+      else if (w.startsWith('SAN')) prefix = 'SANS';
+      else prefix = w.slice(0, 4);
+    } else {
+      if (clean.toLowerCase().includes('social')) prefix = 'SST';
+      else if (clean.toLowerCase().includes('computer')) prefix = 'CS';
+      else if (clean.toLowerCase().includes('physical')) prefix = 'PE';
+      else if (clean.toLowerCase().includes('environmental') || clean.toLowerCase().includes('evs')) prefix = 'EVS';
+      else if (clean.toLowerCase().includes('general knowledge') || clean.toLowerCase().includes('gk')) prefix = 'GK';
+      else {
+        prefix = words.map((w) => w[0].toUpperCase()).join('').slice(0, 4);
+      }
+    }
+
+    let classSuffix = '';
+    if (targetClass) {
+      const cNorm = (targetClass.name || '').toLowerCase();
+      const numMatch = cNorm.match(/\d+/);
+      if (numMatch) {
+        classSuffix = numMatch[0];
+      } else if (cNorm.includes('pre-nur') || cNorm.includes('prenur')) {
+        classSuffix = 'PNUR';
+      } else if (cNorm.includes('nur')) {
+        classSuffix = 'NUR';
+      } else if (cNorm.includes('lkg')) {
+        classSuffix = 'LKG';
+      } else if (cNorm.includes('ukg')) {
+        classSuffix = 'UKG';
+      } else if (targetClass.code) {
+        classSuffix = targetClass.code.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4);
+      }
+    }
+
+    const baseCode = classSuffix ? `${prefix}-${classSuffix}` : prefix;
+
+    let finalCode = baseCode;
+    let counter = 1;
+    const existingCodes = new Set((this.subjects || []).map((s) => (s.code || '').toUpperCase()));
+    while (existingCodes.has(finalCode.toUpperCase())) {
+      finalCode = `${baseCode}-${counter}`;
+      counter++;
+    }
+    return finalCode;
+  }
+
+  onSubjectNameChange() {
+    if (!this.newSubject.name.trim()) return;
+    this.newSubject.code = this.generateSubjectCode(this.newSubject.name, this.subjectTargetClass);
+  }
+
+  regenerateCode() {
+    this.newSubject.code = this.generateSubjectCode(this.newSubject.name, this.subjectTargetClass);
+  }
+
+  applyQuickSubject(sug: string) {
+    this.newSubject.name = sug;
+    this.newSubject.code = this.generateSubjectCode(sug, this.subjectTargetClass);
+    const lower = sug.toLowerCase();
+    if (lower.includes('lab') || lower.includes('practical')) {
+      this.newSubject.subjectType = 'LAB';
+    } else if (lower.includes('english') || lower.includes('hindi') || lower.includes('sanskrit')) {
+      this.newSubject.subjectType = 'LANGUAGE';
+    } else if (lower.includes('art') || lower.includes('music') || lower.includes('craft')) {
+      this.newSubject.subjectType = 'ACTIVITY';
+    } else {
+      this.newSubject.subjectType = 'ACADEMIC';
+    }
+  }
+
+  selectAllSectionsForSubject() {
+    this.newSubject.isAllSections = true;
+    if (this.subjectTargetClass) {
+      this.newSubject.selectedSectionIds = (this.subjectTargetClass.sections || []).map((s) => s.id);
+    }
+  }
+
+  selectSpecificSectionsForSubject() {
+    this.newSubject.isAllSections = false;
+    if (this.newSubject.selectedSectionIds.length === 0 && this.subjectTargetClass?.sections?.length) {
+      this.newSubject.selectedSectionIds = [this.subjectTargetClass.sections[0].id];
+    }
+  }
+
+  toggleSubjectSection(secId: string) {
+    const idx = this.newSubject.selectedSectionIds.indexOf(secId);
+    if (idx >= 0) {
+      this.newSubject.selectedSectionIds.splice(idx, 1);
+    } else {
+      this.newSubject.selectedSectionIds.push(secId);
+    }
+  }
+
+  isSectionSelectedForSubject(secId: string): boolean {
+    return this.newSubject.selectedSectionIds.includes(secId);
+  }
+
+  toggleSectionsCollapse(classId: string, event?: Event) {
+    if (event) event.stopPropagation();
+    if (this.expandedClassSections.has(classId)) {
+      this.expandedClassSections.delete(classId);
+    } else {
+      this.expandedClassSections.add(classId);
+    }
+  }
+
+  isSectionsExpanded(classId: string): boolean {
+    return this.expandedClassSections.has(classId);
+  }
+
+  toggleSubjectsCollapse(classId: string, event?: Event) {
+    if (event) event.stopPropagation();
+    if (this.expandedClassSubjects.has(classId)) {
+      this.expandedClassSubjects.delete(classId);
+    } else {
+      this.expandedClassSubjects.add(classId);
+    }
+  }
+
+  isSubjectsExpanded(classId: string): boolean {
+    return this.expandedClassSubjects.has(classId);
+  }
+
+  getClassSubjects(c: ClassItem): SubjectItem[] {
+    const directSubs = c.subjects || [];
+    if (directSubs.length > 0) return directSubs;
+    return (this.subjects || []).filter(
+      (s) =>
+        s.class_id === c.id ||
+        (s.section_ids && s.section_ids.some((sid) => (c.sections || []).some((cs) => cs.id === sid)))
+    );
+  }
+
+  getSectionSubjects(sec: SectionItem): SubjectItem[] {
+    const directSubs = sec.subjects || [];
+    if (directSubs.length > 0) return directSubs;
+    return (this.subjects || []).filter(
+      (s) =>
+        (s.section_ids && s.section_ids.includes(sec.id)) ||
+        (s.class_id === sec.class_id && s.is_all_sections)
+    );
   }
 
   saveSubject() {
@@ -3824,19 +4532,59 @@ export class AcademicsComponent implements OnInit {
       this.subjectModalError = 'Please enter both Subject Name and Subject Code.';
       return;
     }
+
+    if (this.subjectTargetClass && !this.newSubject.isAllSections && this.newSubject.selectedSectionIds.length === 0) {
+      this.subjectModalError = 'Please select at least one section for this subject.';
+      return;
+    }
+
+    // Check for duplicate subject in target class
+    if (this.subjectTargetClass) {
+      const existingInClass = this.getClassSubjects(this.subjectTargetClass);
+      const nameNorm = this.newSubject.name.trim().toLowerCase();
+      const codeNorm = this.newSubject.code.trim().toUpperCase();
+      if (existingInClass.some((s) => s.name.toLowerCase() === nameNorm || s.code.toUpperCase() === codeNorm)) {
+        this.subjectModalError = `A subject with name "${this.newSubject.name.trim()}" or code "${this.newSubject.code.trim()}" is already assigned to ${this.subjectTargetClass.name}.`;
+        return;
+      }
+    }
+
     this.savingSubject = true;
     this.subjectModalError = '';
 
-    this.api.post<SubjectItem>('academics/subjects', this.newSubject).subscribe({
+    const payload = {
+      name: this.newSubject.name.trim(),
+      code: this.newSubject.code.trim().toUpperCase(),
+      subject_type: this.newSubject.subjectType,
+      description: this.newSubject.description?.trim() || '',
+      class_id: this.subjectTargetClass?.id || null,
+      class_name: this.subjectTargetClass?.name || null,
+      is_all_sections: this.newSubject.isAllSections,
+      section_ids: this.newSubject.isAllSections
+        ? (this.subjectTargetClass ? (this.subjectTargetClass.sections || []).map((s) => s.id) : [])
+        : this.newSubject.selectedSectionIds,
+    };
+
+    this.api.post<SubjectItem>('academics/subjects', payload).subscribe({
       next: (created) => {
         this.savingSubject = false;
         this.closeAddSubjectModal();
-        this.subjects.push(created);
-        this.toast.success(`Subject "${created.name}" (${created.code}) created successfully!`);
+        const secDesc = !this.newSubject.isAllSections
+          ? ` (${this.newSubject.selectedSectionIds.length} specific sections)`
+          : '';
+        this.toast.success(
+          `Subject "${created.name}" (${created.code}) successfully added to ${
+            this.subjectTargetClass ? this.subjectTargetClass.name : 'curriculum'
+          }${secDesc}!`
+        );
+        this.loadClassesAndSubjects();
       },
       error: (err) => {
         this.savingSubject = false;
-        this.subjectModalError = this.formatErrorMessage(err, 'Failed to create subject. Please check code uniqueness.');
+        this.subjectModalError = this.formatErrorMessage(
+          err,
+          'Failed to create subject. Please check if code is already in use.'
+        );
       },
     });
   }
@@ -3848,6 +4596,7 @@ export class AcademicsComponent implements OnInit {
         next: () => {
           this.subjects = this.subjects.filter((s) => s.id !== subject.id);
           this.toast.success(`Subject "${subject.name}" removed successfully.`);
+          this.loadClassesAndSubjects();
         },
         error: (err) => {
           this.toast.error(this.formatErrorMessage(err, 'Failed to delete subject.'));
@@ -3914,20 +4663,7 @@ export class AcademicsComponent implements OnInit {
         this.savingStudent = false;
         this.closeAddStudentModal();
         this.toast.success(`Student ${res.fullName || this.newStudent.firstName} enrolled successfully!`);
-        
-        // Find target class and section to automatically switch view to the student's section
-        const targetClass = this.classes.find(c => c.id === this.studentEnrollClassId) 
-          || this.classes.find(c => c.sections?.some(s => s.id === this.newStudent.sectionId)) 
-          || this.selectedClass;
-        const targetSection = targetClass?.sections?.find(s => s.id === this.newStudent.sectionId) 
-          || this.selectedSection;
-
-        if (targetClass) this.selectedClass = targetClass;
-        if (targetSection) {
-          this.selectSection(targetSection);
-        } else if (this.selectedSection) {
-          this.selectSection(this.selectedSection);
-        }
+        this.loadClassesAndSubjects();
       },
       error: (err) => {
         this.savingStudent = false;
@@ -4543,6 +5279,42 @@ export class AcademicsComponent implements OnInit {
       error: (err) => {
         this.isDeletingSection = false;
         this.toast.error(this.formatErrorMessage(err, 'Failed to delete section.'));
+      },
+    });
+  }
+
+  // Delete Subject Confirmation Modal Handlers
+  promptDeleteSubject(subject: SubjectItem, classItem?: ClassItem, event?: Event) {
+    if (event) event.stopPropagation();
+    this.subjectToDelete = { subject, classItem };
+    this.modalService.open('DELETE_SUBJECT');
+    this.showDeleteSubjectModal = true;
+  }
+
+  closeDeleteSubjectModal() {
+    this.modalService.close();
+    this.showDeleteSubjectModal = false;
+    this.subjectToDelete = null;
+    this.isDeletingSubject = false;
+  }
+
+  executeDeleteSubject() {
+    if (!this.subjectToDelete) return;
+    const { subject, classItem } = this.subjectToDelete;
+    this.isDeletingSubject = true;
+
+    this.api.delete(`academics/subjects/${subject.id}`).subscribe({
+      next: () => {
+        this.isDeletingSubject = false;
+        this.subjects = this.subjects.filter((s) => s.id !== subject.id);
+        const className = classItem ? ` from ${classItem.name}` : '';
+        this.toast.success(`Subject "${subject.name}" (${subject.code}) removed successfully${className}.`);
+        this.closeDeleteSubjectModal();
+        this.loadClassesAndSubjects();
+      },
+      error: (err: any) => {
+        this.isDeletingSubject = false;
+        this.toast.error(this.formatErrorMessage(err, 'Failed to delete subject.'));
       },
     });
   }

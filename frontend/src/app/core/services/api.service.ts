@@ -85,19 +85,19 @@ export class ApiService {
 
     // Dashboard Overview
     if (cleanEndpoint === 'dashboard/overview' || cleanEndpoint === 'dashboard') {
-      return from(this.getDashboardOverview()) as unknown as Observable<T>;
+      return from(this.getDashboardOverview(params?.['academicYearId'])) as unknown as Observable<T>;
     }
 
     // SaaS Subscription & Wallet Overview
     if (cleanEndpoint === 'subscription/overview' || cleanEndpoint === 'subscription') {
       const targetSchoolId = params?.['schoolId'] || this.getSchoolId();
-      return from(this.getSubscriptionDetails(targetSchoolId)) as unknown as Observable<T>;
+      return from(this.getSubscriptionDetails(targetSchoolId, params?.['academicYearId'])) as unknown as Observable<T>;
     }
 
     // SaaS Monthly Calculation & Proration Roster
     if (cleanEndpoint === 'subscription/calculate') {
       const targetSchoolId = params?.['schoolId'] || this.getSchoolId();
-      return from(this.calculateMonthlySubscription(targetSchoolId)) as unknown as Observable<T>;
+      return from(this.calculateMonthlySubscription(targetSchoolId, params?.['academicYearId'])) as unknown as Observable<T>;
     }
 
     // Academics: Classes
@@ -446,8 +446,9 @@ export class ApiService {
   // Supabase Implementation Handlers
   // ============================================================================
 
-  private async getDashboardOverview(): Promise<DashboardStats> {
+  private async getDashboardOverview(academicYearId?: string): Promise<DashboardStats> {
     const schoolId = this.getSchoolId();
+    const effectiveYearId = academicYearId || (await this.getActiveAcademicYearId(schoolId));
 
     let studentCount = 0;
     let classCount = 0;
@@ -455,17 +456,45 @@ export class ApiService {
     let complaintsCount = 0;
 
     if (schoolId) {
-      const [sRes, cRes, tRes, compRes] = await Promise.all([
-        this.supabase.from('students').select('id', { count: 'exact', head: true }).eq('school_id', schoolId),
-        this.supabase.from('classes').select('id', { count: 'exact', head: true }).eq('school_id', schoolId),
-        this.supabase.from('user_school_roles').select('id', { count: 'exact', head: true }).eq('school_id', schoolId),
-        this.supabase.from('complaints').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).eq('status', 'OPEN'),
+      let enrQuery = this.supabase
+        .from('student_enrollments')
+        .select('id', { count: 'exact', head: true })
+        .neq('status', 'INACTIVE');
+      if (effectiveYearId) {
+        enrQuery = enrQuery.eq('academic_year_id', effectiveYearId);
+      }
+
+      const [cRes, tRes, compRes, enrRes] = await Promise.all([
+        this.supabase.from('classes').select('id', { count: 'exact', head: true }).eq('school_id', schoolId) as any,
+        this.supabase.from('user_school_roles').select('id', { count: 'exact', head: true }).eq('school_id', schoolId) as any,
+        this.supabase.from('complaints').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).eq('status', 'OPEN') as any,
+        enrQuery as any,
       ]);
 
-      studentCount = sRes.count || 0;
       classCount = cRes.count || 0;
       teacherCount = tRes.count || 0;
       complaintsCount = compRes.count || 0;
+      studentCount = enrRes.count || 0;
+
+      // Fallback: If 0 enrollments in DB for base session, check local map & active students
+      if (studentCount === 0 && effectiveYearId) {
+        try {
+          const { data: activeYears } = await this.supabase
+            .from('academic_years')
+            .select('id, is_current')
+            .eq('school_id', schoolId)
+            .eq('is_current', true);
+          const isBase = activeYears && activeYears.length > 0 && activeYears[0].id === effectiveYearId;
+          if (isBase) {
+            const { count: stCount } = await this.supabase
+              .from('students')
+              .select('id', { count: 'exact', head: true })
+              .eq('school_id', schoolId)
+              .neq('status', 'INACTIVE');
+            studentCount = stCount || 0;
+          }
+        } catch {}
+      }
     }
 
     const { data: notices } = await this.supabase
@@ -665,10 +694,56 @@ export class ApiService {
       await this.ensureSessionEnrollments(schoolId, effectiveYearId);
     }
 
-    let query = this.supabase.from('classes').select('*, sections(*)').order('display_order');
+    let query = this.supabase.from('classes').select('*').order('display_order');
     if (schoolId) query = query.eq('school_id', schoolId);
-    const { data, error } = await query;
+    const { data: classesData, error } = await query;
     if (error) throw error;
+
+    // Fetch sections strictly for this academic session (or null academic_year_id)
+    let secQuery = this.supabase.from('sections').select('*').order('display_order');
+    if (schoolId) secQuery = secQuery.eq('school_id', schoolId);
+    if (effectiveYearId) {
+      secQuery = secQuery.or(`academic_year_id.eq.${effectiveYearId},academic_year_id.is.null`);
+    }
+    const { data: rawSections } = await secQuery;
+    let sectionsData = rawSections || [];
+
+    // If classes exist but 0 sections exist for this specific session, auto-provision Section A for each class
+    if (effectiveYearId && classesData && classesData.length > 0) {
+      const yearSections = sectionsData.filter((s: any) => s.academic_year_id === effectiveYearId);
+      if (yearSections.length === 0) {
+        const sectionsToCreate: any[] = [];
+        for (const cls of classesData) {
+          sectionsToCreate.push({
+            school_id: schoolId,
+            class_id: cls.id,
+            academic_year_id: effectiveYearId,
+            name: 'Section A',
+            code: 'A',
+            capacity: 40,
+            display_order: 1,
+            status: 'ACTIVE',
+          });
+        }
+        try {
+          const { data: createdSecs } = await this.supabase.from('sections').insert(sectionsToCreate).select('*');
+          if (createdSecs && createdSecs.length > 0) {
+            sectionsData = createdSecs;
+          }
+        } catch (e) {
+          console.warn('Auto-provision sections note:', e);
+        }
+      } else {
+        sectionsData = yearSections;
+      }
+    }
+
+    // Group sections by class_id
+    const classSectionsMap = new Map<string, any[]>();
+    sectionsData.forEach((sec: any) => {
+      if (!classSectionsMap.has(sec.class_id)) classSectionsMap.set(sec.class_id, []);
+      classSectionsMap.get(sec.class_id)!.push(sec);
+    });
 
     let sectionEnrollmentCounts: Record<string, number> = {};
     try {
@@ -706,27 +781,68 @@ export class ApiService {
       } catch {}
     }
 
-    const mapped = (data || []).map((c: any) => ({
-      id: c.id,
-      name: c.name,
-      code: c.code,
-      display_order: c.display_order,
-      sections: (c.sections || []).map((s: any) => ({
-        id: s.id,
-        class_id: s.class_id,
-        academic_year_id: s.academic_year_id,
-        name: s.name,
-        code: s.code,
-        capacity: s.capacity || 40,
-        enrolled_count: sectionEnrollmentCounts[s.id] || 0,
-        display_order: s.display_order || 0,
-        class_teacher_id: s.class_teacher_id || null,
-      })),
-    }));
+    // Attach assigned subjects to classes and sections
+    let allSubjects: SubjectItem[] = [];
+    try {
+      allSubjects = await this.getSubjects();
+    } catch {}
+
+    const classSubjectMap = new Map<string, SubjectItem[]>();
+    const sectionSubjectMap = new Map<string, SubjectItem[]>();
+
+    allSubjects.forEach((sub) => {
+      if (sub.class_id) {
+        if (!classSubjectMap.has(sub.class_id)) classSubjectMap.set(sub.class_id, []);
+        classSubjectMap.get(sub.class_id)!.push(sub);
+      }
+      if (sub.section_ids && sub.section_ids.length > 0) {
+        sub.section_ids.forEach((secId) => {
+          if (!sectionSubjectMap.has(secId)) sectionSubjectMap.set(secId, []);
+          sectionSubjectMap.get(secId)!.push(sub);
+        });
+      }
+    });
+
+    const mapped = (classesData || []).map((c: any) => {
+      const clsSubjects = classSubjectMap.get(c.id) || [];
+      const clsSections = classSectionsMap.get(c.id) || [];
+      return {
+        id: c.id,
+        name: c.name,
+        code: c.code,
+        display_order: c.display_order,
+        subjects: clsSubjects,
+        sections: clsSections.map((s: any) => {
+          const directSecSubs = sectionSubjectMap.get(s.id) || [];
+          const inheritedAllSecSubs = clsSubjects.filter((sub) => sub.is_all_sections && !directSecSubs.some((ds) => ds.id === sub.id));
+          return {
+            id: s.id,
+            class_id: s.class_id,
+            academic_year_id: s.academic_year_id,
+            name: s.name,
+            code: s.code,
+            capacity: s.capacity || 40,
+            enrolled_count: sectionEnrollmentCounts[s.id] || 0,
+            display_order: s.display_order || 0,
+            class_teacher_id: s.class_teacher_id || null,
+            subjects: [...directSecSubs, ...inheritedAllSecSubs],
+          };
+        }),
+      };
+    });
 
     return mapped.sort(
       (a, b) => getClassPedagogicalRank(a.name, a.code, a.display_order) - getClassPedagogicalRank(b.name, b.code, b.display_order)
     );
+  }
+
+  public getSectionSubjectMap(): Record<string, any> {
+    try {
+      const raw = localStorage.getItem('schoolsense_section_subjects');
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
   }
 
   private async getSubjects(): Promise<SubjectItem[]> {
@@ -735,13 +851,70 @@ export class ApiService {
     if (schoolId) query = query.eq('school_id', schoolId);
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []).map((s: any) => ({
-      id: s.id,
-      name: s.name,
-      code: s.code,
-      subject_type: s.type || 'THEORY',
-      display_order: 0,
-    }));
+
+    const map = this.getSectionSubjectMap();
+
+    // Fetch classes and sections to resolve section names and class names
+    let sectionMap = new Map<string, any>();
+    let classMap = new Map<string, string>();
+    const stSubjectSections = new Map<string, Set<string>>();
+
+    try {
+      const [sectionsRes, classesRes, stRes] = await Promise.all([
+        this.supabase.from('sections').select('id, name, class_id').eq('school_id', schoolId),
+        this.supabase.from('classes').select('id, name').eq('school_id', schoolId),
+        this.supabase.from('subject_teachers').select('subject_id, section_id'),
+      ]);
+
+      sectionMap = new Map((sectionsRes.data || []).map((s: any) => [s.id, s]));
+      classMap = new Map((classesRes.data || []).map((c: any) => [c.id, c.name]));
+
+      (stRes.data || []).forEach((st: any) => {
+        if (st.subject_id && st.section_id) {
+          if (!stSubjectSections.has(st.subject_id)) {
+            stSubjectSections.set(st.subject_id, new Set());
+          }
+          stSubjectSections.get(st.subject_id)!.add(st.section_id);
+        }
+      });
+    } catch {}
+
+    return (data || []).map((s: any) => {
+      const localEntry = map[s.id] || {};
+      const stSecs = Array.from(stSubjectSections.get(s.id) || []);
+      const effectiveSectionIds: string[] =
+        localEntry.section_ids && localEntry.section_ids.length > 0
+          ? localEntry.section_ids
+          : stSecs;
+
+      const secNames = effectiveSectionIds
+        .map((secId) => sectionMap.get(secId)?.name)
+        .filter(Boolean) as string[];
+
+      let resolvedClassId = localEntry.class_id || '';
+      let resolvedClassName = localEntry.class_name || '';
+
+      if (!resolvedClassId && effectiveSectionIds.length > 0) {
+        const firstSec = sectionMap.get(effectiveSectionIds[0]);
+        if (firstSec?.class_id) {
+          resolvedClassId = firstSec.class_id;
+          resolvedClassName = classMap.get(firstSec.class_id) || '';
+        }
+      }
+
+      return {
+        id: s.id,
+        name: s.name,
+        code: s.code,
+        subject_type: s.type || 'THEORY',
+        display_order: 0,
+        class_id: resolvedClassId,
+        class_name: resolvedClassName,
+        section_ids: effectiveSectionIds,
+        section_names: secNames,
+        is_all_sections: localEntry.is_all_sections ?? (effectiveSectionIds.length === 0),
+      };
+    });
   }
 
   private async getStaff(): Promise<any[]> {
@@ -1829,30 +2002,137 @@ export class ApiService {
 
   // --- CRUD Actions ---
 
-  private async createSubject(body: any) {
+  private async createSubject(body: any): Promise<SubjectItem> {
     const schoolId = this.getSchoolId();
-    const { data, error } = await this.supabase
+    if (!schoolId) throw new Error('School context required');
+
+    const subjectName = (body.name || '').trim();
+    const subjectCode = (body.code || '').trim().toUpperCase();
+    const subjectType = body.subject_type || body.subjectType || 'THEORY';
+
+    if (!subjectName || !subjectCode) {
+      throw new Error('Subject name and code are required.');
+    }
+
+    // 1. Check if subject exists with same code in this school
+    let subjectData: any = null;
+    const { data: existing } = await this.supabase
       .from('subjects')
-      .insert({
-        school_id: schoolId,
-        name: body.name,
-        code: body.code.toUpperCase(),
-        type: body.subject_type || 'THEORY',
-      })
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+      .select('*')
+      .eq('school_id', schoolId)
+      .eq('code', subjectCode)
+      .maybeSingle();
+
+    if (existing) {
+      subjectData = existing;
+      await this.supabase
+        .from('subjects')
+        .update({ name: subjectName, type: subjectType })
+        .eq('id', existing.id);
+    } else {
+      const { data: created, error } = await this.supabase
+        .from('subjects')
+        .insert({
+          school_id: schoolId,
+          name: subjectName,
+          code: subjectCode,
+          type: subjectType,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      subjectData = created;
+    }
+
+    // 2. Class and Section association
+    const sectionIds: string[] = body.section_ids || body.sectionIds || [];
+    const classId: string = body.class_id || body.classId || '';
+    const className: string = body.class_name || body.className || '';
+    const isAllSections: boolean = body.is_all_sections ?? body.isAllSections ?? (sectionIds.length === 0);
+
+    if (subjectData && subjectData.id) {
+      // Create records in subject_teachers if sectionIds are specified
+      for (const secId of sectionIds) {
+        try {
+          const { data: existingSt } = await this.supabase
+            .from('subject_teachers')
+            .select('id')
+            .eq('subject_id', subjectData.id)
+            .eq('section_id', secId)
+            .maybeSingle();
+
+          if (!existingSt) {
+            await this.supabase.from('subject_teachers').insert({
+              subject_id: subjectData.id,
+              section_id: secId,
+              teacher_id: body.teacher_id || null,
+            });
+          }
+        } catch (stErr) {
+          console.warn('subject_teachers insert note:', stErr);
+        }
+      }
+
+      // Persist in localStorage section subjects map
+      try {
+        const map = this.getSectionSubjectMap();
+        map[subjectData.id] = {
+          subject_id: subjectData.id,
+          name: subjectName,
+          code: subjectCode,
+          subject_type: subjectType,
+          class_id: classId,
+          class_name: className,
+          section_ids: sectionIds,
+          is_all_sections: isAllSections,
+        };
+        localStorage.setItem('schoolsense_section_subjects', JSON.stringify(map));
+      } catch (mErr) {
+        console.warn('Failed to save section subjects map:', mErr);
+      }
+    }
+
+    return {
+      id: subjectData.id,
+      name: subjectData.name,
+      code: subjectData.code,
+      subject_type: subjectData.type || subjectType,
+      display_order: 0,
+      description: body.description || '',
+      class_id: classId,
+      class_name: className,
+      section_ids: sectionIds,
+      is_all_sections: isAllSections,
+    };
   }
 
   private async deleteSubject(id: string) {
+    try {
+      await this.supabase.from('subject_teachers').delete().eq('subject_id', id);
+    } catch {}
+
     const { error } = await this.supabase.from('subjects').delete().eq('id', id);
     if (error) throw error;
+
+    try {
+      const map = this.getSectionSubjectMap();
+      delete map[id];
+      localStorage.setItem('schoolsense_section_subjects', JSON.stringify(map));
+    } catch {}
+
     return { success: true };
   }
 
   private async getActiveAcademicYearId(schoolId: string): Promise<string> {
     try {
+      const stored = localStorage.getItem('schoolsense_active_session');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (parsed && parsed.id) return parsed.id;
+        } catch {}
+      }
+
       const { data: year } = await this.supabase
         .from('academic_years')
         .select('id')
@@ -2514,59 +2794,7 @@ export class ApiService {
     const guardianName = (body.guardianName || body.emergencyContactName || '').trim();
     const guardianPhone = (body.guardianPhone || body.emergencyContactPhone || '').trim();
 
-    // 1. Try SECURITY DEFINER RPC enroll_new_student first (bypasses RLS restrictions)
-    try {
-      const { data: rpcData, error: rpcErr } = await this.supabase.rpc('enroll_new_student', {
-        p_school_id: schoolId,
-        p_first_name: firstName,
-        p_last_name: lastName || null,
-        p_admission_number: admissionNumber || null,
-        p_section_id: body.sectionId || null,
-        p_class_id: body.classId || null,
-        p_academic_year_id: body.academicYearId || null,
-        p_roll_number: body.rollNumber ? String(body.rollNumber) : '1',
-        p_gender: body.gender || 'MALE',
-        p_date_of_birth: body.dateOfBirth || null,
-        p_blood_group: body.bloodGroup || null,
-        p_guardian_name: guardianName || null,
-        p_guardian_phone: guardianPhone || null,
-        p_guardian_email: body.guardianEmail || null,
-        p_relationship: body.relationship || 'FATHER',
-      });
-
-      if (!rpcErr && rpcData) {
-        if (rpcData.id || rpcData.student_id) {
-          const sid = rpcData.id || rpcData.student_id;
-          let clsName = '';
-          let secName = '';
-          try {
-            if (body.sectionId) {
-              const { data: sData } = await this.supabase
-                .from('sections')
-                .select('name, class:classes(name)')
-                .eq('id', body.sectionId)
-                .maybeSingle();
-              secName = sData?.name || '';
-              clsName = (sData?.class as any)?.name || '';
-            }
-          } catch {}
-          this.setStudentSection(sid, {
-            classId: body.classId,
-            className: clsName || 'Class 1',
-            sectionId: body.sectionId,
-            sectionName: secName || 'Section A',
-            rollNumber: body.rollNumber ? String(body.rollNumber) : '1',
-          });
-          await this.ensureParentUserAndGuardian(schoolId, sid, body);
-        }
-        return rpcData;
-      }
-    } catch (e) {
-      console.warn('RPC enroll_new_student unavailable, using direct insert', e);
-    }
-
-    // 2. Direct Fallback
-    // Check if admission number already exists for this school to prevent 409 unique constraint error
+    // Check if admission number already exists for this school to prevent unique constraint error
     try {
       const { data: existingStudent } = await this.supabase
         .from('students')
@@ -2580,6 +2808,26 @@ export class ApiService {
       }
     } catch {}
 
+    // Format Date of Birth safely to YYYY-MM-DD
+    let dob: string | null = null;
+    if (body.dateOfBirth) {
+      try {
+        const dStr = String(body.dateOfBirth).trim();
+        if (dStr.includes('/')) {
+          const parts = dStr.split('/');
+          if (parts.length === 3) {
+            if (parts[2].length === 4) {
+              dob = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
+          }
+        } else {
+          dob = new Date(dStr).toISOString().split('T')[0];
+        }
+      } catch {
+        dob = null;
+      }
+    }
+
     const { data: student, error: sErr } = await this.supabase
       .from('students')
       .insert({
@@ -2588,7 +2836,8 @@ export class ApiService {
         first_name: firstName,
         last_name: lastName || null,
         gender: body.gender || 'MALE',
-        date_of_birth: body.dateOfBirth || null,
+        date_of_birth: dob,
+        blood_group: body.bloodGroup || null,
         emergency_contact_name: guardianName || null,
         emergency_contact_phone: guardianPhone || null,
         status: 'ACTIVE',
@@ -2599,101 +2848,101 @@ export class ApiService {
     if (sErr) throw sErr;
 
     // Determine target session
-    let academicYearId = body.academicYearId;
-    if (!academicYearId) {
-      const { data: currYear } = await this.supabase
-        .from('academic_years')
-        .select('id')
-        .eq('school_id', schoolId)
-        .eq('is_current', true)
-        .maybeSingle();
-      academicYearId = currYear?.id;
-    }
-    if (!academicYearId) {
-      const { data: anyYear } = await this.supabase
-        .from('academic_years')
-        .select('id')
-        .eq('school_id', schoolId)
-        .order('start_date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      academicYearId = anyYear?.id;
-    }
-    if (!academicYearId) {
-      const { data: newYear, error: yErr } = await this.supabase
-        .from('academic_years')
-        .insert({
-          school_id: schoolId,
-          name: '2026–2027',
-          start_date: '2026-04-01',
-          end_date: '2027-03-31',
-          is_current: true,
-          status: 'ACTIVE',
-        })
-        .select()
-        .single();
-      if (!yErr && newYear) {
-        academicYearId = newYear.id;
-      }
-    }
+    const academicYearId = body.academicYearId || (await this.getActiveAcademicYearId(schoolId));
 
-    // Determine target class & section
+    // Resolve target class and section for this academic session
+    let targetSectionId = body.sectionId;
     let resolvedClassName = 'Class 1';
     let resolvedSectionName = 'Section A';
+    let targetClassId = body.classId;
+
     if (body.sectionId) {
-      let classId = body.classId;
-      if (!classId) {
+      try {
         const { data: sec } = await this.supabase
           .from('sections')
-          .select('id, name, class_id, class:classes(name)')
+          .select('id, name, code, class_id, academic_year_id, class:classes(id, name)')
           .eq('id', body.sectionId)
           .maybeSingle();
-        classId = sec?.class_id;
-        resolvedSectionName = sec?.name || 'Section A';
-        resolvedClassName = (sec?.class as any)?.name || 'Class 1';
-      }
 
-      if (!classId) {
+        if (sec) {
+          resolvedSectionName = sec.name || 'Section A';
+          resolvedClassName = (sec.class as any)?.name || 'Class 1';
+          targetClassId = sec.class_id || (sec.class as any)?.id || targetClassId;
+
+          // If sec belongs to a different academic year and academicYearId is set, find or create section for academicYearId
+          if (sec.academic_year_id && academicYearId && sec.academic_year_id !== academicYearId) {
+            const { data: matchingSec } = await this.supabase
+              .from('sections')
+              .select('id, name')
+              .eq('class_id', targetClassId)
+              .eq('academic_year_id', academicYearId)
+              .ilike('name', sec.name)
+              .maybeSingle();
+
+            if (matchingSec) {
+              targetSectionId = matchingSec.id;
+            } else {
+              const { data: newSec } = await this.supabase
+                .from('sections')
+                .insert({
+                  school_id: schoolId,
+                  class_id: targetClassId,
+                  academic_year_id: academicYearId,
+                  name: sec.name,
+                  code: sec.code || 'A',
+                  capacity: 40,
+                  display_order: 1,
+                  status: 'ACTIVE',
+                })
+                .select('id, name')
+                .single();
+              if (newSec) {
+                targetSectionId = newSec.id;
+              }
+            }
+          }
+        }
+      } catch (secErr) {
+        console.warn('Resolve section error:', secErr);
+      }
+    }
+
+    if (!targetClassId) {
+      try {
         const { data: cls } = await this.supabase
           .from('classes')
           .select('id, name')
           .eq('school_id', schoolId)
           .limit(1)
           .maybeSingle();
-        classId = cls?.id;
+        targetClassId = cls?.id;
         resolvedClassName = cls?.name || 'Class 1';
-      }
-
-      this.setStudentSection(student.id, {
-        classId: classId || body.classId,
-        className: resolvedClassName,
-        sectionId: body.sectionId,
-        sectionName: resolvedSectionName,
-        rollNumber: body.rollNumber ? String(body.rollNumber) : '1',
-      });
-
-      if (academicYearId) {
-        try {
-          await this.supabase.from('student_enrollments').insert({
-            student_id: student.id,
-            section_id: body.sectionId,
-            academic_year_id: academicYearId,
-            roll_number: body.rollNumber ? String(body.rollNumber) : '1',
-            status: 'ACTIVE',
-          });
-        } catch (eErr) {
-          console.warn('Direct student_enrollments insert note:', eErr);
-        }
-      }
-    } else {
-      this.setStudentSection(student.id, {
-        className: 'Class 1',
-        sectionName: 'Section A',
-        rollNumber: body.rollNumber ? String(body.rollNumber) : '1',
-      });
+      } catch {}
     }
 
-    // Provision parent user account & guardian relationship
+    this.setStudentSection(student.id, {
+      classId: targetClassId,
+      className: resolvedClassName,
+      sectionId: targetSectionId || body.sectionId,
+      sectionName: resolvedSectionName,
+      rollNumber: body.rollNumber ? String(body.rollNumber) : '1',
+    });
+
+    if (academicYearId && targetSectionId) {
+      try {
+        await this.supabase.from('student_enrollments').insert({
+          student_id: student.id,
+          section_id: targetSectionId,
+          academic_year_id: academicYearId,
+          roll_number: body.rollNumber ? String(body.rollNumber) : '1',
+          status: 'ACTIVE',
+        });
+      } catch (eErr) {
+        console.warn('Direct student_enrollments insert note:', eErr);
+      }
+    }
+
+    // Provision parent user account & guardian linkage
     await this.ensureParentUserAndGuardian(schoolId, student.id, body);
 
     return {
@@ -2919,14 +3168,16 @@ export class ApiService {
     } catch {}
   }
 
-  private async getSubscriptionDetails(targetSchoolId?: string): Promise<any> {
+  private async getSubscriptionDetails(targetSchoolId?: string, academicYearId?: string): Promise<any> {
     const schoolId = targetSchoolId || this.getSchoolId();
     if (!schoolId) throw new Error('School context missing');
+    const effectiveYearId = academicYearId || (await this.getActiveAcademicYearId(schoolId));
 
     // 1. Try RPC get_school_subscription_details
     try {
       const { data, error } = await this.supabase.rpc('get_school_subscription_details', {
         p_school_id: schoolId,
+        p_academic_year_id: effectiveYearId || null,
       });
       if (!error && data) {
         return data;
@@ -2942,17 +3193,45 @@ export class ApiService {
     let txnsList: any[] = [];
 
     try {
+      let enrQuery = this.supabase
+        .from('student_enrollments')
+        .select('id', { count: 'exact', head: true })
+        .neq('status', 'INACTIVE');
+      if (effectiveYearId) {
+        enrQuery = enrQuery.eq('academic_year_id', effectiveYearId);
+      }
+
       const [subRes, walletRes, studentCountRes, txnsRes] = await Promise.all([
-        this.supabase.from('school_subscriptions').select('*').eq('school_id', schoolId).maybeSingle(),
-        this.supabase.from('school_wallets').select('*').eq('school_id', schoolId).maybeSingle(),
-        this.supabase.from('students').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).eq('status', 'ACTIVE'),
-        this.supabase.from('wallet_transactions').select('*').eq('school_id', schoolId).order('created_at', { ascending: false }).limit(25),
+        this.supabase.from('school_subscriptions').select('*').eq('school_id', schoolId).maybeSingle() as any,
+        this.supabase.from('school_wallets').select('*').eq('school_id', schoolId).maybeSingle() as any,
+        enrQuery as any,
+        this.supabase.from('wallet_transactions').select('*').eq('school_id', schoolId).order('created_at', { ascending: false }).limit(25) as any,
       ]);
 
       if (subRes?.data) subData = subRes.data;
       if (walletRes?.data) walletData = walletRes.data;
       if (studentCountRes?.count !== undefined && studentCountRes.count !== null) activeStudents = studentCountRes.count;
       if (txnsRes?.data && Array.isArray(txnsRes.data)) txnsList = txnsRes.data;
+
+      // Fallback: If 0 enrollments in DB for base session, check local map & active students
+      if (activeStudents === 0 && effectiveYearId) {
+        try {
+          const { data: activeYears } = await this.supabase
+            .from('academic_years')
+            .select('id, is_current')
+            .eq('school_id', schoolId)
+            .eq('is_current', true);
+          const isBase = activeYears && activeYears.length > 0 && activeYears[0].id === effectiveYearId;
+          if (isBase) {
+            const { count: stCount } = await this.supabase
+              .from('students')
+              .select('id', { count: 'exact', head: true })
+              .eq('school_id', schoolId)
+              .neq('status', 'INACTIVE');
+            activeStudents = stCount || 0;
+          }
+        } catch {}
+      }
     } catch (dbErr) {
       console.warn('Supabase subscription tables direct query failed, falling back to local cache', dbErr);
     }
@@ -3105,14 +3384,16 @@ export class ApiService {
     };
   }
 
-  private async calculateMonthlySubscription(targetSchoolId?: string): Promise<any> {
+  private async calculateMonthlySubscription(targetSchoolId?: string, academicYearId?: string): Promise<any> {
     const schoolId = targetSchoolId || this.getSchoolId();
     if (!schoolId) throw new Error('School context missing');
+    const effectiveYearId = academicYearId || (await this.getActiveAcademicYearId(schoolId));
 
     // 1. Try RPC
     try {
       const { data, error } = await this.supabase.rpc('calculate_monthly_subscription', {
         p_school_id: schoolId,
+        p_academic_year_id: effectiveYearId || null,
       });
       if (!error && data) return data;
     } catch (e) {
@@ -3132,76 +3413,100 @@ export class ApiService {
       if (sub?.per_student_fee) rate = Number(sub.per_student_fee);
     } catch {}
 
-    let students: any[] = [];
-    try {
-      const { data } = await this.supabase
-        .from('students')
-        .select('*, student_enrollments(*, class:classes(name), section:sections(name))')
-        .eq('school_id', schoolId)
-        .eq('status', 'ACTIVE');
-      if (data) students = data;
-    } catch {}
+    let enrollments: any[] = [];
+    if (effectiveYearId) {
+      try {
+        const { data: enrollData } = await this.supabase
+          .from('student_enrollments')
+          .select('*, student:students(*), section:sections(*, class:classes(*))')
+          .eq('academic_year_id', effectiveYearId)
+          .neq('status', 'INACTIVE');
+        if (enrollData && enrollData.length > 0) {
+          enrollments = enrollData;
+        }
+      } catch (e) {
+        console.warn('Query student_enrollments in calculateMonthlySubscription failed:', e);
+      }
+    }
+
+    // Fallback for base session if enrollments not yet created in DB
+    if (enrollments.length === 0 && effectiveYearId) {
+      try {
+        const { data: activeYears } = await this.supabase
+          .from('academic_years')
+          .select('id, is_current')
+          .eq('school_id', schoolId)
+          .eq('is_current', true);
+        const isBase = activeYears && activeYears.length > 0 && activeYears[0].id === effectiveYearId;
+        if (isBase) {
+          const secMap = this.getStudentSectionMap();
+          const { data: students } = await this.supabase
+            .from('students')
+            .select('*')
+            .eq('school_id', schoolId)
+            .neq('status', 'INACTIVE');
+
+          enrollments = (students || []).map((st: any) => {
+            const mapped = secMap[st.id];
+            return {
+              id: st.id,
+              student_id: st.id,
+              student: st,
+              created_at: st.created_at,
+              section: {
+                name: mapped?.sectionName || 'Section A',
+                class: { name: mapped?.className || 'Class 1' },
+              },
+            };
+          });
+        }
+      } catch {}
+    }
 
     const now = new Date();
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const secMap = this.getStudentSectionMap();
-    let defaultClassName = 'Class 1';
-    let defaultSectionName = 'Section A';
-    try {
-      const { data: classesData } = await this.supabase
-        .from('classes')
-        .select('name, sections(name)')
-        .eq('school_id', schoolId)
-        .order('display_order')
-        .limit(1);
-      if (classesData && classesData.length > 0) {
-        defaultClassName = classesData[0].name || defaultClassName;
-        if (classesData[0].sections && classesData[0].sections.length > 0) {
-          defaultSectionName = classesData[0].sections[0].name || defaultSectionName;
-        }
-      }
-    } catch {}
-
     let totalCalculatedFee = 0;
-    const breakdown = (students || []).map((st: any) => {
-      const enDate = new Date(st.created_at || now);
-      const enEnrollment = st.student_enrollments?.[0];
-      const mapped = secMap[st.id];
-      const className = enEnrollment?.class?.name || mapped?.className || defaultClassName;
-      const sectionName = enEnrollment?.section?.name || mapped?.sectionName || defaultSectionName;
+    const breakdown = (enrollments || [])
+      .filter((e: any) => e.student)
+      .map((e: any) => {
+        const st = e.student || {};
+        const enDate = new Date(e.created_at || st.created_at || now);
+        const className = e.section?.class?.name || e.class?.name || 'Class 1';
+        const sectionName = e.section?.name || 'Section A';
 
-      let studentFee = rate;
-      let billingNote = 'Full Month (Enrolled on/before 1st)';
+        let studentFee = rate;
+        let billingNote = 'Full Month (Enrolled on/before 1st)';
 
-      if (enDate > firstDay) {
-        const daysActive = daysInMonth - enDate.getDate() + 1;
-        if (daysActive < 7) {
-          studentFee = Number(((rate * daysActive) / daysInMonth).toFixed(2));
-          billingNote = `Prorated (${daysActive} days active in cycle)`;
-        } else {
-          billingNote = 'Full Month (Mid-month enrollment)';
+        if (enDate > firstDay) {
+          const daysActive = daysInMonth - enDate.getDate() + 1;
+          if (daysActive < 7) {
+            studentFee = Number(((rate * daysActive) / daysInMonth).toFixed(2));
+            billingNote = `Prorated (${daysActive} days active in cycle)`;
+          } else {
+            billingNote = 'Full Month (Mid-month enrollment)';
+          }
         }
-      }
 
-      totalCalculatedFee += studentFee;
+        totalCalculatedFee += studentFee;
 
-      return {
-        student_id: st.id,
-        admission_number: st.admission_number,
-        student_name: `${st.first_name || ''} ${st.last_name || ''}`.trim(),
-        enrollment_date: st.created_at?.split('T')[0],
-        status: st.status,
-        class_name: className,
-        section_name: sectionName,
-        student_fee: studentFee,
-        billing_note: billingNote,
-      };
-    });
+        return {
+          student_id: st.id,
+          admission_number: st.admission_number || '',
+          student_name: `${st.first_name || ''} ${st.last_name || ''}`.trim() || st.admission_number || 'Student',
+          enrollment_date: (e.created_at || st.created_at)?.split('T')[0] || now.toISOString().split('T')[0],
+          status: e.status || st.status || 'ACTIVE',
+          class_name: className,
+          section_name: sectionName,
+          student_fee: studentFee,
+          billing_note: billingNote,
+        };
+      });
 
     return {
       school_id: schoolId,
+      academic_year_id: effectiveYearId,
       per_student_rate: rate,
       total_students: breakdown.length,
       total_calculated_fee: Number(totalCalculatedFee.toFixed(2)),

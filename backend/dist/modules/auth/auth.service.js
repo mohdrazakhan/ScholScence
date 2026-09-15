@@ -76,7 +76,7 @@ let AuthService = class AuthService {
         if (!passwordMatches) {
             throw new common_1.UnauthorizedException('Invalid email/phone or password');
         }
-        const isSuperAdminUser = user.user_school_roles?.some((usr) => usr.role.code === 'SUPER_ADMIN' || usr.role.code === 'PLATFORM_ADMIN') || user.email === 'dev@schoolsense.in';
+        const isSuperAdminUser = user.user_school_roles?.some((usr) => usr.role.code === 'SUPER_ADMIN' || usr.role.code === 'PLATFORM_ADMIN') || user.email === 'admin@schoolscence.in';
         if (!user.user_school_roles || user.user_school_roles.length === 0) {
             if (!isSuperAdminUser) {
                 throw new common_1.UnauthorizedException('No active school membership found for this user');
@@ -271,7 +271,7 @@ let AuthService = class AuthService {
         const schoolRole = user.user_school_roles[0];
         const isSuper = schoolRole?.role?.code === 'SUPER_ADMIN' ||
             schoolRole?.role?.code === 'PLATFORM_ADMIN' ||
-            user.email === 'dev@schoolsense.in';
+            user.email === 'admin@schoolscence.in';
         const permissions = isSuper
             ? ['*']
             : schoolRole?.role.role_permissions.map((rp) => rp.permission.code) || [];

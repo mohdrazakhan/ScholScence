@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
@@ -585,13 +585,22 @@ export class SubscriptionComponent implements OnInit {
     );
   }
 
+  constructor() {
+    effect(() => {
+      const activeSession = this.auth.activeAcademicSession();
+      this.loadAllData();
+    });
+  }
+
   ngOnInit() {
-    this.loadAllData();
+    this.auth.fetchProfile().subscribe();
   }
 
   loadAllData() {
     this.loading = true;
-    this.api.get<SubscriptionDetailsResponse>('subscription/overview').subscribe({
+    const activeSession = this.auth.activeAcademicSession();
+    const params = activeSession ? { academicYearId: activeSession.id } : undefined;
+    this.api.get<SubscriptionDetailsResponse>('subscription/overview', params).subscribe({
       next: (res: any) => {
         this.subscription = res.subscription;
         this.wallet = res.wallet;
@@ -607,7 +616,9 @@ export class SubscriptionComponent implements OnInit {
   }
 
   loadCalculation() {
-    this.api.get<MonthlyCalculationResponse>('subscription/calculate').subscribe({
+    const activeSession = this.auth.activeAcademicSession();
+    const params = activeSession ? { academicYearId: activeSession.id } : undefined;
+    this.api.get<MonthlyCalculationResponse>('subscription/calculate', params).subscribe({
       next: (calc: any) => {
         this.calcData = calc;
         this.loading = false;

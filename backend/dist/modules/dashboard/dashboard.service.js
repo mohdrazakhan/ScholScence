@@ -16,13 +16,22 @@ let DashboardService = class DashboardService {
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async getAdminDashboard(schoolId) {
+    async getAdminDashboard(schoolId, academicYearId) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const [totalStudents, totalClasses, totalTeachers, todayAttendance, pendingComplaints, recentNotices, upcomingExams,] = await Promise.all([
-            this.prisma.student.count({
+        const studentCountPromise = academicYearId
+            ? this.prisma.studentEnrollment.count({
+                where: {
+                    academic_year_id: academicYearId,
+                    status: 'ACTIVE',
+                    deleted_at: null,
+                },
+            })
+            : this.prisma.student.count({
                 where: { school_id: schoolId, status: 'ACTIVE', deleted_at: null },
-            }),
+            });
+        const [totalStudents, totalClasses, totalTeachers, todayAttendance, pendingComplaints, recentNotices, upcomingExams,] = await Promise.all([
+            studentCountPromise,
             this.prisma.class.count({
                 where: { school_id: schoolId, status: 'ACTIVE', deleted_at: null },
             }),
@@ -193,17 +202,17 @@ let DashboardService = class DashboardService {
             recentNotices,
         };
     }
-    async getOverview(schoolId, user) {
+    async getOverview(schoolId, user, academicYearId) {
         const role = user?.role || '';
         if (role === 'GUARDIAN' || role === 'PARENT') {
             const parentData = await this.getParentDashboard(schoolId, user.userId);
-            const adminData = await this.getAdminDashboard(schoolId);
+            const adminData = await this.getAdminDashboard(schoolId, academicYearId);
             return {
                 ...adminData,
                 parentData,
             };
         }
-        return this.getAdminDashboard(schoolId);
+        return this.getAdminDashboard(schoolId, academicYearId);
     }
 };
 exports.DashboardService = DashboardService;
