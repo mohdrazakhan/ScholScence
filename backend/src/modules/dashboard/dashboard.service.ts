@@ -5,9 +5,21 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class DashboardService {
   constructor(private prisma: PrismaService) {}
 
-  async getAdminDashboard(schoolId: string) {
+  async getAdminDashboard(schoolId: string, academicYearId?: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    const studentCountPromise = academicYearId
+      ? this.prisma.studentEnrollment.count({
+          where: {
+            academic_year_id: academicYearId,
+            status: 'ACTIVE',
+            deleted_at: null,
+          },
+        })
+      : this.prisma.student.count({
+          where: { school_id: schoolId, status: 'ACTIVE', deleted_at: null },
+        });
 
     const [
       totalStudents,
@@ -18,9 +30,7 @@ export class DashboardService {
       recentNotices,
       upcomingExams,
     ] = await Promise.all([
-      this.prisma.student.count({
-        where: { school_id: schoolId, status: 'ACTIVE', deleted_at: null },
-      }),
+      studentCountPromise,
       this.prisma.class.count({
         where: { school_id: schoolId, status: 'ACTIVE', deleted_at: null },
       }),
@@ -207,16 +217,16 @@ export class DashboardService {
     };
   }
 
-  async getOverview(schoolId: string, user: any) {
+  async getOverview(schoolId: string, user: any, academicYearId?: string) {
     const role = user?.role || '';
     if (role === 'GUARDIAN' || role === 'PARENT') {
       const parentData = await this.getParentDashboard(schoolId, user.userId);
-      const adminData = await this.getAdminDashboard(schoolId);
+      const adminData = await this.getAdminDashboard(schoolId, academicYearId);
       return {
         ...adminData,
         parentData,
       };
     }
-    return this.getAdminDashboard(schoolId);
+    return this.getAdminDashboard(schoolId, academicYearId);
   }
 }

@@ -436,6 +436,13 @@ let AcademicsService = class AcademicsService {
         if (!subject) {
             throw new common_1.NotFoundException('Subject not found');
         }
+        await this.prisma.classSubject.updateMany({
+            where: { subject_id: subjectId },
+            data: {
+                status: 'INACTIVE',
+                deleted_at: new Date(),
+            },
+        });
         return this.prisma.subject.update({
             where: { id: subjectId },
             data: {

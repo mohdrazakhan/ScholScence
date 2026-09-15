@@ -2,7 +2,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 export declare class DashboardService {
     private prisma;
     constructor(prisma: PrismaService);
-    getAdminDashboard(schoolId: string): Promise<{
+    getAdminDashboard(schoolId: string, academicYearId?: string): Promise<{
         stats: {
             totalStudents: number;
             totalClasses: number;
@@ -66,7 +66,7 @@ export declare class DashboardService {
             expires_at: Date | null;
         }[];
     }>;
-    getOverview(schoolId: string, user: any): Promise<{
+    getOverview(schoolId: string, user: any, academicYearId?: string): Promise<{
         stats: {
             totalStudents: number;
             totalClasses: number;

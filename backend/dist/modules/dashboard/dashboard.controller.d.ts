@@ -3,7 +3,7 @@ import { AuthenticatedUser } from '../../common/decorators/current-user.decorato
 export declare class DashboardController {
     private dashboardService;
     constructor(dashboardService: DashboardService);
-    getOverview(schoolId: string, user: AuthenticatedUser): Promise<{
+    getOverview(schoolId: string, user: AuthenticatedUser, academicYearId?: string): Promise<{
         stats: {
             totalStudents: number;
             totalClasses: number;
