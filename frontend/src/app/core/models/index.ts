@@ -6,11 +6,14 @@ export interface User {
   lastName?: string;
   role: 'SCHOOL_ADMIN' | 'PRINCIPAL' | 'TEACHER' | 'CLASS_TEACHER' | 'GUARDIAN' | 'FEE_MANAGER' | string;
   roleName: string;
+  avatarUrl?: string;
+  photoUrl?: string;
   school?: {
     id: string;
     name: string;
     code: string;
     status?: string;
+    logoUrl?: string;
     disabledServices?: string[];
   };
   isSupportSession?: boolean;
@@ -84,17 +87,31 @@ export interface AcademicSession {
 export interface AlumniStudent {
   student_id: string;
   admission_number: string;
+  alumni_number?: string;
   first_name: string;
   last_name?: string;
   full_name: string;
+  photoUrl?: string;
+  photo_url?: string;
   gender?: string;
   date_of_birth?: string;
   dateOfBirth?: string;
+  blood_group?: string;
   status: string;
   last_class_name?: string;
   last_section_name?: string;
   graduation_session?: string;
   last_roll_number?: string | number;
+  admission_date?: string;
+  admission_class_name?: string;
+  leaving_date?: string;
+  leaving_reason?: string;
+  tc_number?: string;
+  tc_issue_date?: string;
+  character_cert_number?: string;
+  alumni_cert_number?: string;
+  conduct?: string;
+  remarks?: string;
   primary_contact?: {
     first_name?: string;
     last_name?: string;
@@ -102,6 +119,24 @@ export interface AlumniStudent {
     email?: string;
     relationship?: string;
   };
+}
+
+export interface StudentLifecycleLog {
+  id: string;
+  student_id: string;
+  event_type: 'ADMISSION' | 'PROMOTION' | 'SECTION_CHANGE' | 'DEMOTION' | 'STATUS_CHANGE' | 'ALUMNI_GRADUATION' | 'TC_ISSUED' | 'CERTIFICATE_GENERATED';
+  title: string;
+  description: string;
+  academic_session?: string;
+  class_name?: string;
+  section_name?: string;
+  roll_number?: string | number;
+  status?: string;
+  tc_number?: string;
+  alumni_number?: string;
+  performed_by_name?: string;
+  timestamp: string;
+  metadata?: Record<string, any>;
 }
 
 export interface ClassItem {
@@ -151,6 +186,9 @@ export interface StudentItem {
   firstName: string;
   lastName?: string;
   fullName: string;
+  photoUrl?: string;
+  photo_url?: string;
+  guardianPhotoUrl?: string;
   rollNumber?: number | string;
   gender?: string;
   bloodGroup?: string;
@@ -167,6 +205,7 @@ export interface StudentItem {
     email?: string;
     name?: string;
     relationship?: string;
+    photoUrl?: string;
   };
   status?: string;
   activeHours?: number;
@@ -178,17 +217,29 @@ export interface StudentItem {
     relationship?: string;
     phone?: string;
     email?: string;
+    photoUrl?: string;
   }[];
 }
 
 export interface StudentDeactivationRequest {
   id: string;
   school_id: string;
+  request_type?: 'PROMOTION' | 'DEMOTION' | 'SECTION_CHANGE' | 'ALUMNI' | 'INACTIVE' | 'SUSPENDED' | 'LEFTOUT' | string;
   student_id: string;
   student_name: string;
   admission_number: string;
+  class_id?: string;
   class_name: string;
+  section_id?: string;
   section_name: string;
+  target_class_id?: string;
+  target_class_name?: string;
+  target_section_id?: string;
+  target_section_name?: string;
+  target_roll_number?: string;
+  target_status?: string;
+  passing_session?: string;
+  leaving_certificate_number?: string;
   requested_by_user_id: string;
   requested_by_name: string;
   requested_by_role?: string;

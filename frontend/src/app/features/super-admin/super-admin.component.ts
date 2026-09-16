@@ -10,6 +10,8 @@ interface SchoolItemWithStats {
   id: string;
   name: string;
   code: string;
+  logoUrl?: string;
+  logo_url?: string;
   email?: string;
   phone?: string;
   addressLine1?: string;
@@ -240,46 +242,56 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
           <div>
             <!-- Header -->
             <div class="flex items-start justify-between gap-3">
-              <div>
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="text-[10px] font-mono font-black px-2.5 py-0.5 rounded-xl bg-slate-900 text-white">
-                    {{ s.code }}
-                  </span>
-                  
-                  <!-- Status Pill -->
-                  <span *ngIf="s.status === 'ACTIVE'"
-                        class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    ACTIVE
-                  </span>
-                  <span *ngIf="s.status !== 'ACTIVE'"
-                        class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                    DEBOARDED / SUSPENDED
-                  </span>
-
-                  <!-- Allowed Services Badge -->
-                  <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                    {{ getActiveServicesCount(s) }}/7 Services Allowed
-                  </span>
-
-                  <!-- SaaS Subscription Rate Badge -->
-                  <span class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                    <span>🏷️</span>
-                    <span>₹{{ s.subscription?.perStudentFee || 20 }}/student/mo</span>
-                  </span>
-
-                  <!-- Wallet Balance Badge -->
-                  <span class="px-2 py-0.5 rounded-lg text-[10px] font-black border flex items-center gap-1"
-                        [ngClass]="(s.wallet?.balance || 0) < 0 
-                          ? 'bg-rose-50 text-rose-800 border-rose-200' 
-                          : 'bg-slate-50 text-slate-800 border-slate-200'">
-                    <span>💳 Wallet: ₹{{ (s.wallet?.balance || 0) | number:'1.2-2' }}</span>
-                    <span *ngIf="(s.wallet?.balance || 0) < 0" class="text-[9px] uppercase px-1 rounded bg-rose-200 text-rose-900 font-bold">Arrears</span>
-                  </span>
+              <div class="flex items-start gap-3.5">
+                <!-- School Logo / Avatar Box (Fixed Small Size) -->
+                <div class="w-11 h-11 min-w-[44px] max-w-[44px] h-[44px] min-h-[44px] max-h-[44px] rounded-2xl bg-white border border-slate-200/90 shadow-xs flex items-center justify-center overflow-hidden shrink-0 mt-0.5 p-1">
+                  <img *ngIf="s.logoUrl || s.logo_url" [src]="s.logoUrl || s.logo_url" alt="{{ s.name }} Logo" class="w-full h-full max-w-full max-h-full object-contain pointer-events-none" />
+                  <div *ngIf="!(s.logoUrl || s.logo_url)" class="w-full h-full rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white font-black text-sm shadow-inner">
+                    {{ (s.name || 'S').charAt(0).toUpperCase() }}
+                  </div>
                 </div>
-                <h3 class="text-base font-black text-slate-900 mt-1.5">{{ s.name }}</h3>
-                <p class="text-xs text-slate-500">{{ s.addressLine1 ? s.addressLine1 + ', ' : '' }}{{ s.city }}{{ s.state ? ', ' + s.state : '' }}</p>
+
+                <div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-[10px] font-mono font-black px-2.5 py-0.5 rounded-xl bg-slate-900 text-white">
+                      {{ s.code }}
+                    </span>
+                    
+                    <!-- Status Pill -->
+                    <span *ngIf="s.status === 'ACTIVE'"
+                          class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      ACTIVE
+                    </span>
+                    <span *ngIf="s.status !== 'ACTIVE'"
+                          class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                      DEBOARDED / SUSPENDED
+                    </span>
+
+                    <!-- Allowed Services Badge -->
+                    <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                      {{ getActiveServicesCount(s) }}/7 Services Allowed
+                    </span>
+
+                    <!-- SaaS Subscription Rate Badge -->
+                    <span class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                      <span>🏷️</span>
+                      <span>₹{{ s.subscription?.perStudentFee || 20 }}/student/mo</span>
+                    </span>
+
+                    <!-- Wallet Balance Badge -->
+                    <span class="px-2 py-0.5 rounded-lg text-[10px] font-black border flex items-center gap-1"
+                          [ngClass]="(s.wallet?.balance || 0) < 0 
+                            ? 'bg-rose-50 text-rose-800 border-rose-200' 
+                            : 'bg-slate-50 text-slate-800 border-slate-200'">
+                      <span>💳 Wallet: ₹{{ (s.wallet?.balance || 0) | number:'1.2-2' }}</span>
+                      <span *ngIf="(s.wallet?.balance || 0) < 0" class="text-[9px] uppercase px-1 rounded bg-rose-200 text-rose-900 font-bold">Arrears</span>
+                    </span>
+                  </div>
+                  <h3 class="text-base font-black text-slate-900 mt-1.5">{{ s.name }}</h3>
+                  <p class="text-xs text-slate-500">{{ s.addressLine1 ? s.addressLine1 + ', ' : '' }}{{ s.city }}{{ s.state ? ', ' + s.state : '' }}</p>
+                </div>
               </div>
 
               <!-- Root Governance Actions: Services, Pricing & Wallet, Deboard, Binary Support -->
@@ -571,19 +583,28 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
         <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-[10px_10px_30px_rgba(0,0,0,0.15)] border border-slate-200/90 space-y-5 max-h-[90vh] overflow-y-auto">
           
           <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-indigo-100 text-indigo-800">
-                  Service Governance
-                </span>
-                <span class="text-xs font-mono font-bold text-slate-500">{{ selectedSchoolForServices.code }}</span>
+            <div class="flex items-start gap-3">
+              <!-- Services Modal Logo Box -->
+              <div class="w-10 h-10 min-w-[40px] max-w-[40px] h-[40px] min-h-[40px] max-h-[40px] rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-center overflow-hidden shrink-0 p-1 mt-0.5">
+                <img *ngIf="selectedSchoolForServices.logoUrl || selectedSchoolForServices.logo_url" [src]="selectedSchoolForServices.logoUrl || selectedSchoolForServices.logo_url" class="w-full h-full max-w-full max-h-full object-contain pointer-events-none" />
+                <div *ngIf="!(selectedSchoolForServices.logoUrl || selectedSchoolForServices.logo_url)" class="w-full h-full rounded-xl bg-indigo-600 text-white font-black text-xs flex items-center justify-center">
+                  {{ (selectedSchoolForServices.name || 'S').charAt(0).toUpperCase() }}
+                </div>
               </div>
-              <h3 class="text-base font-black text-slate-900 tracking-tight mt-1">
-                Community Service Permissions: {{ selectedSchoolForServices.name }}
-              </h3>
-              <p class="text-xs text-slate-500">
-                Allow or disallow particular platform services for this institution. Disallowed services are immediately hidden from the school portal and rejected by backend guards.
-              </p>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-indigo-100 text-indigo-800">
+                    Service Governance
+                  </span>
+                  <span class="text-xs font-mono font-bold text-slate-500">{{ selectedSchoolForServices.code }}</span>
+                </div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight mt-1">
+                  Community Service Permissions: {{ selectedSchoolForServices.name }}
+                </h3>
+                <p class="text-xs text-slate-500">
+                  Allow or disallow particular platform services for this institution. Disallowed services are immediately hidden from the school portal and rejected by backend guards.
+                </p>
+              </div>
             </div>
             <button (click)="showServicesModal = false" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
           </div>
@@ -672,21 +693,30 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-[10px_10px_30px_rgba(0,0,0,0.15)] border border-slate-200/90 space-y-4 max-h-[90vh] overflow-y-auto">
           
           <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-emerald-100 text-emerald-800">
-                  SaaS Monetization Engine
-                </span>
-                <span *ngIf="loadingLivePricing" class="text-[10px] text-indigo-600 font-bold animate-pulse flex items-center gap-1">
-                  <span>⚡</span> Fetching real-time balance...
-                </span>
+            <div class="flex items-start gap-3">
+              <!-- Pricing Modal Logo Box -->
+              <div class="w-10 h-10 min-w-[40px] max-w-[40px] h-[40px] min-h-[40px] max-h-[40px] rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-center overflow-hidden shrink-0 p-1 mt-0.5">
+                <img *ngIf="selectedSchoolForPricing.logoUrl || selectedSchoolForPricing.logo_url" [src]="selectedSchoolForPricing.logoUrl || selectedSchoolForPricing.logo_url" class="w-full h-full max-w-full max-h-full object-contain pointer-events-none" />
+                <div *ngIf="!(selectedSchoolForPricing.logoUrl || selectedSchoolForPricing.logo_url)" class="w-full h-full rounded-xl bg-emerald-600 text-white font-black text-xs flex items-center justify-center">
+                  {{ (selectedSchoolForPricing.name || 'S').charAt(0).toUpperCase() }}
+                </div>
               </div>
-              <h3 class="text-base font-black text-slate-900 tracking-tight mt-1">
-                Configure Pricing & Wallet — {{ selectedSchoolForPricing.name }}
-              </h3>
-              <p class="text-xs text-slate-500">
-                Update the contracted per-student rate and manually credit or debit this campus's billing wallet with full ledger tracking.
-              </p>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-emerald-100 text-emerald-800">
+                    SaaS Monetization Engine
+                  </span>
+                  <span *ngIf="loadingLivePricing" class="text-[10px] text-indigo-600 font-bold animate-pulse flex items-center gap-1">
+                    <span>⚡</span> Fetching real-time balance...
+                  </span>
+                </div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight mt-1">
+                  Configure Pricing & Wallet — {{ selectedSchoolForPricing.name }}
+                </h3>
+                <p class="text-xs text-slate-500">
+                  Update the contracted per-student rate and manually credit or debit this campus's billing wallet with full ledger tracking.
+                </p>
+              </div>
             </div>
             <button (click)="showPricingModal = false" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
           </div>

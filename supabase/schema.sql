@@ -243,6 +243,8 @@ CREATE TABLE IF NOT EXISTS public.students (
   nationality VARCHAR(50) DEFAULT 'Indian',
   emergency_contact_name VARCHAR(100),
   emergency_contact_phone VARCHAR(20),
+  photo_url TEXT,
+  guardian_photo_url TEXT,
   status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

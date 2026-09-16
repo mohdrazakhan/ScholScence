@@ -4,6 +4,138 @@ import { Observable, from, map, tap, of, throwError } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { AuthResponse, User, AcademicSession } from '../models';
 
+export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
+  SUPER_ADMIN: [
+    'dashboard',
+    'academics',
+    'academics_classes',
+    'academics_students',
+    'academics_alumni',
+    'academics_staff',
+    'academics_subjects',
+    'timetable',
+    'timetable_student',
+    'timetable_faculty',
+    'attendance',
+    'homework',
+    'exams',
+    'communication',
+    'communication_notices',
+    'communication_complaints',
+    'subscription',
+  ],
+  SCHOOL_ADMIN: [
+    'dashboard',
+    'academics',
+    'academics_classes',
+    'academics_students',
+    'academics_alumni',
+    'academics_staff',
+    'academics_subjects',
+    'timetable',
+    'timetable_student',
+    'timetable_faculty',
+    'attendance',
+    'homework',
+    'exams',
+    'communication',
+    'communication_notices',
+    'communication_complaints',
+    'subscription',
+  ],
+  PRINCIPAL: [
+    'dashboard',
+    'academics',
+    'academics_classes',
+    'academics_students',
+    'academics_alumni',
+    'academics_staff',
+    'academics_subjects',
+    'timetable',
+    'timetable_student',
+    'timetable_faculty',
+    'attendance',
+    'homework',
+    'exams',
+    'communication',
+    'communication_notices',
+    'communication_complaints',
+    'subscription',
+  ],
+  CLASS_TEACHER: [
+    'dashboard',
+    'academics',
+    'academics_classes',
+    'academics_students',
+    'academics_alumni',
+    'academics_subjects',
+    'timetable',
+    'timetable_student',
+    'timetable_faculty',
+    'attendance',
+    'homework',
+    'exams',
+    'communication',
+    'communication_notices',
+    'communication_complaints',
+  ],
+  TEACHER: [
+    'dashboard',
+    'academics',
+    'academics_subjects',
+    'timetable',
+    'timetable_student',
+    'timetable_faculty',
+    'attendance',
+    'homework',
+    'exams',
+    'communication',
+    'communication_notices',
+    'communication_complaints',
+  ],
+  FEE_MANAGER: [
+    'dashboard',
+    'academics',
+    'academics_students',
+    'academics_alumni',
+    'communication',
+    'communication_notices',
+    'subscription',
+  ],
+  GUARDIAN: [
+    'dashboard',
+    'timetable',
+    'timetable_student',
+    'attendance',
+    'homework',
+    'exams',
+    'communication',
+    'communication_notices',
+    'communication_complaints',
+  ],
+  PARENT: [
+    'dashboard',
+    'timetable',
+    'timetable_student',
+    'attendance',
+    'homework',
+    'exams',
+    'communication',
+    'communication_notices',
+    'communication_complaints',
+  ],
+  STUDENT: [
+    'dashboard',
+    'timetable',
+    'timetable_student',
+    'attendance',
+    'homework',
+    'exams',
+    'communication',
+    'communication_notices',
+  ],
+};
+
 @Injectable({
   providedIn: 'root',
 })
@@ -11,6 +143,7 @@ export class AuthService {
   private readonly TOKEN_KEY = 'schoolsense_token';
   private readonly USER_KEY = 'schoolsense_user';
   private readonly SESSION_KEY = 'schoolsense_active_session';
+  private readonly ROLE_PERMS_KEY_PREFIX = 'schoolsense_role_perms_';
 
   private supabase = inject(SupabaseService);
   private router = inject(Router);
@@ -20,6 +153,7 @@ export class AuthService {
   // Angular Signals for Reactive State
   currentUser = signal<User | null>(this.getStoredUser());
   activeAcademicSession = signal<AcademicSession | null>(this.getStoredSession());
+  rolePermissions = signal<Record<string, string[]>>(this.loadInitialRolePermissions());
   
   isAuthenticated = computed(() => !!this.currentUser());
   userRole = computed(() => this.currentUser()?.role || '');
@@ -37,10 +171,139 @@ export class AuthService {
   });
   isParent = computed(() => ['GUARDIAN', 'PARENT'].includes(this.userRole()));
 
+  /**
+   * Check if a specific section / service is allowed for the active user based on role permissions
+   */
+  isSectionAllowedForUser(sectionId: string): boolean {
+    if (this.isSuperAdmin() || this.isSupportSession()) return true;
+
+    const role = this.userRole();
+    if (!role) return false;
+
+    // Super Admin & Platform Admin have universal access
+    if (role === 'SUPER_ADMIN' || role === 'PLATFORM_ADMIN') return true;
+
+    // Map any aliases
+    const normalizedId = this.normalizeSectionId(sectionId);
+
+    const perms = this.rolePermissions();
+    const roleList = perms[role] || DEFAULT_ROLE_PERMISSIONS[role] || [];
+
+    // If checking child section (e.g. academics_students), ensure parent (academics) is also enabled
+    const parentMap: Record<string, string> = {
+      academics_classes: 'academics',
+      academics_students: 'academics',
+      academics_alumni: 'academics',
+      academics_staff: 'academics',
+      academics_subjects: 'academics',
+      timetable_student: 'timetable',
+      timetable_faculty: 'timetable',
+      communication_notices: 'communication',
+      communication_complaints: 'communication',
+    };
+
+    const parentId = parentMap[normalizedId];
+    if (parentId && !roleList.includes(parentId)) {
+      return false;
+    }
+
+    return roleList.includes(normalizedId);
+  }
+
+  private normalizeSectionId(sectionId: string): string {
+    const clean = (sectionId || '').trim();
+    if (clean === 'classes') return 'academics_classes';
+    if (clean === 'students') return 'academics_students';
+    if (clean === 'alumni') return 'academics_alumni';
+    if (clean === 'staff') return 'academics_staff';
+    if (clean === 'subjects') return 'academics_subjects';
+    if (clean === 'complaints') return 'communication_complaints';
+    if (clean === 'notices') return 'communication_notices';
+    return clean;
+  }
+
   isServiceEnabled(serviceCode: string): boolean {
-    if (this.isSuperAdmin()) return true;
+    if (this.isSuperAdmin() || this.isSupportSession()) return true;
     const disabled = this.currentUser()?.school?.disabledServices || [];
-    return !disabled.includes(serviceCode);
+    if (disabled.includes(serviceCode)) return false;
+
+    const serviceToSectionMap: Record<string, string> = {
+      TIMETABLE: 'timetable',
+      ATTENDANCE: 'attendance',
+      HOMEWORK: 'homework',
+      EXAMS: 'exams',
+      COMMUNICATION: 'communication',
+      COMPLAINTS: 'communication_complaints',
+      ACADEMICS: 'academics',
+      SUBSCRIPTION: 'subscription',
+    };
+
+    const sectionId = serviceToSectionMap[serviceCode.toUpperCase()];
+    if (sectionId) {
+      return this.isSectionAllowedForUser(sectionId);
+    }
+
+    return true;
+  }
+
+  /**
+   * Get all role permissions for a school
+   */
+  getSchoolRolePermissions(schoolId?: string): Record<string, string[]> {
+    const sId = schoolId || this.currentUser()?.school?.id || 'default';
+    try {
+      const stored = localStorage.getItem(`${this.ROLE_PERMS_KEY_PREFIX}${sId}`);
+      if (stored) {
+        return { ...DEFAULT_ROLE_PERMISSIONS, ...JSON.parse(stored) };
+      }
+    } catch (e) {
+      console.warn('Failed to parse stored role permissions', e);
+    }
+    return JSON.parse(JSON.stringify(DEFAULT_ROLE_PERMISSIONS));
+  }
+
+  /**
+   * Update role permissions for a role in a school
+   */
+  saveSchoolRolePermissions(schoolId: string, roleCode: string, sectionIds: string[]): void {
+    const current = this.getSchoolRolePermissions(schoolId);
+    current[roleCode] = [...sectionIds];
+
+    try {
+      localStorage.setItem(`${this.ROLE_PERMS_KEY_PREFIX}${schoolId}`, JSON.stringify(current));
+    } catch (e) {
+      console.warn('Failed to save role permissions', e);
+    }
+
+    this.rolePermissions.set(current);
+  }
+
+  /**
+   * Reset role permissions for a school/role to defaults
+   */
+  resetSchoolRolePermissions(schoolId: string, roleCode?: string): void {
+    const current = this.getSchoolRolePermissions(schoolId);
+    if (roleCode) {
+      current[roleCode] = [...(DEFAULT_ROLE_PERMISSIONS[roleCode] || [])];
+    } else {
+      Object.keys(DEFAULT_ROLE_PERMISSIONS).forEach((r) => {
+        current[r] = [...DEFAULT_ROLE_PERMISSIONS[r]];
+      });
+    }
+
+    try {
+      localStorage.setItem(`${this.ROLE_PERMS_KEY_PREFIX}${schoolId}`, JSON.stringify(current));
+    } catch (e) {
+      console.warn('Failed to reset role permissions', e);
+    }
+
+    this.rolePermissions.set(current);
+  }
+
+  private loadInitialRolePermissions(): Record<string, string[]> {
+    const user = this.getStoredUser();
+    const schoolId = user?.school?.id || 'default';
+    return this.getSchoolRolePermissions(schoolId);
   }
 
   constructor() {}
@@ -368,9 +631,11 @@ export class AuthService {
     // Read local cache overrides
     let localSubs: Record<string, any> = {};
     let localWallets: Record<string, any> = {};
+    let localProfiles: Record<string, any> = {};
     try {
       localSubs = JSON.parse(localStorage.getItem('schoolsense_saas_subscriptions') || '{}');
       localWallets = JSON.parse(localStorage.getItem('schoolsense_saas_wallets') || '{}');
+      localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
     } catch {}
 
     const schools = schoolsRes.data || [];
@@ -464,9 +729,13 @@ export class AuthService {
 
       const sub = subMap.get(s.id) || localSubs[s.id];
       const wallet = walletMap.get(s.id) || localWallets[s.id];
+      const localProfile = localProfiles[s.id] || {};
+      const resolvedLogo = localProfile.logoUrl || localProfile.logo_url || s.logo_url || s.logoUrl || '';
 
       return {
         ...s,
+        logo_url: resolvedLogo,
+        logoUrl: resolvedLogo,
         admin: adminUser
           ? {
               id: adminUser.id,

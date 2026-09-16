@@ -41,7 +41,7 @@ export const authGuard: CanActivateFn = (route, state) => {
 
   const requiredService = serviceMap[primarySegment];
   if (requiredService && !authService.isServiceEnabled(requiredService)) {
-    toast.error(`The ${requiredService} service is currently restricted by platform administration.`);
+    toast.error(`Access Restricted: Your role does not have permission to access the ${requiredService.toLowerCase()} section.`);
     router.navigate(['/dashboard']);
     return false;
   }
