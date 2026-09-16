@@ -14,6 +14,7 @@ import {
   ComplaintItem,
   AcademicSession,
   AlumniStudent,
+  StudentLifecycleLog,
 } from '../models';
 
 export function getClassPedagogicalRank(name: string, code?: string, displayOrder?: number): number {
@@ -88,6 +89,18 @@ export class ApiService {
       return from(this.getDashboardOverview(params?.['academicYearId'])) as unknown as Observable<T>;
     }
 
+    // School Profile
+    if (cleanEndpoint === 'school/profile' || cleanEndpoint === 'academics/school-profile') {
+      const targetSchoolId = params?.['schoolId'] || this.getSchoolId();
+      return from(this.getSchoolProfile(targetSchoolId)) as unknown as Observable<T>;
+    }
+
+    // Role Permissions & Module Matrix
+    if (cleanEndpoint === 'school/role-permissions' || cleanEndpoint === 'academics/role-permissions') {
+      const targetSchoolId = params?.['schoolId'] || this.getSchoolId();
+      return from(this.getRolePermissions(targetSchoolId)) as unknown as Observable<T>;
+    }
+
     // SaaS Subscription & Wallet Overview
     if (cleanEndpoint === 'subscription/overview' || cleanEndpoint === 'subscription') {
       const targetSchoolId = params?.['schoolId'] || this.getSchoolId();
@@ -105,8 +118,13 @@ export class ApiService {
       return from(this.getNextAdmissionNumber(params?.['schoolId'])) as unknown as Observable<T>;
     }
 
-    // Academics: Student Deactivation Requests
-    if (cleanEndpoint === 'academics/students/deactivation-requests' || cleanEndpoint === 'students/deactivation-requests') {
+    // Academics: Student Academic & Deactivation Requests
+    if (
+      cleanEndpoint === 'academics/students/deactivation-requests' ||
+      cleanEndpoint === 'students/deactivation-requests' ||
+      cleanEndpoint === 'academics/students/academic-requests' ||
+      cleanEndpoint === 'students/academic-requests'
+    ) {
       return from(this.getStudentDeactivationRequests()) as unknown as Observable<T>;
     }
 
@@ -116,7 +134,9 @@ export class ApiService {
       studentProfileMatch &&
       studentProfileMatch[1] !== 'next-admission-number' &&
       studentProfileMatch[1] !== 'deactivation-requests' &&
-      !cleanEndpoint.includes('deactivation-requests')
+      studentProfileMatch[1] !== 'academic-requests' &&
+      !cleanEndpoint.includes('deactivation-requests') &&
+      !cleanEndpoint.includes('academic-requests')
     ) {
       return from(this.getStudentFullProfile(studentProfileMatch[1])) as unknown as Observable<T>;
     }
@@ -134,6 +154,12 @@ export class ApiService {
     // Academics: Alumni
     if (cleanEndpoint === 'academics/alumni') {
       return from(this.getAlumniStudents(params?.['academicYearId'])) as unknown as Observable<T>;
+    }
+
+    // Academics: Student Lifecycle Journey & Logs
+    const studentLogsMatch = cleanEndpoint.match(/^academics\/students\/(.+)\/lifecycle-logs$/) || cleanEndpoint.match(/^academics\/alumni\/(.+)\/logs$/);
+    if (studentLogsMatch) {
+      return from(this.getStudentLifecycleLogs(studentLogsMatch[1])) as unknown as Observable<T>;
     }
 
     // Academics: Subjects
@@ -232,6 +258,11 @@ export class ApiService {
       return from(this.rolloverStudents(body)) as unknown as Observable<T>;
     }
 
+    // Alumni Student Creation
+    if (cleanEndpoint === 'academics/alumni') {
+      return from(this.createAlumniStudent(body)) as unknown as Observable<T>;
+    }
+
     // Create Subject
     if (cleanEndpoint === 'academics/subjects') {
       return from(this.createSubject(body)) as unknown as Observable<T>;
@@ -289,8 +320,30 @@ export class ApiService {
       return from(this.createStudent(body)) as unknown as Observable<T>;
     }
 
-    // Student Deactivation Request
-    if (cleanEndpoint === 'academics/students/deactivation-requests' || cleanEndpoint === 'students/deactivation-requests') {
+    // Student Promotion, Demotion, Section Change & Alumni Direct Actions
+    if (cleanEndpoint === 'academics/students/promote') {
+      return from(this.promoteStudent(body)) as unknown as Observable<T>;
+    }
+    if (cleanEndpoint === 'academics/students/demote') {
+      return from(this.demoteStudent(body)) as unknown as Observable<T>;
+    }
+    if (cleanEndpoint === 'academics/students/change-section' || cleanEndpoint === 'academics/students/transfer-section') {
+      return from(this.changeStudentSection(body)) as unknown as Observable<T>;
+    }
+    if (cleanEndpoint === 'academics/students/convert-alumni' || cleanEndpoint === 'academics/students/graduate') {
+      return from(this.convertStudentToAlumni(body)) as unknown as Observable<T>;
+    }
+    if (cleanEndpoint === 'academics/alumni/certificates' || cleanEndpoint === 'academics/students/certificates') {
+      return from(this.recordStudentCertificate(body)) as unknown as Observable<T>;
+    }
+
+    // Student Academic / Deactivation Request
+    if (
+      cleanEndpoint === 'academics/students/deactivation-requests' ||
+      cleanEndpoint === 'students/deactivation-requests' ||
+      cleanEndpoint === 'academics/students/academic-requests' ||
+      cleanEndpoint === 'students/academic-requests'
+    ) {
       return from(this.submitStudentDeactivationRequest(body)) as unknown as Observable<T>;
     }
 
@@ -338,14 +391,20 @@ export class ApiService {
       return from(this.updateStudentStatus(studentStatusMatch[1], body.status, body.reason)) as unknown as Observable<T>;
     }
 
+    // Alumni Update
+    const alumniMatch = cleanEndpoint.match(/^academics\/alumni\/([^/]+)$/);
+    if (alumniMatch) {
+      return from(this.updateAlumniStudent(alumniMatch[1], body)) as unknown as Observable<T>;
+    }
+
     // Student Update (Edit details)
     const studentMatch = cleanEndpoint.match(/^academics\/students\/([^/]+)$/);
     if (studentMatch && !cleanEndpoint.includes('deactivation-requests')) {
       return from(this.updateStudent(studentMatch[1], body)) as unknown as Observable<T>;
     }
 
-    // Review Student Deactivation Request (Admin / Principal)
-    const deactReviewMatch = cleanEndpoint.match(/^academics\/students\/deactivation-requests\/(.+)\/review$/);
+    // Review Student Deactivation / Academic Request (Admin / Principal)
+    const deactReviewMatch = cleanEndpoint.match(/^academics\/students\/(?:deactivation-requests|academic-requests)\/(.+)\/review$/);
     if (deactReviewMatch) {
       return from(this.reviewStudentDeactivationRequest(deactReviewMatch[1], body.action, body.reviewNotes)) as unknown as Observable<T>;
     }
@@ -371,11 +430,26 @@ export class ApiService {
       return from(this.updateSection(id, body)) as unknown as Observable<T>;
     }
 
+    if (cleanEndpoint === 'school/profile' || cleanEndpoint === 'academics/school-profile') {
+      const targetSchoolId = body?.schoolId || body?.id || this.getSchoolId();
+      return from(this.updateSchoolProfile(targetSchoolId, body)) as unknown as Observable<T>;
+    }
+
+    if (cleanEndpoint === 'school/role-permissions' || cleanEndpoint === 'academics/role-permissions') {
+      const targetSchoolId = body?.schoolId || this.getSchoolId();
+      return from(this.updateRolePermissions(targetSchoolId, body?.permissions || body)) as unknown as Observable<T>;
+    }
+
     return this.patch<T>(endpoint, body);
   }
 
   delete<T>(endpoint: string): Observable<T> {
     const cleanEndpoint = endpoint.split('?')[0];
+
+    if (cleanEndpoint.startsWith('academics/alumni/')) {
+      const id = cleanEndpoint.replace('academics/alumni/', '');
+      return from(this.deleteAlumniStudent(id)) as unknown as Observable<T>;
+    }
 
     if (cleanEndpoint.startsWith('academics/classes/')) {
       const id = cleanEndpoint.replace('academics/classes/', '');
@@ -1165,6 +1239,8 @@ export class ApiService {
           fullName: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'Staff Member',
           email: u.email,
           phone: u.phone,
+          photoUrl: u.photo_url || u.avatar_url || '',
+          avatarUrl: u.avatar_url || u.photo_url || '',
           role: roleCode,
           roleName: r?.name || (roleCode === 'SCHOOL_ADMIN' ? 'School Admin' : (roleCode === 'PRINCIPAL' ? 'Principal' : 'Teacher')),
           classTeacherSections: cts,
@@ -1254,12 +1330,14 @@ export class ApiService {
       roleName = 'Class Teacher';
     }
 
+    const photo = body.photoUrl || body.avatarUrl || body.photo_url || null;
+
     // 1. Create or update User in `users` table
     let userId: string | null = null;
     try {
       const { data: existingUser } = await this.supabase
         .from('users')
-        .select('id, email, first_name, last_name')
+        .select('id, email, first_name, last_name, avatar_url, photo_url')
         .eq('email', cleanEmail)
         .maybeSingle();
 
@@ -1271,6 +1349,8 @@ export class ApiService {
             first_name: cleanFirstName || existingUser.first_name,
             last_name: cleanLastName || existingUser.last_name,
             phone: cleanPhone,
+            avatar_url: photo || existingUser.avatar_url,
+            photo_url: photo || existingUser.photo_url,
             status: 'ACTIVE',
           })
           .eq('id', userId);
@@ -1282,6 +1362,8 @@ export class ApiService {
             first_name: cleanFirstName,
             last_name: cleanLastName,
             phone: cleanPhone,
+            avatar_url: photo,
+            photo_url: photo,
             password_hash: password,
             status: 'ACTIVE',
           })
@@ -1923,11 +2005,29 @@ export class ApiService {
       console.warn('Navigation lookup error:', e);
     }
 
+    // 7. Resolve photo from local cache or student record
+    const photosMap = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('schoolsense_student_photos') || '{}');
+      } catch {
+        return {};
+      }
+    })();
+    const localPhoto = photosMap[actualStudentId] || photosMap[studentId] || {};
+    const resolvedPhotoUrl = localPhoto.photoUrl || localPhoto.photo_url || student.photo_url || student.avatar_url || '';
+    const resolvedGuardianPhotoUrl = localPhoto.guardianPhotoUrl || localPhoto.guardian_photo_url || student.guardian_photo_url || student.emergency_contact_photo_url || '';
+
     return {
       student: {
         ...student,
         id: actualStudentId,
         fullName: `${student.first_name || ''} ${student.last_name || ''}`.trim() || student.admission_number || 'Student',
+        photo_url: resolvedPhotoUrl,
+        photoUrl: resolvedPhotoUrl,
+        avatar_url: resolvedPhotoUrl,
+        guardian_photo_url: resolvedGuardianPhotoUrl,
+        guardianPhotoUrl: resolvedGuardianPhotoUrl,
+        emergency_contact_photo_url: resolvedGuardianPhotoUrl,
         className,
         sectionName,
         academicSession,
@@ -1973,22 +2073,61 @@ export class ApiService {
       }
     }
 
+    const studentPhoto = body.photoUrl !== undefined ? body.photoUrl : (body.photo_url !== undefined ? body.photo_url : undefined);
+    const guardianPhoto = body.guardianPhotoUrl !== undefined ? body.guardianPhotoUrl : (body.guardian_photo_url !== undefined ? body.guardian_photo_url : undefined);
+
+    // Persist photos to client storage immediately so photos are 100% resilient across page reloads
+    if (studentPhoto !== undefined || guardianPhoto !== undefined) {
+      try {
+        const photosMap = JSON.parse(localStorage.getItem('schoolsense_student_photos') || '{}');
+        if (!photosMap[studentId]) {
+          photosMap[studentId] = {};
+        }
+        if (studentPhoto !== undefined) {
+          photosMap[studentId].photoUrl = studentPhoto;
+          photosMap[studentId].photo_url = studentPhoto;
+        }
+        if (guardianPhoto !== undefined) {
+          photosMap[studentId].guardianPhotoUrl = guardianPhoto;
+          photosMap[studentId].guardian_photo_url = guardianPhoto;
+        }
+        localStorage.setItem('schoolsense_student_photos', JSON.stringify(photosMap));
+      } catch (storageErr) {
+        console.warn('Student photo cache error:', storageErr);
+      }
+    }
+
     const updatePayload: any = {
-      first_name: firstName,
-      last_name: lastName || null,
-      gender: body.gender || 'MALE',
-      date_of_birth: dob,
-      blood_group: body.bloodGroup || null,
-      emergency_contact_name: guardianName || null,
-      emergency_contact_phone: guardianPhone || null,
       updated_at: new Date().toISOString(),
     };
-    if (admissionNumber) {
-      updatePayload.admission_number = admissionNumber;
+    if (body.firstName !== undefined) updatePayload.first_name = firstName;
+    if (body.lastName !== undefined) updatePayload.last_name = lastName || null;
+    if (body.gender !== undefined) updatePayload.gender = body.gender;
+    if (dob) updatePayload.date_of_birth = dob;
+    if (body.bloodGroup !== undefined) updatePayload.blood_group = body.bloodGroup || null;
+    if (guardianName) updatePayload.emergency_contact_name = guardianName;
+    if (guardianPhone) updatePayload.emergency_contact_phone = guardianPhone;
+    if (admissionNumber) updatePayload.admission_number = admissionNumber;
+    if (studentPhoto !== undefined) {
+      updatePayload.photo_url = studentPhoto || null;
+    }
+    if (guardianPhoto !== undefined) {
+      updatePayload.guardian_photo_url = guardianPhoto || null;
     }
 
     try {
-      await this.supabase.from('students').update(updatePayload).eq('id', studentId);
+      const { error } = await this.supabase.from('students').update(updatePayload).eq('id', studentId);
+      if (error) {
+        console.warn('Update student Supabase initial error:', error);
+        // If column error (e.g. PGRST204), retry without photo_url / guardian_photo_url
+        if (error.code === 'PGRST204' || (error.message && (error.message.includes('column') || error.message.includes('schema cache')))) {
+          delete updatePayload.photo_url;
+          delete updatePayload.guardian_photo_url;
+          if (Object.keys(updatePayload).length > 1) {
+            await this.supabase.from('students').update(updatePayload).eq('id', studentId);
+          }
+        }
+      }
     } catch (e) {
       console.warn('Update student table note:', e);
     }
@@ -2022,6 +2161,277 @@ export class ApiService {
     }
 
     return { success: true, message: 'Student details updated successfully' };
+  }
+
+  // Student Promotion, Demotion, Section Change & Alumni Direct Actions
+  public async promoteStudent(body: any): Promise<any> {
+    const schoolId = this.getSchoolId();
+    const studentId = body.studentId || body.id;
+    if (!studentId) throw new Error('Student ID is required');
+
+    const targetClassId = body.targetClassId || body.classId;
+    const targetSectionId = body.targetSectionId || body.sectionId;
+    const targetClassName = body.targetClassName || body.className;
+    const targetSectionName = body.targetSectionName || body.sectionName;
+    const rollNumber = body.rollNumber ? String(body.rollNumber) : undefined;
+    const academicYearId = body.academicYearId || (await this.getActiveAcademicYearId(schoolId));
+    const nowIso = new Date().toISOString();
+
+    if (targetClassId || targetSectionId) {
+      try {
+        const enrPayload: any = {
+          school_id: schoolId,
+          student_id: studentId,
+          class_id: targetClassId,
+          section_id: targetSectionId,
+          status: 'ACTIVE',
+          updated_at: nowIso,
+        };
+        if (rollNumber) enrPayload.roll_number = rollNumber;
+        if (academicYearId) enrPayload.academic_year_id = academicYearId;
+
+        let existingQuery = this.supabase
+          .from('student_enrollments')
+          .select('id')
+          .eq('student_id', studentId);
+        if (academicYearId) existingQuery = existingQuery.eq('academic_year_id', academicYearId);
+        const { data: existingEnr } = await existingQuery.maybeSingle();
+
+        if (existingEnr?.id) {
+          await this.supabase
+            .from('student_enrollments')
+            .update(enrPayload)
+            .eq('id', existingEnr.id);
+        } else {
+          await this.supabase
+            .from('student_enrollments')
+            .insert(enrPayload);
+        }
+      } catch (e) {
+        console.warn('Supabase promote student enrollment update note:', e);
+      }
+    }
+
+    await this.updateStudentStatus(studentId, 'ACTIVE', body.reason || 'Promoted to next class');
+
+    this.setStudentSection(
+      studentId,
+      {
+        classId: targetClassId,
+        className: targetClassName,
+        sectionId: targetSectionId,
+        sectionName: targetSectionName,
+        rollNumber: rollNumber,
+      },
+      academicYearId
+    );
+    this.setStudentSection(studentId, {
+      classId: targetClassId,
+      className: targetClassName,
+      sectionId: targetSectionId,
+      sectionName: targetSectionName,
+      rollNumber: rollNumber,
+    });
+
+    return {
+      success: true,
+      message: `Student successfully promoted to ${targetClassName || 'next class'}${targetSectionName ? ' - ' + targetSectionName : ''}.`,
+    };
+  }
+
+  public async demoteStudent(body: any): Promise<any> {
+    const schoolId = this.getSchoolId();
+    const studentId = body.studentId || body.id;
+    if (!studentId) throw new Error('Student ID is required');
+
+    const targetClassId = body.targetClassId || body.classId;
+    const targetSectionId = body.targetSectionId || body.sectionId;
+    const targetClassName = body.targetClassName || body.className;
+    const targetSectionName = body.targetSectionName || body.sectionName;
+    const rollNumber = body.rollNumber ? String(body.rollNumber) : undefined;
+    const academicYearId = body.academicYearId || (await this.getActiveAcademicYearId(schoolId));
+    const nowIso = new Date().toISOString();
+
+    if (targetClassId || targetSectionId) {
+      try {
+        const enrPayload: any = {
+          school_id: schoolId,
+          student_id: studentId,
+          class_id: targetClassId,
+          section_id: targetSectionId,
+          status: 'ACTIVE',
+          updated_at: nowIso,
+        };
+        if (rollNumber) enrPayload.roll_number = rollNumber;
+        if (academicYearId) enrPayload.academic_year_id = academicYearId;
+
+        let existingQuery = this.supabase
+          .from('student_enrollments')
+          .select('id')
+          .eq('student_id', studentId);
+        if (academicYearId) existingQuery = existingQuery.eq('academic_year_id', academicYearId);
+        const { data: existingEnr } = await existingQuery.maybeSingle();
+
+        if (existingEnr?.id) {
+          await this.supabase
+            .from('student_enrollments')
+            .update(enrPayload)
+            .eq('id', existingEnr.id);
+        } else {
+          await this.supabase
+            .from('student_enrollments')
+            .insert(enrPayload);
+        }
+      } catch (e) {
+        console.warn('Supabase demote student enrollment update note:', e);
+      }
+    }
+
+    await this.updateStudentStatus(studentId, 'ACTIVE', body.reason || 'Demoted / moved to previous class');
+
+    this.setStudentSection(
+      studentId,
+      {
+        classId: targetClassId,
+        className: targetClassName,
+        sectionId: targetSectionId,
+        sectionName: targetSectionName,
+        rollNumber: rollNumber,
+      },
+      academicYearId
+    );
+    this.setStudentSection(studentId, {
+      classId: targetClassId,
+      className: targetClassName,
+      sectionId: targetSectionId,
+      sectionName: targetSectionName,
+      rollNumber: rollNumber,
+    });
+
+    return {
+      success: true,
+      message: `Student reassigned to ${targetClassName || 'previous class'}${targetSectionName ? ' - ' + targetSectionName : ''}.`,
+    };
+  }
+
+  public async changeStudentSection(body: any): Promise<any> {
+    const schoolId = this.getSchoolId();
+    const studentId = body.studentId || body.id;
+    if (!studentId) throw new Error('Student ID is required');
+
+    const targetSectionId = body.targetSectionId || body.sectionId;
+    const targetSectionName = body.targetSectionName || body.sectionName;
+    const targetClassId = body.targetClassId || body.classId;
+    const targetClassName = body.targetClassName || body.className;
+    const rollNumber = body.rollNumber ? String(body.rollNumber) : undefined;
+    const academicYearId = body.academicYearId || (await this.getActiveAcademicYearId(schoolId));
+    const nowIso = new Date().toISOString();
+
+    if (targetSectionId) {
+      try {
+        const enrPayload: any = {
+          section_id: targetSectionId,
+          updated_at: nowIso,
+        };
+        if (targetClassId) enrPayload.class_id = targetClassId;
+        if (rollNumber) enrPayload.roll_number = rollNumber;
+
+        let query = this.supabase
+          .from('student_enrollments')
+          .update(enrPayload)
+          .eq('student_id', studentId);
+        if (academicYearId) query = query.eq('academic_year_id', academicYearId);
+        await query;
+      } catch (e) {
+        console.warn('Supabase change student section note:', e);
+      }
+    }
+
+    this.setStudentSection(
+      studentId,
+      {
+        classId: targetClassId,
+        className: targetClassName,
+        sectionId: targetSectionId,
+        sectionName: targetSectionName,
+        rollNumber: rollNumber,
+      },
+      academicYearId
+    );
+    this.setStudentSection(studentId, {
+      classId: targetClassId,
+      className: targetClassName,
+      sectionId: targetSectionId,
+      sectionName: targetSectionName,
+      rollNumber: rollNumber,
+    });
+
+    return {
+      success: true,
+      message: `Student section successfully changed to ${targetSectionName || 'selected section'}.`,
+    };
+  }
+
+  public async convertStudentToAlumni(body: any): Promise<any> {
+    const schoolId = this.getSchoolId();
+    const studentId = body.studentId || body.id;
+    if (!studentId) throw new Error('Student ID is required');
+
+    const sessionName = body.sessionName || body.passingSession || '2025–2026';
+    const graduatingClassId = body.graduatingClassId || body.classId;
+    const graduatingSectionId = body.graduatingSectionId || body.sectionId;
+    const graduatingClassName = body.graduatingClassName || body.className;
+    const graduatingSectionName = body.graduatingSectionName || body.sectionName;
+    const leavingCertificateNumber = body.leavingCertificateNumber || body.tcNumber || '';
+    const remarks = body.reason || body.remarks || 'Graduated / Completed studies and moved to Alumni';
+    const academicYearId = body.academicYearId || (await this.getActiveAcademicYearId(schoolId));
+    const nowIso = new Date().toISOString();
+
+    // 1. Mark status ALUMNI in students table and enrollments
+    await this.updateStudentStatus(studentId, 'ALUMNI', remarks);
+
+    // 2. Record in alumni info store
+    try {
+      const alumniStoreKey = `schoolsense_alumni_info_${schoolId || 'default'}`;
+      const raw = localStorage.getItem(alumniStoreKey) || '{}';
+      const map = JSON.parse(raw);
+      map[studentId] = {
+        sessionName,
+        graduatingClassId,
+        graduatingClassName,
+        graduatingSectionId,
+        graduatingSectionName,
+        leavingCertificateNumber,
+        remarks,
+        convertedAt: nowIso,
+      };
+      localStorage.setItem(alumniStoreKey, JSON.stringify(map));
+    } catch {}
+
+    // 3. Update section map with graduating details
+    if (graduatingClassId || graduatingSectionId) {
+      this.setStudentSection(
+        studentId,
+        {
+          classId: graduatingClassId,
+          className: graduatingClassName,
+          sectionId: graduatingSectionId,
+          sectionName: graduatingSectionName,
+        },
+        academicYearId
+      );
+      this.setStudentSection(studentId, {
+        classId: graduatingClassId,
+        className: graduatingClassName,
+        sectionId: graduatingSectionId,
+        sectionName: graduatingSectionName,
+      });
+    }
+
+    return {
+      success: true,
+      message: `Student successfully graduated/converted to Alumni (${graduatingClassName || 'Current Class'}, Session: ${sessionName}).`,
+    };
   }
 
   private async getStudentDeactivationRequests(): Promise<any[]> {
@@ -2073,15 +2483,26 @@ export class ApiService {
     const requestObj = {
       id: `req_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       school_id: schoolId || '',
+      request_type: (payload.requestType || payload.type || 'INACTIVE').toUpperCase(),
       student_id: payload.studentId,
       student_name: payload.studentName,
       admission_number: payload.admissionNumber || '',
+      class_id: payload.classId || '',
       class_name: payload.className || '',
+      section_id: payload.sectionId || '',
       section_name: payload.sectionName || '',
+      target_class_id: payload.targetClassId || '',
+      target_class_name: payload.targetClassName || '',
+      target_section_id: payload.targetSectionId || '',
+      target_section_name: payload.targetSectionName || '',
+      target_roll_number: payload.targetRollNumber || payload.rollNumber || '',
+      target_status: payload.targetStatus || '',
+      passing_session: payload.passingSession || payload.sessionName || '',
+      leaving_certificate_number: payload.leavingCertificateNumber || payload.tcNumber || '',
       requested_by_user_id: currentUser?.id || '',
       requested_by_name: `${currentUser?.firstName || currentUser?.first_name || ''} ${currentUser?.lastName || currentUser?.last_name || ''}`.trim() || 'Teacher',
       requested_by_role: currentUser?.role || 'TEACHER',
-      reason: payload.reason || 'Other',
+      reason: payload.reason || 'Academic update requested by teacher',
       comments: payload.comments || '',
       status: 'PENDING',
       created_at: new Date().toISOString(),
@@ -2103,7 +2524,7 @@ export class ApiService {
     return {
       success: true,
       request: requestObj,
-      message: 'Student deactivation request submitted to School Administration for review.',
+      message: 'Student academic action request submitted to School Administration for review.',
     };
   }
 
@@ -2131,8 +2552,7 @@ export class ApiService {
       console.warn('Supabase update student_deactivation_requests failed:', e);
     }
 
-    let targetStudentId: string | null = null;
-    let targetReason = 'Approved by administration from teacher request';
+    let targetReq: any = null;
     try {
       const raw = localStorage.getItem('schoolsense_deactivation_requests');
       if (raw) {
@@ -2140,22 +2560,71 @@ export class ApiService {
         const idx = list.findIndex((r: any) => r.id === requestId);
         if (idx !== -1) {
           list[idx] = { ...list[idx], ...reviewData };
-          targetStudentId = list[idx].student_id;
-          targetReason = list[idx].reason || targetReason;
+          targetReq = list[idx];
           localStorage.setItem('schoolsense_deactivation_requests', JSON.stringify(list));
         }
       }
     } catch {}
 
-    if (action === 'APPROVE' && targetStudentId) {
-      await this.updateStudentStatus(targetStudentId, 'INACTIVE', targetReason);
+    if (action === 'APPROVE' && targetReq && targetReq.student_id) {
+      const reqType = (targetReq.request_type || 'INACTIVE').toUpperCase();
+      const reason = targetReq.reason || `Approved by administration from ${targetReq.requested_by_name || 'teacher'} request`;
+
+      if (reqType === 'PROMOTION') {
+        await this.promoteStudent({
+          studentId: targetReq.student_id,
+          targetClassId: targetReq.target_class_id,
+          targetClassName: targetReq.target_class_name,
+          targetSectionId: targetReq.target_section_id,
+          targetSectionName: targetReq.target_section_name,
+          rollNumber: targetReq.target_roll_number,
+          reason,
+        });
+      } else if (reqType === 'DEMOTION') {
+        await this.demoteStudent({
+          studentId: targetReq.student_id,
+          targetClassId: targetReq.target_class_id,
+          targetClassName: targetReq.target_class_name,
+          targetSectionId: targetReq.target_section_id,
+          targetSectionName: targetReq.target_section_name,
+          rollNumber: targetReq.target_roll_number,
+          reason,
+        });
+      } else if (reqType === 'SECTION_CHANGE') {
+        await this.changeStudentSection({
+          studentId: targetReq.student_id,
+          targetClassId: targetReq.target_class_id || targetReq.class_id,
+          targetClassName: targetReq.target_class_name || targetReq.class_name,
+          targetSectionId: targetReq.target_section_id,
+          targetSectionName: targetReq.target_section_name,
+          rollNumber: targetReq.target_roll_number,
+          reason,
+        });
+      } else if (reqType === 'ALUMNI') {
+        await this.convertStudentToAlumni({
+          studentId: targetReq.student_id,
+          sessionName: targetReq.passing_session,
+          graduatingClassId: targetReq.class_id,
+          graduatingClassName: targetReq.class_name,
+          graduatingSectionId: targetReq.section_id,
+          graduatingSectionName: targetReq.section_name,
+          leavingCertificateNumber: targetReq.leaving_certificate_number,
+          reason,
+        });
+      } else if (reqType === 'SUSPENDED') {
+        await this.updateStudentStatus(targetReq.student_id, 'SUSPENDED', reason);
+      } else if (reqType === 'LEFTOUT') {
+        await this.updateStudentStatus(targetReq.student_id, 'LEFTOUT', reason);
+      } else {
+        await this.updateStudentStatus(targetReq.student_id, 'INACTIVE', reason);
+      }
     }
 
     return {
       success: true,
       status: newStatus,
-      message: `Deactivation request ${newStatus.toLowerCase()} successfully.${
-        action === 'APPROVE' ? ' Student has been marked inactive.' : ''
+      message: `Academic request ${newStatus.toLowerCase()} successfully.${
+        action === 'APPROVE' ? ' Action has been executed.' : ''
       }`,
     };
   }
@@ -2226,6 +2695,14 @@ export class ApiService {
       }
     })();
 
+    const photosMap = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('schoolsense_student_photos') || '{}');
+      } catch {
+        return {};
+      }
+    })();
+
     const localMap = this.getStudentSectionMap(effectiveYearId);
 
     let enrollments: any[] = [];
@@ -2242,28 +2719,50 @@ export class ApiService {
 
       const { data: allSessionEnrolls, error } = await query;
       if (!error && allSessionEnrolls && allSessionEnrolls.length > 0) {
-        // Match direct sectionId or match by classId and section name strictly within this same academic session
-        enrollments = allSessionEnrolls.filter((e: any) => {
-          if (e.section_id === sectionId) return true;
-          const eSecClassId = e.class_id || e.section?.class_id || (e.section?.class as any)?.id;
-          const eSecClassName = (e.section?.class as any)?.name || '';
-          const eSecName = (e.section?.name || 'section a').trim().toLowerCase();
-          const targetSecName = (secName || 'section a').trim().toLowerCase();
-
-          const classMatch = (classId && eSecClassId === classId) ||
-                             (clsName && eSecClassName && eSecClassName.trim().toLowerCase() === clsName.trim().toLowerCase());
-          const secMatch = eSecName === targetSecName;
-          if (classMatch && secMatch) return true;
-
-          // Check session-specific local map assignment only
-          const stInfo = localMap[e.student_id];
-          if (stInfo) {
-            const stClassMatch = (classId && stInfo.classId === classId) ||
-                                 (clsName && stInfo.className && stInfo.className.trim().toLowerCase() === clsName.trim().toLowerCase());
-            const stSecMatch = (stInfo.sectionName || 'section a').trim().toLowerCase() === targetSecName;
-            if (stClassMatch && stSecMatch) return true;
+        // Group by student ID to ensure each student has exactly ONE authoritative enrollment record
+        const latestEnrollmentByStudent = new Map<string, any>();
+        for (const e of allSessionEnrolls) {
+          const sId = e.student_id || e.student?.id;
+          if (!sId) continue;
+          const existing = latestEnrollmentByStudent.get(sId);
+          if (!existing) {
+            latestEnrollmentByStudent.set(sId, e);
+          } else {
+            const prevTime = new Date(existing.updated_at || existing.created_at || 0).getTime();
+            const currTime = new Date(e.updated_at || e.created_at || 0).getTime();
+            if (currTime > prevTime) {
+              latestEnrollmentByStudent.set(sId, e);
+            }
           }
-          return false;
+        }
+
+        const uniqueEnrolls = Array.from(latestEnrollmentByStudent.values());
+
+        // Strictly filter to the target class and section
+        enrollments = uniqueEnrolls.filter((e: any) => {
+          const sId = e.student_id || e.student?.id;
+          const stInfo = localMap[sId];
+
+          // Determine the student's current authoritative section and class
+          const effectiveSectionId = stInfo?.sectionId || e.section_id;
+          const effectiveClassId = stInfo?.classId || e.class_id || e.section?.class_id || (e.section?.class as any)?.id;
+          const effectiveClassName = (stInfo?.className || (e.section?.class as any)?.name || '').trim().toLowerCase();
+          const effectiveSecName = (stInfo?.sectionName || e.section?.name || 'section a').trim().toLowerCase();
+
+          const targetSecName = (secName || 'section a').trim().toLowerCase();
+          const targetClsName = (clsName || '').trim().toLowerCase();
+
+          // Direct section ID match
+          if (effectiveSectionId && sectionId && effectiveSectionId === sectionId) {
+            return true;
+          }
+
+          // Strict Class name and Section name match
+          const isClassMatch = (classId && effectiveClassId && effectiveClassId === classId) ||
+                               (targetClsName && effectiveClassName && effectiveClassName === targetClsName);
+          const isSecMatch = effectiveSecName === targetSecName;
+
+          return isClassMatch && isSecMatch;
         });
       }
     } catch (e) {
@@ -2282,6 +2781,14 @@ export class ApiService {
           const stStatus = String(rawStatus).toUpperCase() === 'ALUMNI' ? 'ACTIVE' : String(rawStatus).toUpperCase();
           const activeInfo = this.getStudentActiveTimeInfo(st.id || e.id, e.created_at || st.created_at, stStatus);
 
+          const studentLocalPhoto = photosMap[st.id] || photosMap[e.id] || (e.student_id ? photosMap[e.student_id] : null) || {};
+          const resolvedPhotoUrl = studentLocalPhoto.photoUrl || studentLocalPhoto.photo_url || st.photo_url || st.avatar_url || '';
+          const resolvedGuardianPhotoUrl = studentLocalPhoto.guardianPhotoUrl || studentLocalPhoto.guardian_photo_url || st.guardian_photo_url || st.emergency_contact_photo_url || '';
+
+          const stLocalInfo = localMap[st.id] || {};
+          const resolvedClassName = stLocalInfo.className || clsName || (e.section?.class as any)?.name || 'Class 1';
+          const resolvedSectionName = stLocalInfo.sectionName || secName || e.section?.name || 'Section A';
+
           return {
             id: st.id || e.id,
             enrollmentId: e.id,
@@ -2290,17 +2797,22 @@ export class ApiService {
             firstName: st.first_name || '',
             lastName: st.last_name || '',
             fullName,
-            rollNumber: Number(e.roll_number) || 1,
+            rollNumber: Number(stLocalInfo.rollNumber || e.roll_number) || 1,
             gender: st.gender || 'MALE',
             dateOfBirth: st.date_of_birth,
             bloodGroup: st.blood_group,
-            className: clsName,
-            sectionName: secName,
+            className: resolvedClassName,
+            sectionName: resolvedSectionName,
+            photoUrl: resolvedPhotoUrl,
+            photo_url: resolvedPhotoUrl,
+            guardianPhotoUrl: resolvedGuardianPhotoUrl,
             primaryContact: {
               first_name: st.emergency_contact_name || 'Guardian',
               last_name: '',
               phone: st.emergency_contact_phone || '',
               email: '',
+              photo_url: resolvedGuardianPhotoUrl,
+              photoUrl: resolvedGuardianPhotoUrl,
               relationship: 'Guardian',
             },
             status: stStatus,
@@ -2381,6 +2893,10 @@ export class ApiService {
                 const stStatus = String(rawStatus).toUpperCase() === 'ALUMNI' ? 'ACTIVE' : String(rawStatus).toUpperCase();
                 const activeInfo = this.getStudentActiveTimeInfo(st.id, st.created_at, stStatus);
 
+                const studentLocalPhoto = photosMap[st.id] || {};
+                const resolvedPhotoUrl = studentLocalPhoto.photoUrl || studentLocalPhoto.photo_url || st.photo_url || st.avatar_url || '';
+                const resolvedGuardianPhotoUrl = studentLocalPhoto.guardianPhotoUrl || studentLocalPhoto.guardian_photo_url || st.guardian_photo_url || st.emergency_contact_photo_url || '';
+
                 return {
                   id: st.id,
                   enrollmentId: st.id,
@@ -2395,11 +2911,16 @@ export class ApiService {
                   bloodGroup: st.blood_group,
                   className: clsName,
                   sectionName: secName,
+                  photoUrl: resolvedPhotoUrl,
+                  photo_url: resolvedPhotoUrl,
+                  guardianPhotoUrl: resolvedGuardianPhotoUrl,
                   primaryContact: {
                     first_name: st.emergency_contact_name || 'Guardian',
                     last_name: '',
                     phone: st.emergency_contact_phone || '',
                     email: '',
+                    photo_url: resolvedGuardianPhotoUrl,
+                    photoUrl: resolvedGuardianPhotoUrl,
                     relationship: 'Guardian',
                   },
                   status: stStatus,
@@ -3645,6 +4166,7 @@ export class ApiService {
 
       const studentIds = students.map((s: any) => s.id);
       let enrollmentsMap: Record<string, any> = {};
+      let firstEnrollmentsMap: Record<string, any> = {};
       if (studentIds.length > 0) {
         const { data: enrolls } = await this.supabase
           .from('student_enrollments')
@@ -3654,11 +4176,25 @@ export class ApiService {
         (enrolls || []).forEach((en: any) => {
           if (!enrollmentsMap[en.student_id]) enrollmentsMap[en.student_id] = en;
         });
+
+        // Also find first enrollment for admission grade
+        const reversedEnrolls = [...(enrolls || [])].reverse();
+        reversedEnrolls.forEach((en: any) => {
+          if (!firstEnrollmentsMap[en.student_id]) firstEnrollmentsMap[en.student_id] = en;
+        });
       }
+
+      // 3. Load stored alumni info map
+      const alumniStoreKey = `schoolsense_alumni_info_${schoolId || 'default'}`;
+      const rawAlumni = localStorage.getItem(alumniStoreKey) || '{}';
+      const alumniMap = JSON.parse(rawAlumni);
 
       const list: AlumniStudent[] = [];
       for (const st of students) {
         const lastEnrollment = enrollmentsMap[st.id];
+        const firstEnrollment = firstEnrollmentsMap[st.id];
+        const storedInfo = alumniMap[st.id] || {};
+
         const gradSessionId = lastEnrollment?.academic_year_id || lastEnrollment?.academic_year?.id;
         const gradSessionIdx = gradSessionId
           ? sortedSessions.findIndex((s: any) => s.id === gradSessionId)
@@ -3669,20 +4205,47 @@ export class ApiService {
           continue; // In this session, they were an active enrolled student (not an alumnus yet)
         }
 
+        const terminalClass = storedInfo.graduatingClassName || lastEnrollment?.section?.class?.name || lastEnrollment?.class?.name || 'Class 12';
+        const terminalSection = storedInfo.graduatingSectionName || lastEnrollment?.section?.name || 'Section A';
+        const gradSession = storedInfo.sessionName || lastEnrollment?.academic_year?.name || 'Graduated';
+
+        const cleanAdm = String(st.admission_number || '0000').replace(/[^a-zA-Z0-9]/g, '');
+        const gradYear = (gradSession.match(/\d{4}/) ? gradSession.match(/\d{4}/)![0] : new Date().getFullYear());
+        const alumniNumber = storedInfo.alumniNumber || `ALU-${gradYear}-${cleanAdm.padStart(4, '0')}`;
+        const tcNumber = storedInfo.leavingCertificateNumber || storedInfo.tcNumber || `TC/${gradYear}/${cleanAdm.padStart(4, '0')}`;
+
         list.push({
           student_id: st.id,
           admission_number: st.admission_number,
+          alumni_number: alumniNumber,
           first_name: st.first_name,
           last_name: st.last_name,
           full_name: `${st.first_name || ''} ${st.last_name || ''}`.trim(),
           gender: st.gender,
           date_of_birth: st.date_of_birth,
           dateOfBirth: st.date_of_birth,
+          blood_group: st.blood_group,
           status: 'ALUMNI',
-          last_class_name: lastEnrollment?.section?.class?.name || lastEnrollment?.class?.name || 'Class 12',
-          last_section_name: lastEnrollment?.section?.name || 'Section A',
-          graduation_session: lastEnrollment?.academic_year?.name || 'Graduated',
+          last_class_name: terminalClass,
+          last_section_name: terminalSection,
+          graduation_session: gradSession,
           last_roll_number: lastEnrollment?.roll_number,
+          admission_date: st.admission_date || st.created_at || firstEnrollment?.created_at,
+          admission_class_name: firstEnrollment?.section?.class?.name || firstEnrollment?.class?.name || 'Enrolled Class',
+          leaving_date: storedInfo.convertedAt || lastEnrollment?.updated_at,
+          leaving_reason: storedInfo.remarks || storedInfo.reason || 'Completed studies',
+          tc_number: tcNumber,
+          tc_issue_date: storedInfo.tcIssueDate,
+          character_cert_number: storedInfo.characterCertNumber,
+          alumni_cert_number: storedInfo.alumniCertNumber,
+          conduct: storedInfo.conduct || 'Exemplary & Commendable',
+          remarks: storedInfo.remarks,
+          primary_contact: {
+            first_name: st.father_name || st.guardian_name || 'Primary Guardian',
+            phone: st.guardian_phone || st.emergency_contact_phone,
+            email: st.guardian_email,
+            relationship: st.guardian_relationship || 'Parent/Guardian',
+          },
         });
       }
 
@@ -3691,6 +4254,466 @@ export class ApiService {
       console.warn('Failed to load alumni students', e);
       return [];
     }
+  }
+
+  public async getStudentLifecycleLogs(studentId: string): Promise<{
+    student: AlumniStudent | any;
+    logs: StudentLifecycleLog[];
+    summary: {
+      admissionDate: string;
+      admissionClass: string;
+      admissionSession: string;
+      leavingDate: string;
+      terminalClass: string;
+      graduationSession: string;
+      totalSessionsCount: number;
+      permanentAdmissionNumber: string;
+      alumniNumber: string;
+      tcNumber: string;
+      conduct: string;
+    };
+  }> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) throw new Error('School context required');
+
+    // 1. Fetch student info
+    const { data: st, error: stErr } = await this.supabase
+      .from('students')
+      .select('*')
+      .eq('id', studentId)
+      .single();
+
+    if (stErr || !st) {
+      throw new Error('Student record not found');
+    }
+
+    // 2. Fetch all academic years for chronology
+    const { data: allSessions } = await this.supabase
+      .from('academic_years')
+      .select('id, name, start_date, end_date, created_at')
+      .eq('school_id', schoolId)
+      .order('start_date', { ascending: true });
+
+    // 3. Fetch all enrollments for this student
+    const { data: enrollments } = await this.supabase
+      .from('student_enrollments')
+      .select('*, section:sections(*, class:classes(*)), academic_year:academic_years(*)')
+      .eq('student_id', studentId)
+      .order('created_at', { ascending: true });
+
+    // 4. Fetch stored alumni info & certificates
+    const alumniStoreKey = `schoolsense_alumni_info_${schoolId || 'default'}`;
+    const rawAlumni = localStorage.getItem(alumniStoreKey) || '{}';
+    const alumniMap = JSON.parse(rawAlumni);
+    const storedInfo = alumniMap[studentId] || {};
+
+    const certStoreKey = `schoolsense_student_certs_${schoolId || 'default'}`;
+    const rawCerts = localStorage.getItem(certStoreKey) || '{}';
+    const certsMap = JSON.parse(rawCerts);
+    const studentCerts: any[] = certsMap[studentId] || [];
+
+    // 5. Fetch any requests
+    const { data: requests } = await this.supabase
+      .from('student_deactivation_requests')
+      .select('*')
+      .eq('student_id', studentId)
+      .order('created_at', { ascending: true });
+
+    // 6. Build timeline logs
+    const logs: StudentLifecycleLog[] = [];
+    const enrs = enrollments || [];
+
+    // Admission Date & First enrollment
+    const firstEnr = enrs[0];
+    const lastEnr = enrs[enrs.length - 1];
+
+    const admissionDate = st.admission_date || st.created_at || (firstEnr?.created_at) || new Date().toISOString();
+    const admissionClass = firstEnr?.section?.class?.name || firstEnr?.class?.name || storedInfo.admissionClass || 'Enrolled Class';
+    const admissionSession = firstEnr?.academic_year?.name || storedInfo.admissionSession || 'Initial Session';
+
+    const terminalClass = storedInfo.graduatingClassName || lastEnr?.section?.class?.name || lastEnr?.class?.name || 'Class 12';
+    const terminalSection = storedInfo.graduatingSectionName || lastEnr?.section?.name || 'Section A';
+    const graduationSession = storedInfo.sessionName || lastEnr?.academic_year?.name || 'Graduated';
+
+    const cleanAdm = String(st.admission_number || '0000').replace(/[^a-zA-Z0-9]/g, '');
+    const gradYear = (graduationSession.match(/\d{4}/) ? graduationSession.match(/\d{4}/)![0] : new Date().getFullYear());
+    const alumniNumber = storedInfo.alumniNumber || `ALU-${gradYear}-${cleanAdm.padStart(4, '0')}`;
+    const tcNumber = storedInfo.leavingCertificateNumber || storedInfo.tcNumber || `TC/${gradYear}/${cleanAdm.padStart(4, '0')}`;
+    const conduct = storedInfo.conduct || 'Exemplary & Commendable';
+
+    // Log 1: Initial Admission
+    logs.push({
+      id: `adm_${st.id}`,
+      student_id: st.id,
+      event_type: 'ADMISSION',
+      title: 'Institutional Admission & Registration',
+      description: `Student formally admitted into ${admissionClass} (${firstEnr?.section?.name || 'Section A'}) with Permanent Admission No. ${st.admission_number}.`,
+      academic_session: admissionSession,
+      class_name: admissionClass,
+      section_name: firstEnr?.section?.name || 'Section A',
+      roll_number: firstEnr?.roll_number || st.roll_number || 1,
+      status: 'ADMITTED',
+      timestamp: admissionDate,
+    });
+
+    // Progression Logs for each subsequent enrollment
+    for (let i = 0; i < enrs.length; i++) {
+      const en = enrs[i];
+      const clsName = en.section?.class?.name || en.class?.name || `Grade ${i + 1}`;
+      const secName = en.section?.name || 'Section A';
+      const sesName = en.academic_year?.name || `Session ${i + 1}`;
+      const roll = en.roll_number || 1;
+
+      if (i > 0) {
+        const prevEn = enrs[i - 1];
+        const prevClsName = prevEn.section?.class?.name || prevEn.class?.name || '';
+        
+        let title = `Academic Session Progression: ${clsName}`;
+        let description = `Enrolled in ${clsName} - ${secName} (Roll No: ${roll}) for Academic Session ${sesName}.`;
+        let eventType: StudentLifecycleLog['event_type'] = 'PROMOTION';
+
+        if (prevClsName && prevClsName !== clsName) {
+          title = `Annual Academic Promotion to ${clsName}`;
+          description = `Successfully completed ${prevClsName} and promoted to ${clsName} (${secName}) with Roll No: ${roll}.`;
+        } else if (prevEn.section?.name !== secName) {
+          title = `Section Division Transfer to ${secName}`;
+          description = `Transferred from ${prevEn.section?.name || 'Section'} to ${secName} in ${clsName}.`;
+          eventType = 'SECTION_CHANGE';
+        }
+
+        logs.push({
+          id: `enr_${en.id || i}`,
+          student_id: st.id,
+          event_type: eventType,
+          title,
+          description,
+          academic_session: sesName,
+          class_name: clsName,
+          section_name: secName,
+          roll_number: roll,
+          status: 'ACTIVE',
+          timestamp: en.created_at || en.updated_at || new Date().toISOString(),
+        });
+      }
+    }
+
+    // Deactivation / Academic Requests Approved Logs
+    if (requests && requests.length > 0) {
+      for (const req of requests) {
+        if (req.status === 'APPROVED') {
+          logs.push({
+            id: `req_${req.id}`,
+            student_id: st.id,
+            event_type: req.request_type === 'PROMOTION' ? 'PROMOTION' : req.request_type === 'DEMOTION' ? 'DEMOTION' : req.request_type === 'SECTION_CHANGE' ? 'SECTION_CHANGE' : 'STATUS_CHANGE',
+            title: `Academic Action Approved: ${req.request_type || 'Status Change'}`,
+            description: `Teacher request approved by Administration. Reason: ${req.reason || 'N/A'}. Notes: ${req.review_notes || req.comments || 'N/A'}`,
+            academic_session: req.passing_session || graduationSession,
+            class_name: req.target_class_name || req.class_name,
+            section_name: req.target_section_name || req.section_name,
+            roll_number: req.target_roll_number,
+            status: req.status,
+            performed_by_name: 'School Administration / Principal',
+            timestamp: req.reviewed_at || req.created_at,
+          });
+        }
+      }
+    }
+
+    // Graduation / Alumni Conversion Log
+    logs.push({
+      id: `alumni_${st.id}`,
+      student_id: st.id,
+      event_type: 'ALUMNI_GRADUATION',
+      title: `Graduation & Alumni Induction (${terminalClass})`,
+      description: `Student successfully completed terminal coursework in ${terminalClass} - ${terminalSection} during Academic Session ${graduationSession}. Inducted into Alumni Register with permanent Alumni ID ${alumniNumber}.`,
+      academic_session: graduationSession,
+      class_name: terminalClass,
+      section_name: terminalSection,
+      roll_number: lastEnr?.roll_number || 1,
+      status: 'ALUMNI',
+      tc_number: tcNumber,
+      alumni_number: alumniNumber,
+      timestamp: storedInfo.convertedAt || lastEnr?.updated_at || new Date().toISOString(),
+    });
+
+    // Certificate Issuance Logs (TC, Character, Alumni)
+    if (studentCerts && studentCerts.length > 0) {
+      for (const cert of studentCerts) {
+        logs.push({
+          id: `cert_${cert.id || Math.random()}`,
+          student_id: st.id,
+          event_type: 'CERTIFICATE_GENERATED',
+          title: `Official Document Generated: ${cert.certificate_type}`,
+          description: `Issued certificate serial #${cert.certificate_number || cert.serial_number} on ${cert.issue_date ? new Date(cert.issue_date).toLocaleDateString() : new Date().toLocaleDateString()}.`,
+          academic_session: graduationSession,
+          class_name: terminalClass,
+          status: 'ISSUED',
+          timestamp: cert.created_at || cert.issue_date || new Date().toISOString(),
+        });
+      }
+    }
+
+    // Sort logs chronologically
+    logs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    const studentObj: AlumniStudent = {
+      student_id: st.id,
+      admission_number: st.admission_number,
+      alumni_number: alumniNumber,
+      first_name: st.first_name,
+      last_name: st.last_name,
+      full_name: `${st.first_name || ''} ${st.last_name || ''}`.trim(),
+      gender: st.gender,
+      date_of_birth: st.date_of_birth,
+      dateOfBirth: st.date_of_birth,
+      blood_group: st.blood_group,
+      status: 'ALUMNI',
+      last_class_name: terminalClass,
+      last_section_name: terminalSection,
+      graduation_session: graduationSession,
+      last_roll_number: lastEnr?.roll_number,
+      admission_date: admissionDate,
+      admission_class_name: admissionClass,
+      leaving_date: storedInfo.convertedAt || lastEnr?.updated_at,
+      leaving_reason: storedInfo.remarks || storedInfo.reason || 'Completed terminal class studies',
+      tc_number: tcNumber,
+      tc_issue_date: storedInfo.tcIssueDate,
+      character_cert_number: storedInfo.characterCertNumber,
+      alumni_cert_number: storedInfo.alumniCertNumber,
+      conduct,
+      remarks: storedInfo.remarks,
+      primary_contact: {
+        first_name: st.father_name || st.guardian_name || 'Primary Guardian',
+        phone: st.guardian_phone || st.emergency_contact_phone,
+        email: st.guardian_email,
+        relationship: st.guardian_relationship || 'Parent/Guardian',
+      },
+    };
+
+    return {
+      student: studentObj,
+      logs,
+      summary: {
+        admissionDate,
+        admissionClass,
+        admissionSession,
+        leavingDate: storedInfo.convertedAt || lastEnr?.updated_at || new Date().toISOString(),
+        terminalClass,
+        graduationSession,
+        totalSessionsCount: Math.max(1, enrs.length),
+        permanentAdmissionNumber: st.admission_number,
+        alumniNumber,
+        tcNumber,
+        conduct,
+      },
+    };
+  }
+
+  public async recordStudentCertificate(body: any): Promise<any> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) throw new Error('School context missing');
+    const studentId = body.studentId || body.student_id;
+    if (!studentId) throw new Error('Student ID required');
+
+    const certStoreKey = `schoolsense_student_certs_${schoolId || 'default'}`;
+    const rawCerts = localStorage.getItem(certStoreKey) || '{}';
+    const certsMap = JSON.parse(rawCerts);
+    if (!certsMap[studentId]) certsMap[studentId] = [];
+
+    const newCert = {
+      id: `cert_${Date.now()}`,
+      certificate_type: body.certificate_type || body.type || 'Transfer Certificate',
+      certificate_number: body.certificate_number || body.serial_number || `CERT-${Date.now()}`,
+      issue_date: body.issue_date || new Date().toISOString(),
+      conduct: body.conduct || 'Exemplary',
+      reason_for_leaving: body.reason_for_leaving || body.reason,
+      created_at: new Date().toISOString(),
+      metadata: body,
+    };
+
+    certsMap[studentId].push(newCert);
+    localStorage.setItem(certStoreKey, JSON.stringify(certsMap));
+
+    // Also update schoolsense_alumni_info
+    const alumniStoreKey = `schoolsense_alumni_info_${schoolId || 'default'}`;
+    const rawAlumni = localStorage.getItem(alumniStoreKey) || '{}';
+    const alumniMap = JSON.parse(rawAlumni);
+    if (!alumniMap[studentId]) alumniMap[studentId] = {};
+
+    if (body.certificate_type === 'TRANSFER_CERTIFICATE' || body.type === 'TRANSFER_CERTIFICATE') {
+      alumniMap[studentId].leavingCertificateNumber = newCert.certificate_number;
+      alumniMap[studentId].tcNumber = newCert.certificate_number;
+      alumniMap[studentId].tcIssueDate = newCert.issue_date;
+    } else if (body.certificate_type === 'CHARACTER_CERTIFICATE' || body.type === 'CHARACTER_CERTIFICATE') {
+      alumniMap[studentId].characterCertNumber = newCert.certificate_number;
+      alumniMap[studentId].conduct = body.conduct || alumniMap[studentId].conduct;
+    } else if (body.certificate_type === 'ALUMNI_CERTIFICATE' || body.type === 'ALUMNI_CERTIFICATE') {
+      alumniMap[studentId].alumniCertNumber = newCert.certificate_number;
+      if (body.alumni_number) alumniMap[studentId].alumniNumber = body.alumni_number;
+    }
+    localStorage.setItem(alumniStoreKey, JSON.stringify(alumniMap));
+
+    return {
+      success: true,
+      message: 'Certificate recorded successfully.',
+      certificate: newCert,
+    };
+  }
+
+  private async createAlumniStudent(body: any): Promise<any> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) throw new Error('School context missing');
+
+    let admissionNumber = (body.admissionNumber || body.admission_number || '').trim();
+    const firstName = (body.firstName || body.first_name || '').trim();
+    const lastName = (body.lastName || body.last_name || '').trim();
+    const guardianName = (body.guardianName || body.emergencyContactName || body.primaryContact?.first_name || '').trim();
+    const guardianPhone = (body.guardianPhone || body.emergencyContactPhone || body.primaryContact?.phone || '').trim();
+
+    if (!admissionNumber) {
+      const nextInfo = await this.getNextAdmissionNumber(schoolId);
+      admissionNumber = nextInfo.admissionNumber;
+    }
+
+    let dob: string | null = null;
+    if (body.dateOfBirth || body.date_of_birth) {
+      try {
+        dob = new Date(body.dateOfBirth || body.date_of_birth).toISOString().split('T')[0];
+      } catch {
+        dob = null;
+      }
+    }
+
+    // 1. Create student record with ALUMNI status
+    const { data: student, error: sErr } = await this.supabase
+      .from('students')
+      .insert({
+        school_id: schoolId,
+        admission_number: admissionNumber,
+        first_name: firstName,
+        last_name: lastName || null,
+        gender: body.gender || 'MALE',
+        date_of_birth: dob,
+        emergency_contact_name: guardianName || null,
+        emergency_contact_phone: guardianPhone || null,
+        status: 'ALUMNI',
+      })
+      .select()
+      .single();
+
+    if (sErr) throw sErr;
+
+    // 2. Resolve terminal class & section & graduation session
+    let targetClassId = body.classId || body.class_id;
+    let targetSectionId = body.sectionId || body.section_id;
+    let graduationSessionId = body.academicYearId || body.academic_year_id;
+
+    if (!targetClassId) {
+      const { data: classes } = await this.supabase
+        .from('classes')
+        .select('id, name, sections(id, name)')
+        .eq('school_id', schoolId)
+        .order('display_order', { ascending: false });
+      if (classes && classes.length > 0) {
+        targetClassId = classes[0].id;
+        if (!targetSectionId && classes[0].sections && classes[0].sections.length > 0) {
+          targetSectionId = classes[0].sections[0].id;
+        }
+      }
+    }
+
+    if (!targetSectionId && targetClassId) {
+      const { data: sec } = await this.supabase
+        .from('sections')
+        .select('id')
+        .eq('class_id', targetClassId)
+        .limit(1)
+        .maybeSingle();
+      if (sec) targetSectionId = sec.id;
+    }
+
+    if (!graduationSessionId) {
+      const { data: ses } = await this.supabase
+        .from('academic_years')
+        .select('id')
+        .eq('school_id', schoolId)
+        .order('start_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (ses) graduationSessionId = ses.id;
+    }
+
+    if (student?.id && targetSectionId && graduationSessionId) {
+      try {
+        await this.supabase.from('student_enrollments').insert({
+          student_id: student.id,
+          class_id: targetClassId,
+          section_id: targetSectionId,
+          academic_year_id: graduationSessionId,
+          roll_number: body.rollNumber || '1',
+          status: 'ALUMNI',
+        });
+      } catch (enrErr) {
+        console.warn('Alumni enrollment note:', enrErr);
+      }
+    }
+
+    return { success: true, student_id: student.id, student };
+  }
+
+  private async updateAlumniStudent(studentId: string, body: any): Promise<any> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) throw new Error('School context missing');
+
+    const updatePayload: any = {};
+    if (body.firstName || body.first_name) updatePayload.first_name = (body.firstName || body.first_name).trim();
+    if (body.lastName !== undefined || body.last_name !== undefined) updatePayload.last_name = (body.lastName || body.last_name || '').trim() || null;
+    if (body.gender) updatePayload.gender = body.gender;
+    if (body.guardianName || body.emergencyContactName || body.primaryContact?.first_name) {
+      updatePayload.emergency_contact_name = (body.guardianName || body.emergencyContactName || body.primaryContact?.first_name).trim();
+    }
+    if (body.guardianPhone || body.emergencyContactPhone || body.primaryContact?.phone) {
+      updatePayload.emergency_contact_phone = (body.guardianPhone || body.emergencyContactPhone || body.primaryContact?.phone).trim();
+    }
+    if (body.dateOfBirth || body.date_of_birth) {
+      try {
+        updatePayload.date_of_birth = new Date(body.dateOfBirth || body.date_of_birth).toISOString().split('T')[0];
+      } catch {}
+    }
+
+    if (Object.keys(updatePayload).length > 0) {
+      await this.supabase.from('students').update(updatePayload).eq('id', studentId).eq('school_id', schoolId);
+    }
+
+    if (body.classId || body.sectionId || body.academicYearId) {
+      const enrUpdate: any = {};
+      if (body.classId) enrUpdate.class_id = body.classId;
+      if (body.sectionId) enrUpdate.section_id = body.sectionId;
+      if (body.academicYearId) enrUpdate.academic_year_id = body.academicYearId;
+      try {
+        await this.supabase.from('student_enrollments').update(enrUpdate).eq('student_id', studentId);
+      } catch {}
+    }
+
+    return { success: true };
+  }
+
+  private async deleteAlumniStudent(studentId: string): Promise<any> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) throw new Error('School context missing');
+
+    try {
+      await this.supabase.from('student_enrollments').delete().eq('student_id', studentId);
+    } catch {}
+
+    const { error } = await this.supabase
+      .from('students')
+      .delete()
+      .eq('id', studentId)
+      .eq('school_id', schoolId);
+
+    if (error) throw error;
+    return { success: true };
   }
 
   private async deleteAcademicSession(sessionId: string): Promise<any> {
@@ -3959,24 +4982,61 @@ export class ApiService {
       }
     }
 
-    const { data: student, error: sErr } = await this.supabase
+    const studentPhoto = body.photoUrl || body.photo_url || null;
+    const guardianPhoto = body.guardianPhotoUrl || body.guardian_photo_url || null;
+
+    let insertPayload: any = {
+      school_id: schoolId,
+      admission_number: admissionNumber,
+      first_name: firstName,
+      last_name: lastName || null,
+      gender: body.gender || 'MALE',
+      date_of_birth: dob,
+      blood_group: body.bloodGroup || null,
+      emergency_contact_name: guardianName || null,
+      emergency_contact_phone: guardianPhone || null,
+      status: 'ACTIVE',
+    };
+
+    if (studentPhoto) {
+      insertPayload.photo_url = studentPhoto;
+    }
+    if (guardianPhoto) {
+      insertPayload.guardian_photo_url = guardianPhoto;
+    }
+
+    let { data: student, error: sErr } = await this.supabase
       .from('students')
-      .insert({
-        school_id: schoolId,
-        admission_number: admissionNumber,
-        first_name: firstName,
-        last_name: lastName || null,
-        gender: body.gender || 'MALE',
-        date_of_birth: dob,
-        blood_group: body.bloodGroup || null,
-        emergency_contact_name: guardianName || null,
-        emergency_contact_phone: guardianPhone || null,
-        status: 'ACTIVE',
-      })
+      .insert(insertPayload)
       .select()
       .single();
 
+    if (sErr && (sErr.code === 'PGRST204' || sErr.message?.includes('column') || sErr.message?.includes('schema cache'))) {
+      delete insertPayload.photo_url;
+      delete insertPayload.guardian_photo_url;
+      const res = await this.supabase
+        .from('students')
+        .insert(insertPayload)
+        .select()
+        .single();
+      student = res.data;
+      sErr = res.error;
+    }
+
     if (sErr) throw sErr;
+
+    if (student?.id && (studentPhoto || guardianPhoto)) {
+      try {
+        const photosMap = JSON.parse(localStorage.getItem('schoolsense_student_photos') || '{}');
+        photosMap[student.id] = {
+          photoUrl: studentPhoto || '',
+          photo_url: studentPhoto || '',
+          guardianPhotoUrl: guardianPhoto || '',
+          guardian_photo_url: guardianPhoto || '',
+        };
+        localStorage.setItem('schoolsense_student_photos', JSON.stringify(photosMap));
+      } catch {}
+    }
 
     // Determine target session
     const academicYearId = body.academicYearId || (await this.getActiveAcademicYearId(schoolId));
@@ -4811,5 +5871,170 @@ export class ApiService {
       new_rate: rate,
       adjustment_applied: adjustment,
     };
+  }
+
+  // =========================================================================
+  // SCHOOL PROFILE MANAGEMENT
+  // =========================================================================
+  public async getSchoolProfile(schoolId?: string): Promise<any> {
+    const sId = schoolId || this.getSchoolId();
+    if (!sId) return null;
+
+    let schoolData: any = null;
+
+    // 1. Fetch from Supabase
+    try {
+      const { data, error } = await this.supabase
+        .from('schools')
+        .select('*')
+        .eq('id', sId)
+        .maybeSingle();
+      if (!error && data) {
+        schoolData = data;
+      }
+    } catch (e) {
+      console.warn('Error fetching school profile from Supabase', e);
+    }
+
+    // 2. Read any local storage cache override
+    try {
+      const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
+      if (localProfiles[sId]) {
+        schoolData = { ...(schoolData || {}), ...localProfiles[sId] };
+      }
+    } catch (e) {}
+
+    // 3. Fallback from current user's school object if nothing found
+    if (!schoolData) {
+      const user = this.getCurrentUser();
+      if (user?.school && user.school.id === sId) {
+        schoolData = {
+          id: user.school.id,
+          name: user.school.name,
+          code: user.school.code,
+          status: user.school.status || 'ACTIVE',
+        };
+      }
+    }
+
+    return schoolData;
+  }
+
+  public async updateSchoolProfile(schoolId: string, profileData: any): Promise<any> {
+    const sId = schoolId || this.getSchoolId();
+    if (!sId) throw new Error('No school ID specified.');
+
+    const logo = profileData.logo_url || profileData.logoUrl || null;
+    const updatePayload = {
+      name: profileData.name?.trim(),
+      code: profileData.code?.trim(),
+      email: profileData.email?.trim() || null,
+      phone: profileData.phone?.trim() || null,
+      logo_url: logo,
+      address_line1: profileData.address_line1?.trim() || profileData.addressLine1?.trim() || null,
+      city: profileData.city?.trim() || null,
+      state: profileData.state?.trim() || null,
+      country: profileData.country?.trim() || 'India',
+      postal_code: profileData.postal_code?.trim() || profileData.postalCode?.trim() || null,
+      status: profileData.status || 'ACTIVE',
+    };
+
+    // 1. Update in Supabase
+    try {
+      await this.supabase
+        .from('schools')
+        .update(updatePayload)
+        .eq('id', sId);
+    } catch (e) {
+      console.warn('Could not update school in Supabase directly', e);
+    }
+
+    // 2. Update local storage overrides & sync active user state
+    try {
+      const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
+      localProfiles[sId] = { ...(localProfiles[sId] || {}), ...updatePayload, ...profileData, logoUrl: logo, logo_url: logo, id: sId };
+      localStorage.setItem('schoolsense_school_profiles', JSON.stringify(localProfiles));
+
+      // Sync user in localStorage if user belongs to this school
+      const userRaw = localStorage.getItem('schoolsense_user');
+      if (userRaw) {
+        const u = JSON.parse(userRaw);
+        if (u?.school && u.school.id === sId) {
+          u.school.name = updatePayload.name || u.school.name;
+          u.school.code = updatePayload.code || u.school.code;
+          u.school.logoUrl = logo || u.school.logoUrl;
+          localStorage.setItem('schoolsense_user', JSON.stringify(u));
+        }
+      }
+    } catch (e) {}
+
+    return { success: true, school: { ...profileData, id: sId, ...updatePayload, logoUrl: logo } };
+  }
+
+  // =========================================================================
+  // ROLE & SERVICE PERMISSION MANAGEMENT
+  // =========================================================================
+  public async getRolePermissions(schoolId?: string): Promise<Record<string, string[]>> {
+    const sId = schoolId || this.getSchoolId();
+    const defaultPerms: Record<string, string[]> = {
+      SUPER_ADMIN: [
+        'dashboard', 'academics', 'academics_classes', 'academics_students', 'academics_alumni', 'academics_staff', 'academics_subjects',
+        'timetable', 'timetable_student', 'timetable_faculty', 'attendance', 'homework', 'exams', 'communication', 'communication_notices', 'communication_complaints', 'subscription'
+      ],
+      SCHOOL_ADMIN: [
+        'dashboard', 'academics', 'academics_classes', 'academics_students', 'academics_alumni', 'academics_staff', 'academics_subjects',
+        'timetable', 'timetable_student', 'timetable_faculty', 'attendance', 'homework', 'exams', 'communication', 'communication_notices', 'communication_complaints', 'subscription'
+      ],
+      PRINCIPAL: [
+        'dashboard', 'academics', 'academics_classes', 'academics_students', 'academics_alumni', 'academics_staff', 'academics_subjects',
+        'timetable', 'timetable_student', 'timetable_faculty', 'attendance', 'homework', 'exams', 'communication', 'communication_notices', 'communication_complaints', 'subscription'
+      ],
+      CLASS_TEACHER: [
+        'dashboard', 'academics', 'academics_classes', 'academics_students', 'academics_alumni', 'academics_subjects',
+        'timetable', 'timetable_student', 'timetable_faculty', 'attendance', 'homework', 'exams', 'communication', 'communication_notices', 'communication_complaints'
+      ],
+      TEACHER: [
+        'dashboard', 'academics', 'academics_subjects',
+        'timetable', 'timetable_student', 'timetable_faculty', 'attendance', 'homework', 'exams', 'communication', 'communication_notices', 'communication_complaints'
+      ],
+      FEE_MANAGER: [
+        'dashboard', 'academics', 'academics_students', 'academics_alumni', 'communication', 'communication_notices', 'subscription'
+      ],
+      GUARDIAN: [
+        'dashboard', 'timetable', 'timetable_student', 'attendance', 'homework', 'exams', 'communication', 'communication_notices', 'communication_complaints'
+      ],
+      PARENT: [
+        'dashboard', 'timetable', 'timetable_student', 'attendance', 'homework', 'exams', 'communication', 'communication_notices', 'communication_complaints'
+      ],
+      STUDENT: [
+        'dashboard', 'timetable', 'timetable_student', 'attendance', 'homework', 'exams', 'communication', 'communication_notices'
+      ],
+    };
+
+    try {
+      const key = `schoolsense_role_perms_${sId}`;
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        return { ...defaultPerms, ...JSON.parse(stored) };
+      }
+    } catch (e) {
+      console.warn('Failed to parse role permissions from local storage', e);
+    }
+
+    return defaultPerms;
+  }
+
+  public async updateRolePermissions(schoolId: string, permissions: Record<string, string[]>): Promise<any> {
+    const sId = schoolId || this.getSchoolId();
+    if (!sId) throw new Error('No school ID specified.');
+
+    try {
+      const key = `schoolsense_role_perms_${sId}`;
+      localStorage.setItem(key, JSON.stringify(permissions));
+    } catch (e) {
+      console.warn('Failed to save role permissions to local storage', e);
+    }
+
+    return { success: true, permissions };
   }
 }

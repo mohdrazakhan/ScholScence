@@ -2,12 +2,13 @@ import { Component, OnInit, inject, HostListener, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ApiService } from '../../core/services/api.service';
+import { ApiService, getClassPedagogicalRank } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ExportService } from '../../core/services/export.service';
 import { ModalService } from '../../core/services/modal.service';
-import { ClassItem, SubjectItem, StudentItem, SectionItem, AcademicSession, AlumniStudent, StudentDeactivationRequest } from '../../core/models';
+import { ImageUploadService } from '../../core/services/image-upload.service';
+import { ClassItem, SubjectItem, StudentItem, SectionItem, AcademicSession, AlumniStudent, StudentDeactivationRequest, StudentLifecycleLog } from '../../core/models';
 
 interface StaffMember {
   id: string;
@@ -16,6 +17,8 @@ interface StaffMember {
   fullName: string;
   email: string;
   phone?: string;
+  photoUrl?: string;
+  avatarUrl?: string;
   role: string;
   roleName?: string;
   primarySubjectId?: string;
@@ -43,7 +46,7 @@ interface StaffMember {
           </h1>
           <h1 *ngIf="activeTab === 'ALUMNI'" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <span>Alumni & Graduated Students Directory</span>
-            <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+            <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
               Permanent Register
             </span>
           </h1>
@@ -163,8 +166,17 @@ interface StaffMember {
             <span>Add Student</span>
           </button>
 
-          <button *ngIf="canManage && (activeTab === 'STUDENTS' || activeTab === 'ALUMNI')" (click)="openSessionModal()"
-                  class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-2xl shadow-md border border-indigo-600 transition-all flex items-center gap-1.5 active:scale-[0.98] cursor-pointer">
+          <!-- Buttons for ALUMNI tab -->
+          <button *ngIf="canManage && activeTab === 'ALUMNI'" (click)="openAddAlumniModal()"
+                  class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_12px_#cbd5e1,-4px_-4px_12px_#ffffff] border border-slate-900 transition-all flex items-center gap-2 active:scale-[0.98] cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+            </svg>
+            <span>Add Alumni</span>
+          </button>
+
+          <button *ngIf="canManage && activeTab === 'STUDENTS'" (click)="openSessionModal()"
+                  class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md border border-slate-900 transition-all flex items-center gap-1.5 active:scale-[0.98] cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
@@ -749,10 +761,11 @@ interface StaffMember {
                   <td class="px-6 py-3.5 font-bold font-mono text-slate-700">#{{ st.rollNumber || '—' }}</td>
                   <td class="px-6 py-3.5 font-mono text-slate-500 font-semibold">{{ st.admissionNumber }}</td>
                   <td class="px-6 py-3.5 font-bold text-slate-900">
-                    <div (click)="viewStudentDetails(st, $event)" class="flex items-center gap-2 cursor-pointer group hover:text-indigo-600 transition-colors">
-                      <span class="w-6 h-6 rounded-full bg-slate-900 text-white text-[10px] font-black flex items-center justify-center group-hover:bg-indigo-600 transition-colors">
-                        {{ st.firstName.charAt(0) }}
-                      </span>
+                    <div (click)="viewStudentDetails(st, $event)" class="flex items-center gap-2.5 cursor-pointer group hover:text-indigo-600 transition-colors">
+                      <div class="w-7 h-7 rounded-full bg-slate-900 text-white text-[10px] font-black flex items-center justify-center group-hover:bg-indigo-600 transition-colors shrink-0 overflow-hidden border border-slate-200">
+                        <img *ngIf="st.photoUrl || st.photo_url" [src]="st.photoUrl || st.photo_url" class="w-full h-full object-cover" alt="Student" />
+                        <span *ngIf="!st.photoUrl && !st.photo_url">{{ st.firstName.charAt(0) }}</span>
+                      </div>
                       <span class="group-hover:underline underline-offset-2">{{ st.fullName }}</span>
                     </div>
                   </td>
@@ -760,8 +773,15 @@ interface StaffMember {
                     {{ st.gender?.toLowerCase() || '—' }} <span *ngIf="st.bloodGroup" class="font-bold text-slate-700">({{ st.bloodGroup }})</span>
                   </td>
                   <td class="px-6 py-3.5">
-                    <div class="font-bold text-slate-800">{{ st.primaryContact?.first_name || '—' }} {{ st.primaryContact?.last_name || '' }}</div>
-                    <div class="text-[10px] font-mono text-slate-400">{{ st.primaryContact?.phone || '—' }}</div>
+                    <div class="flex items-center gap-2">
+                      <div *ngIf="st.guardianPhotoUrl || st.primaryContact?.photo_url || st.primaryContact?.photoUrl" class="w-6 h-6 rounded-full overflow-hidden shrink-0 border border-slate-200">
+                        <img [src]="st.guardianPhotoUrl || st.primaryContact?.photo_url || st.primaryContact?.photoUrl" class="w-full h-full object-cover" alt="Guardian" />
+                      </div>
+                      <div>
+                        <div class="font-bold text-slate-800">{{ st.primaryContact?.first_name || '—' }} {{ st.primaryContact?.last_name || '' }}</div>
+                        <div class="text-[10px] font-mono text-slate-400">{{ st.primaryContact?.phone || '—' }}</div>
+                      </div>
+                    </div>
                   </td>
                   <td class="px-6 py-3.5 text-slate-700 font-semibold">
                     {{ st.className }} - {{ formatSection(st.sectionName) }}
@@ -793,33 +813,61 @@ interface StaffMember {
                       <!-- Student Dropdown Actions List (Viewport Fixed on Top of Everything) -->
                       <div *ngIf="activeStudentMenuId === (st.studentId || st.id)"
                            [ngStyle]="studentMenuStyle"
-                           class="fixed w-48 bg-white rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.25)] border border-slate-200 py-1.5 z-[100] animate-fadeIn text-xs text-left">
+                           class="fixed w-52 bg-white rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.25)] border border-slate-200 py-1.5 z-[100] animate-fadeIn text-xs text-left">
                         
                         <!-- 0. View Details & Logs Option -->
                         <button type="button" (click)="viewStudentDetails(st, $event)"
-                                class="w-full px-3.5 py-2 text-left font-bold text-indigo-700 hover:bg-indigo-50 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-slate-100">
-                          <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-slate-100">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
                           <span>View Details & Logs</span>
                         </button>
 
-                        <!-- 1. Edit Option -->
+                        <!-- 1. Edit Option (Admin / Management) -->
                         <button *ngIf="canManage" type="button" (click)="openEditStudentModal(st, $event)"
-                                class="w-full px-3.5 py-2 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
-                          <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-slate-100">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                           <span>Edit Details</span>
                         </button>
 
-                        <!-- 2. Active / Inactive Option -->
+                        <!-- ================= ADMIN / PRINCIPAL DIRECT ACTIONS ================= -->
                         <ng-container *ngIf="canDirectlyDeactivateStudent">
+                          <!-- Promote to Next Class -->
+                          <button type="button" (click)="openPromoteStudentModal(st, $event)"
+                                  class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                            <span>Promote to Next Class</span>
+                          </button>
+
+                          <!-- Change Section -->
+                          <button type="button" (click)="openChangeSectionModal(st, $event)"
+                                  class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                            </svg>
+                            <span>Change Section</span>
+                          </button>
+
+                          <!-- Demote to Previous Class -->
+                          <button type="button" (click)="openDemoteStudentModal(st, $event)"
+                                  class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-slate-100">
+                            <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                            </svg>
+                            <span>Demote to Previous Class</span>
+                          </button>
+
+                          <!-- Mark Inactive / Active -->
                           <button *ngIf="(st.status || 'ACTIVE').toUpperCase() === 'ACTIVE'"
                                   type="button" (click)="openToggleStudentStatus(st, 'INACTIVE', $event)"
-                                  class="w-full px-3.5 py-2 text-left font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 transition-colors cursor-pointer">
-                            <svg class="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                  class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                             </svg>
                             <span>Mark Inactive</span>
@@ -827,43 +875,103 @@ interface StaffMember {
 
                           <button *ngIf="(st.status || 'ACTIVE').toUpperCase() !== 'ACTIVE'"
                                   type="button" (click)="openToggleStudentStatus(st, 'ACTIVE', $event)"
-                                  class="w-full px-3.5 py-2 text-left font-bold text-emerald-600 hover:bg-emerald-50 flex items-center gap-2.5 transition-colors cursor-pointer">
-                            <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                  class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             <span>Mark Active</span>
                           </button>
+
+                          <!-- Suspend Student Option -->
+                          <button *ngIf="(st.status || 'ACTIVE').toUpperCase() !== 'SUSPENDED'"
+                                  type="button" (click)="openToggleStudentStatus(st, 'SUSPENDED', $event)"
+                                  class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>Suspend Student</span>
+                          </button>
+
+                          <!-- Leftout / TC Option -->
+                          <button *ngIf="(st.status || 'ACTIVE').toUpperCase() !== 'LEFTOUT'"
+                                  type="button" (click)="openToggleStudentStatus(st, 'LEFTOUT', $event)"
+                                  class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            <span>Mark Leftout / TC</span>
+                          </button>
+
+                          <!-- Convert / Graduate to Alumni -->
+                          <button *ngIf="(st.status || 'ACTIVE').toUpperCase() !== 'ALUMNI'"
+                                  type="button" (click)="openConvertToAlumniModal(st, $event)"
+                                  class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer border-t border-slate-100 mt-1 pt-1.5">
+                            <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                            </svg>
+                            <span>Graduate to Alumni</span>
+                          </button>
                         </ng-container>
 
-                        <!-- Teacher Request Inactive -->
-                        <button *ngIf="!canDirectlyDeactivateStudent && canRequestStudentDeactivation && (st.status || 'ACTIVE').toUpperCase() === 'ACTIVE'"
-                                type="button" (click)="openTeacherDeactModal(st, $event)"
-                                class="w-full px-3.5 py-2 text-left font-bold text-amber-700 hover:bg-amber-50 flex items-center gap-2.5 transition-colors cursor-pointer">
-                          <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          <span>Request Inactive</span>
-                        </button>
+                        <!-- ================= TEACHER REQUEST WORKFLOW (REQUEST-ONLY) ================= -->
+                        <ng-container *ngIf="!canDirectlyDeactivateStudent && canRequestStudentDeactivation">
+                          <!-- Request Promotion -->
+                          <button type="button" (click)="openTeacherAcademicRequestModal(st, 'PROMOTION', $event)"
+                                  class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                            <span>Request Promotion</span>
+                          </button>
 
-                        <!-- 3. Suspend Student Option -->
-                        <button *ngIf="canDirectlyDeactivateStudent && (st.status || 'ACTIVE').toUpperCase() !== 'SUSPENDED'"
-                                type="button" (click)="openToggleStudentStatus(st, 'SUSPENDED', $event)"
-                                class="w-full px-3.5 py-2 text-left font-bold text-amber-700 hover:bg-amber-50 flex items-center gap-2.5 transition-colors cursor-pointer">
-                          <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span>Suspend Student</span>
-                        </button>
+                          <!-- Request Section Change -->
+                          <button type="button" (click)="openTeacherAcademicRequestModal(st, 'SECTION_CHANGE', $event)"
+                                  class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                            </svg>
+                            <span>Request Section Change</span>
+                          </button>
 
-                        <!-- 4. Leftout / TC Option -->
-                        <button *ngIf="canDirectlyDeactivateStudent && (st.status || 'ACTIVE').toUpperCase() !== 'LEFTOUT'"
-                                type="button" (click)="openToggleStudentStatus(st, 'LEFTOUT', $event)"
-                                class="w-full px-3.5 py-2 text-left font-bold text-purple-700 hover:bg-purple-50 flex items-center gap-2.5 transition-colors cursor-pointer border-t border-slate-100 mt-1 pt-1.5">
-                          <svg class="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                          </svg>
-                          <span>Mark Leftout / TC</span>
-                        </button>
+                          <!-- Request Demotion -->
+                          <button type="button" (click)="openTeacherAcademicRequestModal(st, 'DEMOTION', $event)"
+                                  class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-slate-100">
+                            <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                            </svg>
+                            <span>Request Demotion</span>
+                          </button>
+
+                          <!-- Request Inactive -->
+                          <button *ngIf="(st.status || 'ACTIVE').toUpperCase() === 'ACTIVE'"
+                                  type="button" (click)="openTeacherAcademicRequestModal(st, 'INACTIVE', $event)"
+                                  class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                            </svg>
+                            <span>Request Inactive</span>
+                          </button>
+
+                          <!-- Request Leftout / TC -->
+                          <button type="button" (click)="openTeacherAcademicRequestModal(st, 'LEFTOUT', $event)"
+                                  class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            <span>Request Leftout / TC</span>
+                          </button>
+
+                          <!-- Request Alumni Status -->
+                          <button type="button" (click)="openTeacherAcademicRequestModal(st, 'ALUMNI', $event)"
+                                  class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer border-t border-slate-100 mt-1 pt-1.5">
+                            <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                            </svg>
+                            <span>Request Alumni Status</span>
+                          </button>
+                        </ng-container>
                       </div>
                     </div>
                   </td>
@@ -884,26 +992,32 @@ interface StaffMember {
                  [class.relative]="true"
                  [class.z-30]="activeStudentMenuId === (st.studentId || st.id)">
               <div class="flex items-start justify-between gap-2">
-                <div>
-                  <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="px-2 py-0.5 rounded-md bg-slate-900 text-white font-black text-[10px] font-mono">
-                      #{{ st.rollNumber || '—' }}
-                    </span>
-                    <span class="px-2 py-0.5 rounded-md bg-slate-200 text-slate-700 font-bold text-[10px] font-mono">
-                      {{ st.admissionNumber }}
-                    </span>
-                    <span class="px-2 py-0.5 rounded-md border font-bold text-[9px]"
-                          [ngClass]="{
-                            'bg-emerald-50 text-emerald-700 border-emerald-200': (st.status || 'ACTIVE').toUpperCase() === 'ACTIVE',
-                            'bg-indigo-50 text-indigo-700 border-indigo-200': (st.status || 'ACTIVE').toUpperCase() === 'ALUMNI' || (st.status || 'ACTIVE').toUpperCase() === 'GRADUATED',
-                            'bg-rose-50 text-rose-700 border-rose-200': (st.status || 'ACTIVE').toUpperCase() === 'INACTIVE',
-                            'bg-amber-50 text-amber-800 border-amber-200': (st.status || 'ACTIVE').toUpperCase() === 'SUSPENDED',
-                            'bg-purple-50 text-purple-700 border-purple-200': (st.status || 'ACTIVE').toUpperCase() === 'LEFTOUT' || (st.status || 'ACTIVE').toUpperCase() === 'TRANSFERRED'
-                          }">
-                      {{ (st.status || 'ACTIVE').toUpperCase() }}
-                    </span>
+                <div class="flex items-start gap-2.5">
+                  <div class="w-10 h-10 rounded-xl bg-slate-900 text-white font-black text-xs flex items-center justify-center shrink-0 overflow-hidden border border-slate-200 shadow-xs">
+                    <img *ngIf="st.photoUrl || st.photo_url" [src]="st.photoUrl || st.photo_url" class="w-full h-full object-cover" alt="Student" />
+                    <span *ngIf="!st.photoUrl && !st.photo_url">{{ st.firstName.charAt(0) }}</span>
                   </div>
-                  <h4 (click)="viewStudentDetails(st, $event)" class="text-sm font-black text-slate-900 mt-1 cursor-pointer hover:text-indigo-600 transition-colors hover:underline underline-offset-2">{{ st.fullName }}</h4>
+                  <div>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="px-2 py-0.5 rounded-md bg-slate-900 text-white font-black text-[10px] font-mono">
+                        #{{ st.rollNumber || '—' }}
+                      </span>
+                      <span class="px-2 py-0.5 rounded-md bg-slate-200 text-slate-700 font-bold text-[10px] font-mono">
+                        {{ st.admissionNumber }}
+                      </span>
+                      <span class="px-2 py-0.5 rounded-md border font-bold text-[9px]"
+                            [ngClass]="{
+                              'bg-emerald-50 text-emerald-700 border-emerald-200': (st.status || 'ACTIVE').toUpperCase() === 'ACTIVE',
+                              'bg-indigo-50 text-indigo-700 border-indigo-200': (st.status || 'ACTIVE').toUpperCase() === 'ALUMNI' || (st.status || 'ACTIVE').toUpperCase() === 'GRADUATED',
+                              'bg-rose-50 text-rose-700 border-rose-200': (st.status || 'ACTIVE').toUpperCase() === 'INACTIVE',
+                              'bg-amber-50 text-amber-800 border-amber-200': (st.status || 'ACTIVE').toUpperCase() === 'SUSPENDED',
+                              'bg-purple-50 text-purple-700 border-purple-200': (st.status || 'ACTIVE').toUpperCase() === 'LEFTOUT' || (st.status || 'ACTIVE').toUpperCase() === 'TRANSFERRED'
+                            }">
+                        {{ (st.status || 'ACTIVE').toUpperCase() }}
+                      </span>
+                    </div>
+                    <h4 (click)="viewStudentDetails(st, $event)" class="text-sm font-black text-slate-900 mt-1 cursor-pointer hover:text-indigo-600 transition-colors hover:underline underline-offset-2">{{ st.fullName }}</h4>
+                  </div>
                 </div>
 
                 <div class="flex items-center gap-1.5 shrink-0">
@@ -925,33 +1039,61 @@ interface StaffMember {
                     <!-- Student Dropdown Actions List (Viewport Fixed on Top of Everything) -->
                     <div *ngIf="activeStudentMenuId === (st.studentId || st.id)"
                          [ngStyle]="studentMenuStyle"
-                         class="fixed w-48 bg-white rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.25)] border border-slate-200 py-1.5 z-[100] animate-fadeIn text-xs text-left">
+                         class="fixed w-52 bg-white rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.25)] border border-slate-200 py-1.5 z-[100] animate-fadeIn text-xs text-left">
                       
                       <!-- 0. View Details & Logs Option -->
                       <button type="button" (click)="viewStudentDetails(st, $event)"
-                              class="w-full px-3.5 py-2 text-left font-bold text-indigo-700 hover:bg-indigo-50 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-slate-100">
-                        <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-slate-100">
+                        <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                           <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
                         <span>View Details & Logs</span>
                       </button>
 
-                      <!-- 1. Edit Option -->
+                      <!-- 1. Edit Option (Admin / Management) -->
                       <button *ngIf="canManage" type="button" (click)="openEditStudentModal(st, $event)"
-                              class="w-full px-3.5 py-2 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
-                        <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              class="w-full px-3.5 py-2 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-slate-100">
+                        <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                         <span>Edit Details</span>
                       </button>
 
-                      <!-- 2. Active / Inactive Option -->
+                      <!-- ================= ADMIN / PRINCIPAL DIRECT ACTIONS ================= -->
                       <ng-container *ngIf="canDirectlyDeactivateStudent">
+                        <!-- Promote to Next Class -->
+                        <button type="button" (click)="openPromoteStudentModal(st, $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                          </svg>
+                          <span>Promote to Next Class</span>
+                        </button>
+
+                        <!-- Change Section -->
+                        <button type="button" (click)="openChangeSectionModal(st, $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                          </svg>
+                          <span>Change Section</span>
+                        </button>
+
+                        <!-- Demote to Previous Class -->
+                        <button type="button" (click)="openDemoteStudentModal(st, $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-slate-100">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                          </svg>
+                          <span>Demote to Previous Class</span>
+                        </button>
+
+                        <!-- Mark Inactive / Active -->
                         <button *ngIf="(st.status || 'ACTIVE').toUpperCase() === 'ACTIVE'"
                                 type="button" (click)="openToggleStudentStatus(st, 'INACTIVE', $event)"
-                                class="w-full px-3.5 py-2 text-left font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 transition-colors cursor-pointer">
-                          <svg class="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                           </svg>
                           <span>Mark Inactive</span>
@@ -959,43 +1101,103 @@ interface StaffMember {
 
                         <button *ngIf="(st.status || 'ACTIVE').toUpperCase() !== 'ACTIVE'"
                                 type="button" (click)="openToggleStudentStatus(st, 'ACTIVE', $event)"
-                                class="w-full px-3.5 py-2 text-left font-bold text-emerald-600 hover:bg-emerald-50 flex items-center gap-2.5 transition-colors cursor-pointer">
-                          <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                           <span>Mark Active</span>
                         </button>
+
+                        <!-- Suspend Student Option -->
+                        <button *ngIf="(st.status || 'ACTIVE').toUpperCase() !== 'SUSPENDED'"
+                                type="button" (click)="openToggleStudentStatus(st, 'SUSPENDED', $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>Suspend Student</span>
+                        </button>
+
+                        <!-- Leftout / TC Option -->
+                        <button *ngIf="(st.status || 'ACTIVE').toUpperCase() !== 'LEFTOUT'"
+                                type="button" (click)="openToggleStudentStatus(st, 'LEFTOUT', $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                          <span>Mark Leftout / TC</span>
+                        </button>
+
+                        <!-- Convert / Graduate to Alumni -->
+                        <button *ngIf="(st.status || 'ACTIVE').toUpperCase() !== 'ALUMNI'"
+                                type="button" (click)="openConvertToAlumniModal(st, $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer border-t border-slate-100 mt-1 pt-1.5">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                          </svg>
+                          <span>Graduate to Alumni</span>
+                        </button>
                       </ng-container>
 
-                      <!-- Teacher Request Inactive -->
-                      <button *ngIf="!canDirectlyDeactivateStudent && canRequestStudentDeactivation && (st.status || 'ACTIVE').toUpperCase() === 'ACTIVE'"
-                              type="button" (click)="openTeacherDeactModal(st, $event)"
-                              class="w-full px-3.5 py-2 text-left font-bold text-amber-700 hover:bg-amber-50 flex items-center gap-2.5 transition-colors cursor-pointer">
-                        <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span>Request Inactive</span>
-                      </button>
+                      <!-- ================= TEACHER REQUEST WORKFLOW (REQUEST-ONLY) ================= -->
+                      <ng-container *ngIf="!canDirectlyDeactivateStudent && canRequestStudentDeactivation">
+                        <!-- Request Promotion -->
+                        <button type="button" (click)="openTeacherAcademicRequestModal(st, 'PROMOTION', $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                          </svg>
+                          <span>Request Promotion</span>
+                        </button>
 
-                      <!-- 3. Suspend Student Option -->
-                      <button *ngIf="canDirectlyDeactivateStudent && (st.status || 'ACTIVE').toUpperCase() !== 'SUSPENDED'"
-                              type="button" (click)="openToggleStudentStatus(st, 'SUSPENDED', $event)"
-                              class="w-full px-3.5 py-2 text-left font-bold text-amber-700 hover:bg-amber-50 flex items-center gap-2.5 transition-colors cursor-pointer">
-                        <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span>Suspend Student</span>
-                      </button>
+                        <!-- Request Section Change -->
+                        <button type="button" (click)="openTeacherAcademicRequestModal(st, 'SECTION_CHANGE', $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                          </svg>
+                          <span>Request Section Change</span>
+                        </button>
 
-                      <!-- 4. Leftout / TC Option -->
-                      <button *ngIf="canDirectlyDeactivateStudent && (st.status || 'ACTIVE').toUpperCase() !== 'LEFTOUT'"
-                              type="button" (click)="openToggleStudentStatus(st, 'LEFTOUT', $event)"
-                              class="w-full px-3.5 py-2 text-left font-bold text-purple-700 hover:bg-purple-50 flex items-center gap-2.5 transition-colors cursor-pointer border-t border-slate-100 mt-1 pt-1.5">
-                        <svg class="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        <span>Mark Leftout / TC</span>
-                      </button>
+                        <!-- Request Demotion -->
+                        <button type="button" (click)="openTeacherAcademicRequestModal(st, 'DEMOTION', $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-slate-100">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                          </svg>
+                          <span>Request Demotion</span>
+                        </button>
+
+                        <!-- Request Inactive -->
+                        <button *ngIf="(st.status || 'ACTIVE').toUpperCase() === 'ACTIVE'"
+                                type="button" (click)="openTeacherAcademicRequestModal(st, 'INACTIVE', $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                          </svg>
+                          <span>Request Inactive</span>
+                        </button>
+
+                        <!-- Request Leftout / TC -->
+                        <button type="button" (click)="openTeacherAcademicRequestModal(st, 'LEFTOUT', $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                          <span>Request Leftout / TC</span>
+                        </button>
+
+                        <!-- Request Alumni Status -->
+                        <button type="button" (click)="openTeacherAcademicRequestModal(st, 'ALUMNI', $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer border-t border-slate-100 mt-1 pt-1.5">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                          </svg>
+                          <span>Request Alumni Status</span>
+                        </button>
+                      </ng-container>
                     </div>
                   </div>
                 </div>
@@ -1059,9 +1261,9 @@ interface StaffMember {
         
         <!-- Alumni Metrics Summary Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-          <div class="p-4 bg-white rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#e2e8f0,-4px_-4px_12px_#ffffff] flex items-center gap-3.5">
-            <div class="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center shrink-0 shadow-inner">
-              <svg class="w-6 h-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <div class="p-4 bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#e2e8f0,-4px_-4px_12px_#ffffff] flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-slate-100 text-slate-700 border border-slate-200/60 flex items-center justify-center shrink-0 shadow-2xs">
+              <svg class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
               </svg>
@@ -1072,9 +1274,9 @@ interface StaffMember {
             </div>
           </div>
 
-          <div class="p-4 bg-white rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#e2e8f0,-4px_-4px_12px_#ffffff] flex items-center gap-3.5">
-            <div class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center shrink-0 shadow-inner">
-              <svg class="w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <div class="p-4 bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#e2e8f0,-4px_-4px_12px_#ffffff] flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-slate-100 text-slate-700 border border-slate-200/60 flex items-center justify-center shrink-0 shadow-2xs">
+              <svg class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
             </div>
@@ -1084,9 +1286,9 @@ interface StaffMember {
             </div>
           </div>
 
-          <div class="p-4 bg-white rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#e2e8f0,-4px_-4px_12px_#ffffff] flex items-center gap-3.5">
-            <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center shrink-0 shadow-inner">
-              <svg class="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <div class="p-4 bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#e2e8f0,-4px_-4px_12px_#ffffff] flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-slate-100 text-slate-700 border border-slate-200/60 flex items-center justify-center shrink-0 shadow-2xs">
+              <svg class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
@@ -1106,7 +1308,7 @@ interface StaffMember {
                 <h3 class="text-xs sm:text-sm font-black text-slate-900">
                   Graduated Alumni Register
                 </h3>
-                <span class="text-[11px] text-amber-600 font-bold">({{ filteredAlumni.length }})</span>
+                <span class="text-[11px] text-slate-500 font-bold">({{ filteredAlumni.length }})</span>
               </div>
 
               <!-- Session filter dropdown -->
@@ -1120,7 +1322,7 @@ interface StaffMember {
               </div>
             </div>
 
-            <!-- Search filter & Export Buttons -->
+            <!-- Search filter & Export & Action Buttons -->
             <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full lg:w-auto">
               <div class="w-full sm:w-64">
                 <input type="text" [(ngModel)]="alumniSearchQuery" (input)="alumniCurrentPage = 1" placeholder="Search alumni name/adm..."
@@ -1143,23 +1345,26 @@ interface StaffMember {
                   </svg>
                   <span>Print</span>
                 </button>
+
+                <button *ngIf="canManage" (click)="openAddAlumniModal()"
+                        class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>Add Alumni</span>
+                </button>
               </div>
             </div>
           </div>
 
-          <!-- Alumni Directory Loading State: Modern Animated Circle Loader -->
+          <!-- Alumni Directory Loading State -->
           <div *ngIf="loadingAlumni" class="p-16 flex flex-col items-center justify-center text-center space-y-4 animate-fadeIn">
-            <div class="relative w-16 h-16 flex items-center justify-center">
-              <div class="w-16 h-16 rounded-full border-4 border-slate-100 border-t-amber-600 border-r-amber-500 animate-spin"></div>
-              <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-50 to-amber-100 text-amber-600 flex items-center justify-center absolute shadow-inner">
-                <svg class="w-5 h-5 text-amber-600" viewBox="0 0 24 24" fill="currentColor">
-                  <path fill-rule="evenodd" d="M5.166 2.621v.858c-1.035.148-2.059.33-3.071.543a.75.75 0 00-.584.859 6.753 6.753 0 006.138 5.6 6.73 6.73 0 002.743 1.346A6.707 6.707 0 019.25 14.25v2.308a3.75 3.75 0 00-2.25 3.442v.75a.75.75 0 00.75.75h8.5a.75.75 0 00.75-.75v-.75a3.75 3.75 0 00-2.25-3.442V14.25a6.707 6.707 0 01-1.127-2.426 6.73 6.73 0 002.743-1.346 6.753 6.753 0 006.139-5.6.75.75 0 00-.585-.858 47.077 47.077 0 00-3.07-.543V2.62a.75.75 0 00-.658-.744 49.22 49.22 0 00-6.093 0 .75.75 0 00-.658.744zM4.024 5.061a47.288 47.288 0 012.642-.438v3.446c-.767-.184-1.488-.512-2.126-.963a5.253 5.253 0 01-.516-2.045zm15.952 0c-.067.72-.25 1.411-.516 2.045a6.764 6.764 0 01-2.126.963V4.623a47.288 47.288 0 012.642.438z" clip-rule="evenodd" />
-                </svg>
-              </div>
+            <div class="relative w-12 h-12 flex items-center justify-center">
+              <div class="w-12 h-12 rounded-full border-3 border-slate-200 border-t-slate-800 animate-spin"></div>
             </div>
             <div class="space-y-1">
               <h4 class="text-sm font-black text-slate-900 tracking-tight">Loading Alumni Directory</h4>
-              <p class="text-xs text-slate-400 font-medium">Please wait a moment while graduate records synchronize...</p>
+              <p class="text-xs text-slate-400 font-medium">Synchronizing graduate records...</p>
             </div>
           </div>
 
@@ -1175,25 +1380,29 @@ interface StaffMember {
                   <th class="px-6 py-3.5">Primary Guardian</th>
                   <th class="px-6 py-3.5">Guardian Phone</th>
                   <th class="px-6 py-3.5">Status</th>
+                  <th class="px-6 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 font-medium">
-                <tr *ngFor="let al of paginatedAlumni" class="hover:bg-amber-50/40 transition-colors">
+                <tr *ngFor="let al of paginatedAlumni"
+                    class="hover:bg-slate-50/80 transition-colors"
+                    [class.relative]="true"
+                    [class.z-30]="activeAlumniMenuId === al.student_id">
                   <td class="px-6 py-3.5 font-mono text-slate-600 font-bold">{{ al.admission_number }}</td>
                   <td class="px-6 py-3.5 font-bold text-slate-900">
-                    <div class="flex items-center gap-2">
-                      <span class="w-6 h-6 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black flex items-center justify-center">
-                        {{ al.full_name.charAt(0) }}
+                    <div (click)="viewStudentDetails(al, $event)" class="flex items-center gap-2 cursor-pointer group hover:text-indigo-600 transition-colors">
+                      <span class="w-6 h-6 rounded-full bg-slate-900 text-white text-[10px] font-black flex items-center justify-center group-hover:bg-indigo-600 transition-colors">
+                        {{ (al.full_name || al.first_name || 'A').charAt(0) }}
                       </span>
-                      <span>{{ al.full_name }}</span>
+                      <span class="group-hover:underline underline-offset-2">{{ al.full_name }}</span>
                     </div>
                   </td>
                   <td class="px-6 py-3.5 text-slate-700 font-medium">
                     {{ al.last_class_name || 'Class 12' }} - {{ formatSection(al.last_section_name) }}
                   </td>
                   <td class="px-6 py-3.5">
-                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs">
-                      <svg class="w-3 h-3 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                      <svg class="w-3 h-3 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
                       </svg>
@@ -1205,29 +1414,113 @@ interface StaffMember {
                   </td>
                   <td class="px-6 py-3.5 text-slate-500 font-mono">{{ al.primary_contact?.phone || '—' }}</td>
                   <td class="px-6 py-3.5">
-                    <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                       ALUMNI
                     </span>
                   </td>
+                  <td class="px-6 py-3.5 text-right">
+                    <div class="relative inline-block text-right">
+                      <!-- 3-Dot Action Button -->
+                      <button type="button" (click)="toggleAlumniMenu(al.student_id, $event)" title="Alumni Actions"
+                              class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer shadow-2xs">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <circle cx="12" cy="5" r="2"/>
+                          <circle cx="12" cy="12" r="2"/>
+                          <circle cx="12" cy="19" r="2"/>
+                        </svg>
+                      </button>
+
+                      <!-- Alumni Dropdown Actions List (Viewport Fixed on Top of Everything) -->
+                      <div *ngIf="activeAlumniMenuId === al.student_id"
+                           [ngStyle]="alumniMenuStyle"
+                           class="fixed w-56 bg-white rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.25)] border border-slate-200 py-1.5 z-[100] animate-fadeIn text-xs text-left">
+                        
+                        <!-- View Student Lifecycle Journey & Logs -->
+                        <button type="button" (click)="openAlumniJourneyModal(al, $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-900 hover:bg-slate-100 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-slate-100">
+                          <svg class="w-4 h-4 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                          </svg>
+                          <span>Lifecycle Logs & Journey</span>
+                        </button>
+
+                        <!-- Generate Transfer Certificate (TC) -->
+                        <button type="button" (click)="openTcModal(al, $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <span>Transfer Certificate (TC)</span>
+                        </button>
+
+                        <!-- Generate Character Certificate -->
+                        <button type="button" (click)="openCharacterCertModal(al, $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                          </svg>
+                          <span>Character Certificate</span>
+                        </button>
+
+                        <!-- Generate Alumni Certificate (with Alumni #) -->
+                        <button type="button" (click)="openAlumniCertModal(al, $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                          </svg>
+                          <span>Alumni Certificate</span>
+                        </button>
+
+                        <!-- View Profile -->
+                        <button type="button" (click)="viewStudentDetails(al, $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer border-t border-slate-100">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          <span>View Profile</span>
+                        </button>
+
+                        <!-- Edit Alumni -->
+                        <button *ngIf="canManage" type="button" (click)="openEditAlumniModal(al, $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                          <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          <span>Edit Details</span>
+                        </button>
+
+                        <!-- Delete Record -->
+                        <button *ngIf="canManage" type="button" (click)="promptDeleteAlumni(al, $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 transition-colors cursor-pointer border-t border-slate-100">
+                          <svg class="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          <span>Delete Record</span>
+                        </button>
+                      </div>
+                    </div>
+                  </td>
                 </tr>
                 <tr *ngIf="filteredAlumni.length === 0">
-                  <td colspan="7" class="px-6 py-14 text-center text-slate-400">
-                    <div class="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-3 font-bold text-2xl shadow-inner">
-                      <svg class="w-7 h-7 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <td colspan="8" class="px-6 py-14 text-center text-slate-400">
+                    <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto mb-3">
+                      <svg class="w-6 h-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
                       </svg>
                     </div>
                     <div class="font-black text-slate-800 text-sm">No Alumni Records Yet</div>
                     <p class="text-xs text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
-                      Students in the highest grade (Class 12) automatically graduate and enter this Alumni Directory when you perform an annual session rollover.
+                      Students in the highest grade (Class 12) automatically graduate upon session rollover, or you can register alumni directly.
                     </p>
-                    <button *ngIf="canManage" (click)="openSessionModal()"
+                    <button *ngIf="canManage" (click)="openAddAlumniModal()"
                             class="mt-4 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 mx-auto">
-                      <svg class="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                       </svg>
-                      <span>Open Session Rollover Engine</span>
+                      <span>Add First Alumni Student</span>
                     </button>
                   </td>
                 </tr>
@@ -1238,20 +1531,36 @@ interface StaffMember {
           <!-- MOBILE CARD VIEW (md:hidden) -->
           <div *ngIf="!loadingAlumni" class="block md:hidden p-3.5 space-y-3">
             <div *ngFor="let al of paginatedAlumni"
-                 class="p-4 bg-white rounded-2xl border border-amber-200/80 shadow-[3px_3px_10px_#e2e8f0,-3px_-3px_10px_#ffffff] space-y-3">
+                 class="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-[3px_3px_10px_#e2e8f0,-3px_-3px_10px_#ffffff] space-y-3">
               <div class="flex items-start justify-between gap-2">
-                <div class="flex items-center gap-2.5">
-                  <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-800 text-xs font-black flex items-center justify-center shrink-0">
-                    {{ al.full_name.charAt(0) }}
+                <div (click)="viewStudentDetails(al, $event)" class="flex items-center gap-2.5 cursor-pointer">
+                  <div class="w-8 h-8 rounded-full bg-slate-900 text-white text-xs font-black flex items-center justify-center shrink-0">
+                    {{ (al.full_name || al.first_name || 'A').charAt(0) }}
                   </div>
                   <div>
                     <h4 class="text-sm font-black text-slate-900">{{ al.full_name }}</h4>
-                    <div class="text-[11px] font-mono text-slate-400">{{ al.admission_number }}</div>
+                    <div class="flex items-center gap-2 mt-0.5">
+                      <span class="text-[11px] font-mono font-bold text-slate-700">Adm: {{ al.admission_number }}</span>
+                      <span class="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">ID: {{ al.alumni_number || 'ALU-REG' }}</span>
+                    </div>
                   </div>
                 </div>
-                <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 shrink-0">
-                  ALUMNI
-                </span>
+                
+                <div class="flex items-center gap-1.5">
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
+                    ALUMNI
+                  </span>
+                  
+                  <!-- Mobile 3-Dot Button -->
+                  <button type="button" (click)="toggleAlumniMenu(al.student_id, $event)"
+                          class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                      <circle cx="12" cy="5" r="2"/>
+                      <circle cx="12" cy="12" r="2"/>
+                      <circle cx="12" cy="19" r="2"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
@@ -1261,16 +1570,36 @@ interface StaffMember {
                 </div>
                 <div>
                   <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Passing Session</span>
-                  <span class="font-mono font-bold text-indigo-700">{{ al.graduation_session || 'Graduated' }}</span>
+                  <span class="font-mono font-bold text-slate-700">{{ al.graduation_session || 'Graduated' }}</span>
                 </div>
+              </div>
+
+              <!-- Mobile Quick Actions Row -->
+              <div class="pt-2 border-t border-slate-100 grid grid-cols-4 gap-1.5 text-center">
+                <button type="button" (click)="openAlumniJourneyModal(al, $event)"
+                        class="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 text-[10px] font-bold text-slate-700">
+                  Logs
+                </button>
+                <button type="button" (click)="openTcModal(al, $event)"
+                        class="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 text-[10px] font-bold text-slate-700">
+                  TC
+                </button>
+                <button type="button" (click)="openCharacterCertModal(al, $event)"
+                        class="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 text-[10px] font-bold text-slate-700">
+                  Char Cert
+                </button>
+                <button type="button" (click)="openAlumniCertModal(al, $event)"
+                        class="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 text-[10px] font-bold text-slate-700">
+                  Alumni Cert
+                </button>
               </div>
 
               <div *ngIf="al.primary_contact?.phone" class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
                 <span class="text-[11px] text-slate-400 font-semibold">
                   Guardian: {{ al.primary_contact?.first_name }}
                 </span>
-                <a [href]="'tel:' + al.primary_contact?.phone" class="font-mono font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
-                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <a [href]="'tel:' + al.primary_contact?.phone" class="font-mono font-bold text-slate-700 hover:text-slate-900 flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
                   <span>{{ al.primary_contact?.phone }}</span>
@@ -1280,7 +1609,7 @@ interface StaffMember {
 
             <div *ngIf="filteredAlumni.length === 0" class="p-8 text-center bg-slate-50/70 rounded-2xl border border-dashed border-slate-200 text-slate-400">
               <div class="font-bold text-slate-700 text-xs">No Alumni Records Found</div>
-              <p class="text-[11px] text-slate-400 mt-1">Graduated students appear here following an annual session rollover.</p>
+              <p class="text-[11px] text-slate-400 mt-1">Graduated students appear here following an annual session rollover or direct registration.</p>
             </div>
           </div>
 
@@ -1508,14 +1837,15 @@ interface StaffMember {
                   <!-- Staff Name & Avatar -->
                   <td class="px-6 py-3.5">
                     <div class="flex items-center gap-3">
-                      <div class="w-9 h-9 rounded-2xl flex items-center justify-center font-black text-xs shrink-0 shadow-xs text-white"
+                      <div class="w-9 h-9 rounded-2xl flex items-center justify-center font-black text-xs shrink-0 shadow-xs text-white overflow-hidden border border-slate-200"
                            [ngClass]="{
                              'bg-gradient-to-br from-purple-600 to-indigo-700': staff.role === 'PRINCIPAL',
                              'bg-gradient-to-br from-indigo-700 to-slate-900': staff.role === 'SCHOOL_ADMIN',
                              'bg-gradient-to-br from-emerald-600 to-teal-700': staff.role === 'CLASS_TEACHER' || staff.classTeacherSections?.length,
                              'bg-gradient-to-br from-blue-600 to-indigo-600': staff.role === 'TEACHER'
                            }">
-                        {{ staff.firstName.charAt(0) }}
+                        <img *ngIf="staff.photoUrl || staff.avatarUrl" [src]="staff.photoUrl || staff.avatarUrl" class="w-full h-full object-cover" alt="Staff" />
+                        <span *ngIf="!staff.photoUrl && !staff.avatarUrl">{{ staff.firstName.charAt(0) }}</span>
                       </div>
                       <div>
                         <div class="flex items-center gap-1.5">
@@ -1641,14 +1971,15 @@ interface StaffMember {
                  class="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-[3px_3px_10px_#e2e8f0,-3px_-3px_10px_#ffffff] space-y-3">
               <div class="flex items-start justify-between gap-2">
                 <div class="flex items-center gap-2.5 min-w-0">
-                  <div class="w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs shrink-0 shadow-xs text-white"
+                  <div class="w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs shrink-0 shadow-xs text-white overflow-hidden border border-slate-200"
                        [ngClass]="{
                          'bg-gradient-to-br from-purple-600 to-indigo-700': staff.role === 'PRINCIPAL',
                          'bg-gradient-to-br from-indigo-700 to-slate-900': staff.role === 'SCHOOL_ADMIN',
                          'bg-gradient-to-br from-emerald-600 to-teal-700': staff.role === 'CLASS_TEACHER' || staff.classTeacherSections?.length,
                          'bg-gradient-to-br from-blue-600 to-indigo-600': staff.role === 'TEACHER'
                        }">
-                    {{ staff.firstName.charAt(0) }}
+                    <img *ngIf="staff.photoUrl || staff.avatarUrl" [src]="staff.photoUrl || staff.avatarUrl" class="w-full h-full object-cover" alt="Staff" />
+                    <span *ngIf="!staff.photoUrl && !staff.avatarUrl">{{ staff.firstName.charAt(0) }}</span>
                   </div>
                   <div class="min-w-0">
                     <div class="flex items-center gap-1">
@@ -2153,8 +2484,36 @@ interface StaffMember {
           </div>
 
           <div class="p-5 sm:p-6 space-y-4 text-xs overflow-y-auto flex-1 custom-clay-scroll bg-white">
-            <div class="p-3 bg-indigo-50 border border-indigo-100 rounded-2xl text-indigo-900">
+            <div class="p-3 bg-indigo-50 border border-indigo-100 rounded-2xl text-indigo-900 flex items-center justify-between">
               <strong class="font-bold">Student Profile Details</strong>
+              <span *ngIf="newStudent.photoUrl" (click)="removeStudentPhoto()" class="text-[10px] font-bold text-rose-600 hover:underline cursor-pointer">
+                Remove Photo
+              </span>
+            </div>
+
+            <!-- Student Photo Upload Card -->
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex items-center gap-3.5">
+              <div class="w-14 h-14 rounded-2xl bg-white border border-slate-300 flex items-center justify-center shrink-0 overflow-hidden shadow-inner relative group">
+                <img *ngIf="newStudent.photoUrl" [src]="newStudent.photoUrl" class="w-full h-full object-cover" alt="Student Preview" />
+                <span *ngIf="!newStudent.photoUrl" class="text-base font-black text-slate-400">
+                  {{ (newStudent.firstName || 'S').charAt(0).toUpperCase() }}
+                </span>
+                <label class="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity text-[10px] font-bold">
+                  <span>{{ newStudent.photoUrl ? 'Change' : 'Upload' }}</span>
+                  <input type="file" accept="image/*" (change)="onStudentPhotoSelected($event)" class="hidden" />
+                </label>
+              </div>
+              <div class="flex-1 space-y-1">
+                <label [class.opacity-50]="uploadingStudentPhoto"
+                       class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-xl text-[11px] font-bold transition-all cursor-pointer shadow-2xs inline-flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  </svg>
+                  <span>{{ uploadingStudentPhoto ? 'Optimizing...' : (newStudent.photoUrl ? 'Change Student Photo' : 'Upload Student Photo') }}</span>
+                  <input type="file" accept="image/*" (change)="onStudentPhotoSelected($event)" [disabled]="uploadingStudentPhoto" class="hidden" />
+                </label>
+                <p class="text-[10px] text-slate-400">Student passport size photo for ID card, roster, and certificates.</p>
+              </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2243,8 +2602,36 @@ interface StaffMember {
             </div>
 
             <!-- Guardian Section -->
-            <div class="p-3 bg-slate-100 border border-slate-200 rounded-2xl text-slate-900 mt-2">
+            <div class="p-3 bg-slate-100 border border-slate-200 rounded-2xl text-slate-900 mt-2 flex items-center justify-between">
               <strong class="font-bold">Primary Guardian / Parent Linkage</strong>
+              <span *ngIf="newStudent.guardianPhotoUrl" (click)="removeGuardianPhoto()" class="text-[10px] font-bold text-rose-600 hover:underline cursor-pointer">
+                Remove Photo
+              </span>
+            </div>
+
+            <!-- Guardian Photo Upload Card -->
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex items-center gap-3.5">
+              <div class="w-12 h-12 rounded-2xl bg-white border border-slate-300 flex items-center justify-center shrink-0 overflow-hidden shadow-inner relative group">
+                <img *ngIf="newStudent.guardianPhotoUrl" [src]="newStudent.guardianPhotoUrl" class="w-full h-full object-cover" alt="Guardian Preview" />
+                <span *ngIf="!newStudent.guardianPhotoUrl" class="text-sm font-black text-slate-400">
+                  {{ (newStudent.guardianName || 'G').charAt(0).toUpperCase() }}
+                </span>
+                <label class="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity text-[9px] font-bold">
+                  <span>{{ newStudent.guardianPhotoUrl ? 'Change' : 'Upload' }}</span>
+                  <input type="file" accept="image/*" (change)="onGuardianPhotoSelected($event)" class="hidden" />
+                </label>
+              </div>
+              <div class="flex-1 space-y-1">
+                <label [class.opacity-50]="uploadingGuardianPhoto"
+                       class="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-xl text-[11px] font-bold transition-all cursor-pointer shadow-2xs inline-flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  </svg>
+                  <span>{{ uploadingGuardianPhoto ? 'Optimizing...' : (newStudent.guardianPhotoUrl ? 'Change Guardian Photo' : 'Upload Guardian Photo') }}</span>
+                  <input type="file" accept="image/*" (change)="onGuardianPhotoSelected($event)" [disabled]="uploadingGuardianPhoto" class="hidden" />
+                </label>
+                <p class="text-[10px] text-slate-400">Guardian identity photo for student security and gate pass verification.</p>
+              </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2314,6 +2701,31 @@ interface StaffMember {
           </div>
 
           <div class="p-5 sm:px-6 py-4 space-y-4 text-xs overflow-y-auto flex-1 custom-clay-scroll bg-white">
+            <!-- Staff Photo Upload Card -->
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex items-center gap-3.5">
+              <div class="w-14 h-14 rounded-2xl bg-white border border-slate-300 flex items-center justify-center shrink-0 overflow-hidden shadow-inner relative group">
+                <img *ngIf="newStaff.photoUrl" [src]="newStaff.photoUrl" class="w-full h-full object-cover" alt="Faculty Preview" />
+                <span *ngIf="!newStaff.photoUrl" class="text-base font-black text-slate-400">
+                  {{ (newStaff.firstName || 'T').charAt(0).toUpperCase() }}
+                </span>
+                <label class="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity text-[10px] font-bold">
+                  <span>{{ newStaff.photoUrl ? 'Change' : 'Upload' }}</span>
+                  <input type="file" accept="image/*" (change)="onStaffPhotoSelected($event)" class="hidden" />
+                </label>
+              </div>
+              <div class="flex-1 space-y-1">
+                <label [class.opacity-50]="uploadingStaffPhoto"
+                       class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-xl text-[11px] font-bold transition-all cursor-pointer shadow-2xs inline-flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  </svg>
+                  <span>{{ uploadingStaffPhoto ? 'Optimizing...' : (newStaff.photoUrl ? 'Change Faculty Photo' : 'Upload Faculty Photo') }}</span>
+                  <input type="file" accept="image/*" (change)="onStaffPhotoSelected($event)" [disabled]="uploadingStaffPhoto" class="hidden" />
+                </label>
+                <p class="text-[10px] text-slate-400">Official profile picture for faculty directory, class assignments, and student timetable.</p>
+              </div>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label class="block font-bold text-slate-700 mb-1">First Name *</label>
@@ -2384,6 +2796,155 @@ interface StaffMember {
                     class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95">
               <span *ngIf="!savingStaff">Register Staff</span>
               <span *ngIf="savingStaff">Saving...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- MODAL: ADD / EDIT ALUMNI STUDENT                               -->
+      <!-- ============================================================== -->
+      <div *ngIf="showAddAlumniModal" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[70] animate-fadeIn">
+        <div class="bg-white rounded-3xl max-w-xl w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
+          
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-2xl bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center shrink-0 shadow-xs">
+                <svg class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight">
+                  {{ isEditingAlumni ? 'Edit Alumni Record' : 'Register New Alumni Student' }}
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Permanent institutional record for graduated student.</p>
+              </div>
+            </div>
+            <button (click)="closeAlumniModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+          </div>
+
+          <div class="p-5 sm:px-6 py-4 space-y-4 text-xs overflow-y-auto flex-1 custom-clay-scroll bg-white">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">First Name *</label>
+                <input type="text" [(ngModel)]="newAlumni.firstName" placeholder="e.g. Rahul"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Last Name</label>
+                <input type="text" [(ngModel)]="newAlumni.lastName" placeholder="e.g. Sharma"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Admission Number *</label>
+                <input type="text" [(ngModel)]="newAlumni.admissionNumber" placeholder="e.g. ADM-DEL-2026-0001"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Gender</label>
+                <select [(ngModel)]="newAlumni.gender"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
+                  <option value="MALE">Male</option>
+                  <option value="FEMALE">Female</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Graduation / Passing Session *</label>
+                <select [(ngModel)]="newAlumni.graduationSession"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
+                  <option *ngFor="let ses of academicSessions" [value]="ses.name">{{ ses.name }}</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Date of Birth</label>
+                <input type="date" [(ngModel)]="newAlumni.dateOfBirth"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Terminal Exit Class</label>
+                <select [(ngModel)]="newAlumni.className"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
+                  <option *ngFor="let c of classes" [value]="c.name">{{ c.name }}</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Terminal Section</label>
+                <input type="text" [(ngModel)]="newAlumni.sectionName" placeholder="e.g. Section A"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Primary Guardian Name</label>
+                <input type="text" [(ngModel)]="newAlumni.guardianName" placeholder="e.g. Suresh Sharma"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Guardian Phone</label>
+                <input type="text" [(ngModel)]="newAlumni.guardianPhone" placeholder="+91 98765 43210"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+            </div>
+
+            <div *ngIf="alumniModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+              {{ alumniModalError }}
+            </div>
+          </div>
+
+          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
+            <button (click)="closeAlumniModal()" class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
+              Cancel
+            </button>
+            <button (click)="saveAlumni()" [disabled]="savingAlumni"
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95">
+              <span *ngIf="!savingAlumni">{{ isEditingAlumni ? 'Save Changes' : 'Register Alumni' }}</span>
+              <span *ngIf="savingAlumni">Saving...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- MODAL: DELETE ALUMNI CONFIRMATION                              -->
+      <!-- ============================================================== -->
+      <div *ngIf="showDeleteAlumniModal" class="fixed inset-0 flex items-center justify-center p-4 z-[75] animate-fadeIn">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-slate-200 text-center animate-scaleUp">
+          <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center mx-auto shadow-inner">
+            <svg class="w-6 h-6 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-black text-slate-900">Remove Alumni Record?</h3>
+            <p class="text-xs text-slate-500 mt-1">
+              Are you sure you want to remove <strong class="text-slate-800">{{ alumniToDelete?.full_name }}</strong> ({{ alumniToDelete?.admission_number }}) from the alumni directory?
+            </p>
+          </div>
+          <div class="flex items-center justify-center gap-2 pt-2">
+            <button (click)="cancelDeleteAlumni()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer">
+              Cancel
+            </button>
+            <button (click)="executeDeleteAlumni()" [disabled]="isDeletingAlumni"
+                    class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl cursor-pointer disabled:opacity-50">
+              <span *ngIf="!isDeletingAlumni">Yes, Delete</span>
+              <span *ngIf="isDeletingAlumni">Deleting...</span>
             </button>
           </div>
         </div>
@@ -3099,27 +3660,21 @@ interface StaffMember {
         <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" (click)="closeStudentStatusModal()"></div>
         <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 space-y-4 animate-scaleUp relative z-10">
           <div class="flex items-start gap-3.5">
-            <div class="w-11 h-11 rounded-2xl flex items-center justify-center font-black text-xl shrink-0 shadow-xs"
-                 [ngClass]="{
-                   'bg-rose-50 text-rose-600 border border-rose-200': studentStatusAction === 'INACTIVE',
-                   'bg-emerald-50 text-emerald-600 border border-emerald-200': studentStatusAction === 'ACTIVE',
-                   'bg-amber-50 text-amber-600 border border-amber-200': studentStatusAction === 'SUSPENDED',
-                   'bg-purple-50 text-purple-600 border border-purple-200': studentStatusAction === 'LEFTOUT'
-                 }">
+            <div class="w-11 h-11 rounded-2xl bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center font-black text-xl shrink-0 shadow-xs">
               <!-- Inactive Icon -->
-              <svg *ngIf="studentStatusAction === 'INACTIVE'" class="w-6 h-6 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <svg *ngIf="studentStatusAction === 'INACTIVE'" class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
               </svg>
               <!-- Active Icon -->
-              <svg *ngIf="studentStatusAction === 'ACTIVE'" class="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <svg *ngIf="studentStatusAction === 'ACTIVE'" class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <!-- Suspended Icon -->
-              <svg *ngIf="studentStatusAction === 'SUSPENDED'" class="w-6 h-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <svg *ngIf="studentStatusAction === 'SUSPENDED'" class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <!-- Leftout Icon -->
-              <svg *ngIf="studentStatusAction === 'LEFTOUT'" class="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <svg *ngIf="studentStatusAction === 'LEFTOUT'" class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
             </div>
@@ -3142,22 +3697,33 @@ interface StaffMember {
                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
             </div>
 
-            <div class="p-3.5 rounded-2xl space-y-1 text-xs"
-                 [ngClass]="{
-                   'bg-rose-50/80 border border-rose-200 text-rose-900': studentStatusAction === 'INACTIVE',
-                   'bg-emerald-50/80 border border-emerald-200 text-emerald-900': studentStatusAction === 'ACTIVE',
-                   'bg-amber-50/80 border border-amber-200 text-amber-900': studentStatusAction === 'SUSPENDED',
-                   'bg-purple-50/80 border border-purple-200 text-purple-900': studentStatusAction === 'LEFTOUT'
-                 }">
-              <div class="font-bold text-[11px] flex items-center gap-1.5">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <!-- Leftout / TC Alumni option (Eligible for any completed class) -->
+            <div *ngIf="studentStatusAction === 'LEFTOUT'" class="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+              <label class="flex items-start gap-2 cursor-pointer">
+                <input type="checkbox" [(ngModel)]="alsoMarkAsAlumni" class="mt-0.5 w-4 h-4 rounded text-slate-900 accent-slate-900 cursor-pointer" />
+                <div>
+                  <span class="font-bold text-slate-900 block text-xs">Register in Alumni Directory</span>
+                  <span class="text-[11px] text-slate-500 leading-tight block">Student completed studies up to {{ selectedStudentForStatus.className }} and is eligible for institutional alumni status.</span>
+                </div>
+              </label>
+
+              <div *ngIf="alsoMarkAsAlumni" class="pt-2 border-t border-slate-200/70 space-y-2">
+                <div>
+                  <label class="block font-bold text-slate-700 text-[11px] mb-1">Transfer Certificate (TC) Number</label>
+                  <input type="text" [(ngModel)]="leftoutTcNumber" placeholder="e.g. TC-2026-088"
+                         class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-inner" />
+                </div>
+              </div>
+            </div>
+
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-1 text-xs text-slate-700">
+              <div class="font-bold text-[11px] flex items-center gap-1.5 text-slate-900">
+                <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>{{ studentStatusAction === 'INACTIVE' ? 'Inactive Status Details:' : 
-                         studentStatusAction === 'ACTIVE' ? 'Reactivation Details:' : 
-                         studentStatusAction === 'SUSPENDED' ? 'Suspension Details:' : 'Leftout / TC Details:' }}</span>
+                <span>Status Details:</span>
               </div>
-              <p class="text-[11px] leading-relaxed">
+              <p class="text-[11px] leading-relaxed text-slate-600">
                 {{ studentStatusAction === 'INACTIVE' ? 'Student will be marked INACTIVE and excluded from active class rosters and billing unless filtered.' : 
                    studentStatusAction === 'ACTIVE' ? 'Student will be restored to ACTIVE status across classroom modules and rosters.' : 
                    studentStatusAction === 'SUSPENDED' ? 'Student will be marked SUSPENDED and restricted from daily class activities until reactivated.' : 
@@ -3166,124 +3732,551 @@ interface StaffMember {
             </div>
           </div>
 
-          <div class="flex items-center justify-end gap-2.5 pt-2">
+          <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
             <button type="button" (click)="closeStudentStatusModal()" [disabled]="updatingStudentStatus"
                     class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer">
               Cancel
             </button>
             <button type="button" (click)="executeToggleStudentStatus()" [disabled]="updatingStudentStatus"
-                    class="px-5 py-2.5 text-white text-xs font-bold rounded-2xl shadow-md transition-all cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50"
-                    [ngClass]="{
-                      'bg-rose-600 hover:bg-rose-700': studentStatusAction === 'INACTIVE',
-                      'bg-emerald-600 hover:bg-emerald-700': studentStatusAction === 'ACTIVE',
-                      'bg-amber-600 hover:bg-amber-700': studentStatusAction === 'SUSPENDED',
-                      'bg-purple-600 hover:bg-purple-700': studentStatusAction === 'LEFTOUT'
-                    }">
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50">
               <svg *ngIf="updatingStudentStatus" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
               </svg>
-              <span>{{ updatingStudentStatus ? 'Updating...' : 
-                       (studentStatusAction === 'INACTIVE' ? 'Confirm Inactive' : 
-                        studentStatusAction === 'ACTIVE' ? 'Confirm Active' : 
-                        studentStatusAction === 'SUSPENDED' ? 'Confirm Suspend' : 'Confirm Leftout / TC') }}</span>
+              <span>{{ updatingStudentStatus ? 'Updating...' : 'Confirm Status Change' }}</span>
             </button>
           </div>
         </div>
       </div>
 
       <!-- ============================================================== -->
-      <!-- MODAL 8: TEACHER STUDENT DEACTIVATION REQUEST MODAL            -->
+      <!-- MODAL: PROMOTE STUDENT DIRECTLY (Admin / Principal)            -->
       <!-- ============================================================== -->
-      <div *ngIf="showTeacherDeactModal && selectedStudentForDeactRequest" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[70] animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 space-y-4 animate-scaleUp">
+      <div *ngIf="showPromoteStudentModal && selectedStudentForPromote" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[110] animate-fadeIn">
+        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" (click)="closePromoteStudentModal()"></div>
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 space-y-4 animate-scaleUp relative z-10">
           <div class="flex items-start justify-between gap-3">
             <div class="flex items-center gap-3">
-              <div class="w-11 h-11 rounded-2xl bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center font-black text-xl shrink-0 shadow-xs">
-                <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <div class="w-11 h-11 rounded-2xl bg-slate-100 text-slate-800 border border-slate-200 flex items-center justify-center font-black text-xl shrink-0 shadow-xs">
+                <svg class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
               </div>
               <div>
-                <h3 class="text-base font-black text-slate-900 tracking-tight">Request Student Deactivation</h3>
-                <p class="text-xs text-slate-500 mt-0.5">Submit request to Principal & Admin for deactivation approval.</p>
+                <h3 class="text-base font-black text-slate-900 tracking-tight">Promote Student to Next Class</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Advance student to the next academic standard and assign section.</p>
               </div>
             </div>
-            <button (click)="closeTeacherDeactModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1 rounded-xl cursor-pointer">&times;</button>
+            <button (click)="closePromoteStudentModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1 rounded-xl cursor-pointer">&times;</button>
+          </div>
+
+          <!-- Student Current Details -->
+          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between text-xs">
+            <div>
+              <span class="text-[10px] text-slate-400 font-bold uppercase block">Student Record</span>
+              <span class="font-black text-slate-900">{{ selectedStudentForPromote.fullName }}</span>
+              <span class="text-slate-500 ml-1 font-mono">({{ selectedStudentForPromote.admissionNumber }})</span>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] text-slate-400 font-bold uppercase block">Current Grade</span>
+              <span class="px-2.5 py-1 bg-white rounded-xl border border-slate-200 font-bold text-slate-800 text-xs shadow-2xs">
+                {{ selectedStudentForPromote.className }} - {{ formatSection(selectedStudentForPromote.sectionName) }}
+              </span>
+            </div>
+          </div>
+
+          <div class="space-y-3.5 text-xs">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Target Class *</label>
+                <select [(ngModel)]="promoteTargetClassId" (change)="onPromoteClassChange()"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner cursor-pointer">
+                  <option *ngFor="let c of sortedClasses" [value]="c.id">
+                    {{ c.name }}
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Target Section *</label>
+                <select [(ngModel)]="promoteTargetSectionId"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner cursor-pointer">
+                  <option *ngFor="let sec of availableSectionsForPromoteClass" [value]="sec.id">
+                    {{ formatSection(sec.name) }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Roll Number in New Class</label>
+                <input type="text" [(ngModel)]="promoteRollNumber" placeholder="e.g. 15"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Academic Session</label>
+                <input type="text" [value]="activeSession?.name || 'Active Session'" readonly disabled
+                       class="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 cursor-not-allowed" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Reason / Promotion Remarks</label>
+              <input type="text" [(ngModel)]="promoteReason" placeholder="e.g. Passed annual examinations / Mid-term acceleration"
+                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+            </div>
+
+            <div *ngIf="promoteModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+              {{ promoteModalError }}
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+            <button type="button" (click)="closePromoteStudentModal()" [disabled]="executingPromote"
+                    class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer">
+              Cancel
+            </button>
+            <button type="button" (click)="executePromoteStudent()" [disabled]="executingPromote"
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50">
+              <svg *ngIf="executingPromote" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>{{ executingPromote ? 'Promoting...' : 'Execute Promotion' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- MODAL: CHANGE SECTION DIRECTLY (Admin / Principal)             -->
+      <!-- ============================================================== -->
+      <div *ngIf="showChangeSectionModal && selectedStudentForSectionChange" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[110] animate-fadeIn">
+        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" (click)="closeChangeSectionModal()"></div>
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 space-y-4 animate-scaleUp relative z-10">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-2xl bg-slate-100 text-slate-800 border border-slate-200 flex items-center justify-center font-black text-xl shrink-0 shadow-xs">
+                <svg class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight">Change Student Section</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Transfer student to another section in {{ selectedStudentForSectionChange.className }}.</p>
+              </div>
+            </div>
+            <button (click)="closeChangeSectionModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1 rounded-xl cursor-pointer">&times;</button>
+          </div>
+
+          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between text-xs">
+            <div>
+              <span class="text-[10px] text-slate-400 font-bold uppercase block">Student</span>
+              <span class="font-black text-slate-900">{{ selectedStudentForSectionChange.fullName }}</span>
+            </div>
+            <span class="px-2.5 py-1 bg-white rounded-xl border border-slate-200 font-bold text-slate-800 text-xs shadow-2xs">
+              Current: {{ formatSection(selectedStudentForSectionChange.sectionName) }}
+            </span>
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Target Section *</label>
+              <select [(ngModel)]="sectionChangeTargetSectionId"
+                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner cursor-pointer">
+                <option *ngFor="let sec of availableSectionsForCurrentClass" [value]="sec.id">
+                  {{ formatSection(sec.name) }}
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">New Roll Number in Section</label>
+              <input type="text" [(ngModel)]="sectionChangeRollNumber" placeholder="e.g. 05"
+                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Reason for Transfer</label>
+              <input type="text" [(ngModel)]="sectionChangeReason" placeholder="e.g. Section balancing / Parental request"
+                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+            </div>
+
+            <div *ngIf="sectionChangeModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+              {{ sectionChangeModalError }}
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+            <button type="button" (click)="closeChangeSectionModal()" [disabled]="executingSectionChange"
+                    class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer">
+              Cancel
+            </button>
+            <button type="button" (click)="executeChangeSection()" [disabled]="executingSectionChange"
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50">
+              <svg *ngIf="executingSectionChange" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>{{ executingSectionChange ? 'Updating...' : 'Transfer Section' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- MODAL: DEMOTE / REASSIGN TO PREVIOUS CLASS (Admin / Principal) -->
+      <!-- ============================================================== -->
+      <div *ngIf="showDemoteStudentModal && selectedStudentForDemote" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[110] animate-fadeIn">
+        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" (click)="closeDemoteStudentModal()"></div>
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 space-y-4 animate-scaleUp relative z-10">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-2xl bg-slate-100 text-slate-800 border border-slate-200 flex items-center justify-center font-black text-xl shrink-0 shadow-xs">
+                <svg class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight">Reassign / Demote Student</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Reassign student to a previous grade standard for remediation.</p>
+              </div>
+            </div>
+            <button (click)="closeDemoteStudentModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1 rounded-xl cursor-pointer">&times;</button>
+          </div>
+
+          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between text-xs">
+            <div>
+              <span class="text-[10px] text-slate-400 font-bold uppercase block">Student</span>
+              <span class="font-black text-slate-900">{{ selectedStudentForDemote.fullName }}</span>
+              <span class="text-slate-500 ml-1 font-mono">({{ selectedStudentForDemote.admissionNumber }})</span>
+            </div>
+            <span class="px-2.5 py-1 bg-white rounded-xl border border-slate-200 font-bold text-slate-800 text-xs shadow-2xs">
+              Current: {{ selectedStudentForDemote.className }} - {{ formatSection(selectedStudentForDemote.sectionName) }}
+            </span>
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Target Previous Class *</label>
+                <select [(ngModel)]="demoteTargetClassId" (change)="onDemoteClassChange()"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner cursor-pointer">
+                  <option *ngFor="let c of sortedClasses" [value]="c.id">
+                    {{ c.name }}
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Target Section *</label>
+                <select [(ngModel)]="demoteTargetSectionId"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner cursor-pointer">
+                  <option *ngFor="let sec of availableSectionsForDemoteClass" [value]="sec.id">
+                    {{ formatSection(sec.name) }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Roll Number in Target Class</label>
+              <input type="text" [(ngModel)]="demoteRollNumber" placeholder="e.g. 20"
+                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Reason / Academic Remediation Remarks *</label>
+              <input type="text" [(ngModel)]="demoteReason" placeholder="e.g. Academic remediation / Parental request"
+                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+            </div>
+
+            <div *ngIf="demoteModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+              {{ demoteModalError }}
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+            <button type="button" (click)="closeDemoteStudentModal()" [disabled]="executingDemote"
+                    class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer">
+              Cancel
+            </button>
+            <button type="button" (click)="executeDemoteStudent()" [disabled]="executingDemote"
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50">
+              <svg *ngIf="executingDemote" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>{{ executingDemote ? 'Reassigning...' : 'Confirm Reassignment' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- MODAL: CONVERT / GRADUATE TO ALUMNI (Admin / Principal)        -->
+      <!-- ============================================================== -->
+      <div *ngIf="showConvertToAlumniModal && selectedStudentForAlumniConversion" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[110] animate-fadeIn">
+        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" (click)="closeConvertToAlumniModal()"></div>
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 space-y-4 animate-scaleUp relative z-10">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-2xl bg-slate-100 text-slate-800 border border-slate-200 flex items-center justify-center font-black text-xl shrink-0 shadow-xs">
+                <svg class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight">Graduate to Alumni Directory</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Eligible for any completed class (e.g. Class 3 or Class 12). Admission ID remains permanent.</p>
+              </div>
+            </div>
+            <button (click)="closeConvertToAlumniModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1 rounded-xl cursor-pointer">&times;</button>
           </div>
 
           <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between text-xs">
             <div>
               <span class="text-[10px] text-slate-400 font-bold uppercase block">Student Record</span>
-              <span class="font-black text-slate-900">{{ selectedStudentForDeactRequest.fullName }}</span>
-              <span class="text-slate-500 ml-1">({{ selectedStudentForDeactRequest.admissionNumber }})</span>
+              <span class="font-black text-slate-900">{{ selectedStudentForAlumniConversion.fullName }}</span>
+              <span class="text-slate-500 ml-1 font-mono">({{ selectedStudentForAlumniConversion.admissionNumber }})</span>
             </div>
-            <span class="px-2.5 py-1 bg-white rounded-xl border border-slate-200 font-bold text-slate-700 text-xs shadow-2xs">
-              {{ selectedStudentForDeactRequest.className }} - {{ formatSection(selectedStudentForDeactRequest.sectionName) }}
+            <span class="px-2.5 py-1 bg-white rounded-xl border border-slate-200 font-bold text-slate-800 text-xs shadow-2xs">
+              {{ selectedStudentForAlumniConversion.className }} - {{ formatSection(selectedStudentForAlumniConversion.sectionName) }}
             </span>
           </div>
 
           <div class="space-y-3.5 text-xs">
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Primary Reason *</label>
-              <select [(ngModel)]="deactRequestReason"
-                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner cursor-pointer">
-                <option value="Transfer / Relocation">Transfer / Relocation to another city/school</option>
-                <option value="Prolonged Absence / Dropped Out">Prolonged Unexcused Absence / Dropped Out</option>
-                <option value="Parent Request / Withdrawal">Parent Formal Request / Voluntary Withdrawal</option>
-                <option value="Disciplinary Action">Disciplinary Suspension / Expulsion</option>
-                <option value="Financial / Fee Default">Long-term Fee Default / Non-payment</option>
-                <option value="Medical / Health Reasons">Medical / Health Reasons</option>
-                <option value="Other">Other Reasons (Specify in Remarks)</option>
-              </select>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Graduating / Terminal Class *</label>
+                <select [(ngModel)]="alumniConversionGraduatingClassId"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner cursor-pointer">
+                  <option *ngFor="let c of sortedClasses" [value]="c.id">
+                    {{ c.name }}
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Passing / Leaving Academic Session *</label>
+                <input type="text" [(ngModel)]="alumniConversionSession" placeholder="e.g. 2026–2027"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
             </div>
 
             <div>
-              <label class="block font-bold text-slate-700 mb-1">Detailed Remarks & Justification *</label>
-              <textarea [(ngModel)]="deactRequestComments" rows="3" placeholder="Provide background details, dates of communication with parents, or reasons..."
-                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner"></textarea>
+              <label class="block font-bold text-slate-700 mb-1">Transfer Certificate (TC) / Serial Number</label>
+              <input type="text" [(ngModel)]="alumniConversionTcNumber" placeholder="e.g. TC/DEL/2026/0142"
+                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
             </div>
 
-            <div *ngIf="deactModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
-              {{ deactModalError }}
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Graduation Remarks / Notes</label>
+              <input type="text" [(ngModel)]="alumniConversionRemarks" placeholder="e.g. Completed Class 3 and relocated - eligible alumni"
+                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+            </div>
+
+            <div *ngIf="alumniConversionModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+              {{ alumniConversionModalError }}
             </div>
           </div>
 
-          <div class="flex items-center justify-end gap-2.5 pt-2">
-            <button type="button" (click)="closeTeacherDeactModal()" [disabled]="submittingDeactRequest"
+          <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+            <button type="button" (click)="closeConvertToAlumniModal()" [disabled]="executingAlumniConversion"
                     class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer">
               Cancel
             </button>
-            <button type="button" (click)="submitTeacherDeactRequest()" [disabled]="submittingDeactRequest"
+            <button type="button" (click)="executeConvertToAlumni()" [disabled]="executingAlumniConversion"
                     class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50">
-              <svg *ngIf="submittingDeactRequest" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+              <svg *ngIf="executingAlumniConversion" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
               </svg>
-              <span>{{ submittingDeactRequest ? 'Submitting...' : 'Submit Request to Admin' }}</span>
+              <span>{{ executingAlumniConversion ? 'Moving...' : 'Move to Alumni Directory' }}</span>
             </button>
           </div>
         </div>
       </div>
 
       <!-- ============================================================== -->
-      <!-- MODAL 9: DEACTIVATION REQUESTS REVIEW QUEUE MODAL              -->
+      <!-- MODAL: TEACHER ACADEMIC ACTION REQUEST (Teacher Role)          -->
+      <!-- ============================================================== -->
+      <div *ngIf="showAcademicRequestModal && selectedStudentForAcademicRequest" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[110] animate-fadeIn">
+        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" (click)="closeTeacherAcademicRequestModal()"></div>
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 space-y-4 animate-scaleUp relative z-10">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-2xl bg-slate-100 text-slate-800 border border-slate-200 flex items-center justify-center font-black text-xl shrink-0 shadow-xs">
+                <svg class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight">Submit Academic Action Request</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Submitted requests are reviewed and approved by Principal / Admin.</p>
+              </div>
+            </div>
+            <button (click)="closeTeacherAcademicRequestModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1 rounded-xl cursor-pointer">&times;</button>
+          </div>
+
+          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between text-xs">
+            <div>
+              <span class="text-[10px] text-slate-400 font-bold uppercase block">Student Record</span>
+              <span class="font-black text-slate-900">{{ selectedStudentForAcademicRequest.fullName }}</span>
+              <span class="text-slate-500 ml-1 font-mono">({{ selectedStudentForAcademicRequest.admissionNumber }})</span>
+            </div>
+            <span class="px-2.5 py-1 bg-white rounded-xl border border-slate-200 font-bold text-slate-800 text-xs shadow-2xs">
+              {{ selectedStudentForAcademicRequest.className }} - {{ formatSection(selectedStudentForAcademicRequest.sectionName) }}
+            </span>
+          </div>
+
+          <div class="space-y-3.5 text-xs">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Request Action Type *</label>
+              <select [(ngModel)]="academicRequestType" (change)="onAcademicRequestTypeChange()"
+                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner cursor-pointer">
+                <option value="PROMOTION">Promote to Next Class</option>
+                <option value="SECTION_CHANGE">Transfer Section (within class)</option>
+                <option value="DEMOTION">Demote to Previous Class</option>
+                <option value="ALUMNI">Convert / Graduate to Alumni</option>
+                <option value="INACTIVE">Mark Student Inactive</option>
+                <option value="LEFTOUT">Mark Leftout / TC Issued</option>
+              </select>
+            </div>
+
+            <!-- Dynamic target fields for Promotion & Demotion -->
+            <div *ngIf="academicRequestType === 'PROMOTION' || academicRequestType === 'DEMOTION'" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Proposed Target Class *</label>
+                <select [(ngModel)]="academicRequestTargetClassId" (change)="onAcademicRequestClassChange()"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner cursor-pointer">
+                  <option *ngFor="let c of sortedClasses" [value]="c.id">
+                    {{ c.name }}
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Proposed Section *</label>
+                <select [(ngModel)]="academicRequestTargetSectionId"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner cursor-pointer">
+                  <option *ngFor="let sec of availableSectionsForAcademicRequestClass" [value]="sec.id">
+                    {{ formatSection(sec.name) }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Dynamic target section for Section Change -->
+            <div *ngIf="academicRequestType === 'SECTION_CHANGE'">
+              <label class="block font-bold text-slate-700 mb-1">Proposed Target Section *</label>
+              <select [(ngModel)]="academicRequestTargetSectionId"
+                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner cursor-pointer">
+                <option *ngFor="let sec of availableSectionsForCurrentClass" [value]="sec.id">
+                  {{ formatSection(sec.name) }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Dynamic field for Alumni -->
+            <div *ngIf="academicRequestType === 'ALUMNI'" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Graduation Session</label>
+                <input type="text" [(ngModel)]="academicRequestPassingSession" placeholder="e.g. 2026–2027"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">TC Number (if issued)</label>
+                <input type="text" [(ngModel)]="academicRequestTcNumber" placeholder="e.g. TC-2026-04"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Primary Justification / Reason *</label>
+              <input type="text" [(ngModel)]="academicRequestReason" placeholder="e.g. Completed Class 3 curriculum with distinction / Parent request"
+                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Detailed Teacher Notes *</label>
+              <textarea [(ngModel)]="academicRequestComments" rows="3" placeholder="Provide background details, examination scores, or parent communication context..."
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner"></textarea>
+            </div>
+
+            <div *ngIf="academicRequestModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+              {{ academicRequestModalError }}
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+            <button type="button" (click)="closeTeacherAcademicRequestModal()" [disabled]="submittingAcademicRequest"
+                    class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer">
+              Cancel
+            </button>
+            <button type="button" (click)="submitTeacherAcademicRequest()" [disabled]="submittingAcademicRequest"
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50">
+              <svg *ngIf="submittingAcademicRequest" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>{{ submittingAcademicRequest ? 'Submitting...' : 'Submit Request to Administration' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- MODAL 9: ACADEMIC & STATUS REQUESTS REVIEW QUEUE MODAL          -->
       <!-- ============================================================== -->
       <div *ngIf="showDeactivationRequestsModal" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[70] animate-fadeIn">
         <div class="bg-white rounded-3xl max-w-2xl w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
           <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
             <div class="flex items-center gap-2.5">
-              <div class="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center justify-center font-black text-base shadow-xs">
-                <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <div class="w-9 h-9 rounded-2xl bg-slate-100 text-slate-800 border border-slate-200 flex items-center justify-center font-black text-base shadow-xs">
+                <svg class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
               </div>
               <div>
-                <h3 class="text-base font-black text-slate-900 tracking-tight">Student Deactivation Requests Queue</h3>
-                <p class="text-xs text-slate-500 mt-0.5">Review teacher submissions for student status deactivations.</p>
+                <h3 class="text-base font-black text-slate-900 tracking-tight">Academic & Status Requests Queue</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Review teacher submissions for promotions, section transfers, demotions, and alumni status.</p>
               </div>
             </div>
             <button (click)="closeDeactivationRequestsModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+          </div>
+
+          <!-- Filter Tabs -->
+          <div class="px-5 sm:px-6 py-2.5 bg-slate-50/80 border-b border-slate-200 flex items-center gap-1.5 overflow-x-auto text-xs">
+            <button type="button" (click)="academicRequestFilterTab = 'ALL'"
+                    class="px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer"
+                    [ngClass]="academicRequestFilterTab === 'ALL' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white text-slate-600 hover:bg-slate-200/70 border border-slate-200'">
+              All ({{ deactivationRequests.length }})
+            </button>
+            <button type="button" (click)="academicRequestFilterTab = 'PENDING'"
+                    class="px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                    [ngClass]="academicRequestFilterTab === 'PENDING' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white text-slate-600 hover:bg-slate-200/70 border border-slate-200'">
+              <span>Pending</span>
+              <span *ngIf="pendingDeactivationRequestsCount > 0"
+                    class="px-1.5 py-0.2 rounded-full text-[10px] font-black"
+                    [ngClass]="academicRequestFilterTab === 'PENDING' ? 'bg-rose-500 text-white' : 'bg-rose-100 text-rose-700'">
+                {{ pendingDeactivationRequestsCount }}
+              </span>
+            </button>
+            <button type="button" (click)="academicRequestFilterTab = 'APPROVED'"
+                    class="px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer"
+                    [ngClass]="academicRequestFilterTab === 'APPROVED' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white text-slate-600 hover:bg-slate-200/70 border border-slate-200'">
+              Approved
+            </button>
+            <button type="button" (click)="academicRequestFilterTab = 'REJECTED'"
+                    class="px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer"
+                    [ngClass]="academicRequestFilterTab === 'REJECTED' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white text-slate-600 hover:bg-slate-200/70 border border-slate-200'">
+              Rejected
+            </button>
           </div>
 
           <div class="p-5 sm:p-6 space-y-4 text-xs overflow-y-auto flex-1 custom-clay-scroll bg-white">
@@ -3294,31 +4287,46 @@ interface StaffMember {
                      class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-inner" />
             </div>
 
-            <!-- List of Deactivation Requests -->
+            <!-- List of Requests -->
             <div class="space-y-3">
-              <div *ngFor="let req of deactivationRequests"
-                   class="p-4 rounded-2xl border transition-all space-y-3"
+              <div *ngFor="let req of filteredAcademicRequests"
+                   class="p-4 rounded-2xl border transition-all space-y-3 bg-white"
                    [ngClass]="{
-                     'bg-amber-50/50 border-amber-200 shadow-xs': req.status === 'PENDING',
-                     'bg-emerald-50/40 border-emerald-200': req.status === 'APPROVED',
-                     'bg-slate-50 border-slate-200 opacity-80': req.status === 'REJECTED'
+                     'border-slate-300 shadow-xs': req.status === 'PENDING',
+                     'border-slate-200 bg-slate-50/50': req.status === 'APPROVED',
+                     'border-slate-200 opacity-80': req.status === 'REJECTED'
                    }">
                 <div class="flex items-start justify-between gap-2">
                   <div>
                     <div class="flex items-center gap-2 flex-wrap">
                       <span class="font-black text-sm text-slate-900">{{ req.student_name }}</span>
                       <span class="font-mono text-slate-500 text-[11px]">({{ req.admission_number }})</span>
+                      
+                      <!-- Request Type Badge -->
+                      <span class="px-2 py-0.5 rounded-lg text-[10px] font-black border uppercase bg-slate-100 text-slate-800 border-slate-300">
+                        {{ formatRequestType(req.request_type) }}
+                      </span>
+
+                      <!-- Status Badge -->
                       <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold border"
                             [ngClass]="{
-                              'bg-amber-100 text-amber-800 border-amber-300': req.status === 'PENDING',
-                              'bg-emerald-100 text-emerald-800 border-emerald-300': req.status === 'APPROVED',
-                              'bg-rose-100 text-rose-800 border-rose-300': req.status === 'REJECTED'
+                              'bg-slate-900 text-white border-slate-900': req.status === 'PENDING',
+                              'bg-slate-100 text-slate-800 border-slate-300': req.status === 'APPROVED',
+                              'bg-rose-50 text-rose-700 border-rose-200': req.status === 'REJECTED'
                             }">
                         {{ req.status }}
                       </span>
                     </div>
-                    <div class="text-[11px] text-slate-500 mt-0.5">
-                      Class: <strong>{{ req.class_name || 'N/A' }} - {{ formatSection(req.section_name) }}</strong>
+
+                    <div class="text-[11px] text-slate-600 mt-1 flex items-center gap-1.5 flex-wrap">
+                      <span>Current: <strong>{{ req.class_name || 'N/A' }} - {{ formatSection(req.section_name) }}</strong></span>
+                      <span *ngIf="req.target_class_name || req.target_section_name" class="font-bold text-slate-400">→</span>
+                      <span *ngIf="req.target_class_name || req.target_section_name" class="font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                        Target: {{ req.target_class_name || req.class_name }} - {{ formatSection(req.target_section_name) }}
+                      </span>
+                      <span *ngIf="req.passing_session" class="text-slate-500">
+                        (Session: <strong>{{ req.passing_session }}</strong>)
+                      </span>
                     </div>
                   </div>
 
@@ -3327,7 +4335,7 @@ interface StaffMember {
                   </span>
                 </div>
 
-                <div class="p-3 bg-white/90 border border-slate-200/80 rounded-xl space-y-1">
+                <div class="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
                   <div class="text-[11px]">
                     <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Reason: </span>
                     <strong class="text-slate-800">{{ req.reason }}</strong>
@@ -3335,13 +4343,13 @@ interface StaffMember {
                   <div *ngIf="req.comments" class="text-[11px] text-slate-600 mt-1 italic">
                     "{{ req.comments }}"
                   </div>
-                  <div class="text-[10px] text-slate-400 pt-1 border-t border-slate-100 mt-1">
+                  <div class="text-[10px] text-slate-400 pt-1 border-t border-slate-200/60 mt-1">
                     Submitted by: <strong class="text-slate-700">{{ req.requested_by_name || 'Teacher' }}</strong> ({{ req.requested_by_role || 'TEACHER' }})
                   </div>
                 </div>
 
                 <!-- Review details if already reviewed -->
-                <div *ngIf="req.status !== 'PENDING'" class="text-[11px] text-slate-600 flex items-center justify-between flex-wrap gap-2 pt-1">
+                <div *ngIf="req.status !== 'PENDING'" class="text-[11px] text-slate-600 flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-slate-100">
                   <span>Reviewed by <strong>{{ req.reviewed_by_name || 'Authority' }}</strong></span>
                   <span *ngIf="req.review_notes" class="italic text-slate-500">Note: {{ req.review_notes }}</span>
                 </div>
@@ -3349,7 +4357,7 @@ interface StaffMember {
                 <!-- Action buttons for Pending requests (Admin / Principal only) -->
                 <div *ngIf="req.status === 'PENDING' && canDirectlyDeactivateStudent" class="flex items-center justify-end gap-2 pt-1 border-t border-slate-200/80">
                   <button type="button" (click)="reviewDeactivationRequest(req, 'REJECTED')"
-                          class="px-3.5 py-1.5 bg-white hover:bg-rose-50 text-rose-700 hover:text-rose-800 border border-rose-300 rounded-xl font-bold text-xs transition-colors cursor-pointer shadow-2xs flex items-center gap-1">
+                          class="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-rose-700 border border-rose-300 rounded-xl font-bold text-xs transition-colors cursor-pointer shadow-2xs flex items-center gap-1">
                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -3360,19 +4368,19 @@ interface StaffMember {
                     <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                    <span>Approve & Deactivate Student</span>
+                    <span>Approve & Apply Action</span>
                   </button>
                 </div>
               </div>
 
-              <div *ngIf="deactivationRequests.length === 0" class="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400">
+              <div *ngIf="filteredAcademicRequests.length === 0" class="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400">
                 <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2 shadow-inner">
                   <svg class="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
                 </div>
-                <div class="font-bold text-slate-700 text-xs">No Deactivation Requests</div>
-                <p class="text-[11px] text-slate-400 mt-1">When teachers submit student deactivation requests, they will appear here for review.</p>
+                <div class="font-bold text-slate-700 text-xs">No Requests Found</div>
+                <p class="text-[11px] text-slate-400 mt-1">No academic or status change requests match the selected tab filter.</p>
               </div>
             </div>
           </div>
@@ -3381,6 +4389,480 @@ interface StaffMember {
             <span class="text-xs text-slate-500 font-semibold">{{ deactivationRequests.length }} Total Requests</span>
             <button (click)="closeDeactivationRequestsModal()" class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
               Close
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- MODAL: ALUMNI LIFECYCLE SUMMARY & JOURNEY LOGS                 -->
+      <!-- ============================================================== -->
+      <div *ngIf="showAlumniJourneyModal && selectedAlumniForJourney" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[80] animate-fadeIn">
+        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" (click)="closeAlumniJourneyModal()"></div>
+        <div class="bg-white rounded-3xl max-w-3xl w-full flex flex-col max-h-[90vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp relative z-10">
+          <!-- Header -->
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-800 border border-slate-200 flex items-center justify-center font-black text-lg shadow-xs">
+                <svg class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight">Student Academic Lifecycle & Journey Logs</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Comprehensive audit trail from Day 1 of enrollment to alumni graduation.</p>
+              </div>
+            </div>
+            <button (click)="closeAlumniJourneyModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+          </div>
+
+          <!-- Body Content -->
+          <div class="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs">
+            <!-- Student Profile Badge Card -->
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-slate-900 text-white font-black text-base flex items-center justify-center shrink-0 shadow-sm">
+                  {{ (selectedAlumniForJourney.full_name || 'A').charAt(0) }}
+                </div>
+                <div>
+                  <h4 class="text-base font-black text-slate-900">{{ selectedAlumniForJourney.full_name }}</h4>
+                  <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <span class="font-mono font-bold text-slate-700">Permanent Adm: {{ selectedAlumniForJourney.admission_number }}</span>
+                    <span class="text-slate-300">•</span>
+                    <span class="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded-md border border-slate-200 shadow-2xs">
+                      Alumni ID: {{ selectedAlumniForJourney.alumni_number || 'ALU-REG' }}
+                    </span>
+                    <span *ngIf="selectedAlumniForJourney.gender" class="text-slate-500">({{ selectedAlumniForJourney.gender }})</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <span class="px-3 py-1 bg-white text-slate-800 font-bold text-xs rounded-xl border border-slate-200 shadow-2xs">
+                  Graduated: {{ selectedAlumniForJourney.last_class_name || 'Class 12' }} ({{ selectedAlumniForJourney.graduation_session }})
+                </span>
+              </div>
+            </div>
+
+            <!-- Lifecycle Key Stats Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block">Date of Admission</span>
+                <span class="font-bold text-slate-800 text-xs mt-0.5 block">
+                  {{ (selectedAlumniForJourney.admission_date ? (selectedAlumniForJourney.admission_date | date:'mediumDate') : 'Recorded') }}
+                </span>
+                <span class="text-[10px] text-slate-500">in {{ selectedAlumniForJourney.admission_class_name || 'Class' }}</span>
+              </div>
+
+              <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block">Graduation / Exit</span>
+                <span class="font-bold text-slate-800 text-xs mt-0.5 block">
+                  {{ (selectedAlumniForJourney.leaving_date ? (selectedAlumniForJourney.leaving_date | date:'mediumDate') : 'Session End') }}
+                </span>
+                <span class="text-[10px] text-slate-500">{{ selectedAlumniForJourney.graduation_session }}</span>
+              </div>
+
+              <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block">TC / Leaving Serial</span>
+                <span class="font-mono font-bold text-slate-800 text-xs mt-0.5 block">
+                  {{ selectedAlumniForJourney.tc_number || 'TC-ISSUED' }}
+                </span>
+                <span class="text-[10px] text-slate-500">Official Register</span>
+              </div>
+
+              <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block">Institutional Conduct</span>
+                <span class="font-bold text-slate-800 text-xs mt-0.5 block">
+                  {{ selectedAlumniForJourney.conduct || 'Exemplary' }}
+                </span>
+                <span class="text-[10px] text-slate-500">Bonafide Record</span>
+              </div>
+            </div>
+
+            <!-- Chronological Lifecycle Timeline -->
+            <div class="space-y-3 pt-2">
+              <div class="flex items-center justify-between">
+                <h5 class="font-black text-slate-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                  <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Chronological Lifecycle Journey & Milestones ({{ alumniJourneyLogs.length }})</span>
+                </h5>
+                <span class="text-[10px] text-slate-400 font-mono">Admission ID: {{ selectedAlumniForJourney.admission_number }}</span>
+              </div>
+
+              <div *ngIf="loadingAlumniJourney" class="p-10 text-center text-slate-400">
+                <div class="w-8 h-8 rounded-full border-2 border-slate-200 border-t-slate-800 animate-spin mx-auto mb-2"></div>
+                <span>Compiling student journey transcript...</span>
+              </div>
+
+              <!-- Timeline Items Container -->
+              <div *ngIf="!loadingAlumniJourney" class="space-y-3 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                <div *ngFor="let log of alumniJourneyLogs; let idx = index" class="relative flex items-start gap-3.5 pl-1.5">
+                  <!-- Timeline Step Dot -->
+                  <div class="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-[10px] shrink-0 z-10 shadow-xs ring-4 ring-white">
+                    {{ idx + 1 }}
+                  </div>
+
+                  <!-- Timeline Content Box -->
+                  <div class="p-3.5 bg-slate-50 hover:bg-slate-100/80 transition-colors rounded-2xl border border-slate-200 flex-1 space-y-1.5">
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                      <div class="flex items-center gap-2">
+                        <span class="font-black text-slate-900 text-xs">{{ log.title }}</span>
+                        <span *ngIf="log.academic_session" class="px-2 py-0.5 bg-white text-slate-700 text-[10px] font-mono font-bold rounded-md border border-slate-200">
+                          {{ log.academic_session }}
+                        </span>
+                      </div>
+                      <span class="text-[10px] font-mono text-slate-400">
+                        {{ log.timestamp ? (log.timestamp | date:'mediumDate') : 'Recorded' }}
+                      </span>
+                    </div>
+
+                    <p class="text-[11px] text-slate-600 leading-relaxed">{{ log.description }}</p>
+
+                    <div *ngIf="log.class_name || log.roll_number || log.alumni_number || log.tc_number" class="flex items-center gap-2 pt-1 text-[10px] text-slate-500 font-medium flex-wrap">
+                      <span *ngIf="log.class_name" class="font-bold text-slate-700">Class: {{ log.class_name }} ({{ formatSection(log.section_name) }})</span>
+                      <span *ngIf="log.roll_number">• Roll: {{ log.roll_number }}</span>
+                      <span *ngIf="log.alumni_number">• Alumni ID: <strong class="font-mono text-slate-800">{{ log.alumni_number }}</strong></span>
+                      <span *ngIf="log.tc_number">• TC No: <strong class="font-mono text-slate-800">{{ log.tc_number }}</strong></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer Actions -->
+          <div class="px-5 sm:px-6 py-3.5 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex flex-col sm:flex-row items-center justify-between gap-2.5 shrink-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <button type="button" (click)="openTcModal(selectedAlumniForJourney, $event)"
+                      class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 font-bold text-xs rounded-xl border border-slate-300 shadow-2xs flex items-center gap-1.5 cursor-pointer">
+                <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Transfer Certificate (TC)</span>
+              </button>
+
+              <button type="button" (click)="openCharacterCertModal(selectedAlumniForJourney, $event)"
+                      class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 font-bold text-xs rounded-xl border border-slate-300 shadow-2xs flex items-center gap-1.5 cursor-pointer">
+                <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                <span>Character Cert</span>
+              </button>
+
+              <button type="button" (click)="openAlumniCertModal(selectedAlumniForJourney, $event)"
+                      class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 font-bold text-xs rounded-xl border border-slate-300 shadow-2xs flex items-center gap-1.5 cursor-pointer">
+                <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                </svg>
+                <span>Alumni Cert</span>
+              </button>
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <button type="button" (click)="printStudentJourneyTranscript()"
+                      class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-2xl shadow-md transition-all cursor-pointer flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                <span>Print Journey Transcript</span>
+              </button>
+              <button type="button" (click)="closeAlumniJourneyModal()"
+                      class="px-3.5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs rounded-2xl cursor-pointer">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- MODAL: TRANSFER / SCHOOL LEAVING CERTIFICATE (TC)              -->
+      <!-- ============================================================== -->
+      <div *ngIf="showTcModal && selectedAlumniForTc" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[90] animate-fadeIn">
+        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" (click)="closeTcModal()"></div>
+        <div class="bg-white rounded-3xl max-w-2xl w-full flex flex-col max-h-[90vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp relative z-10">
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-800 border border-slate-200 flex items-center justify-center font-black text-lg shadow-xs">
+                <svg class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight">Generate Transfer Certificate (TC)</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Official School Leaving / Transfer Certificate with institutional compliance.</p>
+              </div>
+            </div>
+            <button (click)="closeTcModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+          </div>
+
+          <div class="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs">
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
+              <div>
+                <span class="text-[10px] text-slate-400 font-bold uppercase block">Alumnus Record</span>
+                <span class="font-black text-slate-900 text-sm">{{ selectedAlumniForTc.full_name }}</span>
+                <span class="text-slate-500 ml-1.5 font-mono">({{ selectedAlumniForTc.admission_number }})</span>
+              </div>
+              <span class="px-2.5 py-1 bg-white rounded-xl border border-slate-200 font-bold text-slate-800 text-xs shadow-2xs">
+                {{ selectedAlumniForTc.last_class_name || 'Class 12' }} - {{ formatSection(selectedAlumniForTc.last_section_name) }}
+              </span>
+            </div>
+
+            <!-- Configuration Fields -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">TC Serial Number *</label>
+                <input type="text" [(ngModel)]="tcForm.tcNumber" placeholder="e.g. TC/2026/0142"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Issue Date *</label>
+                <input type="date" [(ngModel)]="tcForm.issueDate"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Promotion / Academic Qualification *</label>
+                <input type="text" [(ngModel)]="tcForm.promotionStatus" placeholder="e.g. Qualified for next higher class"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">School Dues Paid Up To *</label>
+                <input type="text" [(ngModel)]="tcForm.duesPaidMonth" placeholder="e.g. March 2026 (All Dues Cleared)"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">General Conduct & Character *</label>
+                <select [(ngModel)]="tcForm.conduct"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner cursor-pointer">
+                  <option value="Exemplary">Exemplary</option>
+                  <option value="Very Good">Very Good</option>
+                  <option value="Good">Good</option>
+                  <option value="Satisfactory">Satisfactory</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Reason for Leaving *</label>
+                <input type="text" [(ngModel)]="tcForm.reasonForLeaving" placeholder="e.g. Completed Class Course / Relocation"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+            </div>
+
+            <!-- Live Document Preview Box -->
+            <div class="p-4 bg-slate-50 border-2 border-slate-300 rounded-2xl font-serif space-y-2 text-slate-900">
+              <div class="text-center pb-2 border-b border-slate-300">
+                <div class="text-xs uppercase tracking-widest font-sans font-bold text-slate-400">Institutional Preview</div>
+                <div class="text-sm font-black uppercase tracking-wider">{{ auth.currentUser()?.school?.name || 'SchoolSense Academy' }}</div>
+                <div class="text-[10px] font-sans text-slate-500 font-semibold">TRANSFER / SCHOOL LEAVING CERTIFICATE • TC NO: {{ tcForm.tcNumber }}</div>
+              </div>
+              <p class="text-[11px] leading-relaxed text-justify">
+                This is to certify that <strong>{{ selectedAlumniForTc.full_name }}</strong>, bearing permanent Admission ID <strong>{{ selectedAlumniForTc.admission_number }}</strong>, studied in this school up to <strong>{{ selectedAlumniForTc.last_class_name || 'Class 12' }}</strong> in session <strong>{{ selectedAlumniForTc.graduation_session }}</strong>. All institutional dues have been paid up to <strong>{{ tcForm.duesPaidMonth }}</strong>. General conduct during their tenure was <strong>{{ tcForm.conduct }}</strong>.
+              </p>
+            </div>
+          </div>
+
+          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
+            <button type="button" (click)="closeTcModal()" [disabled]="savingTc"
+                    class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
+              Cancel
+            </button>
+            <button type="button" (click)="printTransferCertificate()" [disabled]="savingTc"
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50">
+              <svg *ngIf="savingTc" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>{{ savingTc ? 'Generating...' : 'Print Official TC' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- MODAL: CHARACTER & CONDUCT CERTIFICATE                         -->
+      <!-- ============================================================== -->
+      <div *ngIf="showCharacterCertModal && selectedAlumniForCharacterCert" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[90] animate-fadeIn">
+        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" (click)="closeCharacterCertModal()"></div>
+        <div class="bg-white rounded-3xl max-w-2xl w-full flex flex-col max-h-[90vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp relative z-10">
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-800 border border-slate-200 flex items-center justify-center font-black text-lg shadow-xs">
+                <svg class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight">Generate Character Certificate</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Bonafide conduct & character certification for higher education / institutions.</p>
+              </div>
+            </div>
+            <button (click)="closeCharacterCertModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+          </div>
+
+          <div class="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs">
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
+              <div>
+                <span class="text-[10px] text-slate-400 font-bold uppercase block">Student Record</span>
+                <span class="font-black text-slate-900 text-sm">{{ selectedAlumniForCharacterCert.full_name }}</span>
+                <span class="text-slate-500 ml-1.5 font-mono">({{ selectedAlumniForCharacterCert.admission_number }})</span>
+              </div>
+              <span class="px-2.5 py-1 bg-white rounded-xl border border-slate-200 font-bold text-slate-800 text-xs shadow-2xs">
+                {{ selectedAlumniForCharacterCert.last_class_name || 'Class 12' }}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Certificate Serial Number *</label>
+                <input type="text" [(ngModel)]="characterCertForm.certNumber" placeholder="e.g. CC/2026/0088"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Issue Date *</label>
+                <input type="date" [(ngModel)]="characterCertForm.issueDate"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Conduct & Moral Bearing *</label>
+                <select [(ngModel)]="characterCertForm.conduct"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner cursor-pointer">
+                  <option value="Exemplary & Commendable">Exemplary & Commendable</option>
+                  <option value="Very Good">Very Good</option>
+                  <option value="Good">Good</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Co-Curricular Participation</label>
+                <input type="text" [(ngModel)]="characterCertForm.coCurricularRemarks" placeholder="e.g. Actively participated in sports and debate"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+            </div>
+
+            <!-- Preview box -->
+            <div class="p-4 bg-slate-50 border-2 border-slate-300 rounded-2xl font-serif space-y-2 text-slate-900">
+              <div class="text-center pb-2 border-b border-slate-300">
+                <div class="text-xs uppercase tracking-widest font-sans font-bold text-slate-400">Institutional Preview</div>
+                <div class="text-sm font-black uppercase tracking-wider">{{ auth.currentUser()?.school?.name || 'SchoolSense Academy' }}</div>
+                <div class="text-[10px] font-sans text-slate-500 font-semibold">CHARACTER & CONDUCT CERTIFICATE • SERIAL NO: {{ characterCertForm.certNumber }}</div>
+              </div>
+              <p class="text-[11px] leading-relaxed text-justify">
+                This is to certify that <strong>{{ selectedAlumniForCharacterCert.full_name }}</strong>, child of <strong>{{ selectedAlumniForCharacterCert.primary_contact?.first_name || 'Guardian' }}</strong>, was a bonafide student of this institution in <strong>{{ selectedAlumniForCharacterCert.last_class_name || 'Class 12' }}</strong>. During their tenure, their conduct and character were found to be <strong>{{ characterCertForm.conduct }}</strong>. We wish them all success in their future endeavors.
+              </p>
+            </div>
+          </div>
+
+          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
+            <button type="button" (click)="closeCharacterCertModal()" [disabled]="savingCharacterCert"
+                    class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
+              Cancel
+            </button>
+            <button type="button" (click)="printCharacterCertificate()" [disabled]="savingCharacterCert"
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50">
+              <svg *ngIf="savingCharacterCert" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>{{ savingCharacterCert ? 'Generating...' : 'Print Character Certificate' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- MODAL: ALUMNI RECOGNITION & MEMBERSHIP CERTIFICATE             -->
+      <!-- ============================================================== -->
+      <div *ngIf="showAlumniCertModal && selectedAlumniForAlumniCert" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[90] animate-fadeIn">
+        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" (click)="closeAlumniCertModal()"></div>
+        <div class="bg-white rounded-3xl max-w-2xl w-full flex flex-col max-h-[90vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp relative z-10">
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-800 border border-slate-200 flex items-center justify-center font-black text-lg shadow-xs">
+                <svg class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight">Generate Official Alumni Certificate</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Certificate of Alumni Recognition featuring permanent Alumni Registration Number.</p>
+              </div>
+            </div>
+            <button (click)="closeAlumniCertModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+          </div>
+
+          <div class="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs">
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
+              <div>
+                <span class="text-[10px] text-slate-400 font-bold uppercase block">Alumnus Name</span>
+                <span class="font-black text-slate-900 text-sm">{{ selectedAlumniForAlumniCert.full_name }}</span>
+                <span class="text-slate-500 ml-1.5 font-mono">({{ selectedAlumniForAlumniCert.admission_number }})</span>
+              </div>
+              <span class="px-2.5 py-1 bg-white rounded-xl border border-slate-200 font-mono font-bold text-slate-800 text-xs shadow-2xs">
+                Alumni ID: {{ alumniCertForm.alumniNumber }}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Permanent Alumni Number *</label>
+                <input type="text" [(ngModel)]="alumniCertForm.alumniNumber" placeholder="e.g. ALU-2026-0042"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Certificate Serial Number *</label>
+                <input type="text" [(ngModel)]="alumniCertForm.certNumber" placeholder="e.g. AC/2026/0122"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Issue Date *</label>
+                <input type="date" [(ngModel)]="alumniCertForm.issueDate"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Recognition Statement</label>
+                <input type="text" [(ngModel)]="alumniCertForm.honorsRemarks" placeholder="e.g. Inducted into lifelong Alumni Guild"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+            </div>
+
+            <!-- Preview box -->
+            <div class="p-4 bg-slate-50 border-2 border-slate-300 rounded-2xl font-serif space-y-2 text-slate-900">
+              <div class="text-center pb-2 border-b border-slate-300">
+                <div class="text-xs uppercase tracking-widest font-sans font-bold text-slate-400">Institutional Preview</div>
+                <div class="text-sm font-black uppercase tracking-wider">{{ auth.currentUser()?.school?.name || 'SchoolSense Academy' }}</div>
+                <div class="text-[10px] font-sans text-slate-500 font-semibold">CERTIFICATE OF ALUMNI RECOGNITION • ALUMNI ID: {{ alumniCertForm.alumniNumber }}</div>
+              </div>
+              <p class="text-[11px] leading-relaxed text-justify">
+                This is to certify that <strong>{{ selectedAlumniForAlumniCert.full_name }}</strong> (Permanent Admission ID: <strong>{{ selectedAlumniForAlumniCert.admission_number }}</strong>) has completed their course of study in <strong>{{ selectedAlumniForAlumniCert.last_class_name || 'Class 12' }}</strong> and is officially registered as a lifetime Alumni Member of this institution under Registration ID <strong>{{ alumniCertForm.alumniNumber }}</strong>.
+              </p>
+            </div>
+          </div>
+
+          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
+            <button type="button" (click)="closeAlumniCertModal()" [disabled]="savingAlumniCert"
+                    class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
+              Cancel
+            </button>
+            <button type="button" (click)="printAlumniCertificate()" [disabled]="savingAlumniCert"
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50">
+              <svg *ngIf="savingAlumniCert" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>{{ savingAlumniCert ? 'Generating...' : 'Print Alumni Certificate' }}</span>
             </button>
           </div>
         </div>
@@ -3394,6 +4876,7 @@ export class AcademicsComponent implements OnInit {
   toast = inject(ToastService);
   exportService = inject(ExportService);
   modalService = inject(ModalService);
+  imageUploadService = inject(ImageUploadService);
   route = inject(ActivatedRoute);
   router = inject(Router);
   
@@ -3419,6 +4902,31 @@ export class AcademicsComponent implements OnInit {
   pageSize = 25;
   alumniCurrentPage = 1;
   alumniPageSize = 25;
+
+  // Alumni Management
+  showAddAlumniModal = false;
+  isEditingAlumni = false;
+  editingAlumniId = '';
+  savingAlumni = false;
+  alumniModalError = '';
+  activeAlumniMenuId: string | null = null;
+  alumniMenuStyle: Record<string, string> = {};
+  showDeleteAlumniModal = false;
+  alumniToDelete: AlumniStudent | null = null;
+  isDeletingAlumni = false;
+  newAlumni = {
+    firstName: '',
+    lastName: '',
+    admissionNumber: '',
+    gender: 'MALE',
+    dateOfBirth: '',
+    className: 'Class 12',
+    sectionName: 'Section A',
+    graduationSession: '',
+    guardianName: '',
+    guardianPhone: '',
+    rollNumber: '1',
+  };
 
   // Standard Grade Levels List
   readonly STANDARD_GRADE_LEVELS = [
@@ -3564,6 +5072,10 @@ export class AcademicsComponent implements OnInit {
   savingStudent = false;
   studentModalError = '';
   studentEnrollClassId = '';
+  uploadingStudentPhoto = false;
+  uploadingGuardianPhoto = false;
+  uploadingStaffPhoto = false;
+
   newStudent = {
     firstName: '',
     lastName: '',
@@ -3573,9 +5085,11 @@ export class AcademicsComponent implements OnInit {
     gender: 'MALE',
     dateOfBirth: '',
     bloodGroup: '',
+    photoUrl: '',
     guardianName: '',
     guardianPhone: '',
     guardianEmail: '',
+    guardianPhotoUrl: '',
     relationship: 'FATHER',
   };
 
@@ -3587,6 +5101,7 @@ export class AcademicsComponent implements OnInit {
     lastName: '',
     email: '',
     phone: '',
+    photoUrl: '',
     role: 'TEACHER',
     primarySubjectId: '',
     password: 'password123',
@@ -3659,6 +5174,112 @@ export class AcademicsComponent implements OnInit {
   deactRequestComments = '';
   submittingDeactRequest = false;
   deactModalError = '';
+
+  // Promotion State
+  showPromoteStudentModal = false;
+  selectedStudentForPromote: StudentItem | null = null;
+  promoteTargetClassId = '';
+  promoteTargetSectionId = '';
+  promoteRollNumber = '';
+  promoteReason = '';
+  executingPromote = false;
+  promoteModalError = '';
+
+  // Section Change State
+  showChangeSectionModal = false;
+  selectedStudentForSectionChange: StudentItem | null = null;
+  sectionChangeTargetSectionId = '';
+  sectionChangeRollNumber = '';
+  sectionChangeReason = '';
+  executingSectionChange = false;
+  sectionChangeModalError = '';
+
+  // Demotion State
+  showDemoteStudentModal = false;
+  selectedStudentForDemote: StudentItem | null = null;
+  demoteTargetClassId = '';
+  demoteTargetSectionId = '';
+  demoteRollNumber = '';
+  demoteReason = '';
+  executingDemote = false;
+  demoteModalError = '';
+
+  // Convert to Alumni State
+  showConvertToAlumniModal = false;
+  selectedStudentForAlumniConversion: StudentItem | null = null;
+  alumniConversionSession = '';
+  alumniConversionGraduatingClassId = '';
+  alumniConversionGraduatingSectionId = '';
+  alumniConversionTcNumber = '';
+  alumniConversionRemarks = '';
+  executingAlumniConversion = false;
+  alumniConversionModalError = '';
+
+  // Teacher Academic Request State
+  showAcademicRequestModal = false;
+  selectedStudentForAcademicRequest: StudentItem | null = null;
+  academicRequestType: 'PROMOTION' | 'SECTION_CHANGE' | 'DEMOTION' | 'ALUMNI' | 'INACTIVE' | 'LEFTOUT' = 'PROMOTION';
+  academicRequestTargetClassId = '';
+  academicRequestTargetSectionId = '';
+  academicRequestTargetRollNumber = '';
+  academicRequestPassingSession = '';
+  academicRequestTcNumber = '';
+  academicRequestReason = '';
+  academicRequestComments = '';
+  submittingAcademicRequest = false;
+  academicRequestModalError = '';
+
+  // Leftout / Status modal extensions
+  alsoMarkAsAlumni = false;
+  leftoutTcNumber = '';
+  academicRequestFilterTab: 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED' = 'PENDING';
+
+  // Alumni Journey & Lifecycle Logs State
+  showAlumniJourneyModal = false;
+  selectedAlumniForJourney: AlumniStudent | null = null;
+  loadingAlumniJourney = false;
+  alumniJourneyLogs: StudentLifecycleLog[] = [];
+  alumniJourneySummary: any = null;
+
+  // Transfer Certificate (TC) Modal State
+  showTcModal = false;
+  selectedAlumniForTc: AlumniStudent | null = null;
+  savingTc = false;
+  tcForm = {
+    tcNumber: '',
+    bookNumber: '01',
+    issueDate: '',
+    promotionStatus: 'Qualified for promotion to next standard',
+    duesPaidMonth: 'March (All Dues Cleared)',
+    conduct: 'Exemplary',
+    reasonForLeaving: 'Course completed / Graduated',
+    workingDaysTotal: '220',
+    workingDaysPresent: '214',
+    remarks: 'Student bears good moral character.',
+  };
+
+  // Character Certificate Modal State
+  showCharacterCertModal = false;
+  selectedAlumniForCharacterCert: AlumniStudent | null = null;
+  savingCharacterCert = false;
+  characterCertForm = {
+    certNumber: '',
+    issueDate: '',
+    conduct: 'Exemplary & Commendable',
+    coCurricularRemarks: 'Actively participated in school academic, cultural, and sports activities.',
+    remarks: 'We wish them excellence and bright success in all future pursuits.',
+  };
+
+  // Alumni Certificate Modal State
+  showAlumniCertModal = false;
+  selectedAlumniForAlumniCert: AlumniStudent | null = null;
+  savingAlumniCert = false;
+  alumniCertForm = {
+    certNumber: '',
+    alumniNumber: '',
+    issueDate: '',
+    honorsRemarks: 'Recognized for successful academic completion and awarded lifelong institutional alumni status.',
+  };
 
   get canDirectlyDeactivateStudent(): boolean {
     return this.auth.isAdmin() || this.auth.isSuperAdmin() || this.auth.isPrincipal();
@@ -4046,12 +5667,68 @@ export class AcademicsComponent implements OnInit {
     });
   }
 
+  // --- Pedagogical & Academic Ordering Getters ---
+  get sortedClasses(): ClassItem[] {
+    return [...(this.classes || [])].sort((a, b) => {
+      const rankA = getClassPedagogicalRank(a.name, a.code, a.display_order);
+      const rankB = getClassPedagogicalRank(b.name, b.code, b.display_order);
+      if (rankA !== rankB) return rankA - rankB;
+      return (a.display_order || 0) - (b.display_order || 0);
+    });
+  }
+
+  get availableSectionsForPromoteClass(): SectionItem[] {
+    if (!this.promoteTargetClassId) return [];
+    const targetCls = this.classes.find(c => c.id === this.promoteTargetClassId);
+    return targetCls?.sections || [];
+  }
+
+  get availableSectionsForDemoteClass(): SectionItem[] {
+    if (!this.demoteTargetClassId) return [];
+    const targetCls = this.classes.find(c => c.id === this.demoteTargetClassId);
+    return targetCls?.sections || [];
+  }
+
+  get availableSectionsForCurrentClass(): SectionItem[] {
+    if (!this.selectedStudentForSectionChange) return this.selectedClass?.sections || [];
+    const cls = this.classes.find(c => c.name === this.selectedStudentForSectionChange?.className || c.id === this.selectedClass?.id);
+    return cls?.sections || this.selectedClass?.sections || [];
+  }
+
+  get availableSectionsForAcademicRequestClass(): SectionItem[] {
+    if (!this.academicRequestTargetClassId) return [];
+    const targetCls = this.classes.find(c => c.id === this.academicRequestTargetClassId);
+    return targetCls?.sections || [];
+  }
+
+  get filteredAcademicRequests(): StudentDeactivationRequest[] {
+    if (this.academicRequestFilterTab === 'ALL') {
+      return this.deactivationRequests;
+    }
+    return this.deactivationRequests.filter(r => (r.status || 'PENDING') === this.academicRequestFilterTab);
+  }
+
+  formatRequestType(type?: string): string {
+    switch (type) {
+      case 'PROMOTION': return 'Promote to Next Class';
+      case 'DEMOTION': return 'Demote to Previous Class';
+      case 'SECTION_CHANGE': return 'Transfer Section';
+      case 'ALUMNI': return 'Graduate to Alumni';
+      case 'INACTIVE': return 'Mark Inactive';
+      case 'SUSPENDED': return 'Suspend Student';
+      case 'LEFTOUT': return 'Mark Leftout / TC';
+      default: return type || 'Deactivation Request';
+    }
+  }
+
   // --- Student Status Direct Toggle (Admin / Principal) ---
   openToggleStudentStatus(student: StudentItem, newStatus: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'LEFTOUT', event?: Event) {
     if (event) event.stopPropagation();
     this.activeStudentMenuId = null;
     this.selectedStudentForStatus = student;
     this.studentStatusAction = newStatus;
+    this.alsoMarkAsAlumni = false;
+    this.leftoutTcNumber = '';
     const defaultReasons: Record<string, string> = {
       ACTIVE: 'Re-admitted / Reactivated',
       INACTIVE: 'Administrative deactivation',
@@ -4067,6 +5744,8 @@ export class AcademicsComponent implements OnInit {
     this.modalService.close();
     this.showStudentStatusModal = false;
     this.selectedStudentForStatus = null;
+    this.alsoMarkAsAlumni = false;
+    this.leftoutTcNumber = '';
   }
 
   executeToggleStudentStatus() {
@@ -4076,6 +5755,35 @@ export class AcademicsComponent implements OnInit {
     this.updatingStudentStatus = true;
 
     const studentId = student.studentId || student.id || student.enrollmentId;
+
+    if (action === 'LEFTOUT' && this.alsoMarkAsAlumni) {
+      const currentCls = this.classes.find(c => c.name.toLowerCase() === student.className.toLowerCase() || c.id === this.selectedClass?.id);
+      const payload = {
+        student_id: studentId,
+        graduating_class_id: currentCls?.id || this.classes[0]?.id || '',
+        graduating_session: this.auth.activeAcademicSession()?.name || '2026–2027',
+        tc_number: this.leftoutTcNumber.trim() || undefined,
+        remarks: this.studentStatusReason.trim() || `Left school / TC issued in ${student.className} and added to Alumni`,
+      };
+      this.api.post('academics/students/convert-alumni', payload).subscribe({
+        next: () => {
+          this.updatingStudentStatus = false;
+          this.closeStudentStatusModal();
+          student.status = 'ALUMNI';
+          this.toast.success(`Student "${student.fullName}" marked as Leftout and registered in Alumni Directory.`);
+          this.loadAlumniList();
+          if (this.selectedSection) {
+            this.selectSection(this.selectedSection);
+          }
+        },
+        error: (err: any) => {
+          this.updatingStudentStatus = false;
+          this.toast.error(this.formatErrorMessage(err, 'Failed to update student status.'));
+        },
+      });
+      return;
+    }
+
     this.api.patch(`academics/students/${studentId}/status`, {
       status: action,
       reason: this.studentStatusReason.trim() || undefined,
@@ -4091,68 +5799,435 @@ export class AcademicsComponent implements OnInit {
       },
       error: (err: any) => {
         this.updatingStudentStatus = false;
-        this.toast.error(err.error?.message || err.message || 'Failed to update student status.');
+        this.toast.error(this.formatErrorMessage(err, 'Failed to update student status.'));
       },
     });
   }
 
-  // --- Teacher Student Deactivation Request ---
-  openTeacherDeactModal(student: StudentItem, event: Event) {
-    event.stopPropagation();
-    this.selectedStudentForDeactRequest = student;
-    this.deactRequestReason = 'Transfer / Relocation';
-    this.deactRequestComments = '';
-    this.deactModalError = '';
-    this.modalService.open('TEACHER_DEACT_MODAL');
-    this.showTeacherDeactModal = true;
+  // --- Student Direct Promotion (Admin / Principal) ---
+  openPromoteStudentModal(student: StudentItem, event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeStudentMenuId = null;
+    this.selectedStudentForPromote = student;
+    this.promoteRollNumber = student.rollNumber ? String(student.rollNumber) : '';
+    this.promoteReason = 'Annual academic promotion to next grade level';
+    this.promoteModalError = '';
+
+    const sorted = this.sortedClasses;
+    const currentIndex = sorted.findIndex(c => c.name.toLowerCase() === student.className.toLowerCase() || c.id === this.selectedClass?.id);
+    if (currentIndex >= 0 && currentIndex < sorted.length - 1) {
+      this.promoteTargetClassId = sorted[currentIndex + 1].id;
+    } else {
+      this.promoteTargetClassId = sorted[0]?.id || '';
+    }
+    this.onPromoteClassChange();
+    this.modalService.open('PROMOTE_STUDENT_MODAL');
+    this.showPromoteStudentModal = true;
   }
 
-  closeTeacherDeactModal() {
+  closePromoteStudentModal() {
     this.modalService.close();
-    this.showTeacherDeactModal = false;
-    this.selectedStudentForDeactRequest = null;
+    this.showPromoteStudentModal = false;
+    this.selectedStudentForPromote = null;
+    this.promoteModalError = '';
   }
 
-  submitTeacherDeactRequest() {
-    if (!this.selectedStudentForDeactRequest) return;
-    if (!this.deactRequestReason.trim()) {
-      this.deactModalError = 'Please select a reason.';
+  onPromoteClassChange() {
+    const sections = this.availableSectionsForPromoteClass;
+    if (sections && sections.length > 0) {
+      this.promoteTargetSectionId = sections[0].id;
+    } else {
+      this.promoteTargetSectionId = '';
+    }
+  }
+
+  executePromoteStudent() {
+    if (!this.selectedStudentForPromote) return;
+    if (!this.promoteTargetClassId) {
+      this.promoteModalError = 'Please select a target class.';
       return;
     }
-    if (!this.deactRequestComments.trim()) {
-      this.deactModalError = 'Please provide detailed remarks / justification for deactivation.';
+    if (!this.promoteTargetSectionId) {
+      this.promoteModalError = 'Please select a target section.';
       return;
     }
-    this.submittingDeactRequest = true;
-    this.deactModalError = '';
+
+    this.executingPromote = true;
+    this.promoteModalError = '';
+
+    const student = this.selectedStudentForPromote;
+    const studentId = student.studentId || student.id || student.enrollmentId;
 
     const payload = {
-      student_id: this.selectedStudentForDeactRequest.studentId || this.selectedStudentForDeactRequest.id || this.selectedStudentForDeactRequest.enrollmentId,
-      student_name: this.selectedStudentForDeactRequest.fullName,
-      admission_number: this.selectedStudentForDeactRequest.admissionNumber,
-      class_name: this.selectedStudentForDeactRequest.className,
-      section_name: this.selectedStudentForDeactRequest.sectionName,
-      reason: this.deactRequestReason,
-      comments: this.deactRequestComments.trim(),
+      student_id: studentId,
+      target_class_id: this.promoteTargetClassId,
+      target_section_id: this.promoteTargetSectionId,
+      target_roll_number: this.promoteRollNumber ? Number(this.promoteRollNumber) : undefined,
+      reason: this.promoteReason.trim() || undefined,
+    };
+
+    this.api.post('academics/students/promote', payload).subscribe({
+      next: () => {
+        this.executingPromote = false;
+        this.closePromoteStudentModal();
+        this.toast.success(`Student "${student.fullName}" promoted successfully! Admission number remains ${student.admissionNumber}.`);
+        this.loadClassesAndSubjects();
+        if (this.selectedSection) {
+          this.selectSection(this.selectedSection);
+        }
+      },
+      error: (err: any) => {
+        this.executingPromote = false;
+        this.promoteModalError = this.formatErrorMessage(err, 'Failed to promote student.');
+      },
+    });
+  }
+
+  // --- Student Direct Section Change (Admin / Principal) ---
+  openChangeSectionModal(student: StudentItem, event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeStudentMenuId = null;
+    this.selectedStudentForSectionChange = student;
+    this.sectionChangeRollNumber = student.rollNumber ? String(student.rollNumber) : '';
+    this.sectionChangeReason = 'Section rebalancing / Class division transfer';
+    this.sectionChangeModalError = '';
+
+    const sections = this.availableSectionsForCurrentClass;
+    const otherSection = sections.find(s => s.name.toLowerCase() !== student.sectionName.toLowerCase());
+    this.sectionChangeTargetSectionId = otherSection?.id || sections[0]?.id || '';
+
+    this.modalService.open('CHANGE_SECTION_MODAL');
+    this.showChangeSectionModal = true;
+  }
+
+  closeChangeSectionModal() {
+    this.modalService.close();
+    this.showChangeSectionModal = false;
+    this.selectedStudentForSectionChange = null;
+    this.sectionChangeModalError = '';
+  }
+
+  executeChangeSection() {
+    if (!this.selectedStudentForSectionChange) return;
+    if (!this.sectionChangeTargetSectionId) {
+      this.sectionChangeModalError = 'Please select a target section.';
+      return;
+    }
+
+    this.executingSectionChange = true;
+    this.sectionChangeModalError = '';
+
+    const student = this.selectedStudentForSectionChange;
+    const studentId = student.studentId || student.id || student.enrollmentId;
+
+    const payload = {
+      student_id: studentId,
+      target_section_id: this.sectionChangeTargetSectionId,
+      target_roll_number: this.sectionChangeRollNumber ? Number(this.sectionChangeRollNumber) : undefined,
+      reason: this.sectionChangeReason.trim() || undefined,
+    };
+
+    this.api.post('academics/students/change-section', payload).subscribe({
+      next: () => {
+        this.executingSectionChange = false;
+        this.closeChangeSectionModal();
+        this.toast.success(`Student "${student.fullName}" transferred to new section successfully.`);
+        this.loadClassesAndSubjects();
+        if (this.selectedSection) {
+          this.selectSection(this.selectedSection);
+        }
+      },
+      error: (err: any) => {
+        this.executingSectionChange = false;
+        this.sectionChangeModalError = this.formatErrorMessage(err, 'Failed to transfer section.');
+      },
+    });
+  }
+
+  // --- Student Direct Demotion (Admin / Principal) ---
+  openDemoteStudentModal(student: StudentItem, event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeStudentMenuId = null;
+    this.selectedStudentForDemote = student;
+    this.demoteRollNumber = student.rollNumber ? String(student.rollNumber) : '';
+    this.demoteReason = 'Academic review / Foundational reassignment';
+    this.demoteModalError = '';
+
+    const sorted = this.sortedClasses;
+    const currentIndex = sorted.findIndex(c => c.name.toLowerCase() === student.className.toLowerCase() || c.id === this.selectedClass?.id);
+    if (currentIndex > 0) {
+      this.demoteTargetClassId = sorted[currentIndex - 1].id;
+    } else {
+      this.demoteTargetClassId = sorted[0]?.id || '';
+    }
+    this.onDemoteClassChange();
+    this.modalService.open('DEMOTE_STUDENT_MODAL');
+    this.showDemoteStudentModal = true;
+  }
+
+  closeDemoteStudentModal() {
+    this.modalService.close();
+    this.showDemoteStudentModal = false;
+    this.selectedStudentForDemote = null;
+    this.demoteModalError = '';
+  }
+
+  onDemoteClassChange() {
+    const sections = this.availableSectionsForDemoteClass;
+    if (sections && sections.length > 0) {
+      this.demoteTargetSectionId = sections[0].id;
+    } else {
+      this.demoteTargetSectionId = '';
+    }
+  }
+
+  executeDemoteStudent() {
+    if (!this.selectedStudentForDemote) return;
+    if (!this.demoteTargetClassId) {
+      this.demoteModalError = 'Please select a target class.';
+      return;
+    }
+    if (!this.demoteTargetSectionId) {
+      this.demoteModalError = 'Please select a target section.';
+      return;
+    }
+
+    this.executingDemote = true;
+    this.demoteModalError = '';
+
+    const student = this.selectedStudentForDemote;
+    const studentId = student.studentId || student.id || student.enrollmentId;
+
+    const payload = {
+      student_id: studentId,
+      target_class_id: this.demoteTargetClassId,
+      target_section_id: this.demoteTargetSectionId,
+      target_roll_number: this.demoteRollNumber ? Number(this.demoteRollNumber) : undefined,
+      reason: this.demoteReason.trim() || undefined,
+    };
+
+    this.api.post('academics/students/demote', payload).subscribe({
+      next: () => {
+        this.executingDemote = false;
+        this.closeDemoteStudentModal();
+        this.toast.success(`Student "${student.fullName}" moved to target class successfully.`);
+        this.loadClassesAndSubjects();
+        if (this.selectedSection) {
+          this.selectSection(this.selectedSection);
+        }
+      },
+      error: (err: any) => {
+        this.executingDemote = false;
+        this.demoteModalError = this.formatErrorMessage(err, 'Failed to reassign student.');
+      },
+    });
+  }
+
+  // --- Student Direct Convert to Alumni (Admin / Principal) ---
+  openConvertToAlumniModal(student: StudentItem, event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeStudentMenuId = null;
+    this.selectedStudentForAlumniConversion = student;
+    this.alumniConversionSession = this.auth.activeAcademicSession()?.name || '2026–2027';
+    
+    const currentCls = this.classes.find(c => c.name.toLowerCase() === student.className.toLowerCase() || c.id === this.selectedClass?.id);
+    this.alumniConversionGraduatingClassId = currentCls?.id || this.classes[0]?.id || '';
+    this.alumniConversionTcNumber = '';
+    this.alumniConversionRemarks = `Completed ${student.className} and graduated to institutional alumni`;
+    this.alumniConversionModalError = '';
+
+    this.modalService.open('CONVERT_ALUMNI_MODAL');
+    this.showConvertToAlumniModal = true;
+  }
+
+  closeConvertToAlumniModal() {
+    this.modalService.close();
+    this.showConvertToAlumniModal = false;
+    this.selectedStudentForAlumniConversion = null;
+    this.alumniConversionModalError = '';
+  }
+
+  executeConvertToAlumni() {
+    if (!this.selectedStudentForAlumniConversion) return;
+    if (!this.alumniConversionGraduatingClassId) {
+      this.alumniConversionModalError = 'Please select the graduating/terminal class.';
+      return;
+    }
+    if (!this.alumniConversionSession.trim()) {
+      this.alumniConversionModalError = 'Please specify the passing academic session.';
+      return;
+    }
+
+    this.executingAlumniConversion = true;
+    this.alumniConversionModalError = '';
+
+    const student = this.selectedStudentForAlumniConversion;
+    const studentId = student.studentId || student.id || student.enrollmentId;
+
+    const payload = {
+      student_id: studentId,
+      graduating_class_id: this.alumniConversionGraduatingClassId,
+      graduating_session: this.alumniConversionSession.trim(),
+      tc_number: this.alumniConversionTcNumber.trim() || undefined,
+      remarks: this.alumniConversionRemarks.trim() || undefined,
+    };
+
+    this.api.post('academics/students/convert-alumni', payload).subscribe({
+      next: () => {
+        this.executingAlumniConversion = false;
+        this.closeConvertToAlumniModal();
+        student.status = 'ALUMNI';
+        this.toast.success(`Student "${student.fullName}" successfully moved to Alumni Directory! Permanent admission number: ${student.admissionNumber}`);
+        this.loadAlumniList();
+        if (this.selectedSection) {
+          this.selectSection(this.selectedSection);
+        }
+      },
+      error: (err: any) => {
+        this.executingAlumniConversion = false;
+        this.alumniConversionModalError = this.formatErrorMessage(err, 'Failed to convert student to alumni.');
+      },
+    });
+  }
+
+  // --- Teacher Academic Action Request Modal (Teacher Role) ---
+  openTeacherAcademicRequestModal(student: StudentItem, requestType: 'PROMOTION' | 'SECTION_CHANGE' | 'DEMOTION' | 'ALUMNI' | 'INACTIVE' | 'LEFTOUT' = 'PROMOTION', event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeStudentMenuId = null;
+    this.selectedStudentForAcademicRequest = student;
+    this.academicRequestType = requestType;
+    this.academicRequestPassingSession = this.auth.activeAcademicSession()?.name || '2026–2027';
+    this.academicRequestTcNumber = '';
+    this.academicRequestTargetRollNumber = student.rollNumber ? String(student.rollNumber) : '';
+
+    const defaultReasons: Record<string, string> = {
+      PROMOTION: 'Qualified for academic promotion to next grade level',
+      SECTION_CHANGE: 'Section transfer / Classroom balance request',
+      DEMOTION: 'Needs foundational revision in previous class level',
+      ALUMNI: `Completed studies up to ${student.className} - move to alumni`,
+      INACTIVE: 'Parent requested temporary withdrawal / fee hold',
+      LEFTOUT: 'Transfer Certificate requested / student relocated',
+    };
+    this.academicRequestReason = defaultReasons[requestType] || '';
+    this.academicRequestComments = '';
+    this.academicRequestModalError = '';
+
+    this.onAcademicRequestTypeChange();
+    this.modalService.open('TEACHER_ACADEMIC_REQUEST_MODAL');
+    this.showAcademicRequestModal = true;
+  }
+
+  closeTeacherAcademicRequestModal() {
+    this.modalService.close();
+    this.showAcademicRequestModal = false;
+    this.selectedStudentForAcademicRequest = null;
+    this.academicRequestModalError = '';
+  }
+
+  onAcademicRequestTypeChange() {
+    const student = this.selectedStudentForAcademicRequest;
+    if (!student) return;
+    const sorted = this.sortedClasses;
+    const currentIndex = sorted.findIndex(c => c.name.toLowerCase() === student.className.toLowerCase() || c.id === this.selectedClass?.id);
+
+    if (this.academicRequestType === 'PROMOTION') {
+      if (currentIndex >= 0 && currentIndex < sorted.length - 1) {
+        this.academicRequestTargetClassId = sorted[currentIndex + 1].id;
+      } else {
+        this.academicRequestTargetClassId = sorted[0]?.id || '';
+      }
+      this.onAcademicRequestClassChange();
+    } else if (this.academicRequestType === 'DEMOTION') {
+      if (currentIndex > 0) {
+        this.academicRequestTargetClassId = sorted[currentIndex - 1].id;
+      } else {
+        this.academicRequestTargetClassId = sorted[0]?.id || '';
+      }
+      this.onAcademicRequestClassChange();
+    } else if (this.academicRequestType === 'SECTION_CHANGE') {
+      const sections = this.availableSectionsForCurrentClass;
+      const otherSection = sections.find(s => s.name.toLowerCase() !== student.sectionName.toLowerCase());
+      this.academicRequestTargetSectionId = otherSection?.id || sections[0]?.id || '';
+    }
+  }
+
+  onAcademicRequestClassChange() {
+    const sections = this.availableSectionsForAcademicRequestClass;
+    if (sections && sections.length > 0) {
+      this.academicRequestTargetSectionId = sections[0].id;
+    } else {
+      this.academicRequestTargetSectionId = '';
+    }
+  }
+
+  submitTeacherAcademicRequest() {
+    if (!this.selectedStudentForAcademicRequest) return;
+    if (!this.academicRequestReason.trim()) {
+      this.academicRequestModalError = 'Please provide a primary justification / reason.';
+      return;
+    }
+    if (!this.academicRequestComments.trim()) {
+      this.academicRequestModalError = 'Please provide detailed teacher remarks.';
+      return;
+    }
+
+    const student = this.selectedStudentForAcademicRequest;
+    const studentId = student.studentId || student.id || student.enrollmentId;
+    const targetClass = this.classes.find(c => c.id === this.academicRequestTargetClassId);
+    const targetSection = (targetClass?.sections || this.classes.flatMap(c => c.sections || [])).find(s => s.id === this.academicRequestTargetSectionId);
+
+    this.submittingAcademicRequest = true;
+    this.academicRequestModalError = '';
+
+    const payload = {
+      student_id: studentId,
+      student_name: student.fullName,
+      admission_number: student.admissionNumber,
+      class_name: student.className,
+      section_name: student.sectionName,
+      request_type: this.academicRequestType,
+      target_class_id: (this.academicRequestType === 'PROMOTION' || this.academicRequestType === 'DEMOTION') ? this.academicRequestTargetClassId : undefined,
+      target_class_name: targetClass?.name,
+      target_section_id: (this.academicRequestType === 'PROMOTION' || this.academicRequestType === 'DEMOTION' || this.academicRequestType === 'SECTION_CHANGE') ? this.academicRequestTargetSectionId : undefined,
+      target_section_name: targetSection?.name,
+      target_roll_number: this.academicRequestTargetRollNumber ? Number(this.academicRequestTargetRollNumber) : undefined,
+      passing_session: this.academicRequestType === 'ALUMNI' ? this.academicRequestPassingSession : undefined,
+      leaving_certificate_number: (this.academicRequestType === 'ALUMNI' || this.academicRequestType === 'LEFTOUT') ? this.academicRequestTcNumber : undefined,
+      reason: this.academicRequestReason.trim(),
+      comments: this.academicRequestComments.trim(),
     };
 
     this.api.post('academics/students/deactivation-requests', payload).subscribe({
       next: () => {
-        this.submittingDeactRequest = false;
-        this.closeTeacherDeactModal();
-        this.toast.success(`Deactivation request submitted for ${payload.student_name}. Sent to Principal/Admin for review.`);
+        this.submittingAcademicRequest = false;
+        this.closeTeacherAcademicRequestModal();
+        this.toast.success(`Academic request for "${student.fullName}" submitted successfully. Sent to Principal / Admin for review.`);
         this.loadDeactivationRequests();
       },
       error: (err: any) => {
-        this.submittingDeactRequest = false;
-        this.deactModalError = this.formatErrorMessage(err, 'Failed to submit deactivation request.');
+        this.submittingAcademicRequest = false;
+        this.academicRequestModalError = this.formatErrorMessage(err, 'Failed to submit academic request.');
       },
     });
   }
 
-  // --- Deactivation Requests Review Modal ---
+  // --- Teacher Deactivation Modal (Compatibility alias) ---
+  openTeacherDeactModal(student: StudentItem, event: Event) {
+    this.openTeacherAcademicRequestModal(student, 'INACTIVE', event);
+  }
+
+  closeTeacherDeactModal() {
+    this.closeTeacherAcademicRequestModal();
+  }
+
+  submitTeacherDeactRequest() {
+    this.submitTeacherAcademicRequest();
+  }
+
+  // --- Academic Requests Review Queue Modal ---
   openDeactivationRequestsModal() {
     this.loadDeactivationRequests();
+    this.academicRequestFilterTab = 'PENDING';
     this.reviewNotes = '';
     this.modalService.open('DEACT_REQUESTS_MODAL');
     this.showDeactivationRequestsModal = true;
@@ -4164,7 +6239,8 @@ export class AcademicsComponent implements OnInit {
   }
 
   reviewDeactivationRequest(req: StudentDeactivationRequest, action: 'APPROVED' | 'REJECTED') {
-    if (!confirm(`Are you sure you want to ${action === 'APPROVED' ? 'APPROVE (this will mark student INACTIVE)' : 'REJECT'} this request for ${req.student_name}?`)) {
+    const actionLabel = action === 'APPROVED' ? 'APPROVE & EXECUTE' : 'REJECT';
+    if (!confirm(`Are you sure you want to ${actionLabel} this ${this.formatRequestType(req.request_type)} request for ${req.student_name}?`)) {
       return;
     }
     this.api.patch(`academics/students/deactivation-requests/${req.id}/review`, {
@@ -4174,6 +6250,8 @@ export class AcademicsComponent implements OnInit {
       next: () => {
         this.toast.success(`Request ${action.toLowerCase()} successfully.`);
         this.loadDeactivationRequests();
+        this.loadClassesAndSubjects();
+        this.loadAlumniList();
         if (this.selectedSection) {
           this.selectSection(this.selectedSection);
         }
@@ -4238,6 +6316,830 @@ export class AcademicsComponent implements OnInit {
         this.loadingAlumni = false;
       },
     });
+  }
+
+  // --- Alumni Management Handlers ---
+  toggleAlumniMenu(studentId: string, event: MouseEvent) {
+    event.stopPropagation();
+    if (this.activeAlumniMenuId === studentId) {
+      this.activeAlumniMenuId = null;
+      return;
+    }
+    this.activeAlumniMenuId = studentId;
+
+    const btn = (event.currentTarget || event.target) as HTMLElement;
+    const rect = btn.getBoundingClientRect();
+    const dropdownHeight = 180;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const top = spaceBelow < dropdownHeight ? `${rect.top - dropdownHeight - 8}px` : `${rect.bottom + 8}px`;
+    const right = `${window.innerWidth - rect.right}px`;
+
+    this.alumniMenuStyle = {
+      position: 'fixed',
+      top,
+      right,
+      zIndex: '100',
+    };
+  }
+
+  openAddAlumniModal() {
+    this.isEditingAlumni = false;
+    this.editingAlumniId = '';
+    const activeSession = this.auth.activeAcademicSession();
+    const defaultGradSession = activeSession?.name || (this.academicSessions.length > 0 ? this.academicSessions[0].name : '2027–2028');
+
+    this.newAlumni = {
+      firstName: '',
+      lastName: '',
+      admissionNumber: '',
+      gender: 'MALE',
+      dateOfBirth: '',
+      className: 'Class 12',
+      sectionName: 'Section A',
+      graduationSession: defaultGradSession,
+      guardianName: '',
+      guardianPhone: '',
+      rollNumber: '1',
+    };
+
+    // Auto-fetch next admission number
+    this.api.getNextAdmissionNumber().then((res) => {
+      if (res?.admissionNumber && !this.newAlumni.admissionNumber) {
+        this.newAlumni.admissionNumber = res.admissionNumber;
+      }
+    }).catch(() => {});
+
+    this.alumniModalError = '';
+    this.modalService.open('ALUMNI_MODAL');
+    this.showAddAlumniModal = true;
+  }
+
+  openEditAlumniModal(al: AlumniStudent, event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeAlumniMenuId = null;
+    this.isEditingAlumni = true;
+    this.editingAlumniId = al.student_id;
+
+    const parts = (al.full_name || `${al.first_name || ''} ${al.last_name || ''}`).trim().split(' ');
+    const firstName = al.first_name || parts[0] || '';
+    const lastName = al.last_name || parts.slice(1).join(' ') || '';
+
+    let formattedDob = '';
+    const dobRaw = al.date_of_birth || al.dateOfBirth;
+    if (dobRaw) {
+      try {
+        formattedDob = String(dobRaw).includes('T') ? String(dobRaw).split('T')[0] : String(dobRaw);
+      } catch {}
+    }
+
+    this.newAlumni = {
+      firstName,
+      lastName,
+      admissionNumber: al.admission_number || '',
+      gender: (al.gender || 'MALE').toUpperCase(),
+      dateOfBirth: formattedDob,
+      className: al.last_class_name || 'Class 12',
+      sectionName: al.last_section_name || 'Section A',
+      graduationSession: al.graduation_session || this.auth.activeSessionName() || '',
+      guardianName: `${al.primary_contact?.first_name || ''} ${al.primary_contact?.last_name || ''}`.trim(),
+      guardianPhone: al.primary_contact?.phone || '',
+      rollNumber: String(al.last_roll_number || '1'),
+    };
+    this.alumniModalError = '';
+    this.modalService.open('ALUMNI_MODAL');
+    this.showAddAlumniModal = true;
+  }
+
+  closeAlumniModal() {
+    this.modalService.close();
+    this.showAddAlumniModal = false;
+    this.isEditingAlumni = false;
+    this.editingAlumniId = '';
+  }
+
+  saveAlumni() {
+    if (!this.newAlumni.firstName.trim()) {
+      this.alumniModalError = 'Student First Name is required.';
+      return;
+    }
+
+    this.savingAlumni = true;
+    this.alumniModalError = '';
+
+    const matchedClass = this.classes.find(
+      (c) => c.name.toLowerCase() === this.newAlumni.className.toLowerCase()
+    ) || (this.classes.length > 0 ? this.classes[this.classes.length - 1] : null);
+
+    const matchedSec = matchedClass?.sections?.find(
+      (s) => s.name.toLowerCase() === this.newAlumni.sectionName.toLowerCase()
+    ) || matchedClass?.sections?.[0];
+
+    const matchedSession = this.academicSessions.find(
+      (s) => s.name === this.newAlumni.graduationSession
+    );
+
+    const payload = {
+      admissionNumber: this.newAlumni.admissionNumber,
+      firstName: this.newAlumni.firstName,
+      lastName: this.newAlumni.lastName,
+      gender: this.newAlumni.gender,
+      dateOfBirth: this.newAlumni.dateOfBirth,
+      classId: matchedClass?.id,
+      className: this.newAlumni.className,
+      sectionId: matchedSec?.id,
+      sectionName: this.newAlumni.sectionName,
+      academicYearId: matchedSession?.id || this.auth.activeAcademicSession()?.id,
+      graduationSession: this.newAlumni.graduationSession,
+      guardianName: this.newAlumni.guardianName,
+      guardianPhone: this.newAlumni.guardianPhone,
+      rollNumber: this.newAlumni.rollNumber,
+    };
+
+    if (this.isEditingAlumni && this.editingAlumniId) {
+      this.api.put(`academics/alumni/${this.editingAlumniId}`, payload).subscribe({
+        next: () => {
+          this.savingAlumni = false;
+          this.closeAlumniModal();
+          this.toast.success('Alumni record updated successfully.');
+          this.loadAlumniList();
+        },
+        error: (err: any) => {
+          this.savingAlumni = false;
+          this.alumniModalError = this.formatErrorMessage(err, 'Failed to update alumni record.');
+        },
+      });
+    } else {
+      this.api.post('academics/alumni', payload).subscribe({
+        next: () => {
+          this.savingAlumni = false;
+          this.closeAlumniModal();
+          this.toast.success(`Alumni student "${this.newAlumni.firstName}" registered successfully.`);
+          this.loadAlumniList();
+        },
+        error: (err: any) => {
+          this.savingAlumni = false;
+          this.alumniModalError = this.formatErrorMessage(err, 'Failed to register alumni student.');
+        },
+      });
+    }
+  }
+
+  promptDeleteAlumni(al: AlumniStudent, event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeAlumniMenuId = null;
+    this.alumniToDelete = al;
+    this.modalService.open('DELETE_ALUMNI');
+    this.showDeleteAlumniModal = true;
+  }
+
+  cancelDeleteAlumni() {
+    this.modalService.close();
+    this.showDeleteAlumniModal = false;
+    this.alumniToDelete = null;
+    this.isDeletingAlumni = false;
+  }
+
+  executeDeleteAlumni() {
+    if (!this.alumniToDelete) return;
+    this.isDeletingAlumni = true;
+    const targetId = this.alumniToDelete.student_id;
+
+    this.api.delete(`academics/alumni/${targetId}`).subscribe({
+      next: () => {
+        this.isDeletingAlumni = false;
+        this.cancelDeleteAlumni();
+        this.toast.success('Alumni record removed successfully.');
+        this.loadAlumniList();
+      },
+      error: (err: any) => {
+        this.isDeletingAlumni = false;
+        this.toast.error(err.message || 'Failed to remove alumni record.');
+      },
+    });
+  }
+
+  printAlumniLeavingCertificate(al: AlumniStudent, event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeAlumniMenuId = null;
+
+    const schoolName = this.auth.currentUser()?.school?.name || 'SchoolSense Academy';
+    const schoolLogo = this.auth.currentUser()?.school?.logoUrl || '';
+    const studentPhoto = al.photo_url || al.photoUrl || '';
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      this.toast.error('Unable to open print window. Please check your browser popup blocker.');
+      return;
+    }
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>School Leaving Certificate - ${al.full_name}</title>
+        <style>
+          body { font-family: 'Times New Roman', serif; padding: 40px; color: #1e293b; line-height: 1.6; }
+          .cert-container { border: 4px double #334155; padding: 40px; text-align: center; border-radius: 8px; max-width: 800px; margin: 0 auto; position: relative; }
+          .logo-box { margin-bottom: 12px; }
+          .logo-img { max-height: 70px; max-width: 120px; object-fit: contain; }
+          .photo-box { position: absolute; top: 40px; right: 40px; width: 100px; height: 120px; border: 1px dashed #64748b; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #64748b; text-align: center; padding: 4px; background: #f8fafc; }
+          .photo-img { width: 100%; height: 100%; object-fit: cover; }
+          .school-header { font-size: 28px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; color: #0f172a; margin-bottom: 4px; }
+          .sub-header { font-size: 14px; color: #64748b; margin-bottom: 24px; }
+          .cert-title { font-size: 22px; font-weight: bold; text-decoration: underline; margin-bottom: 30px; letter-spacing: 1px; color: #1e293b; }
+          .cert-body { text-align: justify; font-size: 16px; margin-bottom: 40px; line-height: 2; }
+          .highlight { font-weight: bold; text-decoration: underline; }
+          .signature-row { display: flex; justify-content: space-between; margin-top: 60px; padding: 0 20px; font-size: 14px; }
+          .sig-line { border-top: 1px solid #64748b; width: 180px; padding-top: 6px; }
+          @media print { @page { margin: 20mm; } }
+        </style>
+      </head>
+      <body>
+        <div class="cert-container">
+          <div class="photo-box">
+            ${studentPhoto ? `<img src="${studentPhoto}" class="photo-img" alt="Student Photo">` : 'Affix Passport Size Photo'}
+          </div>
+          <div class="logo-box">
+            ${schoolLogo ? `<img src="${schoolLogo}" class="logo-img" alt="School Logo">` : ''}
+          </div>
+          <div class="school-header">${schoolName}</div>
+          <div class="sub-header">Institutional Alumni & Graduate Record</div>
+          <div class="cert-title">SCHOOL LEAVING / GRADUATION CERTIFICATE</div>
+          <div class="cert-body">
+            This is to certify that <span class="highlight">${al.full_name}</span>, bearing Admission Number <span class="highlight">${al.admission_number}</span>, has successfully completed their studies at this institution in <span class="highlight">${al.last_class_name || 'Class 12'} (${al.last_section_name || 'Section A'})</span> during the Academic Session <span class="highlight">${al.graduation_session || 'Graduated'}</span>.
+            <br><br>
+            According to institutional records, their date of birth is <span class="highlight">${al.date_of_birth || al.dateOfBirth || 'Recorded'}</span> and primary guardian on record is <span class="highlight">${al.primary_contact?.first_name || 'Guardian'} ${al.primary_contact?.last_name || ''}</span>. Their conduct and character during their tenure have been exemplary.
+          </div>
+          <div class="signature-row">
+            <div>
+              <div class="sig-line">Date of Issue: ${new Date().toLocaleDateString()}</div>
+            </div>
+            <div>
+              <div class="sig-line">Class Teacher / Registrar</div>
+            </div>
+            <div>
+              <div class="sig-line">Principal / Head of Institution</div>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 400);
+  }
+
+  // --- ALUMNI JOURNEY & LIFECYCLE LOGS ---
+  openAlumniJourneyModal(al: AlumniStudent, event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeAlumniMenuId = null;
+    this.selectedAlumniForJourney = al;
+    this.showAlumniJourneyModal = true;
+    this.loadingAlumniJourney = true;
+    this.alumniJourneyLogs = [];
+    this.alumniJourneySummary = null;
+
+    this.api.get<any>(`academics/students/${al.student_id}/lifecycle-logs`).subscribe({
+      next: (res) => {
+        this.loadingAlumniJourney = false;
+        if (res) {
+          this.alumniJourneyLogs = res.logs || [];
+          this.alumniJourneySummary = res.summary || null;
+        }
+      },
+      error: (err: any) => {
+        this.loadingAlumniJourney = false;
+        this.toast.error(err.message || 'Failed to load student lifecycle logs.');
+      }
+    });
+  }
+
+  closeAlumniJourneyModal() {
+    this.showAlumniJourneyModal = false;
+    this.selectedAlumniForJourney = null;
+    this.alumniJourneyLogs = [];
+    this.alumniJourneySummary = null;
+  }
+
+  printStudentJourneyTranscript() {
+    if (!this.selectedAlumniForJourney) return;
+    const al = this.selectedAlumniForJourney;
+    const schoolName = this.auth.currentUser()?.school?.name || 'SchoolSense Academy';
+    const schoolLogo = this.auth.currentUser()?.school?.logoUrl || '';
+    const studentPhoto = al.photo_url || al.photoUrl || '';
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      this.toast.error('Unable to open print window. Please allow popups.');
+      return;
+    }
+
+    const rows = this.alumniJourneyLogs.map((l, i) => `
+      <tr>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; text-align: center;">${i + 1}</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; font-family: monospace;">${l.academic_session || '—'}</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0;"><strong>${l.title}</strong><br><span style="color: #64748b; font-size: 11px;">${l.description}</span></td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0;">${l.class_name ? l.class_name + ' (' + (l.section_name || 'A') + ')' : '—'}</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; font-size: 11px;">${l.timestamp ? new Date(l.timestamp).toLocaleDateString() : 'Recorded'}</td>
+      </tr>
+    `).join('');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Academic Lifecycle Transcript - ${al.full_name}</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; color: #1e293b; line-height: 1.5; font-size: 12px; }
+          .header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 20px; }
+          .logo-box { margin-bottom: 8px; }
+          .logo-img { max-height: 55px; max-width: 100px; object-fit: contain; }
+          .school-title { font-size: 22px; font-weight: 800; text-transform: uppercase; color: #0f172a; margin-bottom: 4px; }
+          .doc-title { font-size: 14px; font-weight: bold; letter-spacing: 1px; color: #475569; }
+          .student-card-container { display: flex; gap: 15px; margin-bottom: 20px; }
+          .student-card { flex: 1; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 16px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 12px; }
+          .student-photo-box { width: 80px; height: 95px; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #64748b; text-align: center; }
+          .student-photo-box img { width: 100%; height: 100%; object-fit: cover; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+          th { background: #0f172a; color: white; padding: 8px 10px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+          .footer { margin-top: 40px; display: flex; justify-content: space-between; font-size: 11px; padding: 0 10px; }
+          .sig-box { border-top: 1px solid #64748b; width: 180px; text-align: center; padding-top: 6px; }
+          @media print { @page { margin: 15mm; size: A4 portrait; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          ${schoolLogo ? `<div class="logo-box"><img src="${schoolLogo}" class="logo-img" alt="School Logo"></div>` : ''}
+          <div class="school-title">${schoolName}</div>
+          <div class="doc-title">OFFICIAL STUDENT LIFECYCLE & ACADEMIC TRANSCRIPT</div>
+        </div>
+        <div class="student-card-container">
+          <div class="student-card">
+            <div><strong>Student Name:</strong> ${al.full_name}</div>
+            <div><strong>Permanent Adm No:</strong> ${al.admission_number}</div>
+            <div><strong>Alumni ID:</strong> ${al.alumni_number || 'ALU-REG'}</div>
+            <div><strong>First Admission:</strong> ${al.admission_date ? new Date(al.admission_date).toLocaleDateString() : 'Recorded'} (${al.admission_class_name || 'Class'})</div>
+            <div><strong>Graduation Session:</strong> ${al.graduation_session || 'Completed'}</div>
+            <div><strong>TC Serial No:</strong> ${al.tc_number || 'TC-ISSUED'}</div>
+          </div>
+          <div class="student-photo-box">
+            ${studentPhoto ? `<img src="${studentPhoto}" alt="Student Photo">` : 'Photo'}
+          </div>
+        </div>
+        <h4 style="margin: 0 0 8px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Chronological Milestones & Lifecycle History</h4>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 40px; text-align: center;">#</th>
+              <th style="width: 90px;">Session</th>
+              <th>Milestone / Event Description</th>
+              <th style="width: 130px;">Class & Section</th>
+              <th style="width: 90px;">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+        <div class="footer">
+          <div class="sig-box">Date: ${new Date().toLocaleDateString()}<br>Institutional Seal</div>
+          <div class="sig-box">Registrar / Academics In-Charge</div>
+          <div class="sig-box">Principal / Head of Institution</div>
+        </div>
+      </body>
+      </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => { printWindow.print(); }, 400);
+  }
+
+  // --- TRANSFER CERTIFICATE (TC) ---
+  openTcModal(al: AlumniStudent, event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeAlumniMenuId = null;
+    this.selectedAlumniForTc = al;
+    const year = al.graduation_session ? al.graduation_session.split('-')[0].trim() : new Date().getFullYear().toString();
+    const cleanAdm = (al.admission_number || '0000').replace(/[^a-zA-Z0-9]/g, '');
+    this.tcForm = {
+      tcNumber: al.tc_number || `TC/${year}/${cleanAdm}`,
+      bookNumber: '01',
+      issueDate: al.tc_issue_date ? new Date(al.tc_issue_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      promotionStatus: 'Qualified for promotion to next standard',
+      duesPaidMonth: 'March (All Dues Cleared)',
+      conduct: al.conduct || 'Exemplary',
+      reasonForLeaving: al.leaving_reason || 'Course completed / Graduated',
+      workingDaysTotal: '220',
+      workingDaysPresent: '214',
+      remarks: 'Student bears good moral character.',
+    };
+    this.showTcModal = true;
+  }
+
+  closeTcModal() {
+    this.showTcModal = false;
+    this.selectedAlumniForTc = null;
+  }
+
+  printTransferCertificate() {
+    if (!this.selectedAlumniForTc) return;
+    const al = this.selectedAlumniForTc;
+    this.savingTc = true;
+
+    const payload = {
+      student_id: al.student_id,
+      certificate_type: 'TRANSFER_CERTIFICATE',
+      certificate_number: this.tcForm.tcNumber,
+      issue_date: this.tcForm.issueDate || new Date().toISOString(),
+      conduct: this.tcForm.conduct,
+      leaving_reason: this.tcForm.reasonForLeaving,
+      remarks: this.tcForm.remarks,
+    };
+
+    this.api.post('academics/alumni/certificates', payload).subscribe({
+      next: () => {
+        this.savingTc = false;
+        al.tc_number = this.tcForm.tcNumber;
+        al.tc_issue_date = this.tcForm.issueDate;
+        this.toast.success('Transfer Certificate record updated.');
+        this.renderTransferCertPrintWindow(al);
+        this.closeTcModal();
+      },
+      error: (err: any) => {
+        this.savingTc = false;
+        this.toast.error(err.message || 'Failed to save certificate record.');
+        this.renderTransferCertPrintWindow(al);
+        this.closeTcModal();
+      }
+    });
+  }
+
+  private renderTransferCertPrintWindow(al: AlumniStudent) {
+    const schoolName = this.auth.currentUser()?.school?.name || 'SchoolSense Academy';
+    const schoolLogo = this.auth.currentUser()?.school?.logoUrl || '';
+    const studentPhoto = al.photo_url || al.photoUrl || '';
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Transfer Certificate - ${al.full_name}</title>
+        <style>
+          body { font-family: 'Times New Roman', serif; padding: 40px; color: #0f172a; line-height: 1.6; }
+          .cert-border { border: 3px double #0f172a; padding: 35px; max-width: 800px; margin: 0 auto; position: relative; }
+          .logo-box { margin-bottom: 8px; }
+          .logo-img { max-height: 60px; max-width: 100px; object-fit: contain; }
+          .photo-box { position: absolute; top: 35px; right: 35px; width: 95px; height: 115px; border: 1px dashed #64748b; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #64748b; text-align: center; padding: 4px; background: #f8fafc; }
+          .photo-img { width: 100%; height: 100%; object-fit: cover; }
+          .header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 20px; }
+          .school-name { font-size: 26px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
+          .school-sub { font-size: 12px; color: #475569; margin-top: 2px; text-transform: uppercase; letter-spacing: 1px; }
+          .doc-title { text-align: center; font-size: 18px; font-weight: bold; text-decoration: underline; margin: 15px 0 20px 0; letter-spacing: 1.5px; }
+          .meta-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; margin-bottom: 20px; }
+          .cert-grid { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
+          .cert-grid td { padding: 8px 6px; font-size: 14px; vertical-align: top; border-bottom: 1px dotted #cbd5e1; }
+          .cert-grid td.q-no { width: 35px; font-weight: bold; color: #475569; }
+          .cert-grid td.q-label { width: 320px; font-weight: 600; }
+          .cert-grid td.q-val { font-weight: bold; }
+          .sig-row { display: flex; justify-content: space-between; margin-top: 50px; font-size: 13px; font-weight: bold; }
+          .sig-box { border-top: 1px solid #0f172a; width: 190px; text-align: center; padding-top: 6px; }
+          @media print { @page { margin: 15mm; size: A4 portrait; } }
+        </style>
+      </head>
+      <body>
+        <div class="cert-border">
+          <div class="photo-box">
+            ${studentPhoto ? `<img src="${studentPhoto}" class="photo-img" alt="Student Photo">` : 'Affix Photo'}
+          </div>
+          <div class="header">
+            ${schoolLogo ? `<div class="logo-box"><img src="${schoolLogo}" class="logo-img" alt="School Logo"></div>` : ''}
+            <div class="school-name">${schoolName}</div>
+            <div class="school-sub">Recognized & Affiliated Educational Institution</div>
+          </div>
+          <div class="doc-title">TRANSFER / SCHOOL LEAVING CERTIFICATE</div>
+          <div class="meta-row">
+            <div>TC No: <span style="font-family: monospace;">${this.tcForm.tcNumber}</span></div>
+            <div>Book No: <span style="font-family: monospace;">${this.tcForm.bookNumber}</span></div>
+            <div>Admission No: <span style="font-family: monospace;">${al.admission_number}</span></div>
+          </div>
+          <table class="cert-grid">
+            <tr>
+              <td class="q-no">1.</td>
+              <td class="q-label">Name of Student:</td>
+              <td class="q-val">${al.full_name}</td>
+            </tr>
+            <tr>
+              <td class="q-no">2.</td>
+              <td class="q-label">Mother's / Father's / Guardian's Name:</td>
+              <td class="q-val">${al.primary_contact?.first_name || 'Guardian'} ${al.primary_contact?.last_name || ''}</td>
+            </tr>
+            <tr>
+              <td class="q-no">3.</td>
+              <td class="q-label">Nationality:</td>
+              <td class="q-val">Indian</td>
+            </tr>
+            <tr>
+              <td class="q-no">4.</td>
+              <td class="q-label">Date of First Admission to the School:</td>
+              <td class="q-val">${al.admission_date ? new Date(al.admission_date).toLocaleDateString() : 'Recorded'} (Class: ${al.admission_class_name || 'N/A'})</td>
+            </tr>
+            <tr>
+              <td class="q-no">5.</td>
+              <td class="q-label">Date of Birth (according to Admission Register):</td>
+              <td class="q-val">${al.date_of_birth || al.dateOfBirth || 'Recorded in School Register'}</td>
+            </tr>
+            <tr>
+              <td class="q-no">6.</td>
+              <td class="q-label">Class in which the pupil last studied:</td>
+              <td class="q-val">${al.last_class_name || 'Class 12'} (${al.last_section_name || 'Section A'})</td>
+            </tr>
+            <tr>
+              <td class="q-no">7.</td>
+              <td class="q-label">School / Board Annual Examination last taken:</td>
+              <td class="q-val">${this.tcForm.promotionStatus}</td>
+            </tr>
+            <tr>
+              <td class="q-no">8.</td>
+              <td class="q-label">Month up to which the school dues paid:</td>
+              <td class="q-val">${this.tcForm.duesPaidMonth}</td>
+            </tr>
+            <tr>
+              <td class="q-no">9.</td>
+              <td class="q-label">Total No. of Working Days / Present:</td>
+              <td class="q-val">${this.tcForm.workingDaysPresent} / ${this.tcForm.workingDaysTotal} Days</td>
+            </tr>
+            <tr>
+              <td class="q-no">10.</td>
+              <td class="q-label">General Conduct:</td>
+              <td class="q-val">${this.tcForm.conduct}</td>
+            </tr>
+            <tr>
+              <td class="q-no">11.</td>
+              <td class="q-label">Reason for leaving the school:</td>
+              <td class="q-val">${this.tcForm.reasonForLeaving}</td>
+            </tr>
+            <tr>
+              <td class="q-no">12.</td>
+              <td class="q-label">Any other remarks:</td>
+              <td class="q-val">${this.tcForm.remarks}</td>
+            </tr>
+          </table>
+          <div class="sig-row">
+            <div class="sig-box">Prepared & Checked By</div>
+            <div class="sig-box">Class Teacher / In-Charge</div>
+            <div class="sig-box">Principal (with School Seal)</div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => { printWindow.print(); }, 400);
+  }
+
+  // --- CHARACTER CERTIFICATE ---
+  openCharacterCertModal(al: AlumniStudent, event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeAlumniMenuId = null;
+    this.selectedAlumniForCharacterCert = al;
+    const year = al.graduation_session ? al.graduation_session.split('-')[0].trim() : new Date().getFullYear().toString();
+    const cleanAdm = (al.admission_number || '0000').replace(/[^a-zA-Z0-9]/g, '');
+    this.characterCertForm = {
+      certNumber: al.character_cert_number || `CC/${year}/${cleanAdm}`,
+      issueDate: new Date().toISOString().split('T')[0],
+      conduct: al.conduct || 'Exemplary & Commendable',
+      coCurricularRemarks: 'Actively participated in school academic, cultural, and sports activities.',
+      remarks: 'We wish them excellence and bright success in all future pursuits.',
+    };
+    this.showCharacterCertModal = true;
+  }
+
+  closeCharacterCertModal() {
+    this.showCharacterCertModal = false;
+    this.selectedAlumniForCharacterCert = null;
+  }
+
+  printCharacterCertificate() {
+    if (!this.selectedAlumniForCharacterCert) return;
+    const al = this.selectedAlumniForCharacterCert;
+    this.savingCharacterCert = true;
+
+    const payload = {
+      student_id: al.student_id,
+      certificate_type: 'CHARACTER_CERTIFICATE',
+      certificate_number: this.characterCertForm.certNumber,
+      issue_date: this.characterCertForm.issueDate || new Date().toISOString(),
+      conduct: this.characterCertForm.conduct,
+      remarks: this.characterCertForm.remarks,
+    };
+
+    this.api.post('academics/alumni/certificates', payload).subscribe({
+      next: () => {
+        this.savingCharacterCert = false;
+        al.character_cert_number = this.characterCertForm.certNumber;
+        this.toast.success('Character Certificate issued.');
+        this.renderCharacterCertPrintWindow(al);
+        this.closeCharacterCertModal();
+      },
+      error: (err: any) => {
+        this.savingCharacterCert = false;
+        this.toast.error(err.message || 'Failed to save certificate record.');
+        this.renderCharacterCertPrintWindow(al);
+        this.closeCharacterCertModal();
+      }
+    });
+  }
+
+  private renderCharacterCertPrintWindow(al: AlumniStudent) {
+    const schoolName = this.auth.currentUser()?.school?.name || 'SchoolSense Academy';
+    const schoolLogo = this.auth.currentUser()?.school?.logoUrl || '';
+    const studentPhoto = al.photo_url || al.photoUrl || '';
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Character Certificate - ${al.full_name}</title>
+        <style>
+          body { font-family: 'Times New Roman', serif; padding: 40px; color: #0f172a; line-height: 1.8; }
+          .cert-border { border: 4px double #0f172a; padding: 45px; max-width: 800px; margin: 0 auto; text-align: center; position: relative; }
+          .logo-box { margin-bottom: 10px; }
+          .logo-img { max-height: 65px; max-width: 110px; object-fit: contain; }
+          .photo-box { position: absolute; top: 45px; right: 45px; width: 95px; height: 115px; border: 1px dashed #64748b; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #64748b; text-align: center; padding: 4px; background: #f8fafc; }
+          .photo-img { width: 100%; height: 100%; object-fit: cover; }
+          .school-name { font-size: 28px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
+          .school-sub { font-size: 13px; color: #475569; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+          .doc-title { font-size: 22px; font-weight: bold; text-decoration: underline; margin: 30px 0 25px 0; letter-spacing: 2px; }
+          .cert-meta { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; margin-bottom: 30px; }
+          .cert-body { text-align: justify; font-size: 16px; line-height: 2.2; margin-bottom: 50px; }
+          .highlight { font-weight: bold; text-decoration: underline; }
+          .sig-row { display: flex; justify-content: space-between; margin-top: 60px; font-size: 13px; font-weight: bold; padding: 0 20px; }
+          .sig-box { border-top: 1px solid #0f172a; width: 190px; text-align: center; padding-top: 6px; }
+          @media print { @page { margin: 20mm; size: A4 portrait; } }
+        </style>
+      </head>
+      <body>
+        <div class="cert-border">
+          <div class="photo-box">
+            ${studentPhoto ? `<img src="${studentPhoto}" class="photo-img" alt="Student Photo">` : 'Affix Photo'}
+          </div>
+          <div class="logo-box">
+            ${schoolLogo ? `<img src="${schoolLogo}" class="logo-img" alt="School Logo">` : ''}
+          </div>
+          <div class="school-name">${schoolName}</div>
+          <div class="school-sub">Office of the Registrar & Academic Council</div>
+          <div class="doc-title">CHARACTER & CONDUCT CERTIFICATE</div>
+          <div class="cert-meta">
+            <div>Certificate No: <span style="font-family: monospace;">${this.characterCertForm.certNumber}</span></div>
+            <div>Date of Issue: ${this.characterCertForm.issueDate ? new Date(this.characterCertForm.issueDate).toLocaleDateString() : new Date().toLocaleDateString()}</div>
+          </div>
+          <div class="cert-body">
+            This is to certify that <span class="highlight">${al.full_name}</span>, child of <span class="highlight">${al.primary_contact?.first_name || 'Guardian'} ${al.primary_contact?.last_name || ''}</span>, bearing Permanent Admission ID <span class="highlight">${al.admission_number}</span>, was a bonafide student of this institution in <span class="highlight">${al.last_class_name || 'Class 12'} (${al.last_section_name || 'Section A'})</span> during the Academic Session <span class="highlight">${al.graduation_session || 'Graduated'}</span>.
+            <br><br>
+            During their period of study at this school, their conduct, character, and moral bearing have been <span class="highlight">${this.characterCertForm.conduct}</span>. ${this.characterCertForm.coCurricularRemarks}
+            <br><br>
+            To the best of our knowledge and belief, they bear good moral character and have not been subject to any disciplinary action. ${this.characterCertForm.remarks}
+          </div>
+          <div class="sig-row">
+            <div class="sig-box">Class Teacher</div>
+            <div class="sig-box">Registrar / Seal</div>
+            <div class="sig-box">Principal / Head of Institution</div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => { printWindow.print(); }, 400);
+  }
+
+  // --- ALUMNI CERTIFICATE ---
+  openAlumniCertModal(al: AlumniStudent, event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeAlumniMenuId = null;
+    this.selectedAlumniForAlumniCert = al;
+    const year = al.graduation_session ? al.graduation_session.split('-')[0].trim() : new Date().getFullYear().toString();
+    const cleanAdm = (al.admission_number || '0000').replace(/[^a-zA-Z0-9]/g, '');
+    const alumniNo = al.alumni_number || `ALU-${year}-${cleanAdm}`;
+    this.alumniCertForm = {
+      certNumber: al.alumni_cert_number || `AC/${year}/${cleanAdm}`,
+      alumniNumber: alumniNo,
+      issueDate: new Date().toISOString().split('T')[0],
+      honorsRemarks: 'Recognized for successful academic completion and awarded lifelong institutional alumni status.',
+    };
+    this.showAlumniCertModal = true;
+  }
+
+  closeAlumniCertModal() {
+    this.showAlumniCertModal = false;
+    this.selectedAlumniForAlumniCert = null;
+  }
+
+  printAlumniCertificate() {
+    if (!this.selectedAlumniForAlumniCert) return;
+    const al = this.selectedAlumniForAlumniCert;
+    this.savingAlumniCert = true;
+
+    const payload = {
+      student_id: al.student_id,
+      certificate_type: 'ALUMNI_CERTIFICATE',
+      certificate_number: this.alumniCertForm.certNumber,
+      alumni_number: this.alumniCertForm.alumniNumber,
+      issue_date: this.alumniCertForm.issueDate || new Date().toISOString(),
+      remarks: this.alumniCertForm.honorsRemarks,
+    };
+
+    this.api.post('academics/alumni/certificates', payload).subscribe({
+      next: () => {
+        this.savingAlumniCert = false;
+        al.alumni_number = this.alumniCertForm.alumniNumber;
+        al.alumni_cert_number = this.alumniCertForm.certNumber;
+        this.toast.success('Alumni Certificate generated.');
+        this.renderAlumniCertPrintWindow(al);
+        this.closeAlumniCertModal();
+      },
+      error: (err: any) => {
+        this.savingAlumniCert = false;
+        this.toast.error(err.message || 'Failed to save certificate record.');
+        this.renderAlumniCertPrintWindow(al);
+        this.closeAlumniCertModal();
+      }
+    });
+  }
+
+  private renderAlumniCertPrintWindow(al: AlumniStudent) {
+    const schoolName = this.auth.currentUser()?.school?.name || 'SchoolSense Academy';
+    const schoolLogo = this.auth.currentUser()?.school?.logoUrl || '';
+    const studentPhoto = al.photo_url || al.photoUrl || '';
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Alumni Certificate - ${al.full_name}</title>
+        <style>
+          body { font-family: 'Times New Roman', serif; padding: 40px; color: #0f172a; line-height: 1.8; }
+          .cert-border { border: 5px double #0f172a; padding: 45px; max-width: 820px; margin: 0 auto; text-align: center; background: #fafafa; position: relative; }
+          .logo-box { margin-bottom: 10px; }
+          .logo-img { max-height: 65px; max-width: 110px; object-fit: contain; }
+          .photo-box { position: absolute; top: 45px; right: 45px; width: 95px; height: 115px; border: 1px dashed #64748b; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #64748b; text-align: center; padding: 4px; background: #f8fafc; }
+          .photo-img { width: 100%; height: 100%; object-fit: cover; }
+          .school-name { font-size: 30px; font-weight: bold; text-transform: uppercase; letter-spacing: 3px; color: #0f172a; }
+          .school-sub { font-size: 13px; color: #475569; margin-top: 4px; text-transform: uppercase; letter-spacing: 2px; }
+          .doc-title { font-size: 24px; font-weight: bold; margin: 30px 0 15px 0; letter-spacing: 3px; color: #0f172a; text-transform: uppercase; }
+          .alumni-badge { display: inline-block; background: #0f172a; color: #ffffff; padding: 6px 18px; font-family: monospace; font-size: 14px; font-weight: bold; border-radius: 4px; margin-bottom: 25px; letter-spacing: 1px; }
+          .cert-body { text-align: justify; font-size: 16px; line-height: 2.2; margin-bottom: 45px; }
+          .highlight { font-weight: bold; text-decoration: underline; }
+          .sig-row { display: flex; justify-content: space-between; margin-top: 55px; font-size: 13px; font-weight: bold; padding: 0 20px; }
+          .sig-box { border-top: 1px solid #0f172a; width: 200px; text-align: center; padding-top: 6px; }
+          @media print { @page { margin: 20mm; size: A4 landscape; } body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="cert-border">
+          <div class="photo-box">
+            ${studentPhoto ? `<img src="${studentPhoto}" class="photo-img" alt="Student Photo">` : 'Affix Photo'}
+          </div>
+          <div class="logo-box">
+            ${schoolLogo ? `<img src="${schoolLogo}" class="logo-img" alt="School Logo">` : ''}
+          </div>
+          <div class="school-name">${schoolName}</div>
+          <div class="school-sub">Alumni Association & Institutional Registry</div>
+          <div class="doc-title">Certificate of Alumni Recognition</div>
+          <div class="alumni-badge">PERMANENT ALUMNI ID: ${this.alumniCertForm.alumniNumber}</div>
+          <div class="cert-body">
+            This certificate is proudly conferred upon <span class="highlight">${al.full_name}</span> (Permanent School Admission ID: <span class="highlight">${al.admission_number}</span>) in formal recognition of successfully completing their course of education up to <span class="highlight">${al.last_class_name || 'Class 12'} (${al.last_section_name || 'Section A'})</span> in Academic Session <span class="highlight">${al.graduation_session || 'Graduated'}</span>.
+            <br><br>
+            Having maintained an honorable standing throughout their school career, they are hereby officially enrolled into the lifelong Alumni Guild of this institution under Registration ID <span class="highlight">${this.alumniCertForm.alumniNumber}</span> with all associated honours and privileges.
+            <br><br>
+            ${this.alumniCertForm.honorsRemarks}
+          </div>
+          <div class="sig-row">
+            <div class="sig-box">Date of Issue: ${this.alumniCertForm.issueDate ? new Date(this.alumniCertForm.issueDate).toLocaleDateString() : new Date().toLocaleDateString()}</div>
+            <div class="sig-box">President / Alumni Relations</div>
+            <div class="sig-box">Principal / Head of Institution</div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => { printWindow.print(); }, 400);
   }
 
   loadClassesAndSubjects() {
@@ -5015,15 +7917,81 @@ export class AcademicsComponent implements OnInit {
       gender: 'MALE',
       dateOfBirth: '2015-05-15',
       bloodGroup: 'B+',
+      photoUrl: '',
       guardianName: '',
       guardianPhone: '',
       guardianEmail: '',
+      guardianPhotoUrl: '',
       relationship: 'FATHER',
     };
     this.studentModalError = '';
     this.autoGenerateAdmissionNumber();
     this.modalService.open('ADD_STUDENT');
     this.showAddStudentModal = true;
+  }
+
+  // --- Photo Upload Handlers for Students & Guardians ---
+  async onStudentPhotoSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    try {
+      this.uploadingStudentPhoto = true;
+      const url = await this.imageUploadService.processAndUploadImage(file, 'students', 600, 600, 0.85);
+      this.newStudent.photoUrl = url;
+      this.toast.success('Student photo attached successfully.');
+    } catch (err: any) {
+      this.toast.error(err.message || 'Failed to upload student photo.');
+    } finally {
+      this.uploadingStudentPhoto = false;
+      input.value = '';
+    }
+  }
+
+  removeStudentPhoto() {
+    this.newStudent.photoUrl = '';
+  }
+
+  async onGuardianPhotoSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    try {
+      this.uploadingGuardianPhoto = true;
+      const url = await this.imageUploadService.processAndUploadImage(file, 'guardians', 600, 600, 0.85);
+      this.newStudent.guardianPhotoUrl = url;
+      this.toast.success('Guardian photo attached successfully.');
+    } catch (err: any) {
+      this.toast.error(err.message || 'Failed to upload guardian photo.');
+    } finally {
+      this.uploadingGuardianPhoto = false;
+      input.value = '';
+    }
+  }
+
+  removeGuardianPhoto() {
+    this.newStudent.guardianPhotoUrl = '';
+  }
+
+  async onStaffPhotoSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    try {
+      this.uploadingStaffPhoto = true;
+      const url = await this.imageUploadService.processAndUploadImage(file, 'staff', 600, 600, 0.85);
+      this.newStaff.photoUrl = url;
+      this.toast.success('Faculty photo attached successfully.');
+    } catch (err: any) {
+      this.toast.error(err.message || 'Failed to upload faculty photo.');
+    } finally {
+      this.uploadingStaffPhoto = false;
+      input.value = '';
+    }
+  }
+
+  removeStaffPhoto() {
+    this.newStaff.photoUrl = '';
   }
 
   viewStudentDetails(student: any, event?: Event) {
@@ -5077,9 +8045,11 @@ export class AcademicsComponent implements OnInit {
       gender: (student.gender || 'MALE').toUpperCase(),
       dateOfBirth: formattedDob,
       bloodGroup: student.bloodGroup || '',
+      photoUrl: student.photoUrl || student.photo_url || '',
       guardianName: `${student.primaryContact?.first_name || ''} ${student.primaryContact?.last_name || ''}`.trim(),
       guardianPhone: student.primaryContact?.phone || '',
       guardianEmail: student.primaryContact?.email || '',
+      guardianPhotoUrl: student.guardianPhotoUrl || (student as any).guardian_photo_url || student.primaryContact?.photoUrl || (student.primaryContact as any)?.photo_url || '',
       relationship: student.primaryContact?.relationship || 'FATHER',
     };
 
@@ -5179,6 +8149,7 @@ export class AcademicsComponent implements OnInit {
       lastName: '',
       email: '',
       phone: '',
+      photoUrl: '',
       role: 'TEACHER',
       primarySubjectId: '',
       password: 'password123',
@@ -5575,6 +8546,9 @@ export class AcademicsComponent implements OnInit {
     if (this.activeStudentMenuId) {
       this.activeStudentMenuId = null;
     }
+    if (this.activeAlumniMenuId) {
+      this.activeAlumniMenuId = null;
+    }
   }
 
   @HostListener('document:click')
@@ -5582,6 +8556,7 @@ export class AcademicsComponent implements OnInit {
     this.activeClassMenuId = null;
     this.activeSectionMenuId = null;
     this.activeStudentMenuId = null;
+    this.activeAlumniMenuId = null;
     this.isSessionDropdownOpen = false;
   }
 

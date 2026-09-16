@@ -4,6 +4,8 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ImageUploadService } from '../../core/services/image-upload.service';
+import { ToastService } from '../../core/services/toast.service';
 
 interface ActivityLog {
   id: string;
@@ -142,9 +144,32 @@ interface ActivityLog {
           <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
             <!-- Left Info Block -->
             <div class="flex items-start sm:items-center gap-3.5 sm:gap-5">
-              <!-- Avatar -->
-              <div class="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-violet-600 text-white flex items-center justify-center text-xl sm:text-2xl lg:text-3xl font-black shadow-md shadow-indigo-200 shrink-0 border border-white">
-                {{ getInitials(profileData.student.fullName) }}
+              <!-- Avatar with in-place photo upload -->
+              <div class="relative group shrink-0">
+                <div class="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-violet-600 text-white flex items-center justify-center text-xl sm:text-2xl lg:text-3xl font-black shadow-md shadow-indigo-200 shrink-0 border border-white overflow-hidden">
+                  <img *ngIf="profileData.student.photo_url || profileData.student.photoUrl"
+                       [src]="profileData.student.photo_url || profileData.student.photoUrl"
+                       [alt]="profileData.student.fullName"
+                       class="w-full h-full object-cover">
+                  <span *ngIf="!(profileData.student.photo_url || profileData.student.photoUrl)">
+                    {{ getInitials(profileData.student.fullName) }}
+                  </span>
+                </div>
+
+                <!-- Hover Change Photo Button -->
+                <label *ngIf="canManageStatus"
+                       class="absolute inset-0 rounded-2xl bg-slate-900/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white cursor-pointer transition-opacity backdrop-blur-xs shadow-inner"
+                       title="Change Student Photo">
+                  <svg *ngIf="!isUploadingPhoto" class="w-4 h-4 sm:w-5 sm:h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <svg *ngIf="isUploadingPhoto" class="w-4 h-4 sm:w-5 sm:h-5 animate-spin mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span class="text-[9px] sm:text-[10px] font-bold tracking-tight">{{ isUploadingPhoto ? 'Saving...' : 'Change' }}</span>
+                  <input type="file" accept="image/png,image/jpeg,image/webp,image/jpg" (change)="onStudentPhotoSelected($event)" class="hidden" [disabled]="isUploadingPhoto">
+                </label>
               </div>
 
               <!-- Name, Class, Adm & Status -->
@@ -374,11 +399,21 @@ interface ActivityLog {
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div class="bg-[#f8fafc] p-3.5 rounded-2xl border border-slate-200/60">
-                  <span class="text-slate-400 font-medium block text-[11px]">Primary Guardian Name</span>
-                  <span class="text-slate-800 font-bold text-sm">{{ profileData.student.emergency_contact_name || profileData.student.guardian_name || 'Primary Guardian' }}</span>
+                <div class="bg-[#f8fafc] p-3.5 rounded-2xl border border-slate-200/60 flex items-center gap-3">
+                  <div class="w-11 h-11 rounded-xl bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs shrink-0 border border-slate-300 overflow-hidden shadow-2xs">
+                    <img *ngIf="profileData.student.guardian_photo_url || profileData.student.guardianPhotoUrl"
+                         [src]="profileData.student.guardian_photo_url || profileData.student.guardianPhotoUrl"
+                         alt="Guardian Photo" class="w-full h-full object-cover">
+                    <svg *ngIf="!(profileData.student.guardian_photo_url || profileData.student.guardianPhotoUrl)" class="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <div class="min-w-0">
+                    <span class="text-slate-400 font-medium block text-[11px]">Primary Guardian Name</span>
+                    <span class="text-slate-800 font-bold text-sm truncate block">{{ profileData.student.emergency_contact_name || profileData.student.guardian_name || 'Primary Guardian' }}</span>
+                  </div>
                 </div>
-                <div class="bg-[#f8fafc] p-3.5 rounded-2xl border border-slate-200/60">
+                <div class="bg-[#f8fafc] p-3.5 rounded-2xl border border-slate-200/60 flex flex-col justify-center">
                   <span class="text-slate-400 font-medium block text-[11px]">Relationship</span>
                   <span class="text-slate-800 font-bold text-sm">{{ profileData.student.emergency_contact_relation || 'Parent' }}</span>
                 </div>
@@ -786,9 +821,12 @@ export class StudentDetailComponent implements OnInit {
   private router = inject(Router);
   private api = inject(ApiService);
   private auth = inject(AuthService);
+  private imageUpload = inject(ImageUploadService);
+  private toast = inject(ToastService);
 
   studentId: string = '';
   isLoading: boolean = true;
+  isUploadingPhoto: boolean = false;
   errorMessage: string = '';
   profileData: any = null;
 
@@ -1005,6 +1043,30 @@ export class StudentDetailComponent implements OnInit {
       alert('Error updating status: ' + (err.message || 'Unknown error'));
     } finally {
       this.isSubmittingStatus = false;
+    }
+  }
+
+  async onStudentPhotoSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    this.isUploadingPhoto = true;
+
+    try {
+      const photoUrl = await this.imageUpload.processAndUploadImage(file, 'students', 600, 600, 0.85);
+      if (this.profileData?.student) {
+        this.profileData.student.photo_url = photoUrl;
+        this.profileData.student.photoUrl = photoUrl;
+      }
+      // Save directly to backend
+      const targetId = this.profileData?.student?.id || this.studentId;
+      await this.api.put('academics/students/' + targetId, { photoUrl }).toPromise();
+      this.toast.success('Student profile picture updated successfully.');
+    } catch (err: any) {
+      this.toast.error(err.message || 'Failed to update student photo.');
+    } finally {
+      this.isUploadingPhoto = false;
+      input.value = '';
     }
   }
 }
