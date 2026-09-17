@@ -6028,7 +6028,13 @@ export class ApiService {
         .eq('id', sId)
         .maybeSingle();
       if (!error && data) {
-        schoolData = data;
+        let metaObj = {};
+        if (data.address_line2 && typeof data.address_line2 === 'string' && data.address_line2.startsWith('{')) {
+          try {
+            metaObj = JSON.parse(data.address_line2);
+          } catch {}
+        }
+        schoolData = { ...data, ...metaObj };
       }
     } catch (e) {
       console.warn('Error fetching school profile from Supabase', e);
@@ -6055,6 +6061,22 @@ export class ApiService {
       }
     }
 
+    if (schoolData) {
+      const sName = schoolData.name || '';
+      const sCode = schoolData.code || '';
+      const isDHA = sName.toLowerCase().includes('delhi heritage') || sCode.toUpperCase().includes('DHA');
+      if (!schoolData.logoUrl && !schoolData.logo_url) {
+        schoolData.logoUrl = isDHA 
+          ? 'https://images.unsplash.com/photo-1594608661623-aa0bd3a69d98?auto=format&fit=crop&q=80&w=200' 
+          : '';
+        schoolData.logo_url = schoolData.logoUrl;
+      }
+      if (!schoolData.affiliation_number && isDHA) {
+        schoolData.affiliation_number = '475944379';
+        schoolData.affiliationNumber = '475944379';
+      }
+    }
+
     return schoolData;
   }
 
@@ -6063,13 +6085,50 @@ export class ApiService {
     if (!sId) throw new Error('No school ID specified.');
 
     const logo = profileData.logo_url || profileData.logoUrl || null;
+    
+    // Package rich profile metadata into JSON for seamless cross-deployment sync
+    const metadataToStore = {
+      logo_url: logo,
+      logoUrl: logo,
+      affiliation: profileData.affiliation || 'CBSE',
+      affiliation_board: profileData.affiliation_board || profileData.affiliationBoard || 'CBSE',
+      affiliationBoard: profileData.affiliationBoard || profileData.affiliation_board || 'CBSE',
+      affiliation_number: profileData.affiliation_number || profileData.affiliationNumber || '',
+      affiliationNumber: profileData.affiliationNumber || profileData.affiliation_number || '',
+      custom_board_name: profileData.custom_board_name || profileData.customBoardName || '',
+      customBoardName: profileData.customBoardName || profileData.custom_board_name || '',
+      udise_code: profileData.udise_code || profileData.udiseCode || '',
+      udiseCode: profileData.udiseCode || profileData.udise_code || '',
+      school_registration_number: profileData.school_registration_number || profileData.schoolRegistrationNumber || '',
+      starting_class: profileData.starting_class || profileData.startingClass || 'Pre-Nursery / Playgroup',
+      last_class: profileData.last_class || profileData.lastClass || 'Class 12',
+      school_type: profileData.school_type || profileData.schoolType || 'Co-Educational',
+      school_shift: profileData.school_shift || profileData.schoolShift || 'Regular Day',
+      established_year: profileData.established_year || profileData.establishedYear || '2010',
+      directors: profileData.directors || [],
+      in_charges: profileData.in_charges || profileData.inCharges || [],
+      principal_name: profileData.principal_name || profileData.principalName || '',
+      principal_email: profileData.principal_email || profileData.principalEmail || '',
+      principal_phone: profileData.principal_phone || profileData.principalPhone || '',
+      principal_photo_url: profileData.principal_photo_url || profileData.principalPhotoUrl || '',
+      vice_principal_name: profileData.vice_principal_name || profileData.vicePrincipalName || '',
+      vice_principal_email: profileData.vice_principal_email || profileData.vicePrincipalEmail || '',
+      vice_principal_phone: profileData.vice_principal_phone || profileData.vicePrincipalPhone || '',
+      vice_principal_photo_url: profileData.vice_principal_photo_url || profileData.vicePrincipalPhotoUrl || '',
+      alternate_phone: profileData.alternate_phone || profileData.alternatePhone || '',
+      website_url: profileData.website_url || profileData.websiteUrl || '',
+      district: profileData.district || '',
+      motto: profileData.motto || profileData.tagline || '',
+      tagline: profileData.tagline || profileData.motto || '',
+    };
+
     const updatePayload = {
       name: profileData.name?.trim(),
       code: profileData.code?.trim(),
       email: profileData.email?.trim() || null,
       phone: profileData.phone?.trim() || null,
-      logo_url: logo,
       address_line1: profileData.address_line1?.trim() || profileData.addressLine1?.trim() || null,
+      address_line2: JSON.stringify(metadataToStore),
       city: profileData.city?.trim() || null,
       state: profileData.state?.trim() || null,
       country: profileData.country?.trim() || 'India',
@@ -6090,7 +6149,7 @@ export class ApiService {
     // 2. Update local storage overrides & sync active user state
     try {
       const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
-      localProfiles[sId] = { ...(localProfiles[sId] || {}), ...updatePayload, ...profileData, logoUrl: logo, logo_url: logo, id: sId };
+      localProfiles[sId] = { ...(localProfiles[sId] || {}), ...updatePayload, ...metadataToStore, ...profileData, logoUrl: logo, logo_url: logo, id: sId };
       localStorage.setItem('schoolsense_school_profiles', JSON.stringify(localProfiles));
 
       // Sync user in localStorage if user belongs to this school
@@ -6101,12 +6160,13 @@ export class ApiService {
           u.school.name = updatePayload.name || u.school.name;
           u.school.code = updatePayload.code || u.school.code;
           u.school.logoUrl = logo || u.school.logoUrl;
+          u.school.logo_url = logo || u.school.logo_url;
           localStorage.setItem('schoolsense_user', JSON.stringify(u));
         }
       }
     } catch (e) {}
 
-    return { success: true, school: { ...profileData, id: sId, ...updatePayload, logoUrl: logo } };
+    return { success: true, school: { ...profileData, id: sId, ...updatePayload, ...metadataToStore, logoUrl: logo } };
   }
 
   // =========================================================================

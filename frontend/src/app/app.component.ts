@@ -41,7 +41,7 @@ export class AppComponent {
     if (logoUrl && !isSuperPlatform) {
       targetFavicon = logoUrl;
     } else if (school?.name && !isSuperPlatform) {
-      targetFavicon = this.generateSchoolMonogramFavicon(school.name, school.code);
+      targetFavicon = this.auth.generateSchoolCrestSvg(school.name, school.code);
     }
 
     this.setFaviconHref(targetFavicon);
