@@ -325,9 +325,17 @@ export class AuthService {
         .eq('id', sId)
         .maybeSingle();
 
-      let logo = school?.logo_url || school?.logoUrl;
-      let name = school?.name;
-      let code = school?.code;
+      let metaObj: any = {};
+      if (school?.address_line2 && typeof school.address_line2 === 'string' && school.address_line2.startsWith('{')) {
+        try {
+          metaObj = JSON.parse(school.address_line2);
+        } catch {}
+      }
+
+      const merged = { ...(school || {}), ...metaObj };
+      let logo = merged?.logo_url || merged?.logoUrl;
+      let name = merged?.name;
+      let code = merged?.code;
 
       // 2. Also check local profiles cache override
       try {
@@ -342,7 +350,7 @@ export class AuthService {
 
       if (logo || name || code) {
         this.updateCurrentSchool({
-          ...(school || {}),
+          ...merged,
           name: name || this.currentUser()?.school?.name,
           code: code || this.currentUser()?.school?.code,
           logoUrl: logo,
@@ -352,17 +360,6 @@ export class AuthService {
     } catch (e) {
       console.warn('syncSchoolProfileFromDb error:', e);
     }
-  }
-
-  generateSchoolCrestSvg(name: string, code?: string): string {
-    const sName = name || 'Academy';
-    const sCode = code || '';
-    const isDHA = sName.toLowerCase().includes('delhi heritage') || sCode.toUpperCase().includes('DHA');
-    const initials = isDHA ? 'DHA' : ((code || name.split(' ').map((w: string) => w[0]).join('')).slice(0, 3).toUpperCase() || 'SCH');
-    const ribbonText = isDHA ? 'DELHI HERITAGE' : sName.toUpperCase().slice(0, 16);
-
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200"><defs><linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1e3a8a"/><stop offset="50%" stop-color="#1e40af"/><stop offset="100%" stop-color="#0f172a"/></linearGradient><linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fbbf24"/><stop offset="50%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#d97706"/></linearGradient></defs><path d="M100 14 L172 44 C172 118 100 182 100 182 C100 182 28 118 28 44 Z" fill="url(#shieldGrad)" stroke="url(#goldGrad)" stroke-width="5"/><path d="M100 24 L160 49 C160 110 100 166 100 166 C100 166 40 110 40 49 Z" fill="none" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="3,3"/><path d="M100 72 L100 115 M100 115 C90 105 72 105 58 110 L58 75 C72 70 90 70 100 77 C110 70 128 70 142 75 L142 110 C128 105 110 105 100 115 Z" fill="#ffffff" stroke="#1e3a8a" stroke-width="2"/><text x="100" y="60" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="18" font-weight="900" fill="#fbbf24" text-anchor="middle" letter-spacing="1">${initials}</text><circle cx="70" cy="48" r="3" fill="#fbbf24"/><circle cx="100" cy="34" r="3.5" fill="#fbbf24"/><circle cx="130" cy="48" r="3" fill="#fbbf24"/><rect x="30" y="130" width="140" height="24" rx="5" fill="#0f172a" stroke="url(#goldGrad)" stroke-width="1.5"/><text x="100" y="146" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="8.5" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="0.5">${ribbonText}</text></svg>`;
-    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
   }
 
   async getSchoolProfileById(schoolIdOrCode: string): Promise<any> {
@@ -414,26 +411,21 @@ export class AuthService {
     if (schoolData || cleanId) {
       const sName = schoolData?.name || cleanId;
       const sCode = schoolData?.code || cleanId;
-      const isDHA = (sName || '').toLowerCase().includes('delhi heritage') || (sCode || '').toUpperCase().includes('DHA');
+      const logo = schoolData?.logoUrl || schoolData?.logo_url || null;
 
-      let defaultAffiliation = isDHA ? 'Affiliated to CBSE (Affiliation No. 475944379)' : 'Affiliated to CBSE';
-      let defaultTagline = isDHA ? 'Excellence in Education, Rooted in Values' : '';
-      let defaultLogo = this.generateSchoolCrestSvg(sName, sCode);
-
-      const logo = schoolData?.logoUrl || schoolData?.logo_url || defaultLogo;
       return {
         ...schoolData,
         name: schoolData?.name || sName,
         code: schoolData?.code || sCode,
         logo_url: logo,
         logoUrl: logo,
-        affiliation: schoolData?.affiliation || defaultAffiliation,
+        affiliation: schoolData?.affiliation || 'Affiliated to CBSE',
         affiliation_board: schoolData?.affiliation_board || schoolData?.affiliationBoard || 'CBSE',
         affiliationBoard: schoolData?.affiliationBoard || schoolData?.affiliation_board || 'CBSE',
-        affiliation_number: schoolData?.affiliation_number || schoolData?.affiliationNumber || (isDHA ? '475944379' : ''),
-        affiliationNumber: schoolData?.affiliationNumber || schoolData?.affiliation_number || (isDHA ? '475944379' : ''),
-        tagline: schoolData?.tagline || schoolData?.motto || defaultTagline,
-        motto: schoolData?.motto || schoolData?.tagline || defaultTagline,
+        affiliation_number: schoolData?.affiliation_number || schoolData?.affiliationNumber || '',
+        affiliationNumber: schoolData?.affiliationNumber || schoolData?.affiliation_number || '',
+        tagline: schoolData?.tagline || schoolData?.motto || '',
+        motto: schoolData?.motto || schoolData?.tagline || '',
       };
     }
     return null;
@@ -484,9 +476,7 @@ export class AuthService {
           }
           const merged = { ...s, ...metaObj };
           const lp = localProfiles[s.id] || localProfiles[s.code] || {};
-          const isDHA = (merged.name || '').toLowerCase().includes('delhi heritage') || (merged.code || '').toUpperCase().includes('DHA');
-          const defaultLogo = this.generateSchoolCrestSvg(merged.name, merged.code);
-          const resolvedLogo = lp.logoUrl || lp.logo_url || merged.logo_url || merged.logoUrl || defaultLogo;
+          const resolvedLogo = lp.logoUrl || lp.logo_url || merged.logo_url || merged.logoUrl || null;
 
           return {
             ...merged,
@@ -501,15 +491,15 @@ export class AuthService {
             state: lp.state || s.state || '',
             phone: lp.phone || s.phone || '',
             email: lp.email || s.email || '',
-            motto: lp.motto || s.motto || merged.motto || (isDHA ? 'Excellence in Education, Rooted in Values' : ''),
-            affiliation: lp.affiliation || s.affiliation || merged.affiliation || (isDHA ? 'Affiliated to CBSE (Affiliation No. 475944379)' : ''),
+            motto: lp.motto || s.motto || merged.motto || '',
+            affiliation: lp.affiliation || s.affiliation || merged.affiliation || '',
             affiliation_board: lp.affiliation_board || lp.affiliationBoard || merged.affiliation_board || merged.affiliationBoard || 'CBSE',
             affiliationBoard: lp.affiliationBoard || lp.affiliation_board || merged.affiliationBoard || merged.affiliation_board || 'CBSE',
-            affiliation_number: lp.affiliation_number || lp.affiliationNumber || merged.affiliation_number || merged.affiliationNumber || (isDHA ? '475944379' : ''),
-            affiliationNumber: lp.affiliationNumber || lp.affiliation_number || merged.affiliationNumber || merged.affiliation_number || (isDHA ? '475944379' : ''),
+            affiliation_number: lp.affiliation_number || lp.affiliationNumber || merged.affiliation_number || merged.affiliationNumber || '',
+            affiliationNumber: lp.affiliationNumber || lp.affiliation_number || merged.affiliationNumber || merged.affiliation_number || '',
             custom_board_name: lp.custom_board_name || lp.customBoardName || merged.custom_board_name || merged.customBoardName || '',
             customBoardName: lp.customBoardName || lp.custom_board_name || merged.customBoardName || merged.custom_board_name || '',
-            tagline: lp.tagline || lp.motto || merged.tagline || merged.motto || (isDHA ? 'Excellence in Education, Rooted in Values' : ''),
+            tagline: lp.tagline || lp.motto || merged.tagline || merged.motto || '',
           };
         });
 
