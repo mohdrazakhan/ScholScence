@@ -14,6 +14,7 @@ export interface User {
     code: string;
     status?: string;
     logoUrl?: string;
+    logo_url?: string;
     disabledServices?: string[];
   };
   isSupportSession?: boolean;
@@ -155,6 +156,7 @@ export interface SectionItem {
   name: string;
   code: string;
   capacity: number;
+  enrolled_count?: number;
   display_order: number;
   class_teacher_id?: string | null;
   class?: ClassItem;

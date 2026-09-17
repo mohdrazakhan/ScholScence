@@ -930,29 +930,72 @@ export class ApiService {
     try {
       let enrollQuery = this.supabase
         .from('student_enrollments')
-        .select('id, section_id, status, section:sections(id, name, class_id)');
+        .select('id, student_id, section_id, class_id, status, updated_at, created_at, student:students(id, status), section:sections(id, name, class_id, class:classes(id, name))');
       if (effectiveYearId) {
         enrollQuery = enrollQuery.eq('academic_year_id', effectiveYearId);
       }
       const { data: enrollData } = await enrollQuery;
+
+      const localStatusMap = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('schoolsense_student_statuses') || '{}');
+        } catch {
+          return {};
+        }
+      })();
+
+      const localMap = this.getStudentSectionMap(effectiveYearId);
+
+      // Group by student ID to ensure each student has exactly ONE authoritative enrollment record
+      const latestEnrollmentByStudent = new Map<string, any>();
       (enrollData || []).forEach((e: any) => {
-        if (e.status !== 'INACTIVE') {
-          // Direct section_id match
-          const directMatch = sectionsData.find((s: any) => s.id === e.section_id);
-          if (directMatch) {
-            sectionEnrollmentCounts[directMatch.id] = (sectionEnrollmentCounts[directMatch.id] || 0) + 1;
-          } else {
-            // Match by class_id and section name
-            const classMatch =
-              sectionsData.find(
-                (s: any) =>
-                  s.class_id === e.section?.class_id &&
-                  (s.name?.trim().toLowerCase() === (e.section?.name || 'section a').trim().toLowerCase() || !e.section?.name)
-              ) || sectionsData.find((s: any) => s.class_id === e.section?.class_id);
-            if (classMatch) {
-              sectionEnrollmentCounts[classMatch.id] = (sectionEnrollmentCounts[classMatch.id] || 0) + 1;
-            }
+        const sId = e.student_id || e.student?.id;
+        if (!sId) return;
+        const existing = latestEnrollmentByStudent.get(sId);
+        if (!existing) {
+          latestEnrollmentByStudent.set(sId, e);
+        } else {
+          const prevTime = new Date(existing.updated_at || existing.created_at || 0).getTime();
+          const currTime = new Date(e.updated_at || e.created_at || 0).getTime();
+          if (currTime > prevTime) {
+            latestEnrollmentByStudent.set(sId, e);
           }
+        }
+      });
+
+      const uniqueEnrolls = Array.from(latestEnrollmentByStudent.values());
+
+      uniqueEnrolls.forEach((e: any) => {
+        const sId = e.student_id || e.student?.id;
+        const st = e.student || {};
+        const localStatus = localStatusMap[sId]?.status || localStatusMap[e.id]?.status;
+        const rawStatus = localStatus || (e.status && e.status !== 'ALUMNI' ? e.status : null) || (st.status === 'ALUMNI' ? 'ACTIVE' : st.status) || 'ACTIVE';
+        const stStatus = String(rawStatus).toUpperCase();
+
+        if (stStatus === 'INACTIVE' || stStatus === 'LEFTOUT' || stStatus === 'SUSPENDED' || stStatus === 'LEFT') {
+          return;
+        }
+
+        const stInfo = localMap[sId];
+        const effectiveSectionId = stInfo?.sectionId || e.section_id;
+        const effectiveClassId = stInfo?.classId || e.class_id || e.section?.class_id || (e.section?.class as any)?.id;
+        const effectiveClassName = (stInfo?.className || (e.section?.class as any)?.name || '').trim().toLowerCase();
+        const effectiveSecName = (stInfo?.sectionName || e.section?.name || 'section a').trim().toLowerCase();
+
+        // 1. Direct section_id match
+        let matchedSec = sectionsData.find((s: any) => s.id === effectiveSectionId);
+
+        // 2. If not matched by sectionId, match by class_id and section name
+        if (!matchedSec) {
+          matchedSec = sectionsData.find(
+            (s: any) =>
+              (s.class_id === effectiveClassId || (effectiveClassName && (s.name || '').toLowerCase() === effectiveClassName)) &&
+              (s.name?.trim().toLowerCase() === effectiveSecName || !s.name)
+          ) || sectionsData.find((s: any) => s.class_id === effectiveClassId);
+        }
+
+        if (matchedSec) {
+          sectionEnrollmentCounts[matchedSec.id] = (sectionEnrollmentCounts[matchedSec.id] || 0) + 1;
         }
       });
     } catch (err) {
@@ -1232,6 +1275,25 @@ export class ApiService {
             };
           });
 
+        const staffPhotosMap = (() => {
+          try {
+            return JSON.parse(localStorage.getItem('schoolsense_staff_photos') || '{}');
+          } catch {
+            return {};
+          }
+        })();
+        const staffProfilesMap = (() => {
+          try {
+            return JSON.parse(localStorage.getItem('schoolsense_staff_profiles') || '{}');
+          } catch {
+            return {};
+          }
+        })();
+
+        const staffLocal = staffPhotosMap[u.id] || (u.email ? staffPhotosMap[u.email.toLowerCase()] : null) || {};
+        const resolvedStaffPhoto = staffLocal.photoUrl || staffLocal.photo_url || staffLocal.avatar_url || '';
+        const profileLocal = staffProfilesMap[u.id] || (u.email ? staffProfilesMap[u.email.toLowerCase()] : null) || {};
+
         staffList.push({
           id: u.id,
           firstName: u.first_name || 'Staff',
@@ -1239,8 +1301,19 @@ export class ApiService {
           fullName: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'Staff Member',
           email: u.email,
           phone: u.phone,
-          photoUrl: u.photo_url || u.avatar_url || '',
-          avatarUrl: u.avatar_url || u.photo_url || '',
+          photoUrl: resolvedStaffPhoto,
+          avatarUrl: resolvedStaffPhoto,
+          gender: profileLocal.gender || '',
+          dateOfBirth: profileLocal.dateOfBirth || profileLocal.dob || '',
+          dob: profileLocal.dob || profileLocal.dateOfBirth || '',
+          qualification: profileLocal.qualification || '',
+          experience: profileLocal.experience || '',
+          joiningDate: profileLocal.joiningDate || '',
+          bloodGroup: profileLocal.bloodGroup || '',
+          address: profileLocal.address || '',
+          emergencyContactName: profileLocal.emergencyContactName || '',
+          emergencyContactPhone: profileLocal.emergencyContactPhone || '',
+          department: profileLocal.department || '',
           role: roleCode,
           roleName: r?.name || (roleCode === 'SCHOOL_ADMIN' ? 'School Admin' : (roleCode === 'PRINCIPAL' ? 'Principal' : 'Teacher')),
           classTeacherSections: cts,
@@ -1255,6 +1328,21 @@ export class ApiService {
       const schoolDomain = (schoolData?.email && schoolData.email.includes('@')) ? schoolData.email.split('@')[1].toLowerCase().trim() : '';
 
       if (schoolDomain) {
+        const staffPhotosMap = (() => {
+          try {
+            return JSON.parse(localStorage.getItem('schoolsense_staff_photos') || '{}');
+          } catch {
+            return {};
+          }
+        })();
+        const staffProfilesMap = (() => {
+          try {
+            return JSON.parse(localStorage.getItem('schoolsense_staff_profiles') || '{}');
+          } catch {
+            return {};
+          }
+        })();
+
         for (const u of (usersRes.data || [])) {
           if (seenUserIds.has(u.id)) continue;
           if (!u.email) continue;
@@ -1278,6 +1366,10 @@ export class ApiService {
               ).catch(() => {});
             }
 
+            const staffLocal = staffPhotosMap[u.id] || staffPhotosMap[uEmail] || {};
+            const resolvedStaffPhoto = staffLocal.photoUrl || staffLocal.photo_url || staffLocal.avatar_url || '';
+            const profileLocal = staffProfilesMap[u.id] || staffProfilesMap[uEmail] || {};
+
             staffList.push({
               id: u.id,
               firstName: u.first_name || 'Staff',
@@ -1285,6 +1377,19 @@ export class ApiService {
               fullName: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'Staff Member',
               email: u.email,
               phone: u.phone,
+              photoUrl: resolvedStaffPhoto,
+              avatarUrl: resolvedStaffPhoto,
+              gender: profileLocal.gender || '',
+              dateOfBirth: profileLocal.dateOfBirth || profileLocal.dob || '',
+              dob: profileLocal.dob || profileLocal.dateOfBirth || '',
+              qualification: profileLocal.qualification || '',
+              experience: profileLocal.experience || '',
+              joiningDate: profileLocal.joiningDate || '',
+              bloodGroup: profileLocal.bloodGroup || '',
+              address: profileLocal.address || '',
+              emergencyContactName: profileLocal.emergencyContactName || '',
+              emergencyContactPhone: profileLocal.emergencyContactPhone || '',
+              department: profileLocal.department || '',
               role: roleCode,
               roleName: roleCode === 'SCHOOL_ADMIN' ? 'School Admin' : (roleCode === 'PRINCIPAL' ? 'Principal' : 'Teacher'),
               classTeacherSections: [],
@@ -1337,7 +1442,7 @@ export class ApiService {
     try {
       const { data: existingUser } = await this.supabase
         .from('users')
-        .select('id, email, first_name, last_name, avatar_url, photo_url')
+        .select('id, email, first_name, last_name, phone, status')
         .eq('email', cleanEmail)
         .maybeSingle();
 
@@ -1349,8 +1454,6 @@ export class ApiService {
             first_name: cleanFirstName || existingUser.first_name,
             last_name: cleanLastName || existingUser.last_name,
             phone: cleanPhone,
-            avatar_url: photo || existingUser.avatar_url,
-            photo_url: photo || existingUser.photo_url,
             status: 'ACTIVE',
           })
           .eq('id', userId);
@@ -1362,8 +1465,6 @@ export class ApiService {
             first_name: cleanFirstName,
             last_name: cleanLastName,
             phone: cleanPhone,
-            avatar_url: photo,
-            photo_url: photo,
             password_hash: password,
             status: 'ACTIVE',
           })
@@ -1383,6 +1484,42 @@ export class ApiService {
 
     if (!userId) {
       throw new Error('Failed to create or find staff user record.');
+    }
+
+    // Persist staff photo to client storage immediately so photos are 100% resilient across page reloads
+    if (photo) {
+      try {
+        const staffPhotosMap = JSON.parse(localStorage.getItem('schoolsense_staff_photos') || '{}');
+        staffPhotosMap[userId] = { photoUrl: photo, photo_url: photo, avatar_url: photo };
+        staffPhotosMap[cleanEmail] = { photoUrl: photo, photo_url: photo, avatar_url: photo };
+        localStorage.setItem('schoolsense_staff_photos', JSON.stringify(staffPhotosMap));
+      } catch (storageErr) {
+        console.warn('Staff photo storage warning:', storageErr);
+      }
+    }
+
+    // Persist enriched faculty profile (experience, qualification, address, gender, DOB, etc.)
+    const extraProfile = {
+      gender: body.gender || '',
+      dateOfBirth: body.dateOfBirth || body.dob || '',
+      dob: body.dateOfBirth || body.dob || '',
+      qualification: body.qualification || '',
+      experience: body.experience || '',
+      joiningDate: body.joiningDate || '',
+      bloodGroup: body.bloodGroup || '',
+      address: body.address || '',
+      emergencyContactName: body.emergencyContactName || '',
+      emergencyContactPhone: body.emergencyContactPhone || '',
+      department: body.department || '',
+    };
+
+    try {
+      const staffProfilesMap = JSON.parse(localStorage.getItem('schoolsense_staff_profiles') || '{}');
+      staffProfilesMap[userId] = { ...(staffProfilesMap[userId] || {}), ...extraProfile };
+      staffProfilesMap[cleanEmail] = { ...(staffProfilesMap[cleanEmail] || {}), ...extraProfile };
+      localStorage.setItem('schoolsense_staff_profiles', JSON.stringify(staffProfilesMap));
+    } catch (profileErr) {
+      console.warn('Staff profile storage warning:', profileErr);
     }
 
     // 2. Find or create Role in `roles` table
@@ -2133,9 +2270,10 @@ export class ApiService {
     }
 
     // Update section and roll number in student_enrollments
-    if (body.sectionId || body.rollNumber) {
+    if (body.sectionId || body.classId || body.rollNumber) {
       const enrUpdate: any = {};
       if (body.sectionId) enrUpdate.section_id = body.sectionId;
+      if (body.classId) enrUpdate.class_id = body.classId;
       if (body.rollNumber) enrUpdate.roll_number = String(body.rollNumber);
       enrUpdate.updated_at = new Date().toISOString();
 

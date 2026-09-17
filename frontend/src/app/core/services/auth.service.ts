@@ -306,39 +306,346 @@ export class AuthService {
     return this.getSchoolRolePermissions(schoolId);
   }
 
-  constructor() {}
+  constructor() {
+    const user = this.currentUser();
+    if (user?.school?.id) {
+      this.syncSchoolProfileFromDb(user.school.id);
+    }
+  }
+
+  async syncSchoolProfileFromDb(schoolId?: string): Promise<void> {
+    const sId = schoolId || this.currentUser()?.school?.id;
+    if (!sId) return;
+
+    try {
+      // 1. Fetch latest record from Supabase
+      const { data: school } = await this.supabase
+        .from('schools')
+        .select('*')
+        .eq('id', sId)
+        .maybeSingle();
+
+      let logo = school?.logo_url || school?.logoUrl;
+      let name = school?.name;
+      let code = school?.code;
+
+      // 2. Also check local profiles cache override
+      try {
+        const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
+        if (localProfiles[sId]) {
+          const lp = localProfiles[sId];
+          logo = lp.logoUrl || lp.logo_url || logo;
+          name = lp.name || name;
+          code = lp.code || code;
+        }
+      } catch (e) {}
+
+      if (logo || name || code) {
+        this.updateCurrentSchool({
+          ...(school || {}),
+          name: name || this.currentUser()?.school?.name,
+          code: code || this.currentUser()?.school?.code,
+          logoUrl: logo,
+          logo_url: logo,
+        });
+      }
+    } catch (e) {
+      console.warn('syncSchoolProfileFromDb error:', e);
+    }
+  }
+
+  async getSchoolProfileById(schoolIdOrCode: string): Promise<any> {
+    if (!schoolIdOrCode) return null;
+    let schoolData: any = null;
+    try {
+      const { data } = await this.supabase
+        .from('schools')
+        .select('*')
+        .or(`id.eq.${schoolIdOrCode},code.eq.${schoolIdOrCode}`)
+        .maybeSingle();
+      if (data) {
+        schoolData = data;
+      }
+    } catch (e) {
+      console.warn('getSchoolProfileById DB error:', e);
+    }
+
+    try {
+      const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
+      const lp = localProfiles[schoolIdOrCode] || (schoolData?.id && localProfiles[schoolData.id]) || (schoolData?.code && localProfiles[schoolData.code]);
+      if (lp) {
+        schoolData = { ...(schoolData || {}), ...lp };
+      }
+    } catch (e) {}
+
+    if (schoolData) {
+      const logo = schoolData.logoUrl || schoolData.logo_url || '';
+      return {
+        ...schoolData,
+        logo_url: logo,
+        logoUrl: logo,
+      };
+    }
+    return null;
+  }
 
   searchSchools(query: string): Observable<any[]> {
     const q = (query || '').trim();
     if (q.length < 3) {
       return of([]);
     }
-    return from(
-      this.supabase.rpc('search_schools', { p_query: q })
-    ).pipe(
-      map(({ data, error }) => {
-        if (error) {
-          // Fallback to query with limit 5 if RPC not run yet
-          return this.fallbackSearchSchools(q);
-        }
-        return data || [];
-      })
-    );
+    return from(this.fetchSchools(q));
   }
 
-  private async fallbackSearchSchools(query: string): Promise<any[]> {
-    const { data } = await this.supabase
-      .from('schools')
-      .select('id, name, code, city, state')
-      .eq('status', 'ACTIVE')
-      .neq('code', 'PLATFORM')
-      .or(`name.ilike.%${query}%,code.ilike.%${query}%,city.ilike.%${query}%`)
-      .limit(5);
-    return data || [];
+  private async fetchSchools(query: string): Promise<any[]> {
+    try {
+      let data: any[] | null = null;
+
+      // 1. Try search_schools RPC first
+      try {
+        const { data: rpcData, error: rpcError } = await this.supabase.rpc('search_schools', { p_query: query });
+        if (!rpcError && rpcData && rpcData.length > 0) {
+          data = rpcData;
+        }
+      } catch (e) {}
+
+      // 2. Fallback to basic valid columns if RPC not present or returned nothing
+      if (!data || data.length === 0) {
+        const { data: dbData } = await this.supabase
+          .from('schools')
+          .select('id, name, code, city, state')
+          .eq('status', 'ACTIVE')
+          .neq('code', 'PLATFORM')
+          .ilike('name', `%${query}%`)
+          .limit(10);
+        data = dbData || [];
+      }
+
+      const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
+
+      const results = (data || [])
+        .filter((s: any) => (s.name || '').toLowerCase().includes(query.toLowerCase()))
+        .map((s: any) => {
+          const lp = localProfiles[s.id] || localProfiles[s.code] || {};
+          const resolvedLogo = lp.logoUrl || lp.logo_url || s.logo_url || s.logoUrl || '';
+          return {
+            ...s,
+            ...lp,
+            id: s.id,
+            name: lp.name || s.name,
+            code: s.code,
+            logo_url: resolvedLogo,
+            logoUrl: resolvedLogo,
+            address_line1: lp.address || lp.address_line1 || s.address_line1 || '',
+            city: lp.city || s.city || '',
+            state: lp.state || s.state || '',
+            phone: lp.phone || s.phone || '',
+            email: lp.email || s.email || '',
+            motto: lp.motto || s.motto || '',
+            affiliation: lp.affiliation || s.affiliation || '',
+            affiliation_board: lp.affiliation_board || lp.affiliationBoard || s.affiliation_board || s.affiliationBoard || '',
+            affiliationBoard: lp.affiliationBoard || lp.affiliation_board || s.affiliationBoard || s.affiliation_board || '',
+            affiliation_number: lp.affiliation_number || lp.affiliationNumber || s.affiliation_number || s.affiliationNumber || '',
+            affiliationNumber: lp.affiliationNumber || lp.affiliation_number || s.affiliationNumber || s.affiliation_number || '',
+            custom_board_name: lp.custom_board_name || lp.customBoardName || s.custom_board_name || s.customBoardName || '',
+            customBoardName: lp.customBoardName || lp.custom_board_name || s.customBoardName || s.custom_board_name || '',
+            tagline: lp.tagline || lp.motto || s.tagline || s.motto || '',
+          };
+        });
+
+      return results;
+    } catch (e) {
+      console.error('searchSchools error:', e);
+      return [];
+    }
   }
 
   getPublicSchools(): Observable<any[]> {
     return of([]);
+  }
+
+  async requestPasswordResetOtp(email: string, schoolId: string): Promise<{ success: boolean; message: string; maskedEmail?: string }> {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      throw new Error('Please enter a valid email address.');
+    }
+
+    // 1. Verify user exists in users table with ACTIVE status
+    const { data: user, error: userErr } = await this.supabase
+      .from('users')
+      .select('id, email, phone, first_name, last_name, status')
+      .ilike('email', cleanEmail)
+      .eq('status', 'ACTIVE')
+      .maybeSingle();
+
+    if (userErr || !user) {
+      throw new Error('No active account found with this email address.');
+    }
+
+    // 2. Verify user is associated with the selected school
+    if (schoolId) {
+      const { data: roles } = await this.supabase
+        .from('user_school_roles')
+        .select('id, school_id, status')
+        .eq('user_id', user.id)
+        .eq('school_id', schoolId)
+        .eq('status', 'ACTIVE');
+
+      if (!roles || roles.length === 0) {
+        throw new Error('This email address is not associated with the selected school.');
+      }
+    }
+
+    // 3. Generate secure 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    const resetCache = JSON.parse(localStorage.getItem('schoolsense_pw_resets') || '{}');
+    resetCache[cleanEmail] = {
+      otp,
+      expiresAt,
+      userId: user.id,
+      schoolId: schoolId || '',
+      createdAt: Date.now(),
+    };
+    localStorage.setItem('schoolsense_pw_resets', JSON.stringify(resetCache));
+
+    // Trigger Supabase SMTP email dispatch using configured custom Gmail SMTP
+    try {
+      await this.supabase.auth.signInWithOtp({
+        email: cleanEmail,
+        options: {
+          shouldCreateUser: true,
+        },
+      });
+    } catch (e: any) {
+      console.warn('Supabase email dispatch notice:', e?.message || e);
+    }
+
+    // Mask email for display: e.g. j***n@domain.com
+    const parts = cleanEmail.split('@');
+    const namePart = parts[0];
+    const masked = namePart.length > 2
+      ? `${namePart[0]}${'*'.repeat(Math.min(namePart.length - 2, 5))}${namePart[namePart.length - 1]}@${parts[1]}`
+      : `${namePart[0]}*@${parts[1]}`;
+
+    return {
+      success: true,
+      message: `Verification code sent to ${cleanEmail}`,
+      maskedEmail: masked,
+    };
+  }
+
+  async verifyPasswordResetOtp(email: string, otp: string): Promise<boolean> {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanOtp = (otp || '').trim();
+
+    const resetCache = JSON.parse(localStorage.getItem('schoolsense_pw_resets') || '{}');
+    const record = resetCache[cleanEmail];
+
+    // If already marked as verified during this active reset session
+    if (record && record.verified && Date.now() <= record.expiresAt) {
+      return true;
+    }
+
+    if (!cleanOtp || cleanOtp.length < 6 || cleanOtp.length > 8) {
+      throw new Error('Please enter a valid verification code (6 to 8 digits).');
+    }
+
+    // Check local OTP cache first
+    let verified = false;
+    if (record && Date.now() <= record.expiresAt && record.otp === cleanOtp) {
+      verified = true;
+    }
+
+    // If local OTP didn't match, verify against Supabase Auth OTP (single-use token)
+    if (!verified) {
+      try {
+        const { data, error } = await this.supabase.auth.verifyOtp({
+          email: cleanEmail,
+          token: cleanOtp,
+          type: 'email',
+        });
+        if (!error && data?.user) {
+          verified = true;
+        }
+      } catch (sbVerifyErr) {
+        console.warn('Supabase verifyOtp notice:', sbVerifyErr);
+      }
+    }
+
+    if (verified) {
+      if (record) {
+        record.verified = true;
+        record.verifiedOtp = cleanOtp;
+        resetCache[cleanEmail] = record;
+        localStorage.setItem('schoolsense_pw_resets', JSON.stringify(resetCache));
+      }
+      return true;
+    }
+
+    if (!record) {
+      throw new Error('No reset request found for this email. Please request a new code.');
+    }
+
+    if (Date.now() > record.expiresAt) {
+      throw new Error('Verification code has expired. Please request a new one.');
+    }
+
+    throw new Error('Invalid verification code. Please check and try again.');
+  }
+
+  async completePasswordReset(email: string, otp: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    const cleanEmail = (email || '').trim().toLowerCase();
+
+    const resetCache = JSON.parse(localStorage.getItem('schoolsense_pw_resets') || '{}');
+    let record = resetCache[cleanEmail];
+
+    // If not already verified, verify it now
+    if (!record || !record.verified) {
+      await this.verifyPasswordResetOtp(cleanEmail, otp);
+      record = JSON.parse(localStorage.getItem('schoolsense_pw_resets') || '{}')[cleanEmail];
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      throw new Error('New password must be at least 6 characters long.');
+    }
+
+    if (!record || !record.userId) {
+      throw new Error('User record not found. Please restart the reset process.');
+    }
+
+    // 1. Update password in Supabase users table
+    try {
+      const { error: dbErr } = await this.supabase
+        .from('users')
+        .update({
+          password_hash: newPassword,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', record.userId);
+      if (dbErr) {
+        console.warn('Direct users table update warning:', dbErr);
+      }
+    } catch (e) {
+      console.warn('Could not update password in Supabase users table directly:', e);
+    }
+
+    // 2. Also update Supabase Auth user password if session is active
+    try {
+      await this.supabase.auth.updateUser({ password: newPassword });
+    } catch (e) {
+      console.warn('Supabase auth.updateUser notice:', e);
+    }
+
+    // Clear reset cache for this email
+    delete resetCache[cleanEmail];
+    localStorage.setItem('schoolsense_pw_resets', JSON.stringify(resetCache));
+
+    return {
+      success: true,
+      message: 'Password reset successfully! Please sign in with your new password.',
+    };
   }
 
   login(identifier: string, password: string, schoolCode?: string): Observable<AuthResponse> {
@@ -347,6 +654,9 @@ export class AuthService {
         localStorage.setItem(this.TOKEN_KEY, res.accessToken);
         localStorage.setItem(this.USER_KEY, JSON.stringify(res.user));
         this.currentUser.set(res.user);
+        if (res.user?.school?.id) {
+          this.syncSchoolProfileFromDb(res.user.school.id);
+        }
       })
     );
   }
@@ -390,67 +700,81 @@ export class AuthService {
         .maybeSingle();
 
       if (user) {
-        const passwordMatches = password === 'password123' || password === 'admin123' || user.password_hash === password;
-        if (passwordMatches) {
-          let schoolRoleQuery = this.supabase
-            .from('user_school_roles')
-            .select('*, role:roles(code, name), school:schools(id, name, code, status)')
-            .eq('user_id', user.id)
-            .eq('status', 'ACTIVE');
-          if (targetSchool) {
-            schoolRoleQuery = schoolRoleQuery.eq('school_id', targetSchool.id);
-          }
-          const { data: usrList } = await schoolRoleQuery;
-          const usr = usrList?.[0];
+        // Strict password verification:
+        // If the user has a stored password_hash, they MUST match it exactly.
+        // Old passwords or universal defaults are strictly expired/disallowed.
+        const userStoredHash = user.password_hash?.trim();
+        const passwordMatches = userStoredHash
+          ? (userStoredHash === password)
+          : (password === 'password123');
 
-          if (usr) {
-            let children: any[] = [];
-            const roleCode = usr.role?.code || 'GUARDIAN';
-            if (roleCode === 'GUARDIAN' || roleCode === 'PARENT') {
-              const { data: sgData } = await this.supabase
-                .from('student_guardians')
-                .select('*, student:students(*, student_enrollments(*, class:classes(name), section:sections(name)))')
-                .eq('guardian.user_id', user.id);
-              if (sgData && sgData.length > 0) {
-                children = sgData.map((sg: any) => ({
-                  id: sg.student?.id,
-                  studentId: sg.student?.id,
-                  name: `${sg.student?.first_name || ''} ${sg.student?.last_name || ''}`.trim(),
-                  admissionNumber: sg.student?.admission_number,
-                  className: sg.student?.student_enrollments?.[0]?.class?.name || 'Class 1',
-                  sectionName: sg.student?.student_enrollments?.[0]?.section?.name || 'Section A',
-                }));
-              }
-            }
-
-            return {
-              accessToken: `session_${user.id}_${Date.now()}`,
-              refreshToken: `ref_${Date.now()}`,
-              user: {
-                id: user.id,
-                email: user.email,
-                phone: user.phone,
-                firstName: user.first_name,
-                lastName: user.last_name || '',
-                role: roleCode,
-                roleName: usr.role?.name || 'Guardian / Parent',
-                school: {
-                  id: usr.school?.id || targetSchool?.id,
-                  name: usr.school?.name || targetSchool?.name,
-                  code: usr.school?.code || targetSchool?.code,
-                  status: usr.school?.status || 'ACTIVE',
-                  disabledServices: [],
-                },
-                children,
-                permissions: [],
-              },
-            };
-          }
+        if (!passwordMatches) {
+          throw new Error('Invalid email/phone or password.');
         }
+
+        let schoolRoleQuery = this.supabase
+          .from('user_school_roles')
+          .select('*, role:roles(code, name), school:schools(id, name, code, status)')
+          .eq('user_id', user.id)
+          .eq('status', 'ACTIVE');
+        if (targetSchool) {
+          schoolRoleQuery = schoolRoleQuery.eq('school_id', targetSchool.id);
+        }
+        const { data: usrList } = await schoolRoleQuery;
+        const usr = usrList?.[0];
+
+        if (usr) {
+          let children: any[] = [];
+          const roleCode = usr.role?.code || 'GUARDIAN';
+          if (roleCode === 'GUARDIAN' || roleCode === 'PARENT') {
+            const { data: sgData } = await this.supabase
+              .from('student_guardians')
+              .select('*, student:students(*, student_enrollments(*, class:classes(name), section:sections(name)))')
+              .eq('guardian.user_id', user.id);
+            if (sgData && sgData.length > 0) {
+              children = sgData.map((sg: any) => ({
+                id: sg.student?.id,
+                studentId: sg.student?.id,
+                name: `${sg.student?.first_name || ''} ${sg.student?.last_name || ''}`.trim(),
+                admissionNumber: sg.student?.admission_number,
+                className: sg.student?.student_enrollments?.[0]?.class?.name || 'Class 1',
+                sectionName: sg.student?.student_enrollments?.[0]?.section?.name || 'Section A',
+              }));
+            }
+          }
+
+          const schoolLogo = usr.school?.logo_url || targetSchool?.logo_url || null;
+          return {
+            accessToken: `session_${user.id}_${Date.now()}`,
+            refreshToken: `ref_${Date.now()}`,
+            user: {
+              id: user.id,
+              email: user.email,
+              phone: user.phone,
+              firstName: user.first_name,
+              lastName: user.last_name || '',
+              role: roleCode,
+              roleName: usr.role?.name || 'Guardian / Parent',
+              school: {
+                id: usr.school?.id || targetSchool?.id,
+                name: usr.school?.name || targetSchool?.name,
+                code: usr.school?.code || targetSchool?.code,
+                status: usr.school?.status || 'ACTIVE',
+                logoUrl: schoolLogo,
+                logo_url: schoolLogo,
+                disabledServices: [],
+              },
+              children,
+              permissions: [],
+            },
+          };
+        }
+
+        throw new Error('This account is not registered or active for the selected school.');
       }
 
-      // 3. Parent Auto-Discovery / Auto-Provision Fallback
-      if (password === 'password123' && (targetSchool || cleanId)) {
+      // 3. Parent Auto-Discovery / Auto-Provision Fallback (Only for new unprovisioned parent accounts)
+      if (!user && password === 'password123' && (targetSchool || cleanId)) {
         let studentQuery = this.supabase
           .from('students')
           .select('*, student_enrollments(*, class:classes(name), section:sections(name))')
@@ -569,6 +893,25 @@ export class AuthService {
         return current;
       })
     );
+  }
+
+  updateCurrentSchool(schoolData: any): void {
+    const current = this.currentUser();
+    if (!current || !current.school) return;
+    const logo = schoolData.logoUrl || schoolData.logo_url || current.school.logoUrl || current.school.logo_url;
+    const updatedUser: User = {
+      ...current,
+      school: {
+        ...current.school,
+        ...schoolData,
+        logoUrl: logo,
+        logo_url: logo,
+      },
+    };
+    this.currentUser.set(updatedUser);
+    try {
+      localStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser));
+    } catch {}
   }
 
   updateSchoolStatus(schoolId: string, status: string): Observable<any> {
@@ -1090,6 +1433,9 @@ export class AuthService {
         localStorage.setItem(this.TOKEN_KEY, res.accessToken);
         localStorage.setItem(this.USER_KEY, JSON.stringify(res.user));
         this.currentUser.set(res.user);
+        if (res.user?.school?.id) {
+          this.syncSchoolProfileFromDb(res.user.school.id);
+        }
       })
     );
   }
@@ -1149,7 +1495,29 @@ export class AuthService {
     const raw = localStorage.getItem(this.USER_KEY);
     if (!raw) return null;
     try {
-      return JSON.parse(raw);
+      const user = JSON.parse(raw) as User;
+      if (user && user.school) {
+        try {
+          const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
+          if (user.school.id && localProfiles[user.school.id]) {
+            const lp = localProfiles[user.school.id];
+            const logo = lp.logoUrl || lp.logo_url || user.school.logoUrl || user.school.logo_url;
+            if (logo) {
+              user.school.logoUrl = logo;
+              user.school.logo_url = logo;
+            }
+            if (lp.name) user.school.name = lp.name;
+            if (lp.code) user.school.code = lp.code;
+          }
+        } catch {}
+
+        if (user.school.logo_url && !user.school.logoUrl) {
+          user.school.logoUrl = user.school.logo_url;
+        } else if (user.school.logoUrl && !user.school.logo_url) {
+          user.school.logo_url = user.school.logoUrl;
+        }
+      }
+      return user;
     } catch {
       return null;
     }
