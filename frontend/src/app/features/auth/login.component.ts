@@ -199,10 +199,12 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
             
             <!-- School Monogram & Identity Centered (Desktop Only) -->
             <div class="hidden lg:flex space-y-3 flex-col items-center">
-              <div class="w-16 h-16 rounded-2xl bg-white text-slate-900 font-black text-2xl flex items-center justify-center overflow-hidden border border-slate-200 shadow-md">
-                <img [src]="getSchoolLogo(selectedSchool)"
+              <div class="w-16 h-16 rounded-2xl bg-slate-900 text-white font-black text-2xl flex items-center justify-center overflow-hidden border border-slate-200 shadow-md">
+                <img *ngIf="selectedSchool.logoUrl || selectedSchool.logo_url"
+                     [src]="selectedSchool.logoUrl || selectedSchool.logo_url"
                      class="w-full h-full object-contain p-1 bg-white"
                      alt="School Logo" />
+                <span *ngIf="!(selectedSchool.logoUrl || selectedSchool.logo_url)">{{ (selectedSchool.name.charAt(0) || 'S').toUpperCase() }}</span>
               </div>
               <div class="space-y-1 text-center">
                 <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-snug">
@@ -305,10 +307,12 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
 
           <!-- Step 2 School Mobile Header -->
           <div *ngIf="(step === 'LOGIN' || step === 'FORGOT_PASSWORD') && selectedSchool && !isRootLogin" class="space-y-2.5 flex flex-col items-center w-full">
-            <div class="w-16 h-16 rounded-2xl bg-white text-slate-900 font-black text-2xl flex items-center justify-center overflow-hidden border border-slate-200 shadow-md mx-auto">
-              <img [src]="getSchoolLogo(selectedSchool)"
+            <div class="w-16 h-16 rounded-2xl bg-slate-900 text-white font-black text-2xl flex items-center justify-center overflow-hidden border border-slate-200 shadow-md mx-auto">
+              <img *ngIf="selectedSchool.logoUrl || selectedSchool.logo_url"
+                   [src]="selectedSchool.logoUrl || selectedSchool.logo_url"
                    class="w-full h-full object-contain p-1 bg-white"
                    alt="School Logo" />
+              <span *ngIf="!(selectedSchool.logoUrl || selectedSchool.logo_url)">{{ (selectedSchool.name.charAt(0) || 'S').toUpperCase() }}</span>
             </div>
             <div class="space-y-1 text-center">
               <h1 class="text-2xl font-black text-slate-900 tracking-tight leading-snug">
@@ -456,10 +460,12 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
               </div>
 
               <div *ngIf="!isRootLogin && selectedSchool" class="flex flex-col items-center text-center space-y-2 pt-1 pb-1">
-                <div class="w-14 h-14 rounded-2xl bg-white text-slate-900 font-black text-xl flex items-center justify-center overflow-hidden border border-slate-200 shadow-sm mx-auto">
-                  <img [src]="getSchoolLogo(selectedSchool)"
+                <div class="w-14 h-14 rounded-2xl bg-slate-900 text-white font-black text-xl flex items-center justify-center overflow-hidden border border-slate-200 shadow-sm mx-auto">
+                  <img *ngIf="selectedSchool.logoUrl || selectedSchool.logo_url"
+                       [src]="selectedSchool.logoUrl || selectedSchool.logo_url"
                        class="w-full h-full object-contain p-1 bg-white"
                        alt="School Logo" />
+                  <span *ngIf="!(selectedSchool.logoUrl || selectedSchool.logo_url)">{{ (selectedSchool.name.charAt(0) || 'S').toUpperCase() }}</span>
                 </div>
                 <div>
                   <h2 class="text-xl font-black text-slate-900 tracking-tight">{{ selectedSchool.name }}</h2>
@@ -544,10 +550,12 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
 
               <!-- School Monogram & Sub-header -->
               <div class="flex flex-col items-center text-center space-y-2 pt-1 pb-1">
-                <div class="w-12 h-12 rounded-2xl bg-white text-slate-900 font-black text-lg flex items-center justify-center overflow-hidden border border-slate-200 shadow-sm mx-auto">
-                  <img [src]="getSchoolLogo(selectedSchool)"
+                <div class="w-12 h-12 rounded-2xl bg-slate-900 text-white font-black text-lg flex items-center justify-center overflow-hidden border border-slate-200 shadow-sm mx-auto">
+                  <img *ngIf="selectedSchool.logoUrl || selectedSchool.logo_url"
+                       [src]="selectedSchool.logoUrl || selectedSchool.logo_url"
                        class="w-full h-full object-contain p-1 bg-white"
                        alt="School Logo" />
+                  <span *ngIf="!(selectedSchool.logoUrl || selectedSchool.logo_url)">{{ (selectedSchool.name.charAt(0) || 'S').toUpperCase() }}</span>
                 </div>
                 <div>
                   <h2 class="text-xl font-black text-slate-900 tracking-tight">
@@ -793,11 +801,6 @@ export class LoginComponent implements OnInit {
   getSchoolTagline(school: SchoolItem | null): string {
     if (!school) return '';
     return (school.motto || school.tagline || '').trim();
-  }
-
-  getSchoolLogo(school: SchoolItem | null): string {
-    if (!school) return '';
-    return school.logoUrl || school.logo_url || this.auth.generateSchoolCrestSvg(school.name, school.code);
   }
 
   async ngOnInit() {
