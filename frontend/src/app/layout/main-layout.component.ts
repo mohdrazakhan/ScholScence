@@ -260,102 +260,102 @@ export interface RoleSectionItem {
         </div>
 
         <!-- Top Navigation Header -->
-        <header class="h-16 bg-[#ffffff] border-b border-slate-200/80 flex items-center justify-between px-4 sm:px-8 flex-shrink-0 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+        <header class="h-16 bg-[#ffffff] border-b border-slate-200/80 flex items-center justify-between px-3 sm:px-6 lg:px-8 flex-shrink-0 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
           <!-- Top Left for Root Super Admin (Full Width Console Branding) -->
-          <div *ngIf="isSuperAdminOnly()" class="flex items-center gap-3 min-w-0">
-            <div class="w-9 h-9 rounded-xl bg-slate-900 text-amber-400 font-black text-sm flex items-center justify-center shrink-0 shadow-xs border border-slate-800">
+          <div *ngIf="isSuperAdminOnly()" class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-900 text-amber-400 font-black text-sm flex items-center justify-center shrink-0 shadow-xs border border-slate-800">
               ⚡
             </div>
             <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <h2 class="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
+              <div class="flex items-center gap-1.5 sm:gap-2">
+                <h2 class="text-xs sm:text-sm font-black text-slate-900 tracking-tight truncate">
                   SchoolSense Platform Console
                 </h2>
-                <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200">
+                <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200 shrink-0">
                   Root Multi-Tenant Engine
                 </span>
               </div>
-              <p class="text-[10px] text-slate-400 font-semibold hidden sm:block">Campus Onboarding & Service Governance</p>
+              <p class="text-[10px] text-slate-400 font-semibold hidden sm:block truncate">Campus Onboarding & Service Governance</p>
             </div>
           </div>
 
           <!-- Top Left for School Users & Support Mode (Header Details) -->
-          <div *ngIf="!isSuperAdminOnly()" class="flex items-center gap-3 min-w-0">
+          <div *ngIf="!isSuperAdminOnly()" class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 mr-2">
             <!-- Sidebar Unhide Button (shown when collapsed or on mobile) -->
             <button *ngIf="isDesktopSidebarCollapsed" type="button" (click)="toggleSidebar()" title="Open Sidebar"
-                    class="p-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer hidden lg:flex items-center justify-center border border-slate-200 shadow-xs shrink-0">
+                    class="p-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer hidden lg:flex items-center justify-center border border-slate-200 shadow-2xs shrink-0">
               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
             <button type="button" (click)="toggleSidebar()" title="Open Sidebar"
-                    class="p-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer flex lg:hidden items-center justify-center border border-slate-200 shadow-xs shrink-0">
+                    class="p-1.5 sm:p-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer flex lg:hidden items-center justify-center border border-slate-200 shadow-2xs shrink-0">
               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
 
             <!-- Campus & Welcome Details in Header Bar -->
-            <div class="min-w-0">
+            <div class="min-w-0 flex-1 flex flex-col justify-center">
               <!-- Line 1: User Greeting with Sun/Moon Animated Icon, Date & 12-Hour Live Clock -->
-              <div class="flex items-center gap-2 flex-wrap">
+              <div class="flex items-center gap-1.5 min-w-0 overflow-hidden">
                 <!-- Dynamic Sun / Moon Animated Icon based on Time of Day -->
                 <span *ngIf="timePeriod === 'morning'"
-                      class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-50 text-amber-500 border border-amber-200/80 shadow-2xs shrink-0"
+                      class="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-50 text-amber-500 border border-amber-200/80 shadow-2xs shrink-0"
                       title="Good morning">
-                  <svg class="w-3.5 h-3.5 animate-spin-gentle" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                  <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin-gentle" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                   </svg>
                 </span>
 
                 <span *ngIf="timePeriod === 'afternoon'"
-                      class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-50 text-amber-500 border border-amber-200/80 shadow-2xs shrink-0"
+                      class="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-50 text-amber-500 border border-amber-200/80 shadow-2xs shrink-0"
                       title="Good afternoon">
-                  <svg class="w-3.5 h-3.5 animate-spin-gentle" fill="currentColor" viewBox="0 0 20 20">
+                  <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin-gentle" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd" />
                   </svg>
                 </span>
 
                 <span *ngIf="timePeriod === 'evening'"
-                      class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-50 text-orange-500 border border-orange-200/80 shadow-2xs shrink-0"
+                      class="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-orange-50 text-orange-500 border border-orange-200/80 shadow-2xs shrink-0"
                       title="Good evening">
-                  <svg class="w-3.5 h-3.5 animate-float-gentle" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                  <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-float-gentle" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                   </svg>
                 </span>
 
                 <span *ngIf="timePeriod === 'night'"
-                      class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-indigo-500 border border-slate-200/80 shadow-2xs shrink-0"
+                      class="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-slate-100 text-indigo-500 border border-slate-200/80 shadow-2xs shrink-0"
                       title="Good evening">
-                  <svg class="w-3.5 h-3.5 animate-float-gentle" fill="currentColor" viewBox="0 0 20 20">
+                  <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-float-gentle" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
                   </svg>
                 </span>
 
-                <h2 class="text-xs sm:text-sm font-black text-slate-900 tracking-tight leading-tight truncate">
+                <h2 class="text-xs sm:text-sm font-black text-slate-900 tracking-tight leading-none truncate">
                   {{ timeGreeting }}, {{ auth.currentUser()?.firstName || 'User' }}
                 </h2>
 
-                <span class="w-1 h-1 rounded-full bg-slate-300 hidden sm:inline-block shrink-0"></span>
-                <span class="text-[11px] font-semibold text-slate-500 hidden sm:inline">{{ formattedToday }}</span>
+                <span class="w-1 h-1 rounded-full bg-slate-300 hidden md:inline-block shrink-0"></span>
+                <span class="text-[11px] font-semibold text-slate-500 hidden md:inline whitespace-nowrap">{{ formattedToday }}</span>
 
-                <span class="w-1 h-1 rounded-full bg-slate-300 hidden sm:inline-block shrink-0"></span>
+                <span class="w-1 h-1 rounded-full bg-slate-300 hidden md:inline-block shrink-0"></span>
                 <!-- Real-time 12-Hour Clock (Hour & Min only) -->
-                <div class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/80 shadow-2xs">
+                <div class="hidden md:inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/80 shadow-2xs shrink-0 whitespace-nowrap">
                   <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                   <span>{{ formattedClockTime }}</span>
                 </div>
               </div>
 
               <!-- Line 2: Academic Session Dropdown + Subtitle (Aligned dot, clean UI) -->
-              <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+              <div class="flex items-center gap-1.5 mt-1 min-w-0">
                 <!-- Interactive Session Switcher Dropdown -->
-                <div *ngIf="canManageSessions" class="relative inline-block">
+                <div *ngIf="canManageSessions" class="relative inline-block shrink-0">
                   <button type="button" (click)="toggleSessionDropdown($event)"
-                          class="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-0.5 rounded-lg bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95"
+                          class="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-0.5 rounded-lg bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 border border-slate-200/90 transition-all cursor-pointer shadow-2xs active:scale-95 whitespace-nowrap"
                           title="Click to switch academic session">
                     <span>Session: {{ auth.activeSessionName() }}</span>
-                    <svg class="w-3 h-3 text-slate-500 transition-transform duration-200" [class.rotate-180]="isSessionDropdownOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <svg class="w-2.5 h-2.5 sm:w-3 sm:h-3 text-slate-500 transition-transform duration-200" [class.rotate-180]="isSessionDropdownOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
@@ -414,26 +414,27 @@ export interface RoleSectionItem {
                   </div>
                 </div>
 
-                <span *ngIf="canManageSessions" class="w-1 h-1 rounded-full bg-slate-300 hidden sm:inline-block shrink-0"></span>
-                <p class="text-[11px] text-slate-500 truncate hidden sm:inline">
+                <span *ngIf="canManageSessions" class="w-1 h-1 rounded-full bg-slate-300 hidden lg:inline-block shrink-0"></span>
+                <p class="text-[11px] text-slate-500 truncate hidden lg:inline">
                   Manage campus operations, attendance, and student directory.
                 </p>
               </div>
             </div>
           </div>
 
-          <!-- Top Right User Profile & Sign Out (Always pinned to top right) -->
-          <div class="ml-auto flex items-center gap-3">
-            <div class="flex items-center gap-2.5 pl-2">
+          <!-- Top Right User Profile & Action Controls (Optimized for mobile + desktop) -->
+          <div class="ml-auto flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <!-- User Avatar & Identity -->
+            <div class="flex items-center gap-2 pl-1">
               <!-- Circular Avatar Image -->
-              <div class="w-9 h-9 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-xs ring-2 ring-slate-100 overflow-hidden shrink-0">
+              <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-xs ring-2 ring-slate-100 overflow-hidden shrink-0">
                 <img [src]="userAvatarUrl" [alt]="userFullName" (error)="$any($event.target).style.display='none'" class="w-full h-full object-cover" />
                 <span class="sr-only">{{ userInitial }}</span>
               </div>
 
-              <!-- User Name & Role -->
-              <div class="hidden sm:flex flex-col text-left">
-                <span class="text-xs font-bold text-slate-900 leading-tight truncate max-w-[140px] md:max-w-[180px]">
+              <!-- User Name & Role (Desktop) -->
+              <div class="hidden lg:flex flex-col text-left">
+                <span class="text-xs font-bold text-slate-900 leading-tight truncate max-w-[140px] xl:max-w-[180px]">
                   {{ userFullName }}
                 </span>
                 <div class="flex items-center gap-1.5 mt-0.5">
@@ -447,19 +448,19 @@ export interface RoleSectionItem {
             </div>
 
             <!-- Vertical Separator -->
-            <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
+            <div class="h-5 w-px bg-slate-200 hidden lg:block"></div>
 
             <!-- Notification Bell Icon Button with Dropdown -->
-            <div class="relative">
+            <div class="relative shrink-0">
               <button type="button"
                       (click)="toggleNotificationDropdown($event)"
                       title="Notifications & Circulars"
-                      class="relative p-2 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center">
+                      class="relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
                 <!-- Red unread notification indicator if any active notification -->
-                <span *ngIf="activeNotifications.length > 0" class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white"></span>
+                <span *ngIf="activeNotifications.length > 0" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white"></span>
               </button>
 
               <!-- Backdrop to close notifications -->
@@ -467,7 +468,7 @@ export interface RoleSectionItem {
 
               <!-- Notifications Menu Dropdown -->
               <div *ngIf="isNotificationDropdownOpen"
-                   class="absolute right-0 top-full mt-2 w-80 sm:w-88 bg-white rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-200/90 p-3.5 z-50 animate-fadeIn">
+                   class="absolute right-0 top-full mt-2 w-72 sm:w-88 bg-white rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-200/90 p-3.5 z-50 animate-fadeIn">
                 <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 mb-2.5">
                   <div class="flex items-center gap-1.5">
                     <span class="text-xs font-black text-slate-900">Notifications</span>
@@ -515,11 +516,11 @@ export interface RoleSectionItem {
             </div>
 
             <!-- Settings Gear Icon Button with Dropdown (Restricted to Super Admin and School Admin) -->
-            <div *ngIf="canAccessSettings" class="relative">
+            <div *ngIf="canAccessSettings" class="relative shrink-0">
               <button type="button"
                       (click)="toggleSettingsDropdown($event)"
                       title="Settings & Administration"
-                      class="relative p-2 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center">
+                      class="relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center">
                 <svg class="w-4 h-4 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -548,29 +549,23 @@ export interface RoleSectionItem {
                       </svg>
                     </div>
                     <div class="flex-1 min-w-0">
-                      <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-slate-800 group-hover:text-slate-900">School Profile</span>
-                        <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-600 font-mono">Manage</span>
-                      </div>
-                      <p class="text-[10px] text-slate-500 mt-0.5 leading-snug">Campus details, contact, affiliation & address</p>
+                      <span class="text-xs font-bold text-slate-900 group-hover:text-slate-950 block">School Profile & Branding</span>
+                      <span class="text-[10px] text-slate-500 leading-tight block">Manage crest, contact, affiliation & official identity</span>
                     </div>
                   </button>
 
-                  <!-- Option 2: Role Management -->
+                  <!-- Option 2: Manage Academic Sessions -->
                   <button type="button"
-                          (click)="openRoleManagementModal($event)"
+                          (click)="openManageSessionsFromHeader($event)"
                           class="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors text-left cursor-pointer group">
                     <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0 border border-slate-200 group-hover:bg-slate-900 group-hover:text-white transition-colors shadow-2xs">
                       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                     </div>
                     <div class="flex-1 min-w-0">
-                      <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-slate-800 group-hover:text-slate-900">Role Management</span>
-                        <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-600 font-mono">Config</span>
-                      </div>
-                      <p class="text-[10px] text-slate-500 mt-0.5 leading-snug">User permissions, roles & access control matrix</p>
+                      <span class="text-xs font-bold text-slate-900 group-hover:text-slate-950 block">Academic Sessions & Rollover</span>
+                      <span class="text-[10px] text-slate-500 leading-tight block">Configure active session, dates & session promotion</span>
                     </div>
                   </button>
                 </div>
@@ -580,11 +575,11 @@ export interface RoleSectionItem {
             <!-- Sign Out Button -->
             <button (click)="auth.logout()"
                     title="Sign Out"
-                    class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-all cursor-pointer shadow-xs">
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                    class="w-8 h-8 sm:w-auto sm:px-2.5 sm:py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-all cursor-pointer shadow-2xs flex items-center justify-center shrink-0 gap-1.5">
+              <svg class="w-4 h-4 sm:w-3.5 sm:h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
               </svg>
-              <span class="hidden md:inline">Sign Out</span>
+              <span class="hidden xl:inline">Sign Out</span>
             </button>
           </div>
         </header>
