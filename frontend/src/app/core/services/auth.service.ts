@@ -380,10 +380,24 @@ export class AuthService {
       }
       const { data, error } = await query.maybeSingle();
       if (!error && data) {
-        schoolData = data;
+        let metaObj = {};
+        if (data.address_line2 && typeof data.address_line2 === 'string' && data.address_line2.startsWith('{')) {
+          try {
+            metaObj = JSON.parse(data.address_line2);
+          } catch {}
+        }
+        schoolData = { ...data, ...metaObj };
       } else if (error && !isUuid) {
         const { data: fallbackData } = await this.supabase.from('schools').select('*').ilike('name', `%${cleanId}%`).maybeSingle();
-        if (fallbackData) schoolData = fallbackData;
+        if (fallbackData) {
+          let metaObj = {};
+          if (fallbackData.address_line2 && typeof fallbackData.address_line2 === 'string' && fallbackData.address_line2.startsWith('{')) {
+            try {
+              metaObj = JSON.parse(fallbackData.address_line2);
+            } catch {}
+          }
+          schoolData = { ...fallbackData, ...metaObj };
+        }
       }
     } catch (e) {
       console.warn('getSchoolProfileById DB error:', e);
@@ -462,16 +476,23 @@ export class AuthService {
       const results = (data || [])
         .filter((s: any) => (s.name || '').toLowerCase().includes(query.toLowerCase()))
         .map((s: any) => {
+          let metaObj = {};
+          if (s.address_line2 && typeof s.address_line2 === 'string' && s.address_line2.startsWith('{')) {
+            try {
+              metaObj = JSON.parse(s.address_line2);
+            } catch {}
+          }
+          const merged = { ...s, ...metaObj };
           const lp = localProfiles[s.id] || localProfiles[s.code] || {};
-          const isDHA = (s.name || '').toLowerCase().includes('delhi heritage') || (s.code || '').toUpperCase().includes('DHA');
-          const defaultLogo = this.generateSchoolCrestSvg(s.name, s.code);
-          const resolvedLogo = lp.logoUrl || lp.logo_url || s.logo_url || s.logoUrl || defaultLogo;
+          const isDHA = (merged.name || '').toLowerCase().includes('delhi heritage') || (merged.code || '').toUpperCase().includes('DHA');
+          const defaultLogo = this.generateSchoolCrestSvg(merged.name, merged.code);
+          const resolvedLogo = lp.logoUrl || lp.logo_url || merged.logo_url || merged.logoUrl || defaultLogo;
 
           return {
-            ...s,
+            ...merged,
             ...lp,
             id: s.id,
-            name: lp.name || s.name,
+            name: lp.name || merged.name,
             code: s.code,
             logo_url: resolvedLogo,
             logoUrl: resolvedLogo,
@@ -480,15 +501,15 @@ export class AuthService {
             state: lp.state || s.state || '',
             phone: lp.phone || s.phone || '',
             email: lp.email || s.email || '',
-            motto: lp.motto || s.motto || (isDHA ? 'Excellence in Education, Rooted in Values' : ''),
-            affiliation: lp.affiliation || s.affiliation || (isDHA ? 'Affiliated to CBSE (Affiliation No. 475944379)' : ''),
-            affiliation_board: lp.affiliation_board || lp.affiliationBoard || s.affiliation_board || s.affiliationBoard || 'CBSE',
-            affiliationBoard: lp.affiliationBoard || lp.affiliation_board || s.affiliationBoard || s.affiliation_board || 'CBSE',
-            affiliation_number: lp.affiliation_number || lp.affiliationNumber || s.affiliation_number || s.affiliationNumber || (isDHA ? '475944379' : ''),
-            affiliationNumber: lp.affiliationNumber || lp.affiliation_number || s.affiliationNumber || s.affiliation_number || (isDHA ? '475944379' : ''),
-            custom_board_name: lp.custom_board_name || lp.customBoardName || s.custom_board_name || s.customBoardName || '',
-            customBoardName: lp.customBoardName || lp.custom_board_name || s.customBoardName || s.custom_board_name || '',
-            tagline: lp.tagline || lp.motto || s.tagline || s.motto || (isDHA ? 'Excellence in Education, Rooted in Values' : ''),
+            motto: lp.motto || s.motto || merged.motto || (isDHA ? 'Excellence in Education, Rooted in Values' : ''),
+            affiliation: lp.affiliation || s.affiliation || merged.affiliation || (isDHA ? 'Affiliated to CBSE (Affiliation No. 475944379)' : ''),
+            affiliation_board: lp.affiliation_board || lp.affiliationBoard || merged.affiliation_board || merged.affiliationBoard || 'CBSE',
+            affiliationBoard: lp.affiliationBoard || lp.affiliation_board || merged.affiliationBoard || merged.affiliation_board || 'CBSE',
+            affiliation_number: lp.affiliation_number || lp.affiliationNumber || merged.affiliation_number || merged.affiliationNumber || (isDHA ? '475944379' : ''),
+            affiliationNumber: lp.affiliationNumber || lp.affiliation_number || merged.affiliationNumber || merged.affiliation_number || (isDHA ? '475944379' : ''),
+            custom_board_name: lp.custom_board_name || lp.customBoardName || merged.custom_board_name || merged.customBoardName || '',
+            customBoardName: lp.customBoardName || lp.custom_board_name || merged.customBoardName || merged.custom_board_name || '',
+            tagline: lp.tagline || lp.motto || merged.tagline || merged.motto || (isDHA ? 'Excellence in Education, Rooted in Values' : ''),
           };
         });
 
