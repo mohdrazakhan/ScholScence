@@ -73,8 +73,8 @@ export interface RoleSectionItem {
           <div class="h-16 flex items-center justify-between px-4 border-b border-slate-100 bg-white flex-shrink-0">
             <div class="flex items-center gap-3 min-w-0 flex-1">
               <div class="w-9 h-9 rounded-xl bg-slate-900 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-xs overflow-hidden border border-slate-200">
-                <img *ngIf="auth.currentUser()?.school?.logoUrl" [src]="auth.currentUser()?.school?.logoUrl" class="w-full h-full object-contain p-0.5 bg-white" alt="School Logo" />
-                <span *ngIf="!auth.currentUser()?.school?.logoUrl">{{ (auth.currentUser()?.school?.name || 'S').charAt(0).toUpperCase() }}</span>
+                <img *ngIf="getSchoolLogoUrl()" [src]="getSchoolLogoUrl()" class="w-full h-full object-contain p-0.5 bg-white" alt="School Logo" />
+                <span *ngIf="!getSchoolLogoUrl()">{{ (auth.currentUser()?.school?.name || 'S').charAt(0).toUpperCase() }}</span>
               </div>
               <div class="min-w-0 flex-1">
                 <h1 class="text-xs font-black text-slate-900 tracking-tight leading-tight truncate"
@@ -1900,7 +1900,13 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     });
   }
 
+  getSchoolLogoUrl(): string | null {
+    const school = this.auth.currentUser()?.school;
+    return school?.logoUrl || school?.logo_url || null;
+  }
+
   ngOnInit() {
+    this.auth.syncSchoolProfileFromDb();
     this.filterMenu();
     this.loadSessions();
     this.loadNotifications();
@@ -2250,7 +2256,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       id: currentSchool?.id || '',
       name: currentSchool?.name || 'SchoolSense Academy',
       code: currentSchool?.code || 'CAMPUS',
-      logoUrl: currentSchool?.logoUrl || '',
+      logoUrl: currentSchool?.logoUrl || currentSchool?.logo_url || '',
       affiliationBoard: 'CBSE',
       customBoardName: '',
       affiliationNumber: '',
@@ -2311,7 +2317,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
             id: res.id || currentSchool?.id || '',
             name: res.name || currentSchool?.name || '',
             code: res.code || currentSchool?.code || '',
-            logoUrl: res.logo_url || res.logoUrl || currentSchool?.logoUrl || '',
+            logoUrl: res.logo_url || res.logoUrl || currentSchool?.logoUrl || currentSchool?.logo_url || '',
             affiliationBoard: res.affiliation_board || res.affiliationBoard || 'CBSE',
             customBoardName: res.custom_board_name || res.customBoardName || '',
             affiliationNumber: res.affiliation_number || res.affiliationNumber || '',
@@ -2517,13 +2523,12 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
         this.toastService.success('School profile updated successfully.');
 
         // Immediately sync the reactive auth signal so the top bar and sidebar update live
-        const currentUser = this.auth.currentUser();
-        if (currentUser && currentUser.school) {
-          currentUser.school.name = this.schoolProfileForm.name;
-          currentUser.school.code = this.schoolProfileForm.code;
-          currentUser.school.logoUrl = this.schoolProfileForm.logoUrl;
-          this.auth.currentUser.set({ ...currentUser });
-        }
+        this.auth.updateCurrentSchool({
+          name: this.schoolProfileForm.name,
+          code: this.schoolProfileForm.code,
+          logoUrl: this.schoolProfileForm.logoUrl,
+          logo_url: this.schoolProfileForm.logoUrl,
+        });
 
         this.closeSchoolProfileModal();
       },

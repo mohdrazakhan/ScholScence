@@ -34,11 +34,7 @@ BEGIN
   FROM public.schools s
   WHERE s.status = 'ACTIVE'
     AND UPPER(s.code) != 'PLATFORM'
-    AND (
-      s.name ILIKE '%' || v_cleaned || '%'
-      OR s.code ILIKE '%' || v_cleaned || '%'
-      OR s.city ILIKE '%' || v_cleaned || '%'
-    )
+    AND s.name ILIKE '%' || v_cleaned || '%'
   ORDER BY 
     -- Prioritize exact prefix match
     CASE WHEN s.name ILIKE v_cleaned || '%' THEN 1 ELSE 2 END,

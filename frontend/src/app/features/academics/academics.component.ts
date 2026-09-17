@@ -25,6 +25,17 @@ interface StaffMember {
   primarySubjectName?: string;
   classTeacherSections?: { sectionId: string; sectionName: string; className: string }[];
   subjectAssignments?: { sectionId: string; sectionName: string; className: string; subjectName: string; subjectCode: string }[];
+  gender?: string;
+  dateOfBirth?: string;
+  dob?: string;
+  qualification?: string;
+  experience?: string;
+  joiningDate?: string;
+  bloodGroup?: string;
+  address?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  department?: string;
   status: string;
   createdAt: string;
 }
@@ -283,16 +294,35 @@ interface StaffMember {
                   <h3 class="text-base font-black text-slate-900 tracking-tight mt-1">{{ c.name }}</h3>
                 </div>
 
-                <!-- Class Header 3-Dot Actions Menu -->
-                <div class="relative">
-                  <button type="button" (click)="toggleClassMenu(c.id, $event)" title="Class Actions"
-                          class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <circle cx="12" cy="5" r="2"/>
-                      <circle cx="12" cy="12" r="2"/>
-                      <circle cx="12" cy="19" r="2"/>
-                    </svg>
-                  </button>
+                <!-- Right Header: Total Intake / Fill Badge + 3-Dot Actions Menu -->
+                <div class="flex items-center gap-2">
+                  <!-- Intake Capacity & Fill Badge -->
+                  <div class="px-2.5 py-1 rounded-xl text-[11px] font-black border flex items-center gap-1.5 shadow-2xs transition-all"
+                       [ngClass]="getClassEnrolledCount(c) >= getClassCapacity(c) && getClassCapacity(c) > 0 
+                         ? 'bg-rose-50 border-rose-200 text-rose-700' 
+                         : getClassEnrolledCount(c) > 0 
+                           ? 'bg-indigo-50 border-indigo-200 text-indigo-800' 
+                           : 'bg-slate-50 border-slate-200 text-slate-500'"
+                       title="Total Enrolled Students / Total Section Capacity across all sections">
+                    <span class="w-1.5 h-1.5 rounded-full"
+                          [ngClass]="getClassEnrolledCount(c) >= getClassCapacity(c) && getClassCapacity(c) > 0 
+                            ? 'bg-rose-500' 
+                            : getClassEnrolledCount(c) > 0 
+                              ? 'bg-indigo-500' 
+                              : 'bg-slate-400'"></span>
+                    <span>{{ getClassEnrolledCount(c) }} / {{ getClassCapacity(c) }}</span>
+                  </div>
+
+                  <!-- Class Header 3-Dot Actions Menu -->
+                  <div class="relative">
+                    <button type="button" (click)="toggleClassMenu(c.id, $event)" title="Class Actions"
+                            class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer">
+                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="5" r="2"/>
+                        <circle cx="12" cy="12" r="2"/>
+                        <circle cx="12" cy="19" r="2"/>
+                      </svg>
+                    </button>
 
                   <!-- Class Action Dropdown -->
                   <div *ngIf="activeClassMenuId === c.id"
@@ -342,9 +372,10 @@ interface StaffMember {
                   </div>
                 </div>
               </div>
+            </div>
 
-              <!-- Sections Container (Collapsible) -->
-              <div class="mt-4 pt-3 border-t border-slate-100 space-y-2">
+            <!-- Sections Container (Collapsible) -->
+            <div class="mt-4 pt-3 border-t border-slate-100 space-y-2">
                 <div (click)="toggleSectionsCollapse(c.id, $event)"
                      class="flex items-center justify-between text-[11px] font-bold text-slate-600 hover:text-slate-900 cursor-pointer select-none transition-colors group">
                   <div class="flex items-center gap-1.5">
@@ -557,8 +588,17 @@ interface StaffMember {
                  ? 'neu-pushed' 
                  : 'neu-elevated'"
                class="p-3 sm:p-3.5 rounded-2xl cursor-pointer flex flex-col justify-between select-none">
-            <div class="text-xs font-black truncate" [class.text-slate-900]="selectedClass?.id === c.id" [class.text-slate-800]="selectedClass?.id !== c.id">
-              {{ c.name }}
+            <div class="flex items-center justify-between gap-1">
+              <span class="text-xs font-black truncate" [class.text-slate-900]="selectedClass?.id === c.id" [class.text-slate-800]="selectedClass?.id !== c.id">
+                {{ c.name }}
+              </span>
+              <span class="text-[10px] font-black px-1.5 py-0.5 rounded-md shrink-0"
+                    [ngClass]="selectedClass?.id === c.id 
+                      ? 'bg-slate-900 text-white shadow-2xs' 
+                      : 'bg-indigo-50 text-indigo-700 border border-indigo-100/80'"
+                    title="Enrolled Students / Total Capacity">
+                {{ getClassEnrolledCount(c) }}/{{ getClassCapacity(c) }}
+              </span>
             </div>
             <div class="flex items-center justify-between mt-2.5 pt-2 border-t text-[10px]"
                  [ngClass]="selectedClass?.id === c.id ? 'border-slate-300/80 text-slate-600 font-bold' : 'border-slate-100 text-slate-400 font-medium'">
@@ -1836,8 +1876,8 @@ interface StaffMember {
                 <tr *ngFor="let staff of paginatedStaff" class="hover:bg-slate-50/80 transition-colors">
                   <!-- Staff Name & Avatar -->
                   <td class="px-6 py-3.5">
-                    <div class="flex items-center gap-3">
-                      <div class="w-9 h-9 rounded-2xl flex items-center justify-center font-black text-xs shrink-0 shadow-xs text-white overflow-hidden border border-slate-200"
+                    <div class="flex items-start gap-3">
+                      <div class="w-9 h-9 rounded-2xl flex items-center justify-center font-black text-xs shrink-0 shadow-xs text-white overflow-hidden border border-slate-200 mt-0.5"
                            [ngClass]="{
                              'bg-gradient-to-br from-purple-600 to-indigo-700': staff.role === 'PRINCIPAL',
                              'bg-gradient-to-br from-indigo-700 to-slate-900': staff.role === 'SCHOOL_ADMIN',
@@ -1847,13 +1887,33 @@ interface StaffMember {
                         <img *ngIf="staff.photoUrl || staff.avatarUrl" [src]="staff.photoUrl || staff.avatarUrl" class="w-full h-full object-cover" alt="Staff" />
                         <span *ngIf="!staff.photoUrl && !staff.avatarUrl">{{ staff.firstName.charAt(0) }}</span>
                       </div>
-                      <div>
-                        <div class="flex items-center gap-1.5">
+                      <div class="space-y-1">
+                        <div class="flex items-center gap-1.5 flex-wrap">
                           <span class="font-black text-slate-900">{{ staff.fullName }}</span>
                           <span *ngIf="auth.currentUser()?.id === staff.id" class="px-1.5 py-0.2 rounded-md bg-indigo-100 text-indigo-800 font-black text-[9px]">
                             YOU
                           </span>
+                          <span *ngIf="staff.gender" class="px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-600 text-[9px] font-bold">
+                            {{ staff.gender === 'MALE' ? 'Male' : (staff.gender === 'FEMALE' ? 'Female' : staff.gender) }}
+                          </span>
+                          <span *ngIf="staff.bloodGroup" class="px-1.5 py-0.2 rounded-md bg-rose-50 text-rose-700 border border-rose-200 text-[9px] font-bold">
+                            {{ staff.bloodGroup }}
+                          </span>
                         </div>
+                        
+                        <!-- Qualification & Experience Badges -->
+                        <div *ngIf="staff.qualification || staff.experience || staff.department" class="flex items-center gap-1 flex-wrap text-[10px]">
+                          <span *ngIf="staff.qualification" class="text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 py-0.2 rounded-md font-semibold">
+                            {{ staff.qualification }}
+                          </span>
+                          <span *ngIf="staff.experience" class="text-amber-700 bg-amber-50 border border-amber-100 px-1.5 py-0.2 rounded-md font-semibold">
+                            {{ staff.experience }}
+                          </span>
+                          <span *ngIf="staff.department" class="text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded-md font-medium">
+                            {{ staff.department }}
+                          </span>
+                        </div>
+
                         <div class="text-[10px] text-slate-400 font-mono">ID: {{ staff.id.slice(0, 8) }}...</div>
                       </div>
                     </div>
@@ -1898,7 +1958,14 @@ interface StaffMember {
                       </svg>
                       <a [href]="'tel:' + staff.phone" class="hover:text-slate-900">{{ staff.phone }}</a>
                     </div>
-                    <div *ngIf="!staff.phone" class="text-slate-400 text-[11px] mt-0.5">—</div>
+                    <div *ngIf="staff.address" class="text-slate-400 text-[10px] mt-1 flex items-center gap-1 max-w-[200px] truncate" [title]="staff.address">
+                      <svg class="w-3 h-3 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span class="truncate">{{ staff.address }}</span>
+                    </div>
+                    <div *ngIf="!staff.phone && !staff.address" class="text-slate-400 text-[11px] mt-0.5">—</div>
                   </td>
 
                   <!-- Incharge -->
@@ -2007,6 +2074,23 @@ interface StaffMember {
                 </div>
               </div>
 
+              <!-- Enriched Faculty Badges in Mobile View -->
+              <div *ngIf="staff.qualification || staff.experience || staff.department || staff.bloodGroup || staff.gender"
+                   class="flex items-center gap-1.5 flex-wrap text-[10px]">
+                <span *ngIf="staff.qualification" class="text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-lg font-semibold">
+                  {{ staff.qualification }}
+                </span>
+                <span *ngIf="staff.experience" class="text-amber-700 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-lg font-semibold">
+                  {{ staff.experience }}
+                </span>
+                <span *ngIf="staff.department" class="text-slate-600 bg-slate-100 px-2 py-0.5 rounded-lg font-medium">
+                  {{ staff.department }}
+                </span>
+                <span *ngIf="staff.bloodGroup" class="text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded-lg font-bold">
+                  {{ staff.bloodGroup }}
+                </span>
+              </div>
+
               <!-- Contact & Phone -->
               <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 gap-2">
                 <a [href]="'mailto:' + staff.email" class="min-w-0 truncate hover:text-indigo-600 flex items-center gap-1.5">
@@ -2023,6 +2107,15 @@ interface StaffMember {
                   </svg>
                   <span>Call</span>
                 </a>
+              </div>
+
+              <!-- Residential Address snippet if provided -->
+              <div *ngIf="staff.address" class="text-[11px] text-slate-500 flex items-start gap-1.5 pt-1">
+                <svg class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>{{ staff.address }}</span>
               </div>
 
               <!-- Incharge / Subjects -->
@@ -2683,7 +2776,7 @@ interface StaffMember {
       </div>
 
       <div *ngIf="showAddStaffModal" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[70] animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-xl w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
+        <div class="bg-white rounded-3xl max-w-2xl w-full flex flex-col max-h-[90vh] sm:max-h-[92vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
           
           <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
             <div class="flex items-center gap-2.5">
@@ -2714,16 +2807,30 @@ interface StaffMember {
                 </label>
               </div>
               <div class="flex-1 space-y-1">
-                <label [class.opacity-50]="uploadingStaffPhoto"
-                       class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-xl text-[11px] font-bold transition-all cursor-pointer shadow-2xs inline-flex items-center gap-1.5">
-                  <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  </svg>
-                  <span>{{ uploadingStaffPhoto ? 'Optimizing...' : (newStaff.photoUrl ? 'Change Faculty Photo' : 'Upload Faculty Photo') }}</span>
-                  <input type="file" accept="image/*" (change)="onStaffPhotoSelected($event)" [disabled]="uploadingStaffPhoto" class="hidden" />
-                </label>
+                <div class="flex items-center gap-2">
+                  <label [class.opacity-50]="uploadingStaffPhoto"
+                         class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-xl text-[11px] font-bold transition-all cursor-pointer shadow-2xs inline-flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    </svg>
+                    <span>{{ uploadingStaffPhoto ? 'Optimizing...' : (newStaff.photoUrl ? 'Change Faculty Photo' : 'Upload Faculty Photo') }}</span>
+                    <input type="file" accept="image/*" (change)="onStaffPhotoSelected($event)" [disabled]="uploadingStaffPhoto" class="hidden" />
+                  </label>
+                  <button *ngIf="newStaff.photoUrl" type="button" (click)="removeStaffPhoto()"
+                          class="px-2.5 py-1.5 text-rose-600 hover:bg-rose-50 text-[11px] font-bold rounded-xl border border-rose-200 transition-colors">
+                    Remove
+                  </button>
+                </div>
                 <p class="text-[10px] text-slate-400">Official profile picture for faculty directory, class assignments, and student timetable.</p>
               </div>
+            </div>
+
+            <!-- SECTION 1: Basic Identity & Account -->
+            <div class="p-2.5 bg-slate-100/70 border border-slate-200 rounded-xl text-slate-800 font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span>1. Basic Identity & Login Credentials</span>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2781,6 +2888,114 @@ interface StaffMember {
               <label class="block font-bold text-slate-700 mb-1">Initial Password</label>
               <input type="text" [(ngModel)]="newStaff.password" placeholder="password123"
                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+            </div>
+
+            <!-- SECTION 2: Personal & Biographical Details -->
+            <div class="p-2.5 bg-slate-100/70 border border-slate-200 rounded-xl text-slate-800 font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5 mt-3">
+              <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+              </svg>
+              <span>2. Personal & Biographical Details</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Gender</label>
+                <select [(ngModel)]="newStaff.gender"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
+                  <option value="MALE">Male</option>
+                  <option value="FEMALE">Female</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Date of Birth (DOB)</label>
+                <input type="date" [(ngModel)]="newStaff.dateOfBirth"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Blood Group</label>
+                <select [(ngModel)]="newStaff.bloodGroup"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
+                  <option value="">-- Select --</option>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- SECTION 3: Professional Qualifications & Experience -->
+            <div class="p-2.5 bg-slate-100/70 border border-slate-200 rounded-xl text-slate-800 font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5 mt-3">
+              <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+              </svg>
+              <span>3. Professional Qualifications & Background</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Highest Qualification / Degree</label>
+                <input type="text" [(ngModel)]="newStaff.qualification" placeholder="e.g. M.Sc Mathematics, B.Ed"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Teaching Experience</label>
+                <input type="text" [(ngModel)]="newStaff.experience" placeholder="e.g. 5 Years, 8+ Years"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Date of Joining</label>
+                <input type="date" [(ngModel)]="newStaff.joiningDate"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Department / Division</label>
+                <input type="text" [(ngModel)]="newStaff.department" placeholder="e.g. Science & Maths / Senior Wing"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+            </div>
+
+            <!-- SECTION 4: Residential Address & Emergency Contact -->
+            <div class="p-2.5 bg-slate-100/70 border border-slate-200 rounded-xl text-slate-800 font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5 mt-3">
+              <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span>4. Residential Address & Emergency Contact</span>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Residential / Contact Address</label>
+              <textarea [(ngModel)]="newStaff.address" rows="2" placeholder="e.g. Flat 402, Lotus Tower, Civil Lines, New Delhi - 110054"
+                        class="w-full px-3.5 py-2 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner resize-none"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Emergency Contact Person</label>
+                <input type="text" [(ngModel)]="newStaff.emergencyContactName" placeholder="e.g. Spouse / Parent Name"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Emergency Contact Phone</label>
+                <input type="text" [(ngModel)]="newStaff.emergencyContactPhone" placeholder="+91 98111 22233"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
             </div>
 
             <div *ngIf="staffModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
@@ -4655,16 +4870,29 @@ interface StaffMember {
               </div>
             </div>
 
-            <!-- Live Document Preview Box -->
-            <div class="p-4 bg-slate-50 border-2 border-slate-300 rounded-2xl font-serif space-y-2 text-slate-900">
-              <div class="text-center pb-2 border-b border-slate-300">
-                <div class="text-xs uppercase tracking-widest font-sans font-bold text-slate-400">Institutional Preview</div>
-                <div class="text-sm font-black uppercase tracking-wider">{{ auth.currentUser()?.school?.name || 'SchoolSense Academy' }}</div>
-                <div class="text-[10px] font-sans text-slate-500 font-semibold">TRANSFER / SCHOOL LEAVING CERTIFICATE • TC NO: {{ tcForm.tcNumber }}</div>
+            <!-- Live Document Preview Box (Directly Editable) -->
+            <div class="p-4 bg-slate-50 border-2 border-slate-300 rounded-2xl font-serif space-y-2.5 text-slate-900">
+              <div class="pb-2 border-b border-slate-300">
+                <div class="flex items-center justify-between">
+                  <div class="text-[10px] uppercase tracking-widest font-sans font-bold text-slate-400">Institutional Preview (Editable)</div>
+                  <button type="button" (click)="updateTcCertificateBody()" title="Reset / Auto-Generate statement from form inputs"
+                          class="text-[10px] font-sans font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer flex items-center gap-1 hover:underline">
+                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    <span>Reset / Auto-Generate</span>
+                  </button>
+                </div>
+                <div class="text-center mt-1">
+                  <div class="text-sm font-black uppercase tracking-wider">{{ auth.currentUser()?.school?.name || 'SchoolSense Academy' }}</div>
+                  <div class="text-[10px] font-sans text-slate-500 font-semibold">TRANSFER / SCHOOL LEAVING CERTIFICATE • TC NO: {{ tcForm.tcNumber }}</div>
+                </div>
               </div>
-              <p class="text-[11px] leading-relaxed text-justify">
-                This is to certify that <strong>{{ selectedAlumniForTc.full_name }}</strong>, bearing permanent Admission ID <strong>{{ selectedAlumniForTc.admission_number }}</strong>, studied in this school up to <strong>{{ selectedAlumniForTc.last_class_name || 'Class 12' }}</strong> in session <strong>{{ selectedAlumniForTc.graduation_session }}</strong>. All institutional dues have been paid up to <strong>{{ tcForm.duesPaidMonth }}</strong>. General conduct during their tenure was <strong>{{ tcForm.conduct }}</strong>.
-              </p>
+
+              <div>
+                <label class="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider mb-1">Official Certification Statement (Click below to edit):</label>
+                <textarea [(ngModel)]="tcForm.certificateBody" rows="3"
+                          placeholder="Edit or customize official certificate statement text..."
+                          class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-serif leading-relaxed text-slate-900 focus:outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 shadow-xs resize-y"></textarea>
+              </div>
             </div>
           </div>
 
@@ -4748,16 +4976,29 @@ interface StaffMember {
               </div>
             </div>
 
-            <!-- Preview box -->
-            <div class="p-4 bg-slate-50 border-2 border-slate-300 rounded-2xl font-serif space-y-2 text-slate-900">
-              <div class="text-center pb-2 border-b border-slate-300">
-                <div class="text-xs uppercase tracking-widest font-sans font-bold text-slate-400">Institutional Preview</div>
-                <div class="text-sm font-black uppercase tracking-wider">{{ auth.currentUser()?.school?.name || 'SchoolSense Academy' }}</div>
-                <div class="text-[10px] font-sans text-slate-500 font-semibold">CHARACTER & CONDUCT CERTIFICATE • SERIAL NO: {{ characterCertForm.certNumber }}</div>
+            <!-- Preview box (Directly Editable) -->
+            <div class="p-4 bg-slate-50 border-2 border-slate-300 rounded-2xl font-serif space-y-2.5 text-slate-900">
+              <div class="pb-2 border-b border-slate-300">
+                <div class="flex items-center justify-between">
+                  <div class="text-[10px] uppercase tracking-widest font-sans font-bold text-slate-400">Institutional Preview (Editable)</div>
+                  <button type="button" (click)="updateCharacterCertificateBody()" title="Reset / Auto-Generate statement from form inputs"
+                          class="text-[10px] font-sans font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer flex items-center gap-1 hover:underline">
+                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    <span>Reset / Auto-Generate</span>
+                  </button>
+                </div>
+                <div class="text-center mt-1">
+                  <div class="text-sm font-black uppercase tracking-wider">{{ auth.currentUser()?.school?.name || 'SchoolSense Academy' }}</div>
+                  <div class="text-[10px] font-sans text-slate-500 font-semibold">CHARACTER & CONDUCT CERTIFICATE • SERIAL NO: {{ characterCertForm.certNumber }}</div>
+                </div>
               </div>
-              <p class="text-[11px] leading-relaxed text-justify">
-                This is to certify that <strong>{{ selectedAlumniForCharacterCert.full_name }}</strong>, child of <strong>{{ selectedAlumniForCharacterCert.primary_contact?.first_name || 'Guardian' }}</strong>, was a bonafide student of this institution in <strong>{{ selectedAlumniForCharacterCert.last_class_name || 'Class 12' }}</strong>. During their tenure, their conduct and character were found to be <strong>{{ characterCertForm.conduct }}</strong>. We wish them all success in their future endeavors.
-              </p>
+
+              <div>
+                <label class="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider mb-1">Official Character Certification Text (Click below to edit):</label>
+                <textarea [(ngModel)]="characterCertForm.certificateBody" rows="4"
+                          placeholder="Edit or customize character certificate statement text..."
+                          class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-serif leading-relaxed text-slate-900 focus:outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 shadow-xs resize-y"></textarea>
+              </div>
             </div>
           </div>
 
@@ -4838,16 +5079,29 @@ interface StaffMember {
               </div>
             </div>
 
-            <!-- Preview box -->
-            <div class="p-4 bg-slate-50 border-2 border-slate-300 rounded-2xl font-serif space-y-2 text-slate-900">
-              <div class="text-center pb-2 border-b border-slate-300">
-                <div class="text-xs uppercase tracking-widest font-sans font-bold text-slate-400">Institutional Preview</div>
-                <div class="text-sm font-black uppercase tracking-wider">{{ auth.currentUser()?.school?.name || 'SchoolSense Academy' }}</div>
-                <div class="text-[10px] font-sans text-slate-500 font-semibold">CERTIFICATE OF ALUMNI RECOGNITION • ALUMNI ID: {{ alumniCertForm.alumniNumber }}</div>
+            <!-- Preview box (Directly Editable) -->
+            <div class="p-4 bg-slate-50 border-2 border-slate-300 rounded-2xl font-serif space-y-2.5 text-slate-900">
+              <div class="pb-2 border-b border-slate-300">
+                <div class="flex items-center justify-between">
+                  <div class="text-[10px] uppercase tracking-widest font-sans font-bold text-slate-400">Institutional Preview (Editable)</div>
+                  <button type="button" (click)="updateAlumniCertificateBody()" title="Reset / Auto-Generate statement from form inputs"
+                          class="text-[10px] font-sans font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer flex items-center gap-1 hover:underline">
+                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    <span>Reset / Auto-Generate</span>
+                  </button>
+                </div>
+                <div class="text-center mt-1">
+                  <div class="text-sm font-black uppercase tracking-wider">{{ auth.currentUser()?.school?.name || 'SchoolSense Academy' }}</div>
+                  <div class="text-[10px] font-sans text-slate-500 font-semibold">CERTIFICATE OF ALUMNI RECOGNITION • ALUMNI ID: {{ alumniCertForm.alumniNumber }}</div>
+                </div>
               </div>
-              <p class="text-[11px] leading-relaxed text-justify">
-                This is to certify that <strong>{{ selectedAlumniForAlumniCert.full_name }}</strong> (Permanent Admission ID: <strong>{{ selectedAlumniForAlumniCert.admission_number }}</strong>) has completed their course of study in <strong>{{ selectedAlumniForAlumniCert.last_class_name || 'Class 12' }}</strong> and is officially registered as a lifetime Alumni Member of this institution under Registration ID <strong>{{ alumniCertForm.alumniNumber }}</strong>.
-              </p>
+
+              <div>
+                <label class="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider mb-1">Official Recognition Statement Text (Click below to edit):</label>
+                <textarea [(ngModel)]="alumniCertForm.certificateBody" rows="3"
+                          placeholder="Edit or customize alumni recognition statement text..."
+                          class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-serif leading-relaxed text-slate-900 focus:outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 shadow-xs resize-y"></textarea>
+              </div>
             </div>
           </div>
 
@@ -5105,6 +5359,16 @@ export class AcademicsComponent implements OnInit {
     role: 'TEACHER',
     primarySubjectId: '',
     password: 'password123',
+    gender: 'MALE',
+    dateOfBirth: '',
+    qualification: '',
+    experience: '',
+    joiningDate: '',
+    bloodGroup: '',
+    address: '',
+    emergencyContactName: '',
+    emergencyContactPhone: '',
+    department: '',
   };
 
   // Status Management & Deactivation Requests State
@@ -5256,6 +5520,7 @@ export class AcademicsComponent implements OnInit {
     workingDaysTotal: '220',
     workingDaysPresent: '214',
     remarks: 'Student bears good moral character.',
+    certificateBody: '',
   };
 
   // Character Certificate Modal State
@@ -5268,6 +5533,7 @@ export class AcademicsComponent implements OnInit {
     conduct: 'Exemplary & Commendable',
     coCurricularRemarks: 'Actively participated in school academic, cultural, and sports activities.',
     remarks: 'We wish them excellence and bright success in all future pursuits.',
+    certificateBody: '',
   };
 
   // Alumni Certificate Modal State
@@ -5279,6 +5545,7 @@ export class AcademicsComponent implements OnInit {
     alumniNumber: '',
     issueDate: '',
     honorsRemarks: 'Recognized for successful academic completion and awarded lifelong institutional alumni status.',
+    certificateBody: '',
   };
 
   get canDirectlyDeactivateStudent(): boolean {
@@ -6718,6 +6985,12 @@ export class AcademicsComponent implements OnInit {
   }
 
   // --- TRANSFER CERTIFICATE (TC) ---
+  updateTcCertificateBody() {
+    if (!this.selectedAlumniForTc) return;
+    const al = this.selectedAlumniForTc;
+    this.tcForm.certificateBody = `This is to certify that ${al.full_name}, bearing permanent Admission ID ${al.admission_number}, studied in this school up to ${al.last_class_name || 'Class 12'} in session ${al.graduation_session || new Date().getFullYear()}. All institutional dues have been paid up to ${this.tcForm.duesPaidMonth}. General conduct during their tenure was ${this.tcForm.conduct}.`;
+  }
+
   openTcModal(al: AlumniStudent, event?: Event) {
     if (event) event.stopPropagation();
     this.activeAlumniMenuId = null;
@@ -6735,7 +7008,9 @@ export class AcademicsComponent implements OnInit {
       workingDaysTotal: '220',
       workingDaysPresent: '214',
       remarks: 'Student bears good moral character.',
+      certificateBody: '',
     };
+    this.updateTcCertificateBody();
     this.showTcModal = true;
   }
 
@@ -6756,7 +7031,7 @@ export class AcademicsComponent implements OnInit {
       issue_date: this.tcForm.issueDate || new Date().toISOString(),
       conduct: this.tcForm.conduct,
       leaving_reason: this.tcForm.reasonForLeaving,
-      remarks: this.tcForm.remarks,
+      remarks: this.tcForm.certificateBody || this.tcForm.remarks,
     };
 
     this.api.post('academics/alumni/certificates', payload).subscribe({
@@ -6800,7 +7075,8 @@ export class AcademicsComponent implements OnInit {
           .school-name { font-size: 26px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
           .school-sub { font-size: 12px; color: #475569; margin-top: 2px; text-transform: uppercase; letter-spacing: 1px; }
           .doc-title { text-align: center; font-size: 18px; font-weight: bold; text-decoration: underline; margin: 15px 0 20px 0; letter-spacing: 1.5px; }
-          .meta-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; margin-bottom: 20px; }
+          .meta-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; margin-bottom: 15px; }
+          .cert-statement { font-size: 13.5px; line-height: 1.8; text-align: justify; margin-bottom: 20px; padding: 12px 15px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; }
           .cert-grid { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
           .cert-grid td { padding: 8px 6px; font-size: 14px; vertical-align: top; border-bottom: 1px dotted #cbd5e1; }
           .cert-grid td.q-no { width: 35px; font-weight: bold; color: #475569; }
@@ -6826,6 +7102,9 @@ export class AcademicsComponent implements OnInit {
             <div>TC No: <span style="font-family: monospace;">${this.tcForm.tcNumber}</span></div>
             <div>Book No: <span style="font-family: monospace;">${this.tcForm.bookNumber}</span></div>
             <div>Admission No: <span style="font-family: monospace;">${al.admission_number}</span></div>
+          </div>
+          <div class="cert-statement">
+            ${this.tcForm.certificateBody ? this.tcForm.certificateBody.replace(/\n/g, '<br>') : `This is to certify that <strong>${al.full_name}</strong>, bearing permanent Admission ID <strong>${al.admission_number}</strong>, studied in this school up to <strong>${al.last_class_name || 'Class 12'}</strong> in session <strong>${al.graduation_session || ''}</strong>. All institutional dues have been paid up to <strong>${this.tcForm.duesPaidMonth}</strong>. General conduct during their tenure was <strong>${this.tcForm.conduct}</strong>.`}
           </div>
           <table class="cert-grid">
             <tr>
@@ -6905,6 +7184,13 @@ export class AcademicsComponent implements OnInit {
   }
 
   // --- CHARACTER CERTIFICATE ---
+  updateCharacterCertificateBody() {
+    if (!this.selectedAlumniForCharacterCert) return;
+    const al = this.selectedAlumniForCharacterCert;
+    const gName = `${al.primary_contact?.first_name || 'Guardian'} ${al.primary_contact?.last_name || ''}`.trim();
+    this.characterCertForm.certificateBody = `This is to certify that ${al.full_name}, child of ${gName || 'Guardian'}, bearing Permanent Admission ID ${al.admission_number}, was a bonafide student of this institution in ${al.last_class_name || 'Class 12'} (${al.last_section_name || 'Section A'}) during the Academic Session ${al.graduation_session || 'Graduated'}.\n\nDuring their period of study at this school, their conduct, character, and moral bearing have been ${this.characterCertForm.conduct}. ${this.characterCertForm.coCurricularRemarks ? this.characterCertForm.coCurricularRemarks + ' ' : ''}\n\nTo the best of our knowledge and belief, they bear good moral character and have not been subject to any disciplinary action. ${this.characterCertForm.remarks}`;
+  }
+
   openCharacterCertModal(al: AlumniStudent, event?: Event) {
     if (event) event.stopPropagation();
     this.activeAlumniMenuId = null;
@@ -6917,7 +7203,9 @@ export class AcademicsComponent implements OnInit {
       conduct: al.conduct || 'Exemplary & Commendable',
       coCurricularRemarks: 'Actively participated in school academic, cultural, and sports activities.',
       remarks: 'We wish them excellence and bright success in all future pursuits.',
+      certificateBody: '',
     };
+    this.updateCharacterCertificateBody();
     this.showCharacterCertModal = true;
   }
 
@@ -6937,7 +7225,7 @@ export class AcademicsComponent implements OnInit {
       certificate_number: this.characterCertForm.certNumber,
       issue_date: this.characterCertForm.issueDate || new Date().toISOString(),
       conduct: this.characterCertForm.conduct,
-      remarks: this.characterCertForm.remarks,
+      remarks: this.characterCertForm.certificateBody || this.characterCertForm.remarks,
     };
 
     this.api.post('academics/alumni/certificates', payload).subscribe({
@@ -7003,11 +7291,7 @@ export class AcademicsComponent implements OnInit {
             <div>Date of Issue: ${this.characterCertForm.issueDate ? new Date(this.characterCertForm.issueDate).toLocaleDateString() : new Date().toLocaleDateString()}</div>
           </div>
           <div class="cert-body">
-            This is to certify that <span class="highlight">${al.full_name}</span>, child of <span class="highlight">${al.primary_contact?.first_name || 'Guardian'} ${al.primary_contact?.last_name || ''}</span>, bearing Permanent Admission ID <span class="highlight">${al.admission_number}</span>, was a bonafide student of this institution in <span class="highlight">${al.last_class_name || 'Class 12'} (${al.last_section_name || 'Section A'})</span> during the Academic Session <span class="highlight">${al.graduation_session || 'Graduated'}</span>.
-            <br><br>
-            During their period of study at this school, their conduct, character, and moral bearing have been <span class="highlight">${this.characterCertForm.conduct}</span>. ${this.characterCertForm.coCurricularRemarks}
-            <br><br>
-            To the best of our knowledge and belief, they bear good moral character and have not been subject to any disciplinary action. ${this.characterCertForm.remarks}
+            ${this.characterCertForm.certificateBody ? this.characterCertForm.certificateBody.replace(/\n/g, '<br>') : `This is to certify that <span class="highlight">${al.full_name}</span>, child of <span class="highlight">${al.primary_contact?.first_name || 'Guardian'} ${al.primary_contact?.last_name || ''}</span>, bearing Permanent Admission ID <span class="highlight">${al.admission_number}</span>, was a bonafide student of this institution in <span class="highlight">${al.last_class_name || 'Class 12'} (${al.last_section_name || 'Section A'})</span> during the Academic Session <span class="highlight">${al.graduation_session || 'Graduated'}</span>.<br><br>During their period of study at this school, their conduct, character, and moral bearing have been <span class="highlight">${this.characterCertForm.conduct}</span>. ${this.characterCertForm.coCurricularRemarks}<br><br>To the best of our knowledge and belief, they bear good moral character and have not been subject to any disciplinary action. ${this.characterCertForm.remarks}`}
           </div>
           <div class="sig-row">
             <div class="sig-box">Class Teacher</div>
@@ -7025,6 +7309,12 @@ export class AcademicsComponent implements OnInit {
   }
 
   // --- ALUMNI CERTIFICATE ---
+  updateAlumniCertificateBody() {
+    if (!this.selectedAlumniForAlumniCert) return;
+    const al = this.selectedAlumniForAlumniCert;
+    this.alumniCertForm.certificateBody = `This is to certify that ${al.full_name} (Permanent Admission ID: ${al.admission_number}) has completed their course of study in ${al.last_class_name || 'Class 12'} (${al.last_section_name || 'Section A'}) and is officially registered as a lifetime Alumni Member of this institution under Registration ID ${this.alumniCertForm.alumniNumber}. ${this.alumniCertForm.honorsRemarks}`;
+  }
+
   openAlumniCertModal(al: AlumniStudent, event?: Event) {
     if (event) event.stopPropagation();
     this.activeAlumniMenuId = null;
@@ -7037,7 +7327,9 @@ export class AcademicsComponent implements OnInit {
       alumniNumber: alumniNo,
       issueDate: new Date().toISOString().split('T')[0],
       honorsRemarks: 'Recognized for successful academic completion and awarded lifelong institutional alumni status.',
+      certificateBody: '',
     };
+    this.updateAlumniCertificateBody();
     this.showAlumniCertModal = true;
   }
 
@@ -7057,7 +7349,7 @@ export class AcademicsComponent implements OnInit {
       certificate_number: this.alumniCertForm.certNumber,
       alumni_number: this.alumniCertForm.alumniNumber,
       issue_date: this.alumniCertForm.issueDate || new Date().toISOString(),
-      remarks: this.alumniCertForm.honorsRemarks,
+      remarks: this.alumniCertForm.certificateBody || this.alumniCertForm.honorsRemarks,
     };
 
     this.api.post('academics/alumni/certificates', payload).subscribe({
@@ -7121,11 +7413,7 @@ export class AcademicsComponent implements OnInit {
           <div class="doc-title">Certificate of Alumni Recognition</div>
           <div class="alumni-badge">PERMANENT ALUMNI ID: ${this.alumniCertForm.alumniNumber}</div>
           <div class="cert-body">
-            This certificate is proudly conferred upon <span class="highlight">${al.full_name}</span> (Permanent School Admission ID: <span class="highlight">${al.admission_number}</span>) in formal recognition of successfully completing their course of education up to <span class="highlight">${al.last_class_name || 'Class 12'} (${al.last_section_name || 'Section A'})</span> in Academic Session <span class="highlight">${al.graduation_session || 'Graduated'}</span>.
-            <br><br>
-            Having maintained an honorable standing throughout their school career, they are hereby officially enrolled into the lifelong Alumni Guild of this institution under Registration ID <span class="highlight">${this.alumniCertForm.alumniNumber}</span> with all associated honours and privileges.
-            <br><br>
-            ${this.alumniCertForm.honorsRemarks}
+            ${this.alumniCertForm.certificateBody ? this.alumniCertForm.certificateBody.replace(/\n/g, '<br>') : `This certificate is proudly conferred upon <span class="highlight">${al.full_name}</span> (Permanent School Admission ID: <span class="highlight">${al.admission_number}</span>) in formal recognition of successfully completing their course of education up to <span class="highlight">${al.last_class_name || 'Class 12'} (${al.last_section_name || 'Section A'})</span> in Academic Session <span class="highlight">${al.graduation_session || 'Graduated'}</span>.<br><br>Having maintained an honorable standing throughout their school career, they are hereby officially enrolled into the lifelong Alumni Guild of this institution under Registration ID <span class="highlight">${this.alumniCertForm.alumniNumber}</span> with all associated honours and privileges.<br><br>${this.alumniCertForm.honorsRemarks}`}
           </div>
           <div class="sig-row">
             <div class="sig-box">Date of Issue: ${this.alumniCertForm.issueDate ? new Date(this.alumniCertForm.issueDate).toLocaleDateString() : new Date().toLocaleDateString()}</div>
@@ -7238,6 +7526,10 @@ export class AcademicsComponent implements OnInit {
         this.students = res || [];
         this.currentPage = 1;
         this.loadingStudents = false;
+        const activeCount = this.students.filter(
+          (st) => (st.status || 'ACTIVE').toUpperCase() === 'ACTIVE'
+        ).length;
+        sec.enrolled_count = activeCount;
       },
       error: () => {
         this.students = [];
@@ -8153,6 +8445,16 @@ export class AcademicsComponent implements OnInit {
       role: 'TEACHER',
       primarySubjectId: '',
       password: 'password123',
+      gender: 'MALE',
+      dateOfBirth: '',
+      qualification: '',
+      experience: '',
+      joiningDate: '',
+      bloodGroup: '',
+      address: '',
+      emergencyContactName: '',
+      emergencyContactPhone: '',
+      department: '',
     };
     this.staffModalError = '';
     this.modalService.open('ADD_STAFF');
