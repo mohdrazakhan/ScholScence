@@ -422,165 +422,281 @@ export interface RoleSectionItem {
             </div>
           </div>
 
-          <!-- Top Right User Profile & Action Controls (Optimized for mobile + desktop) -->
+          <!-- Top Right Section: Mobile Profile Menu (Mobile Only) & Full Bar (Desktop Only) -->
           <div class="ml-auto flex items-center gap-1.5 sm:gap-2 shrink-0">
-            <!-- User Avatar & Identity -->
-            <div class="flex items-center gap-2 pl-1">
-              <!-- Circular Avatar Image -->
-              <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-xs ring-2 ring-slate-100 overflow-hidden shrink-0">
-                <img [src]="userAvatarUrl" [alt]="userFullName" (error)="$any($event.target).style.display='none'" class="w-full h-full object-cover" />
-                <span class="sr-only">{{ userInitial }}</span>
-              </div>
 
-              <!-- User Name & Role (Desktop) -->
-              <div class="hidden lg:flex flex-col text-left">
-                <span class="text-xs font-bold text-slate-900 leading-tight truncate max-w-[140px] xl:max-w-[180px]">
-                  {{ userFullName }}
-                </span>
-                <div class="flex items-center gap-1.5 mt-0.5">
-                  <span class="inline-block w-1.5 h-1.5 rounded-full"
-                        [ngClass]="auth.currentUser()?.role === 'SUPER_ADMIN' ? 'bg-amber-500' : 'bg-emerald-500'"></span>
-                  <span class="text-[10px] font-semibold text-slate-500 leading-none">
-                    {{ displayRole }}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Vertical Separator -->
-            <div class="h-5 w-px bg-slate-200 hidden lg:block"></div>
-
-            <!-- Notification Bell Icon Button with Dropdown -->
-            <div class="relative shrink-0">
+            <!-- ============================================================== -->
+            <!-- MOBILE VIEW ONLY: Profile Pic with Dropdown Arrow Icon         -->
+            <!-- ============================================================== -->
+            <div class="relative lg:hidden">
+              <!-- Profile Pic Capsule Button with Down Arrow -->
               <button type="button"
-                      (click)="toggleNotificationDropdown($event)"
-                      title="Notifications & Circulars"
-                      class="relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      (click)="toggleMobileUserMenu($event)"
+                      title="User Profile & Quick Menu"
+                      class="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100 hover:bg-slate-200/80 border border-slate-200/90 shadow-2xs transition-all cursor-pointer active:scale-95">
+                
+                <!-- Avatar Image -->
+                <div class="relative w-8 h-8 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-xs overflow-hidden shrink-0">
+                  <img [src]="userAvatarUrl" [alt]="userFullName" (error)="$any($event.target).style.display='none'" class="w-full h-full object-cover" />
+                  <span class="sr-only">{{ userInitial }}</span>
+                  <!-- Red badge on avatar if notifications exist -->
+                  <span *ngIf="activeNotifications.length > 0" class="absolute top-0 right-0 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white"></span>
+                </div>
+
+                <!-- Dropdown Arrow Icon -->
+                <svg class="w-3.5 h-3.5 text-slate-600 mr-1 transition-transform duration-200"
+                     [class.rotate-180]="isMobileUserMenuOpen"
+                     fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
-                <!-- Red unread notification indicator if any active notification -->
-                <span *ngIf="activeNotifications.length > 0" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white"></span>
               </button>
 
-              <!-- Backdrop to close notifications -->
-              <div *ngIf="isNotificationDropdownOpen" (click)="isNotificationDropdownOpen = false" class="fixed inset-0 z-40"></div>
+              <!-- Mobile Backdrop Overlay -->
+              <div *ngIf="isMobileUserMenuOpen" (click)="isMobileUserMenuOpen = false" class="fixed inset-0 z-40"></div>
 
-              <!-- Notifications Menu Dropdown -->
-              <div *ngIf="isNotificationDropdownOpen"
-                   class="absolute right-0 top-full mt-2 w-72 sm:w-88 bg-white rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-200/90 p-3.5 z-50 animate-fadeIn">
-                <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 mb-2.5">
-                  <div class="flex items-center gap-1.5">
-                    <span class="text-xs font-black text-slate-900">Notifications</span>
-                    <span *ngIf="activeNotifications.length > 0" class="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-rose-100 text-rose-700">
+              <!-- Mobile Dropdown Menu List -->
+              <div *ngIf="isMobileUserMenuOpen"
+                   class="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-[0_12px_35px_rgba(0,0,0,0.15)] border border-slate-200/90 p-2.5 z-50 animate-fadeIn">
+                
+                <!-- User Identity Card -->
+                <div class="px-2.5 py-2 flex items-center gap-2.5 border-b border-slate-100 mb-1">
+                  <div class="w-9 h-9 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-xs overflow-hidden shrink-0">
+                    <img [src]="userAvatarUrl" [alt]="userFullName" (error)="$any($event.target).style.display='none'" class="w-full h-full object-cover" />
+                    <span class="sr-only">{{ userInitial }}</span>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="text-xs font-black text-slate-900 truncate leading-tight">{{ userFullName }}</div>
+                    <div class="flex items-center gap-1.5 mt-0.5">
+                      <span class="inline-block w-1.5 h-1.5 rounded-full"
+                            [ngClass]="auth.currentUser()?.role === 'SUPER_ADMIN' ? 'bg-amber-500' : 'bg-emerald-500'"></span>
+                      <span class="text-[10px] font-semibold text-slate-500 leading-none truncate">{{ displayRole }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Quick Menu Options -->
+                <div class="space-y-1 py-1">
+                  <!-- Notifications Button (with Bell Icon) -->
+                  <button type="button"
+                          (click)="openMobileNotifications($event)"
+                          class="w-full flex items-center justify-between p-2 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors text-left cursor-pointer">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                      </div>
+                      <span class="text-xs font-bold text-slate-800">Notifications</span>
+                    </div>
+                    <span *ngIf="activeNotifications.length > 0" class="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-rose-100 text-rose-700">
                       {{ activeNotifications.length }} New
                     </span>
-                  </div>
-                  <button *ngIf="activeNotifications.length > 0"
-                          type="button"
-                          (click)="clearAllNotifications($event)"
-                          class="text-[10px] font-bold text-rose-600 hover:text-rose-700 transition-colors cursor-pointer hover:underline">
-                    Clear All
                   </button>
-                </div>
 
-                <!-- Active Notifications List -->
-                <div *ngIf="activeNotifications.length > 0" class="space-y-2 max-h-64 overflow-y-auto custom-clay-scroll pr-0.5">
-                  <div *ngFor="let n of activeNotifications"
-                       class="group relative p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-100 transition-colors">
-                    <div class="flex items-start justify-between gap-2 text-[10px]">
-                      <span class="font-bold text-slate-900 line-clamp-1 flex-1">{{ n.title }}</span>
-                      <div class="flex items-center gap-1.5 shrink-0">
-                        <span class="text-slate-400">{{ formatNoticeTime(n.published_at) }}</span>
-                        <button type="button" (click)="dismissNotification(n.id, $event)" title="Dismiss"
-                                class="text-slate-400 hover:text-rose-600 rounded-md p-0.5 transition-colors cursor-pointer text-xs font-bold leading-none">
-                          &times;
-                        </button>
-                      </div>
-                    </div>
-                    <p class="text-[11px] text-slate-600 mt-1 line-clamp-2 leading-relaxed">{{ n.content }}</p>
-                  </div>
-                </div>
-
-                <!-- Empty State -->
-                <div *ngIf="activeNotifications.length === 0" class="py-6 px-4 text-center">
-                  <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-2 shadow-2xs border border-slate-200/60">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                    </svg>
-                  </div>
-                  <p class="text-xs font-bold text-slate-700">No new notifications</p>
-                  <p class="text-[10px] text-slate-400 mt-0.5">You're all caught up!</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Settings Gear Icon Button with Dropdown (Restricted to Super Admin and School Admin) -->
-            <div *ngIf="canAccessSettings" class="relative shrink-0">
-              <button type="button"
-                      (click)="toggleSettingsDropdown($event)"
-                      title="Settings & Administration"
-                      class="relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center">
-                <svg class="w-4 h-4 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </button>
-
-              <!-- Backdrop to close settings dropdown -->
-              <div *ngIf="isSettingsDropdownOpen" (click)="isSettingsDropdownOpen = false" class="fixed inset-0 z-40"></div>
-
-              <!-- Settings Menu Dropdown -->
-              <div *ngIf="isSettingsDropdownOpen"
-                   class="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-200/90 p-2 z-50 animate-fadeIn">
-                <div class="px-3 py-2 border-b border-slate-100 mb-1">
-                  <span class="text-xs font-black text-slate-900 tracking-tight block">Campus Administration</span>
-                  <span class="text-[10px] text-slate-400">Institutional settings & profile management</span>
-                </div>
-
-                <div class="space-y-1">
-                  <!-- Option 1: School Profile -->
-                  <button type="button"
-                          (click)="openSchoolProfileModal($event)"
-                          class="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors text-left cursor-pointer group">
-                    <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0 border border-slate-200 group-hover:bg-slate-900 group-hover:text-white transition-colors shadow-2xs">
+                  <!-- School Profile & Branding (If admin) -->
+                  <button *ngIf="canAccessSettings" type="button"
+                          (click)="openMobileSchoolProfile($event)"
+                          class="w-full flex items-center gap-2.5 p-2 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors text-left cursor-pointer">
+                    <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
                       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                       </svg>
                     </div>
-                    <div class="flex-1 min-w-0">
-                      <span class="text-xs font-bold text-slate-900 group-hover:text-slate-950 block">School Profile & Branding</span>
-                      <span class="text-[10px] text-slate-500 leading-tight block">Manage crest, contact, affiliation & official identity</span>
-                    </div>
+                    <span class="text-xs font-bold text-slate-800">School Profile & Branding</span>
                   </button>
 
-                  <!-- Option 2: Manage Academic Sessions -->
-                  <button type="button"
-                          (click)="openManageSessionsFromHeader($event)"
-                          class="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors text-left cursor-pointer group">
-                    <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0 border border-slate-200 group-hover:bg-slate-900 group-hover:text-white transition-colors shadow-2xs">
+                  <!-- Academic Sessions (If admin) -->
+                  <button *ngIf="canManageSessions" type="button"
+                          (click)="openMobileSessions($event)"
+                          class="w-full flex items-center gap-2.5 p-2 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors text-left cursor-pointer">
+                    <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
                       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                     </div>
-                    <div class="flex-1 min-w-0">
-                      <span class="text-xs font-bold text-slate-900 group-hover:text-slate-950 block">Academic Sessions & Rollover</span>
-                      <span class="text-[10px] text-slate-500 leading-tight block">Configure active session, dates & session promotion</span>
-                    </div>
+                    <span class="text-xs font-bold text-slate-800">Academic Sessions</span>
                   </button>
                 </div>
+
+                <!-- Sign Out Section -->
+                <div class="pt-1.5 border-t border-slate-100 mt-1">
+                  <button type="button"
+                          (click)="auth.logout()"
+                          class="w-full flex items-center gap-2.5 p-2 rounded-xl text-rose-600 hover:bg-rose-50 transition-colors text-left font-bold text-xs cursor-pointer">
+                    <div class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                      </svg>
+                    </div>
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+
               </div>
             </div>
 
-            <!-- Sign Out Button -->
-            <button (click)="auth.logout()"
-                    title="Sign Out"
-                    class="w-8 h-8 sm:w-auto sm:px-2.5 sm:py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-all cursor-pointer shadow-2xs flex items-center justify-center shrink-0 gap-1.5">
-              <svg class="w-4 h-4 sm:w-3.5 sm:h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-              </svg>
-              <span class="hidden xl:inline">Sign Out</span>
-            </button>
+            <!-- ============================================================== -->
+            <!-- DESKTOP VIEW ONLY (hidden on mobile, visible on lg:)           -->
+            <!-- ============================================================== -->
+            <div class="hidden lg:flex items-center gap-2.5">
+              <!-- User Avatar & Identity -->
+              <div class="flex items-center gap-2 pl-1">
+                <!-- Circular Avatar Image -->
+                <div class="w-9 h-9 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-xs ring-2 ring-slate-100 overflow-hidden shrink-0">
+                  <img [src]="userAvatarUrl" [alt]="userFullName" (error)="$any($event.target).style.display='none'" class="w-full h-full object-cover" />
+                  <span class="sr-only">{{ userInitial }}</span>
+                </div>
+
+                <!-- User Name & Role -->
+                <div class="flex flex-col text-left">
+                  <span class="text-xs font-bold text-slate-900 leading-tight truncate max-w-[140px] xl:max-w-[180px]">
+                    {{ userFullName }}
+                  </span>
+                  <div class="flex items-center gap-1.5 mt-0.5">
+                    <span class="inline-block w-1.5 h-1.5 rounded-full"
+                          [ngClass]="auth.currentUser()?.role === 'SUPER_ADMIN' ? 'bg-amber-500' : 'bg-emerald-500'"></span>
+                    <span class="text-[10px] font-semibold text-slate-500 leading-none">
+                      {{ displayRole }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Vertical Separator -->
+              <div class="h-5 w-px bg-slate-200"></div>
+
+              <!-- Notification Bell Icon Button with Dropdown -->
+              <div class="relative shrink-0">
+                <button type="button"
+                        (click)="toggleNotificationDropdown($event)"
+                        title="Notifications & Circulars"
+                        class="relative w-9 h-9 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  <span *ngIf="activeNotifications.length > 0" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white"></span>
+                </button>
+
+                <!-- Backdrop to close notifications -->
+                <div *ngIf="isNotificationDropdownOpen" (click)="isNotificationDropdownOpen = false" class="fixed inset-0 z-40"></div>
+
+                <!-- Notifications Menu Dropdown -->
+                <div *ngIf="isNotificationDropdownOpen"
+                     class="absolute right-0 top-full mt-2 w-72 sm:w-88 bg-white rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-200/90 p-3.5 z-50 animate-fadeIn">
+                  <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 mb-2.5">
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-xs font-black text-slate-900">Notifications</span>
+                      <span *ngIf="activeNotifications.length > 0" class="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-rose-100 text-rose-700">
+                        {{ activeNotifications.length }} New
+                      </span>
+                    </div>
+                    <button *ngIf="activeNotifications.length > 0"
+                            type="button"
+                            (click)="clearAllNotifications($event)"
+                            class="text-[10px] font-bold text-rose-600 hover:text-rose-700 transition-colors cursor-pointer hover:underline">
+                      Clear All
+                    </button>
+                  </div>
+
+                  <!-- Active Notifications List -->
+                  <div *ngIf="activeNotifications.length > 0" class="space-y-2 max-h-64 overflow-y-auto custom-clay-scroll pr-0.5">
+                    <div *ngFor="let n of activeNotifications"
+                         class="group relative p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-100 transition-colors">
+                      <div class="flex items-start justify-between gap-2 text-[10px]">
+                        <span class="font-bold text-slate-900 line-clamp-1 flex-1">{{ n.title }}</span>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                          <span class="text-slate-400">{{ formatNoticeTime(n.published_at) }}</span>
+                          <button type="button" (click)="dismissNotification(n.id, $event)" title="Dismiss"
+                                  class="text-slate-400 hover:text-rose-600 rounded-md p-0.5 transition-colors cursor-pointer text-xs font-bold leading-none">
+                            &times;
+                          </button>
+                        </div>
+                      </div>
+                      <p class="text-[11px] text-slate-600 mt-1 line-clamp-2 leading-relaxed">{{ n.content }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Empty State -->
+                  <div *ngIf="activeNotifications.length === 0" class="py-6 px-4 text-center">
+                    <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-2 shadow-2xs border border-slate-200/60">
+                      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
+                    </div>
+                    <p class="text-xs font-bold text-slate-700">No new notifications</p>
+                    <p class="text-[10px] text-slate-400 mt-0.5">You're all caught up!</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Settings Gear Icon Button with Dropdown (Restricted to Super Admin and School Admin) -->
+              <div *ngIf="canAccessSettings" class="relative shrink-0">
+                <button type="button"
+                        (click)="toggleSettingsDropdown($event)"
+                        title="Settings & Administration"
+                        class="relative w-9 h-9 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center">
+                  <svg class="w-4 h-4 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </button>
+
+                <!-- Backdrop to close settings dropdown -->
+                <div *ngIf="isSettingsDropdownOpen" (click)="isSettingsDropdownOpen = false" class="fixed inset-0 z-40"></div>
+
+                <!-- Settings Menu Dropdown -->
+                <div *ngIf="isSettingsDropdownOpen"
+                     class="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-200/90 p-2 z-50 animate-fadeIn">
+                  <div class="px-3 py-2 border-b border-slate-100 mb-1">
+                    <span class="text-xs font-black text-slate-900 tracking-tight block">Campus Administration</span>
+                    <span class="text-[10px] text-slate-400">Institutional settings & profile management</span>
+                  </div>
+
+                  <div class="space-y-1">
+                    <!-- Option 1: School Profile -->
+                    <button type="button"
+                            (click)="openSchoolProfileModal($event)"
+                            class="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors text-left cursor-pointer group">
+                      <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0 border border-slate-200 group-hover:bg-slate-900 group-hover:text-white transition-colors shadow-2xs">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <span class="text-xs font-bold text-slate-900 group-hover:text-slate-950 block">School Profile & Branding</span>
+                        <span class="text-[10px] text-slate-500 leading-tight block">Manage crest, contact, affiliation & official identity</span>
+                      </div>
+                    </button>
+
+                    <!-- Option 2: Manage Academic Sessions -->
+                    <button type="button"
+                            (click)="openManageSessionsFromHeader($event)"
+                            class="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors text-left cursor-pointer group">
+                      <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0 border border-slate-200 group-hover:bg-slate-900 group-hover:text-white transition-colors shadow-2xs">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <span class="text-xs font-bold text-slate-900 group-hover:text-slate-950 block">Academic Sessions & Rollover</span>
+                        <span class="text-[10px] text-slate-500 leading-tight block">Configure active session, dates & session promotion</span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sign Out Button -->
+              <button (click)="auth.logout()"
+                      title="Sign Out"
+                      class="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-all cursor-pointer shadow-2xs flex items-center justify-center shrink-0 gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                <span class="hidden xl:inline">Sign Out</span>
+              </button>
+            </div>
+
           </div>
         </header>
 
@@ -1852,6 +1968,32 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   get userAvatarUrl(): string {
     const name = encodeURIComponent(this.userFullName);
     return `https://ui-avatars.com/api/?name=${name}&background=0f172a&color=ffffff&bold=true&size=128`;
+  }
+
+  isMobileUserMenuOpen = false;
+
+  toggleMobileUserMenu(event: Event) {
+    event.stopPropagation();
+    this.isMobileUserMenuOpen = !this.isMobileUserMenuOpen;
+  }
+
+  openMobileNotifications(event: Event) {
+    event.stopPropagation();
+    this.isMobileUserMenuOpen = false;
+    this.isNotificationDropdownOpen = true;
+    this.loadNotifications();
+  }
+
+  openMobileSchoolProfile(event: Event) {
+    event.stopPropagation();
+    this.isMobileUserMenuOpen = false;
+    this.openSchoolProfileModal(event);
+  }
+
+  openMobileSessions(event: Event) {
+    event.stopPropagation();
+    this.isMobileUserMenuOpen = false;
+    this.openManageSessionsFromHeader(event);
   }
 
   currentTime: Date = new Date();
