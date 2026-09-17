@@ -297,42 +297,42 @@ export interface RoleSectionItem {
 
             <!-- Campus & Welcome Details in Header Bar -->
             <div class="min-w-0 flex-1 flex flex-col justify-center">
-              <!-- Line 1: User Greeting with Sun/Moon Animated Icon, Date & 12-Hour Live Clock -->
-              <div class="flex items-center gap-1.5 min-w-0 overflow-hidden">
-                <!-- Dynamic Sun / Moon Animated Icon based on Time of Day -->
+              <!-- Line 1: User Greeting with Sun/Moon Icon, Date & Live Clock -->
+              <div class="flex items-center gap-1.5 min-w-0">
+                <!-- Dynamic Time of Day Icon (Optically Centered) -->
                 <span *ngIf="timePeriod === 'morning'"
-                      class="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-50 text-amber-500 border border-amber-200/80 shadow-2xs shrink-0"
+                      class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-amber-50 text-amber-500 border border-amber-200/60 shadow-2xs shrink-0"
                       title="Good morning">
-                  <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin-gentle" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                   </svg>
                 </span>
 
                 <span *ngIf="timePeriod === 'afternoon'"
-                      class="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-50 text-amber-500 border border-amber-200/80 shadow-2xs shrink-0"
+                      class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-amber-50 text-amber-500 border border-amber-200/60 shadow-2xs shrink-0"
                       title="Good afternoon">
-                  <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin-gentle" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd" />
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                   </svg>
                 </span>
 
                 <span *ngIf="timePeriod === 'evening'"
-                      class="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-orange-50 text-orange-500 border border-orange-200/80 shadow-2xs shrink-0"
+                      class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-orange-50 text-orange-500 border border-orange-200/60 shadow-2xs shrink-0"
                       title="Good evening">
-                  <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-float-gentle" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                   </svg>
                 </span>
 
                 <span *ngIf="timePeriod === 'night'"
-                      class="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-slate-100 text-indigo-500 border border-slate-200/80 shadow-2xs shrink-0"
+                      class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-indigo-50 text-indigo-600 border border-indigo-200/60 shadow-2xs shrink-0"
                       title="Good evening">
-                  <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-float-gentle" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                   </svg>
                 </span>
 
-                <h2 class="text-xs sm:text-sm font-black text-slate-900 tracking-tight leading-none truncate">
+                <h2 class="text-xs sm:text-sm font-extrabold text-slate-900 tracking-tight leading-tight truncate">
                   {{ timeGreeting }}, {{ auth.currentUser()?.firstName || 'User' }}
                 </h2>
 
@@ -348,11 +348,11 @@ export interface RoleSectionItem {
               </div>
 
               <!-- Line 2: Academic Session Dropdown + Subtitle (Aligned dot, clean UI) -->
-              <div class="flex items-center gap-1.5 mt-1 min-w-0">
+              <div class="flex items-center gap-1.5 mt-0.5 min-w-0">
                 <!-- Interactive Session Switcher Dropdown -->
                 <div *ngIf="canManageSessions" class="relative inline-block shrink-0">
                   <button type="button" (click)="toggleSessionDropdown($event)"
-                          class="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-0.5 rounded-lg bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 border border-slate-200/90 transition-all cursor-pointer shadow-2xs active:scale-95 whitespace-nowrap"
+                          class="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95 whitespace-nowrap"
                           title="Click to switch academic session">
                     <span>Session: {{ auth.activeSessionName() }}</span>
                     <svg class="w-2.5 h-2.5 sm:w-3 sm:h-3 text-slate-500 transition-transform duration-200" [class.rotate-180]="isSessionDropdownOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
