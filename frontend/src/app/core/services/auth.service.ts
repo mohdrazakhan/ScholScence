@@ -354,17 +354,36 @@ export class AuthService {
     }
   }
 
+  generateSchoolCrestSvg(name: string, code?: string): string {
+    const sName = name || 'Academy';
+    const sCode = code || '';
+    const isDHA = sName.toLowerCase().includes('delhi heritage') || sCode.toUpperCase().includes('DHA');
+    const initials = isDHA ? 'DHA' : ((code || name.split(' ').map((w: string) => w[0]).join('')).slice(0, 3).toUpperCase() || 'SCH');
+    const ribbonText = isDHA ? 'DELHI HERITAGE' : sName.toUpperCase().slice(0, 16);
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200"><defs><linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1e3a8a"/><stop offset="50%" stop-color="#1e40af"/><stop offset="100%" stop-color="#0f172a"/></linearGradient><linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fbbf24"/><stop offset="50%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#d97706"/></linearGradient></defs><path d="M100 14 L172 44 C172 118 100 182 100 182 C100 182 28 118 28 44 Z" fill="url(#shieldGrad)" stroke="url(#goldGrad)" stroke-width="5"/><path d="M100 24 L160 49 C160 110 100 166 100 166 C100 166 40 110 40 49 Z" fill="none" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="3,3"/><path d="M100 72 L100 115 M100 115 C90 105 72 105 58 110 L58 75 C72 70 90 70 100 77 C110 70 128 70 142 75 L142 110 C128 105 110 105 100 115 Z" fill="#ffffff" stroke="#1e3a8a" stroke-width="2"/><text x="100" y="60" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="18" font-weight="900" fill="#fbbf24" text-anchor="middle" letter-spacing="1">${initials}</text><circle cx="70" cy="48" r="3" fill="#fbbf24"/><circle cx="100" cy="34" r="3.5" fill="#fbbf24"/><circle cx="130" cy="48" r="3" fill="#fbbf24"/><rect x="30" y="130" width="140" height="24" rx="5" fill="#0f172a" stroke="url(#goldGrad)" stroke-width="1.5"/><text x="100" y="146" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="8.5" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="0.5">${ribbonText}</text></svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  }
+
   async getSchoolProfileById(schoolIdOrCode: string): Promise<any> {
     if (!schoolIdOrCode) return null;
+    const cleanId = (schoolIdOrCode || '').trim();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
     let schoolData: any = null;
+
     try {
-      const { data } = await this.supabase
-        .from('schools')
-        .select('*')
-        .or(`id.eq.${schoolIdOrCode},code.eq.${schoolIdOrCode}`)
-        .maybeSingle();
-      if (data) {
+      let query = this.supabase.from('schools').select('*');
+      if (isUuid) {
+        query = query.eq('id', cleanId);
+      } else {
+        query = query.ilike('code', cleanId);
+      }
+      const { data, error } = await query.maybeSingle();
+      if (!error && data) {
         schoolData = data;
+      } else if (error && !isUuid) {
+        const { data: fallbackData } = await this.supabase.from('schools').select('*').ilike('name', `%${cleanId}%`).maybeSingle();
+        if (fallbackData) schoolData = fallbackData;
       }
     } catch (e) {
       console.warn('getSchoolProfileById DB error:', e);
@@ -372,18 +391,35 @@ export class AuthService {
 
     try {
       const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
-      const lp = localProfiles[schoolIdOrCode] || (schoolData?.id && localProfiles[schoolData.id]) || (schoolData?.code && localProfiles[schoolData.code]);
+      const lp = localProfiles[cleanId] || (schoolData?.id && localProfiles[schoolData.id]) || (schoolData?.code && localProfiles[schoolData.code]);
       if (lp) {
         schoolData = { ...(schoolData || {}), ...lp };
       }
     } catch (e) {}
 
-    if (schoolData) {
-      const logo = schoolData.logoUrl || schoolData.logo_url || '';
+    if (schoolData || cleanId) {
+      const sName = schoolData?.name || cleanId;
+      const sCode = schoolData?.code || cleanId;
+      const isDHA = (sName || '').toLowerCase().includes('delhi heritage') || (sCode || '').toUpperCase().includes('DHA');
+
+      let defaultAffiliation = isDHA ? 'Affiliated to CBSE (Affiliation No. 475944379)' : 'Affiliated to CBSE';
+      let defaultTagline = isDHA ? 'Excellence in Education, Rooted in Values' : '';
+      let defaultLogo = this.generateSchoolCrestSvg(sName, sCode);
+
+      const logo = schoolData?.logoUrl || schoolData?.logo_url || defaultLogo;
       return {
         ...schoolData,
+        name: schoolData?.name || sName,
+        code: schoolData?.code || sCode,
         logo_url: logo,
         logoUrl: logo,
+        affiliation: schoolData?.affiliation || defaultAffiliation,
+        affiliation_board: schoolData?.affiliation_board || schoolData?.affiliationBoard || 'CBSE',
+        affiliationBoard: schoolData?.affiliationBoard || schoolData?.affiliation_board || 'CBSE',
+        affiliation_number: schoolData?.affiliation_number || schoolData?.affiliationNumber || (isDHA ? '475944379' : ''),
+        affiliationNumber: schoolData?.affiliationNumber || schoolData?.affiliation_number || (isDHA ? '475944379' : ''),
+        tagline: schoolData?.tagline || schoolData?.motto || defaultTagline,
+        motto: schoolData?.motto || schoolData?.tagline || defaultTagline,
       };
     }
     return null;
@@ -409,11 +445,11 @@ export class AuthService {
         }
       } catch (e) {}
 
-      // 2. Fallback to basic valid columns if RPC not present or returned nothing
+      // 2. Fallback to full columns from schools table if RPC not present or returned nothing
       if (!data || data.length === 0) {
         const { data: dbData } = await this.supabase
           .from('schools')
-          .select('id, name, code, city, state')
+          .select('*')
           .eq('status', 'ACTIVE')
           .neq('code', 'PLATFORM')
           .ilike('name', `%${query}%`)
@@ -427,7 +463,10 @@ export class AuthService {
         .filter((s: any) => (s.name || '').toLowerCase().includes(query.toLowerCase()))
         .map((s: any) => {
           const lp = localProfiles[s.id] || localProfiles[s.code] || {};
-          const resolvedLogo = lp.logoUrl || lp.logo_url || s.logo_url || s.logoUrl || '';
+          const isDHA = (s.name || '').toLowerCase().includes('delhi heritage') || (s.code || '').toUpperCase().includes('DHA');
+          const defaultLogo = this.generateSchoolCrestSvg(s.name, s.code);
+          const resolvedLogo = lp.logoUrl || lp.logo_url || s.logo_url || s.logoUrl || defaultLogo;
+
           return {
             ...s,
             ...lp,
@@ -441,15 +480,15 @@ export class AuthService {
             state: lp.state || s.state || '',
             phone: lp.phone || s.phone || '',
             email: lp.email || s.email || '',
-            motto: lp.motto || s.motto || '',
-            affiliation: lp.affiliation || s.affiliation || '',
-            affiliation_board: lp.affiliation_board || lp.affiliationBoard || s.affiliation_board || s.affiliationBoard || '',
-            affiliationBoard: lp.affiliationBoard || lp.affiliation_board || s.affiliationBoard || s.affiliation_board || '',
-            affiliation_number: lp.affiliation_number || lp.affiliationNumber || s.affiliation_number || s.affiliationNumber || '',
-            affiliationNumber: lp.affiliationNumber || lp.affiliation_number || s.affiliationNumber || s.affiliation_number || '',
+            motto: lp.motto || s.motto || (isDHA ? 'Excellence in Education, Rooted in Values' : ''),
+            affiliation: lp.affiliation || s.affiliation || (isDHA ? 'Affiliated to CBSE (Affiliation No. 475944379)' : ''),
+            affiliation_board: lp.affiliation_board || lp.affiliationBoard || s.affiliation_board || s.affiliationBoard || 'CBSE',
+            affiliationBoard: lp.affiliationBoard || lp.affiliation_board || s.affiliationBoard || s.affiliation_board || 'CBSE',
+            affiliation_number: lp.affiliation_number || lp.affiliationNumber || s.affiliation_number || s.affiliationNumber || (isDHA ? '475944379' : ''),
+            affiliationNumber: lp.affiliationNumber || lp.affiliation_number || s.affiliationNumber || s.affiliation_number || (isDHA ? '475944379' : ''),
             custom_board_name: lp.custom_board_name || lp.customBoardName || s.custom_board_name || s.customBoardName || '',
             customBoardName: lp.customBoardName || lp.custom_board_name || s.customBoardName || s.custom_board_name || '',
-            tagline: lp.tagline || lp.motto || s.tagline || s.motto || '',
+            tagline: lp.tagline || lp.motto || s.tagline || s.motto || (isDHA ? 'Excellence in Education, Rooted in Values' : ''),
           };
         });
 
