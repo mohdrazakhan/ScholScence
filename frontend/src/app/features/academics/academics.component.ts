@@ -47,57 +47,60 @@ interface StaffMember {
   template: `
     <div class="space-y-6">
       <!-- Header -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 *ngIf="activeTab === 'CLASSES'" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div class="min-w-0">
+          <h1 *ngIf="activeTab === 'CLASSES'" class="text-lg sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
             Manage Classes & Grade Sections
           </h1>
-          <h1 *ngIf="activeTab === 'STUDENTS'" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          <h1 *ngIf="activeTab === 'STUDENTS'" class="text-lg sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
             Student Admissions & Enrolled Roster
           </h1>
-          <h1 *ngIf="activeTab === 'ALUMNI'" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <span>Alumni & Graduated Students Directory</span>
-            <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-              Permanent Register
-            </span>
-          </h1>
-          <h1 *ngIf="activeTab === 'STAFF'" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          <div *ngIf="activeTab === 'ALUMNI'">
+            <h1 class="text-lg sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
+              Alumni & Graduated Students Directory
+            </h1>
+            <div class="flex items-center flex-wrap gap-2 mt-1">
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
+                Permanent Register
+              </span>
+              <p class="text-xs text-slate-500 leading-relaxed">
+                Permanent register of students who completed their terminal class.
+              </p>
+            </div>
+          </div>
+          <h1 *ngIf="activeTab === 'STAFF'" class="text-lg sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
             Faculty & Staff Directory
           </h1>
-          <h1 *ngIf="activeTab === 'SUBJECTS'" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          <h1 *ngIf="activeTab === 'SUBJECTS'" class="text-lg sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
             Curriculum Subjects Master
           </h1>
 
-          <p *ngIf="activeTab === 'CLASSES'" class="text-xs text-slate-500 mt-0.5">
-            Configure institutional grade hierarchy, custom section divisions (e.g. Lotus, Ruby, Section A), and classroom capacities.
+          <p *ngIf="activeTab === 'CLASSES'" class="text-xs text-slate-500 mt-1 leading-relaxed">
+            Configure grade hierarchy, section divisions, and classroom capacities.
           </p>
-          <p *ngIf="activeTab === 'STUDENTS'" class="text-xs text-slate-500 mt-0.5">
-            Manage student admissions, parent guardian records, and view enrolled class rosters.
+          <p *ngIf="activeTab === 'STUDENTS'" class="text-xs text-slate-500 mt-1 leading-relaxed">
+            Manage student admissions, parent guardian records, and class rosters.
           </p>
-          <p *ngIf="activeTab === 'ALUMNI'" class="text-xs text-slate-500 mt-0.5">
-            Permanent register of students who completed their terminal class or graduated from the institution.
+          <p *ngIf="activeTab === 'STAFF'" class="text-xs text-slate-500 mt-1 leading-relaxed">
+            Manage teaching faculty, staff roles, credentials, and class allocations.
           </p>
-          <p *ngIf="activeTab === 'STAFF'" class="text-xs text-slate-500 mt-0.5">
-            Manage teaching faculty, staff roles, login credentials, and class teacher allocations.
-          </p>
-          <p *ngIf="activeTab === 'SUBJECTS'" class="text-xs text-slate-500 mt-0.5">
-            Manage subject codes, theory/practical grading weights, and institutional course masters.
+          <p *ngIf="activeTab === 'SUBJECTS'" class="text-xs text-slate-500 mt-1 leading-relaxed">
+            Manage subject codes, theory/practical grading weights, and courses.
           </p>
         </div>
 
         <!-- Action Buttons Contextual to Active View -->
-        <div class="flex items-center gap-2.5 flex-wrap">
-          <!-- Session Pill & Switcher Dropdown (Just like header dropdown!) -->
+        <div class="flex items-center justify-between sm:justify-end gap-2 sm:gap-2.5 w-full sm:w-auto">
+          <!-- Session Pill & Switcher Dropdown (Neutral Style) -->
           <div *ngIf="canManage" class="relative inline-block">
             <button type="button" (click)="toggleSessionDropdown($event)"
-                    class="px-3.5 py-2 bg-white hover:bg-slate-50 text-indigo-700 text-xs font-bold rounded-2xl border border-indigo-200 shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    class="px-3 py-2 sm:px-3.5 sm:py-2 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 text-xs font-bold rounded-xl border border-slate-200 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
                     title="Switch or create academic sessions">
-              <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+              <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               <span>Session: {{ auth.activeSessionName() }}</span>
-              <svg class="w-3.5 h-3.5 text-indigo-500 transition-transform duration-200" [class.rotate-180]="isSessionDropdownOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <svg class="w-3 h-3 text-slate-400 transition-transform duration-200" [class.rotate-180]="isSessionDropdownOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
             </button>
@@ -107,7 +110,7 @@ interface StaffMember {
 
             <!-- Dropdown Menu -->
             <div *ngIf="isSessionDropdownOpen"
-                 class="absolute right-0 top-full mt-1.5 w-72 bg-white rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.15)] border border-slate-200/90 py-1.5 z-50 animate-fadeIn">
+                 class="absolute left-0 top-full mt-1.5 w-72 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.15)] border border-slate-200/90 py-1.5 z-50 animate-fadeIn">
               
               <div class="px-3 py-1.5 border-b border-slate-100 flex items-center justify-between">
                 <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Available Sessions</span>
@@ -121,7 +124,7 @@ interface StaffMember {
                         type="button"
                         (click)="selectSessionFromDropdown(ses, $event)"
                         class="w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors hover:bg-slate-50 cursor-pointer"
-                        [ngClass]="auth.activeAcademicSession()?.id === ses.id ? 'bg-indigo-50/80 text-indigo-950 font-bold' : 'text-slate-700 font-medium'">
+                        [ngClass]="auth.activeAcademicSession()?.id === ses.id ? 'bg-slate-100 text-slate-900 font-bold' : 'text-slate-700 font-medium'">
                   <div>
                     <div class="flex items-center gap-1.5">
                       <span>{{ ses.name }}</span>
@@ -134,7 +137,7 @@ interface StaffMember {
                     </div>
                   </div>
 
-                  <div *ngIf="auth.activeAcademicSession()?.id === ses.id" class="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black shadow-xs">
+                  <div *ngIf="auth.activeAcademicSession()?.id === ses.id" class="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-black shadow-xs">
                     ✓
                   </div>
                 </button>
@@ -148,11 +151,8 @@ interface StaffMember {
               <div class="pt-1 border-t border-slate-100 px-1.5">
                 <button type="button"
                         (click)="openSessionModal(); isSessionDropdownOpen = false"
-                        class="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-indigo-700 hover:text-indigo-900 hover:bg-indigo-50 transition-colors cursor-pointer">
-                  <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                  </svg>
-                  <span>New Session & Rollover</span>
+                        class="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer">
+                  <span>⚡ Manage Sessions & Rollover</span>
                 </button>
               </div>
 
@@ -161,7 +161,7 @@ interface StaffMember {
 
           <!-- Buttons for CLASSES tab -->
           <button *ngIf="canManage && activeTab === 'CLASSES'" (click)="openAddClassModal()"
-                  class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_12px_#cbd5e1,-4px_-4px_12px_#ffffff] border border-slate-900 transition-all flex items-center gap-2 active:scale-[0.98] cursor-pointer">
+                  class="px-4 py-2 sm:px-5 sm:py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
             </svg>
@@ -170,7 +170,7 @@ interface StaffMember {
 
           <!-- Buttons for STUDENTS tab -->
           <button *ngIf="canManage && activeTab === 'STUDENTS'" (click)="openAddStudentModal()"
-                  class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_12px_#cbd5e1,-4px_-4px_12px_#ffffff] border border-slate-900 transition-all flex items-center gap-2 active:scale-[0.98] cursor-pointer">
+                  class="px-4 py-2 sm:px-5 sm:py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
             </svg>
@@ -179,31 +179,25 @@ interface StaffMember {
 
           <!-- Buttons for ALUMNI tab -->
           <button *ngIf="canManage && activeTab === 'ALUMNI'" (click)="openAddAlumniModal()"
-                  class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_12px_#cbd5e1,-4px_-4px_12px_#ffffff] border border-slate-900 transition-all flex items-center gap-2 active:scale-[0.98] cursor-pointer">
+                  class="px-4 py-2 sm:px-5 sm:py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
             </svg>
             <span>Add Alumni</span>
           </button>
 
-          <button *ngIf="canManage && activeTab === 'STUDENTS'" (click)="openSessionModal()"
-                  class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md border border-slate-900 transition-all flex items-center gap-1.5 active:scale-[0.98] cursor-pointer">
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            <span>Rollover & Promote</span>
-          </button>
-
+          <!-- Buttons for STAFF tab -->
           <button *ngIf="canManage && activeTab === 'STAFF'" (click)="openAddStaffModal()"
-                  class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_12px_#cbd5e1,-4px_-4px_12px_#ffffff] border border-slate-900 transition-all flex items-center gap-2 active:scale-[0.98] cursor-pointer">
+                  class="px-4 py-2 sm:px-5 sm:py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
             </svg>
             <span>Add Faculty</span>
           </button>
 
+          <!-- Buttons for SUBJECTS tab -->
           <button *ngIf="canManage && activeTab === 'SUBJECTS'" (click)="openAddSubjectModal()"
-                  class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-[4px_4px_12px_#cbd5e1,-4px_-4px_12px_#ffffff] border border-slate-900 transition-all flex items-center gap-2 active:scale-[0.98] cursor-pointer">
+                  class="px-4 py-2 sm:px-5 sm:py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
@@ -218,7 +212,40 @@ interface StaffMember {
       <div *ngIf="activeTab === 'CLASSES'" class="space-y-6 animate-fadeIn">
         
         <!-- Summary Stats Metrics -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <!-- Mobile View (Single Merged Card) -->
+        <div class="sm:hidden p-4 rounded-3xl bg-white border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff]">
+          <div class="grid grid-cols-3 divide-x divide-slate-100 text-center">
+            <!-- Metric 1: Total Classes -->
+            <div class="px-1.5 flex flex-col items-center justify-center">
+              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Classes</span>
+              <span class="text-base font-black text-slate-900 mt-0.5">
+                {{ loadingClasses ? '—' : classes.length }}
+              </span>
+              <span class="text-[9px] text-slate-500 truncate mt-0.5">Grade Levels</span>
+            </div>
+
+            <!-- Metric 2: Active Sections -->
+            <div class="px-1.5 flex flex-col items-center justify-center">
+              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Sections</span>
+              <span class="text-base font-black text-emerald-700 mt-0.5">
+                {{ loadingClasses ? '—' : totalSectionsCount }}
+              </span>
+              <span class="text-[9px] text-slate-500 truncate mt-0.5">Divisions</span>
+            </div>
+
+            <!-- Metric 3: Students & Capacity -->
+            <div class="px-1.5 flex flex-col items-center justify-center">
+              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Intake</span>
+              <span class="text-base font-black text-purple-700 mt-0.5">
+                {{ loadingClasses ? '—' : (totalEnrolledStudents + '/' + totalCampusCapacity) }}
+              </span>
+              <span class="text-[9px] text-slate-500 truncate mt-0.5">Students/Cap</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Desktop View (3 Distinct Cards) -->
+        <div class="hidden sm:grid sm:grid-cols-3 gap-4">
           <div class="p-5 rounded-3xl bg-white border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] flex items-center gap-4">
             <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center border border-indigo-100 shrink-0">
               <svg class="w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1300,7 +1327,24 @@ interface StaffMember {
       <div *ngIf="activeTab === 'ALUMNI'" class="space-y-4 sm:space-y-6">
         
         <!-- Alumni Metrics Summary Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        <!-- Mobile View (Single Merged Card) -->
+        <div class="sm:hidden p-4 rounded-3xl bg-white border border-slate-200/80 shadow-[4px_4px_12px_#e2e8f0,-4px_-4px_12px_#ffffff]">
+          <div class="grid grid-cols-2 divide-x divide-slate-100 text-center">
+            <div class="px-2 flex flex-col items-center justify-center">
+              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Alumni</span>
+              <span class="text-lg font-black text-slate-900 mt-0.5">{{ alumniList.length }}</span>
+              <span class="text-[10px] text-slate-500 mt-0.5">Graduated</span>
+            </div>
+            <div class="px-2 flex flex-col items-center justify-center">
+              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Batch</span>
+              <span class="text-sm font-black text-indigo-700 mt-0.5 tracking-tight whitespace-nowrap">{{ selectedGraduationSession !== 'ALL' ? selectedGraduationSession : (auth.activeSessionName() || '2028–2029') }}</span>
+              <span class="text-[10px] text-slate-500 whitespace-nowrap mt-0.5">{{ selectedGraduationSession !== 'ALL' ? 'Filtered Batch' : 'Active Session' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Desktop View (2 Distinct Cards) -->
+        <div class="hidden sm:grid sm:grid-cols-2 gap-3.5">
           <div class="p-4 bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#e2e8f0,-4px_-4px_12px_#ffffff] flex items-center gap-3.5">
             <div class="w-11 h-11 rounded-2xl bg-slate-100 text-slate-700 border border-slate-200/60 flex items-center justify-center shrink-0 shadow-2xs">
               <svg class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1317,61 +1361,50 @@ interface StaffMember {
           <div class="p-4 bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#e2e8f0,-4px_-4px_12px_#ffffff] flex items-center gap-3.5">
             <div class="w-11 h-11 rounded-2xl bg-slate-100 text-slate-700 border border-slate-200/60 flex items-center justify-center shrink-0 shadow-2xs">
               <svg class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-            </div>
-            <div class="min-w-0">
-              <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">Terminal Exit Grade</div>
-              <div class="text-xl font-black text-slate-900 mt-0.5">Class 12</div>
-            </div>
-          </div>
-
-          <div class="p-4 bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#e2e8f0,-4px_-4px_12px_#ffffff] flex items-center gap-3.5">
-            <div class="w-11 h-11 rounded-2xl bg-slate-100 text-slate-700 border border-slate-200/60 flex items-center justify-center shrink-0 shadow-2xs">
-              <svg class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
             <div class="min-w-0">
-              <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">Active Academic Session</div>
-              <div class="text-xl font-black text-slate-900 mt-0.5">{{ auth.activeSessionName() }}</div>
+              <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">{{ selectedGraduationSession !== 'ALL' ? 'Filtered Batch' : 'Active Academic Session' }}</div>
+              <div class="text-xl font-black text-slate-900 mt-0.5 truncate">{{ selectedGraduationSession !== 'ALL' ? selectedGraduationSession : auth.activeSessionName() }}</div>
             </div>
           </div>
         </div>
 
         <!-- Alumni Register Card with Claymorphic Table & Mobile Cards -->
         <div class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] overflow-hidden">
-          <div class="p-4 sm:px-6 sm:py-4 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 bg-[#f8fafc]">
+          <div class="p-3.5 sm:px-6 sm:py-4 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-[#f8fafc]">
             
-            <div class="flex items-center gap-3 flex-wrap">
-              <div class="flex items-center gap-2">
+            <div class="flex items-center justify-between sm:justify-start gap-2.5 flex-wrap">
+              <div class="flex items-center gap-1.5">
                 <h3 class="text-xs sm:text-sm font-black text-slate-900">
-                  Graduated Alumni Register
+                  Alumni Register
                 </h3>
                 <span class="text-[11px] text-slate-500 font-bold">({{ filteredAlumni.length }})</span>
               </div>
 
               <!-- Session filter dropdown -->
-              <div class="flex items-center gap-1.5 text-xs">
-                <span class="text-[11px] text-slate-400 font-semibold">Graduation Batch:</span>
+              <div class="flex items-center gap-1.5 text-xs ml-auto sm:ml-2">
+                <span class="text-[11px] text-slate-400 font-semibold hidden sm:inline">Batch:</span>
                 <select [(ngModel)]="selectedGraduationSession" (change)="alumniCurrentPage = 1"
-                        class="px-3 py-1 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-slate-800 shadow-xs cursor-pointer">
+                        class="px-2.5 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-slate-800 shadow-2xs cursor-pointer">
                   <option value="ALL">All Batches</option>
                   <option *ngFor="let s of availableGraduationSessions" [value]="s">{{ s }}</option>
                 </select>
               </div>
             </div>
 
-            <!-- Search filter & Export & Action Buttons -->
-            <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full lg:w-auto">
-              <div class="w-full sm:w-64">
-                <input type="text" [(ngModel)]="alumniSearchQuery" (input)="alumniCurrentPage = 1" placeholder="Search alumni name/adm..."
-                       class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-2xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-[inset_1px_1px_3px_#e2e8f0,inset_-1px_-1px_3px_#ffffff]" />
+            <!-- Search filter & Export Buttons -->
+            <div class="flex items-center gap-2 w-full lg:w-auto">
+              <div class="flex-1 sm:w-64">
+                <input type="text" [(ngModel)]="alumniSearchQuery" (input)="alumniCurrentPage = 1" placeholder="Search name, admission #..."
+                       class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-inner" />
               </div>
 
-              <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <div class="flex items-center gap-1.5 shrink-0">
                 <button (click)="exportAlumniCsv()" [disabled]="alumniList.length === 0"
-                        class="px-3.5 py-2 bg-[#f8fafc] hover:bg-white text-slate-700 border border-slate-300 rounded-2xl text-xs font-bold shadow-[2px_2px_6px_#d9e2ec,-2px_-2px_6px_#ffffff] flex items-center gap-1.5 transition-all flex-1 sm:flex-initial justify-center cursor-pointer disabled:opacity-40 active:scale-95">
+                        title="Export CSV"
+                        class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40 active:scale-95">
                   <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
@@ -1379,19 +1412,12 @@ interface StaffMember {
                 </button>
                 
                 <button (click)="printAlumniDirectory()" [disabled]="alumniList.length === 0"
-                        class="px-3.5 py-2 bg-[#f8fafc] hover:bg-white text-slate-700 border border-slate-300 rounded-2xl text-xs font-bold shadow-[2px_2px_6px_#d9e2ec,-2px_-2px_6px_#ffffff] flex items-center gap-1.5 transition-all flex-1 sm:flex-initial justify-center cursor-pointer disabled:opacity-40 active:scale-95">
+                        title="Print Directory"
+                        class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40 active:scale-95">
                   <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                   </svg>
                   <span>Print</span>
-                </button>
-
-                <button *ngIf="canManage" (click)="openAddAlumniModal()"
-                        class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95">
-                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                  </svg>
-                  <span>Add Alumni</span>
                 </button>
               </div>
             </div>
@@ -1573,72 +1599,60 @@ interface StaffMember {
             <div *ngFor="let al of paginatedAlumni"
                  class="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-[3px_3px_10px_#e2e8f0,-3px_-3px_10px_#ffffff] space-y-3">
               <div class="flex items-start justify-between gap-2">
-                <div (click)="viewStudentDetails(al, $event)" class="flex items-center gap-2.5 cursor-pointer">
-                  <div class="w-8 h-8 rounded-full bg-slate-900 text-white text-xs font-black flex items-center justify-center shrink-0">
+                <div (click)="viewStudentDetails(al, $event)" class="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer">
+                  <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 text-white text-xs font-black flex items-center justify-center shrink-0 shadow-xs">
                     {{ (al.full_name || al.first_name || 'A').charAt(0) }}
                   </div>
-                  <div>
-                    <h4 class="text-sm font-black text-slate-900">{{ al.full_name }}</h4>
-                    <div class="flex items-center gap-2 mt-0.5">
+                  <div class="min-w-0 flex-1">
+                    <h4 class="text-sm font-black text-slate-900 truncate">{{ al.full_name }}</h4>
+                    <div class="flex flex-wrap items-center gap-1.5 mt-0.5">
                       <span class="text-[11px] font-mono font-bold text-slate-700">Adm: {{ al.admission_number }}</span>
-                      <span class="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">ID: {{ al.alumni_number || 'ALU-REG' }}</span>
+                      <span class="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 truncate max-w-[140px]">ID: {{ al.alumni_number || 'ALU-REG' }}</span>
                     </div>
                   </div>
                 </div>
                 
-                <div class="flex items-center gap-1.5">
-                  <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
-                    ALUMNI
-                  </span>
-                  
-                  <!-- Mobile 3-Dot Button -->
-                  <button type="button" (click)="toggleAlumniMenu(al.student_id, $event)"
-                          class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center cursor-pointer">
-                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                      <circle cx="12" cy="5" r="2"/>
-                      <circle cx="12" cy="12" r="2"/>
-                      <circle cx="12" cy="19" r="2"/>
-                    </svg>
-                  </button>
-                </div>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
+                  ALUMNI
+                </span>
               </div>
 
-              <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
-                <div>
-                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Terminal Class</span>
-                  <span class="font-bold text-slate-800">{{ al.last_class_name || 'Class 12' }} - {{ formatSection(al.last_section_name) }}</span>
+              <div class="grid grid-cols-2 gap-2 pt-2.5 border-t border-slate-100 text-xs">
+                <div class="bg-slate-50/80 p-2.5 rounded-xl border border-slate-100">
+                  <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Terminal Class</span>
+                  <span class="font-bold text-slate-800 text-xs mt-0.5 block truncate">{{ al.last_class_name || 'Class 12' }} - {{ formatSection(al.last_section_name) }}</span>
                 </div>
-                <div>
-                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Passing Session</span>
-                  <span class="font-mono font-bold text-slate-700">{{ al.graduation_session || 'Graduated' }}</span>
+                <div class="bg-slate-50/80 p-2.5 rounded-xl border border-slate-100">
+                  <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Passing Session</span>
+                  <span class="font-mono font-bold text-indigo-700 text-xs mt-0.5 block truncate">{{ al.graduation_session || 'Graduated' }}</span>
                 </div>
               </div>
 
               <!-- Mobile Quick Actions Row -->
               <div class="pt-2 border-t border-slate-100 grid grid-cols-4 gap-1.5 text-center">
                 <button type="button" (click)="openAlumniJourneyModal(al, $event)"
-                        class="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 text-[10px] font-bold text-slate-700">
+                        class="py-1.5 px-1 bg-white hover:bg-slate-50 active:bg-slate-100 rounded-xl border border-slate-200 text-[10px] font-bold text-slate-700 shadow-2xs transition-all active:scale-95">
                   Logs
                 </button>
                 <button type="button" (click)="openTcModal(al, $event)"
-                        class="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 text-[10px] font-bold text-slate-700">
+                        class="py-1.5 px-1 bg-white hover:bg-slate-50 active:bg-slate-100 rounded-xl border border-slate-200 text-[10px] font-bold text-slate-700 shadow-2xs transition-all active:scale-95">
                   TC
                 </button>
                 <button type="button" (click)="openCharacterCertModal(al, $event)"
-                        class="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 text-[10px] font-bold text-slate-700">
+                        class="py-1.5 px-1 bg-white hover:bg-slate-50 active:bg-slate-100 rounded-xl border border-slate-200 text-[10px] font-bold text-slate-700 shadow-2xs transition-all active:scale-95">
                   Char Cert
                 </button>
                 <button type="button" (click)="openAlumniCertModal(al, $event)"
-                        class="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 text-[10px] font-bold text-slate-700">
+                        class="py-1.5 px-1 bg-white hover:bg-slate-50 active:bg-slate-100 rounded-xl border border-slate-200 text-[10px] font-bold text-slate-700 shadow-2xs transition-all active:scale-95">
                   Alumni Cert
                 </button>
               </div>
 
               <div *ngIf="al.primary_contact?.phone" class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                <span class="text-[11px] text-slate-400 font-semibold">
+                <span class="text-[11px] text-slate-400 font-semibold truncate">
                   Guardian: {{ al.primary_contact?.first_name }}
                 </span>
-                <a [href]="'tel:' + al.primary_contact?.phone" class="font-mono font-bold text-slate-700 hover:text-slate-900 flex items-center gap-1">
+                <a [href]="'tel:' + al.primary_contact?.phone" class="font-mono font-bold text-slate-700 hover:text-slate-900 flex items-center gap-1 shrink-0 ml-2">
                   <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
