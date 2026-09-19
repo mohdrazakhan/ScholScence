@@ -1961,6 +1961,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       children: [
         { id: 'timetable_student', label: 'Student / Class Timetable', route: '/timetable', queryParams: { type: 'student' } },
         { id: 'timetable_faculty', label: 'Faculty / Teacher Timetable', route: '/timetable', queryParams: { type: 'faculty' } },
+        { id: 'timetable_academic', label: 'Academic Year Timetable & Calendar', route: '/timetable', queryParams: { type: 'academic' } },
       ],
     },
     {

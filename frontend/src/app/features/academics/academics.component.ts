@@ -1698,24 +1698,24 @@ interface StaffMember {
         <!-- Faculty Directory Minimal Claymorphic Card Container -->
         <div class="bg-white/95 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-[6px_6px_20px_rgba(203,213,225,0.45),-4px_-4px_16px_rgba(255,255,255,0.9)] overflow-hidden">
           
-          <!-- Top Section: Status Gradient Tabs & Search/Action Bar -->
+          <!-- Top Section: Status Segmented Tabs & Search/Action Bar -->
           <div class="p-3.5 sm:p-5 border-b border-slate-100 bg-[#f8fafc]/90 space-y-3.5">
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               
-              <!-- Status Gradient Tabs (All / Active / Inactive) -->
-              <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none w-full lg:w-auto">
+              <!-- Status Claymorphic Segmented Filter Tabs (All / Active / Inactive) -->
+              <div class="inline-flex items-center p-1 bg-slate-100/90 border border-slate-200/80 rounded-2xl shadow-[inset_1px_1px_3px_#e2e8f0,inset_-1px_-1px_3px_#ffffff] gap-1 overflow-x-auto scrollbar-none shrink-0">
                 <!-- Tab: All Staff -->
                 <button (click)="staffStatusFilter = 'ALL'; staffCurrentPage = 1"
                         [ngClass]="staffStatusFilter === 'ALL'
-                          ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white shadow-[0_4px_14px_rgba(79,70,229,0.35)] border-indigo-500 scale-[1.02]'
-                          : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200/90 shadow-[2px_2px_6px_#e2e8f0,-2px_-2px_6px_#ffffff]'"
-                        class="px-3.5 py-2 rounded-2xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-2 shrink-0 active:scale-95">
-                  <svg class="w-4 h-4 shrink-0" [ngClass]="staffStatusFilter === 'ALL' ? 'text-white' : 'text-indigo-600'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          ? 'bg-white text-slate-900 shadow-[2px_2px_6px_#e2e8f0,-2px_-2px_6px_#ffffff] font-bold border border-slate-200/60'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border border-transparent font-medium'"
+                        class="px-3.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer flex items-center gap-2 shrink-0 active:scale-95">
+                  <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                   <span>All Staff</span>
-                  <span class="px-2 py-0.5 rounded-xl text-[11px] font-black font-mono"
-                        [ngClass]="staffStatusFilter === 'ALL' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'">
+                  <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold font-mono"
+                        [ngClass]="staffStatusFilter === 'ALL' ? 'bg-slate-100 text-slate-900' : 'bg-slate-200/60 text-slate-600'">
                     {{ staffList.length }}
                   </span>
                 </button>
@@ -1723,16 +1723,13 @@ interface StaffMember {
                 <!-- Tab: Active Staff -->
                 <button (click)="staffStatusFilter = 'ACTIVE'; staffCurrentPage = 1"
                         [ngClass]="staffStatusFilter === 'ACTIVE'
-                          ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-[0_4px_14px_rgba(16,185,129,0.35)] border-emerald-500 scale-[1.02]'
-                          : 'bg-white text-slate-700 hover:bg-emerald-50/50 hover:text-emerald-700 border-slate-200/90 shadow-[2px_2px_6px_#e2e8f0,-2px_-2px_6px_#ffffff]'"
-                        class="px-3.5 py-2 rounded-2xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-2 shrink-0 active:scale-95">
-                  <span class="relative flex h-2.5 w-2.5">
-                    <span *ngIf="staffStatusFilter === 'ACTIVE'" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2.5 w-2.5" [ngClass]="staffStatusFilter === 'ACTIVE' ? 'bg-white' : 'bg-emerald-500'"></span>
-                  </span>
+                          ? 'bg-white text-slate-900 shadow-[2px_2px_6px_#e2e8f0,-2px_-2px_6px_#ffffff] font-bold border border-slate-200/60'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border border-transparent font-medium'"
+                        class="px-3.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer flex items-center gap-2 shrink-0 active:scale-95">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                   <span>Active</span>
-                  <span class="px-2 py-0.5 rounded-xl text-[11px] font-black font-mono"
-                        [ngClass]="staffStatusFilter === 'ACTIVE' ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'">
+                  <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold font-mono"
+                        [ngClass]="staffStatusFilter === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-slate-200/60 text-slate-600'">
                     {{ activeStaffCount }}
                   </span>
                 </button>
@@ -1740,13 +1737,13 @@ interface StaffMember {
                 <!-- Tab: Inactive Staff -->
                 <button (click)="staffStatusFilter = 'INACTIVE'; staffCurrentPage = 1"
                         [ngClass]="staffStatusFilter === 'INACTIVE'
-                          ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-[0_4px_14px_rgba(244,63,94,0.35)] border-rose-500 scale-[1.02]'
-                          : 'bg-white text-slate-700 hover:bg-rose-50/50 hover:text-rose-700 border-slate-200/90 shadow-[2px_2px_6px_#e2e8f0,-2px_-2px_6px_#ffffff]'"
-                        class="px-3.5 py-2 rounded-2xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-2 shrink-0 active:scale-95">
-                  <span class="w-2.5 h-2.5 rounded-full" [ngClass]="staffStatusFilter === 'INACTIVE' ? 'bg-white' : 'bg-rose-500'"></span>
+                          ? 'bg-white text-slate-900 shadow-[2px_2px_6px_#e2e8f0,-2px_-2px_6px_#ffffff] font-bold border border-slate-200/60'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border border-transparent font-medium'"
+                        class="px-3.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer flex items-center gap-2 shrink-0 active:scale-95">
+                  <span class="w-2 h-2 rounded-full bg-slate-400"></span>
                   <span>Inactive</span>
-                  <span class="px-2 py-0.5 rounded-xl text-[11px] font-black font-mono"
-                        [ngClass]="staffStatusFilter === 'INACTIVE' ? 'bg-white/20 text-white' : 'bg-rose-50 text-rose-800 border border-rose-200/60'">
+                  <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold font-mono"
+                        [ngClass]="staffStatusFilter === 'INACTIVE' ? 'bg-rose-50 text-rose-700 border border-rose-200/60' : 'bg-slate-200/60 text-slate-600'">
                     {{ inactiveStaffCount }}
                   </span>
                 </button>
@@ -1760,8 +1757,8 @@ interface StaffMember {
                       <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </div>
-                  <input type="text" [(ngModel)]="staffSearchQuery" (input)="staffCurrentPage = 1" placeholder="Search staff name, role, email..."
-                         class="w-full pl-8 pr-8 py-2 bg-white border border-slate-300 rounded-2xl text-xs text-slate-900 focus:outline-none focus:border-indigo-500 shadow-[inset_1px_1px_3px_#e2e8f0,inset_-1px_-1px_3px_#ffffff]" />
+                  <input type="text" [(ngModel)]="staffSearchQuery" (input)="staffCurrentPage = 1" placeholder="Search name, role, email..."
+                         class="w-full pl-8 pr-8 py-1.5 bg-white border border-slate-200/90 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-400 shadow-[inset_1px_1px_3px_#e2e8f0,inset_-1px_-1px_3px_#ffffff] transition-all" />
                   <button *ngIf="staffSearchQuery" (click)="staffSearchQuery = ''; staffCurrentPage = 1"
                           class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs font-bold cursor-pointer">&times;</button>
                 </div>
@@ -1769,8 +1766,8 @@ interface StaffMember {
                 <div class="flex items-center gap-1.5 w-full sm:w-auto justify-end shrink-0">
                   <button (click)="exportStaffCsv()" [disabled]="staffList.length === 0"
                           title="Export Faculty CSV"
-                          class="px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300/90 rounded-2xl text-xs font-bold shadow-[2px_2px_5px_#e2e8f0,-2px_-2px_5px_#ffffff] flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 active:scale-95">
-                    <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 rounded-xl text-xs font-bold shadow-[2px_2px_5px_#e2e8f0,-2px_-2px_5px_#ffffff] flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 active:scale-95">
+                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
                     <span>CSV</span>
@@ -1778,8 +1775,8 @@ interface StaffMember {
                   
                   <button (click)="printStaffDirectory()" [disabled]="staffList.length === 0"
                           title="Print Faculty Directory"
-                          class="px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300/90 rounded-2xl text-xs font-bold shadow-[2px_2px_5px_#e2e8f0,-2px_-2px_5px_#ffffff] flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 active:scale-95">
-                    <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 rounded-xl text-xs font-bold shadow-[2px_2px_5px_#e2e8f0,-2px_-2px_5px_#ffffff] flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 active:scale-95">
+                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
                     <span>Print</span>
@@ -1788,70 +1785,70 @@ interface StaffMember {
               </div>
             </div>
 
-            <!-- Role Filter Chips Bar (Minimal Claymorphic Gradient Pills) -->
-            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full text-xs scrollbar-none">
+            <!-- Role Filter Chips Bar (Minimal Claymorphic Neutral Pills) -->
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full text-xs scrollbar-none pt-0.5">
               <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1 shrink-0">Role:</span>
               
               <!-- All Roles -->
               <button (click)="staffRoleFilter = 'ALL'; staffCurrentPage = 1"
                       [ngClass]="staffRoleFilter === 'ALL'
-                        ? 'bg-slate-900 text-white shadow-sm border-slate-900'
-                        : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200 shadow-2xs'"
-                      class="px-2.5 py-1 rounded-xl font-bold border transition-all cursor-pointer shrink-0 active:scale-95">
+                        ? 'bg-slate-900 text-white shadow-xs border-slate-900'
+                        : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-slate-200/80 shadow-[2px_2px_5px_#e2e8f0,-2px_-2px_5px_#ffffff]'"
+                      class="px-2.5 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer shrink-0 active:scale-95">
                 All Roles
               </button>
 
               <!-- Principals -->
               <button (click)="staffRoleFilter = 'PRINCIPAL'; staffCurrentPage = 1"
                       [ngClass]="staffRoleFilter === 'PRINCIPAL'
-                        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm border-transparent'
-                        : 'bg-white text-purple-900 hover:bg-purple-50 border-purple-200 shadow-2xs'"
-                      class="px-2.5 py-1 rounded-xl font-bold border transition-all cursor-pointer shrink-0 flex items-center gap-1.5 active:scale-95">
-                <svg class="w-3.5 h-3.5" [ngClass]="staffRoleFilter === 'PRINCIPAL' ? 'text-white' : 'text-purple-600'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        ? 'bg-slate-900 text-white shadow-xs border-slate-900'
+                        : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-slate-200/80 shadow-[2px_2px_5px_#e2e8f0,-2px_-2px_5px_#ffffff]'"
+                      class="px-2.5 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer shrink-0 flex items-center gap-1.5 active:scale-95">
+                <svg class="w-3.5 h-3.5" [ngClass]="staffRoleFilter === 'PRINCIPAL' ? 'text-white' : 'text-slate-500'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
                 </svg>
                 <span>Principals</span>
-                <span class="text-[10px] font-mono opacity-90">({{ principalsCount }})</span>
+                <span class="text-[10px] font-mono" [ngClass]="staffRoleFilter === 'PRINCIPAL' ? 'text-white/80' : 'text-slate-400'">({{ principalsCount }})</span>
               </button>
 
               <!-- School Admins -->
               <button (click)="staffRoleFilter = 'SCHOOL_ADMIN'; staffCurrentPage = 1"
                       [ngClass]="staffRoleFilter === 'SCHOOL_ADMIN'
-                        ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-sm border-transparent'
-                        : 'bg-white text-indigo-900 hover:bg-indigo-50 border-indigo-200 shadow-2xs'"
-                      class="px-2.5 py-1 rounded-xl font-bold border transition-all cursor-pointer shrink-0 flex items-center gap-1.5 active:scale-95">
-                <svg class="w-3.5 h-3.5" [ngClass]="staffRoleFilter === 'SCHOOL_ADMIN' ? 'text-white' : 'text-indigo-600'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        ? 'bg-slate-900 text-white shadow-xs border-slate-900'
+                        : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-slate-200/80 shadow-[2px_2px_5px_#e2e8f0,-2px_-2px_5px_#ffffff]'"
+                      class="px-2.5 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer shrink-0 flex items-center gap-1.5 active:scale-95">
+                <svg class="w-3.5 h-3.5" [ngClass]="staffRoleFilter === 'SCHOOL_ADMIN' ? 'text-white' : 'text-slate-500'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
                 <span>School Admins</span>
-                <span class="text-[10px] font-mono opacity-90">({{ adminsCount }})</span>
+                <span class="text-[10px] font-mono" [ngClass]="staffRoleFilter === 'SCHOOL_ADMIN' ? 'text-white/80' : 'text-slate-400'">({{ adminsCount }})</span>
               </button>
 
               <!-- Class Incharges -->
               <button (click)="staffRoleFilter = 'CLASS_TEACHER'; staffCurrentPage = 1"
                       [ngClass]="staffRoleFilter === 'CLASS_TEACHER'
-                        ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-sm border-transparent'
-                        : 'bg-white text-emerald-900 hover:bg-emerald-50 border-emerald-200 shadow-2xs'"
-                      class="px-2.5 py-1 rounded-xl font-bold border transition-all cursor-pointer shrink-0 flex items-center gap-1.5 active:scale-95">
-                <svg class="w-3.5 h-3.5" [ngClass]="staffRoleFilter === 'CLASS_TEACHER' ? 'text-white' : 'text-emerald-600'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        ? 'bg-slate-900 text-white shadow-xs border-slate-900'
+                        : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-slate-200/80 shadow-[2px_2px_5px_#e2e8f0,-2px_-2px_5px_#ffffff]'"
+                      class="px-2.5 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer shrink-0 flex items-center gap-1.5 active:scale-95">
+                <svg class="w-3.5 h-3.5" [ngClass]="staffRoleFilter === 'CLASS_TEACHER' ? 'text-white' : 'text-slate-500'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                 </svg>
                 <span>Class Incharges</span>
-                <span class="text-[10px] font-mono opacity-90">({{ classTeachersCount }})</span>
+                <span class="text-[10px] font-mono" [ngClass]="staffRoleFilter === 'CLASS_TEACHER' ? 'text-white/80' : 'text-slate-400'">({{ classTeachersCount }})</span>
               </button>
 
               <!-- Subject Teachers -->
               <button (click)="staffRoleFilter = 'TEACHER'; staffCurrentPage = 1"
                       [ngClass]="staffRoleFilter === 'TEACHER'
-                        ? 'bg-gradient-to-r from-blue-600 to-sky-600 text-white shadow-sm border-transparent'
-                        : 'bg-white text-blue-900 hover:bg-blue-50 border-blue-200 shadow-2xs'"
-                      class="px-2.5 py-1 rounded-xl font-bold border transition-all cursor-pointer shrink-0 flex items-center gap-1.5 active:scale-95">
-                <svg class="w-3.5 h-3.5" [ngClass]="staffRoleFilter === 'TEACHER' ? 'text-white' : 'text-blue-600'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        ? 'bg-slate-900 text-white shadow-xs border-slate-900'
+                        : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-slate-200/80 shadow-[2px_2px_5px_#e2e8f0,-2px_-2px_5px_#ffffff]'"
+                      class="px-2.5 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer shrink-0 flex items-center gap-1.5 active:scale-95">
+                <svg class="w-3.5 h-3.5" [ngClass]="staffRoleFilter === 'TEACHER' ? 'text-white' : 'text-slate-500'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
                 <span>Subject Teachers</span>
-                <span class="text-[10px] font-mono opacity-90">({{ teachersCount }})</span>
+                <span class="text-[10px] font-mono" [ngClass]="staffRoleFilter === 'TEACHER' ? 'text-white/80' : 'text-slate-400'">({{ teachersCount }})</span>
               </button>
             </div>
           </div>
@@ -2013,21 +2010,84 @@ interface StaffMember {
                     </span>
                   </td>
 
-                  <!-- Action Buttons -->
-                  <td class="px-6 py-3.5">
-                    <div *ngIf="canDeactivateStaff(staff)" class="flex items-center gap-1.5">
-                      <button *ngIf="(staff.status || 'ACTIVE').toUpperCase() === 'ACTIVE'"
-                              (click)="openToggleStaffStatus(staff, 'INACTIVE', $event)"
-                              class="px-2.5 py-1 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200 rounded-xl text-[11px] font-bold transition-all cursor-pointer shadow-2xs active:scale-95">
-                        Deactivate
+                  <!-- Action Buttons (Vertical 3-Dot Action Menu) -->
+                  <td class="px-6 py-3.5 text-right relative" (click)="$event.stopPropagation()">
+                    <div class="flex items-center justify-end gap-1">
+                      <!-- 3-Dot Action Button -->
+                      <button type="button" (click)="toggleStaffMenu(staff.id, $event)" title="Faculty Actions"
+                              class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer shadow-2xs active:scale-95">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <circle cx="12" cy="5" r="2"/>
+                          <circle cx="12" cy="12" r="2"/>
+                          <circle cx="12" cy="19" r="2"/>
+                        </svg>
                       </button>
-                      <button *ngIf="(staff.status || 'ACTIVE').toUpperCase() === 'INACTIVE'"
-                              (click)="openToggleStaffStatus(staff, 'ACTIVE', $event)"
-                              class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 border border-emerald-200 rounded-xl text-[11px] font-bold transition-all cursor-pointer shadow-2xs active:scale-95">
-                        Reactivate
-                      </button>
+
+                      <!-- Staff Dropdown Actions Menu (Fixed Floating Overlay) -->
+                      <div *ngIf="activeStaffMenuId === staff.id"
+                           [ngStyle]="staffMenuStyle"
+                           class="fixed w-56 bg-white rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.25)] border border-slate-200 py-1.5 z-[100] animate-fadeIn text-xs text-left">
+                        
+                        <!-- 1. View Full Profile -->
+                        <button type="button" (click)="openViewStaffProfile(staff, $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-slate-100">
+                          <svg class="w-4 h-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          <span>View Full Profile</span>
+                        </button>
+
+                        <!-- 2. Edit Details (Admin / Principal) -->
+                        <button *ngIf="canManage" type="button" (click)="openEditStaffModal(staff, $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-slate-100">
+                          <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          <span>Edit Details</span>
+                        </button>
+
+                        <!-- 3. View Weekly Routine / Timetable -->
+                        <button type="button" (click)="navigateToFacultyTimetable(staff, $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-slate-100">
+                          <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span>Weekly Routine</span>
+                        </button>
+
+                        <!-- 4. Deactivate / Reactivate Status Toggle -->
+                        <ng-container *ngIf="canDeactivateStaff(staff)">
+                          <button *ngIf="(staff.status || 'ACTIVE').toUpperCase() === 'ACTIVE'"
+                                  type="button" (click)="openToggleStaffStatus(staff, 'INACTIVE', $event); activeStaffMenuId = null"
+                                  class="w-full px-3.5 py-2 text-left font-bold text-amber-700 hover:bg-amber-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                            </svg>
+                            <span>Deactivate Faculty</span>
+                          </button>
+
+                          <button *ngIf="(staff.status || 'ACTIVE').toUpperCase() === 'INACTIVE'"
+                                  type="button" (click)="openToggleStaffStatus(staff, 'ACTIVE', $event); activeStaffMenuId = null"
+                                  class="w-full px-3.5 py-2 text-left font-bold text-emerald-700 hover:bg-emerald-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>Reactivate Faculty</span>
+                          </button>
+                        </ng-container>
+
+                        <!-- 5. Remove from Directory (Admin / Super Admin / Principal) -->
+                        <button *ngIf="canDeactivateStaff(staff)"
+                                type="button" (click)="confirmDeleteStaff(staff, $event)"
+                                class="w-full px-3.5 py-2 text-left font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 transition-colors cursor-pointer border-t border-slate-100">
+                          <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          <span>Remove from Directory</span>
+                        </button>
+                      </div>
                     </div>
-                    <span *ngIf="!canDeactivateStaff(staff)" class="text-slate-400 text-xs italic">Protected</span>
                   </td>
                 </tr>
 
@@ -2049,10 +2109,11 @@ interface StaffMember {
           <!-- VIEW 2: MOBILE CLAYMORPHIC CARDS VIEW (md:hidden) -->
           <div *ngIf="!loadingStaff" class="block md:hidden p-3.5 space-y-3">
             <div *ngFor="let staff of paginatedStaff"
-                 class="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-[3px_3px_10px_#e2e8f0,-3px_-3px_10px_#ffffff] space-y-3">
+                 class="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-[3px_3px_10px_#e2e8f0,-3px_-3px_10px_#ffffff] space-y-3 relative"
+                 [class.z-30]="activeStaffMenuId === staff.id">
               <div class="flex items-start justify-between gap-2">
-                <div class="flex items-center gap-2.5 min-w-0">
-                  <div class="w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs shrink-0 shadow-xs text-white overflow-hidden border border-slate-200"
+                <div class="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer" (click)="openViewStaffProfile(staff, $event)">
+                  <div class="w-10 h-10 rounded-2xl flex items-center justify-center font-black text-xs shrink-0 shadow-xs text-white overflow-hidden border border-slate-200"
                        [ngClass]="{
                          'bg-gradient-to-br from-purple-600 to-indigo-700': staff.role === 'PRINCIPAL',
                          'bg-gradient-to-br from-indigo-700 to-slate-900': staff.role === 'SCHOOL_ADMIN',
@@ -2062,29 +2123,98 @@ interface StaffMember {
                     <img *ngIf="staff.photoUrl || staff.avatarUrl" [src]="staff.photoUrl || staff.avatarUrl" class="w-full h-full object-cover" alt="Staff" />
                     <span *ngIf="!staff.photoUrl && !staff.avatarUrl">{{ staff.firstName.charAt(0) }}</span>
                   </div>
-                  <div class="min-w-0">
-                    <div class="flex items-center gap-1">
-                      <h4 class="text-xs font-black text-slate-900 truncate">{{ staff.fullName }}</h4>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <h4 class="text-xs font-black text-slate-900 truncate hover:text-indigo-600 transition-colors">{{ staff.fullName }}</h4>
                       <span *ngIf="auth.currentUser()?.id === staff.id" class="px-1 py-0.2 rounded bg-indigo-100 text-indigo-800 font-bold text-[8px]">YOU</span>
                     </div>
-                    <div class="text-[10px] text-slate-400 font-mono">ID: {{ staff.id.slice(0, 8) }}...</div>
+                    <div class="flex items-center gap-1.5 mt-0.5">
+                      <span class="px-2 py-0.5 rounded-lg text-[9px] font-extrabold border shadow-xs"
+                            [ngClass]="{
+                              'bg-purple-50 text-purple-700 border-purple-200': staff.role === 'PRINCIPAL',
+                              'bg-indigo-50 text-indigo-700 border-indigo-200': staff.role === 'SCHOOL_ADMIN',
+                              'bg-emerald-50 text-emerald-700 border-emerald-200': staff.role === 'CLASS_TEACHER' || staff.classTeacherSections?.length,
+                              'bg-blue-50 text-blue-700 border-blue-200': staff.role === 'TEACHER'
+                            }">
+                        {{ staff.role === 'PRINCIPAL' ? 'Principal' : (staff.role === 'SCHOOL_ADMIN' ? 'Admin' : (staff.classTeacherSections?.length ? 'Class Teacher' : 'Teacher')) }}
+                      </span>
+                      <span class="px-1.5 py-0.5 rounded-lg text-[8px] font-bold border"
+                            [ngClass]="(staff.status || 'ACTIVE').toUpperCase() === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'">
+                        {{ (staff.status || 'ACTIVE').toUpperCase() }}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div class="flex items-center gap-1 shrink-0">
-                  <span class="px-2 py-0.5 rounded-lg text-[10px] font-extrabold border shadow-xs"
-                        [ngClass]="{
-                          'bg-purple-50 text-purple-700 border-purple-200': staff.role === 'PRINCIPAL',
-                          'bg-indigo-50 text-indigo-700 border-indigo-200': staff.role === 'SCHOOL_ADMIN',
-                          'bg-emerald-50 text-emerald-700 border-emerald-200': staff.role === 'CLASS_TEACHER' || staff.classTeacherSections?.length,
-                          'bg-blue-50 text-blue-700 border-blue-200': staff.role === 'TEACHER'
-                        }">
-                    {{ staff.role === 'PRINCIPAL' ? 'Principal' : (staff.role === 'SCHOOL_ADMIN' ? 'Admin' : (staff.classTeacherSections?.length ? 'Class Teacher' : 'Teacher')) }}
-                  </span>
-                  <span class="px-2 py-0.5 rounded-lg text-[9px] font-bold border"
-                        [ngClass]="(staff.status || 'ACTIVE').toUpperCase() === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'">
-                    {{ (staff.status || 'ACTIVE').toUpperCase() }}
-                  </span>
+                <!-- Mobile 3-Dot Action Button -->
+                <div class="relative shrink-0" (click)="$event.stopPropagation()">
+                  <button type="button" (click)="toggleStaffMenu(staff.id, $event)" title="Staff Actions"
+                          class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer shadow-2xs active:scale-95">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <circle cx="12" cy="5" r="2"/>
+                      <circle cx="12" cy="12" r="2"/>
+                      <circle cx="12" cy="19" r="2"/>
+                    </svg>
+                  </button>
+
+                  <!-- Floating Dropdown Menu -->
+                  <div *ngIf="activeStaffMenuId === staff.id"
+                       [ngStyle]="staffMenuStyle"
+                       class="fixed w-52 bg-white rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.25)] border border-slate-200 py-1.5 z-[100] animate-fadeIn text-xs text-left">
+                    <button type="button" (click)="openViewStaffProfile(staff, $event)"
+                            class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-slate-100">
+                      <svg class="w-4 h-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      <span>View Full Profile</span>
+                    </button>
+
+                    <button *ngIf="canManage" type="button" (click)="openEditStaffModal(staff, $event)"
+                            class="w-full px-3.5 py-2 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-slate-100">
+                      <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      <span>Edit Details</span>
+                    </button>
+
+                    <button type="button" (click)="navigateToFacultyTimetable(staff, $event)"
+                            class="w-full px-3.5 py-2 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-slate-100">
+                      <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span>Weekly Routine</span>
+                    </button>
+
+                    <ng-container *ngIf="canDeactivateStaff(staff)">
+                      <button *ngIf="(staff.status || 'ACTIVE').toUpperCase() === 'ACTIVE'"
+                              type="button" (click)="openToggleStaffStatus(staff, 'INACTIVE', $event); activeStaffMenuId = null"
+                              class="w-full px-3.5 py-2 text-left font-bold text-amber-700 hover:bg-amber-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                        <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                        </svg>
+                        <span>Deactivate Faculty</span>
+                      </button>
+
+                      <button *ngIf="(staff.status || 'ACTIVE').toUpperCase() === 'INACTIVE'"
+                              type="button" (click)="openToggleStaffStatus(staff, 'ACTIVE', $event); activeStaffMenuId = null"
+                              class="w-full px-3.5 py-2 text-left font-bold text-emerald-700 hover:bg-emerald-50 flex items-center gap-2.5 transition-colors cursor-pointer">
+                        <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Reactivate Faculty</span>
+                      </button>
+                    </ng-container>
+
+                    <button *ngIf="canDeactivateStaff(staff)"
+                            type="button" (click)="confirmDeleteStaff(staff, $event)"
+                            class="w-full px-3.5 py-2 text-left font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 transition-colors cursor-pointer border-t border-slate-100">
+                      <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <span>Remove from Directory</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -2152,17 +2282,19 @@ interface StaffMember {
                 </div>
               </div>
 
-              <!-- Mobile Actions Footer for Staff -->
-              <div *ngIf="canDeactivateStaff(staff)" class="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
-                <button *ngIf="(staff.status || 'ACTIVE').toUpperCase() === 'ACTIVE'"
-                        (click)="openToggleStaffStatus(staff, 'INACTIVE', $event)"
-                        class="px-3 py-1 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                  Deactivate Staff
+              <!-- Quick Action Bar in Mobile Card Footer -->
+              <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+                <button type="button" (click)="openViewStaffProfile(staff, $event)"
+                        class="flex-1 py-1.5 px-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-[11px] font-bold border border-slate-200 text-center transition-colors cursor-pointer shadow-2xs active:scale-95">
+                  Profile
                 </button>
-                <button *ngIf="(staff.status || 'ACTIVE').toUpperCase() === 'INACTIVE'"
-                        (click)="openToggleStaffStatus(staff, 'ACTIVE', $event)"
-                        class="px-3 py-1 bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                  Reactivate Staff
+                <button *ngIf="canManage" type="button" (click)="openEditStaffModal(staff, $event)"
+                        class="flex-1 py-1.5 px-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-[11px] font-bold border border-indigo-200 text-center transition-colors cursor-pointer shadow-2xs active:scale-95">
+                  Edit
+                </button>
+                <button type="button" (click)="navigateToFacultyTimetable(staff, $event)"
+                        class="py-1.5 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-[11px] font-bold border border-blue-200 text-center transition-colors cursor-pointer shadow-2xs active:scale-95">
+                  Routine
                 </button>
               </div>
             </div>
@@ -3204,6 +3336,509 @@ interface StaffMember {
                     class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95">
               <span *ngIf="!savingStaff">Register Staff</span>
               <span *ngIf="savingStaff">Saving...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- ============================================================== -->
+      <!-- MODAL: VIEW FACULTY / STAFF FULL PROFILE                       -->
+      <!-- ============================================================== -->
+      <div *ngIf="showStaffProfileModal && selectedStaffProfile" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[70] animate-fadeIn">
+        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" (click)="closeStaffProfileModal()"></div>
+        <div class="bg-white rounded-3xl max-w-2xl w-full flex flex-col max-h-[90vh] sm:max-h-[92vh] shadow-[0_25px_60px_rgba(0,0,0,0.25)] border border-slate-200/90 overflow-hidden animate-scaleUp z-10">
+          
+          <!-- Clean Minimal Header -->
+          <div class="p-5 sm:px-6 py-4.5 border-b border-slate-100 bg-white flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3.5 min-w-0">
+              <div class="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center font-black text-lg shrink-0 overflow-hidden border border-slate-200 shadow-2xs"
+                   [ngClass]="{
+                     'bg-purple-50 text-purple-700': selectedStaffProfile.role === 'PRINCIPAL',
+                     'bg-indigo-50 text-indigo-700': selectedStaffProfile.role === 'SCHOOL_ADMIN',
+                     'bg-emerald-50 text-emerald-700': selectedStaffProfile.role === 'CLASS_TEACHER' || selectedStaffProfile.classTeacherSections?.length,
+                     'bg-blue-50 text-blue-700': selectedStaffProfile.role === 'TEACHER'
+                   }">
+                <img *ngIf="selectedStaffProfile.photoUrl || selectedStaffProfile.avatarUrl" [src]="selectedStaffProfile.photoUrl || selectedStaffProfile.avatarUrl" class="w-full h-full object-cover" alt="Faculty Avatar" />
+                <span *ngIf="!selectedStaffProfile.photoUrl && !selectedStaffProfile.avatarUrl">{{ selectedStaffProfile.firstName.charAt(0) }}</span>
+              </div>
+              <div class="space-y-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3 class="text-base sm:text-lg font-black tracking-tight text-slate-900 truncate">{{ selectedStaffProfile.fullName }}</h3>
+                  <span class="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border shadow-2xs"
+                        [ngClass]="(selectedStaffProfile.status || 'ACTIVE').toUpperCase() === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'">
+                    {{ (selectedStaffProfile.status || 'ACTIVE').toUpperCase() }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap text-xs">
+                  <span class="px-2 py-0.5 rounded-lg text-[10px] font-extrabold border shadow-2xs"
+                        [ngClass]="{
+                          'bg-purple-50 text-purple-700 border-purple-200': selectedStaffProfile.role === 'PRINCIPAL',
+                          'bg-indigo-50 text-indigo-700 border-indigo-200': selectedStaffProfile.role === 'SCHOOL_ADMIN',
+                          'bg-emerald-50 text-emerald-700 border-emerald-200': selectedStaffProfile.role === 'CLASS_TEACHER' || selectedStaffProfile.classTeacherSections?.length,
+                          'bg-blue-50 text-blue-700 border-blue-200': selectedStaffProfile.role === 'TEACHER'
+                        }">
+                    {{ selectedStaffProfile.role === 'PRINCIPAL' ? 'Principal' : (selectedStaffProfile.role === 'SCHOOL_ADMIN' ? 'School Admin' : (selectedStaffProfile.classTeacherSections?.length ? 'Class Teacher' : 'Teacher')) }}
+                  </span>
+                  <span *ngIf="selectedStaffProfile.department" class="text-slate-500 text-[11px] font-medium">
+                    Dept: {{ selectedStaffProfile.department }}
+                  </span>
+                </div>
+                <div class="text-[10px] text-slate-400 font-mono">Employee ID: {{ selectedStaffProfile.id }}</div>
+              </div>
+            </div>
+            <button (click)="closeStaffProfileModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer shrink-0">&times;</button>
+          </div>
+
+          <!-- Modal Scrollable Content -->
+          <div class="p-5 sm:px-6 py-5 space-y-5 text-xs overflow-y-auto flex-1 custom-clay-scroll bg-white">
+            
+            <!-- 1. Contact & Identity Grid -->
+            <div>
+              <div class="p-2.5 bg-slate-100/70 border border-slate-200 rounded-xl text-slate-800 font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5 mb-3">
+                <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span>1. Contact & Identity</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="p-3.5 bg-[#f8fafc] rounded-2xl border border-slate-200/80 space-y-1">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Email Address</div>
+                  <a [href]="'mailto:' + selectedStaffProfile.email" class="text-xs font-bold text-slate-900 hover:text-indigo-600 hover:underline flex items-center gap-1.5 transition-colors">
+                    <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <span class="truncate">{{ selectedStaffProfile.email }}</span>
+                  </a>
+                </div>
+
+                <div class="p-3.5 bg-[#f8fafc] rounded-2xl border border-slate-200/80 space-y-1">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Phone Number</div>
+                  <div class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                    <a *ngIf="selectedStaffProfile.phone" [href]="'tel:' + selectedStaffProfile.phone" class="hover:text-indigo-600 font-mono">{{ selectedStaffProfile.phone }}</a>
+                    <span *ngIf="!selectedStaffProfile.phone" class="text-slate-400 font-normal">Not Provided</span>
+                  </div>
+                </div>
+
+                <div class="p-3.5 bg-[#f8fafc] rounded-2xl border border-slate-200/80 space-y-1">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Gender & Blood Group</div>
+                  <div class="text-xs font-bold text-slate-900 flex items-center gap-2">
+                    <span>{{ selectedStaffProfile.gender ? (selectedStaffProfile.gender === 'MALE' ? 'Male' : (selectedStaffProfile.gender === 'FEMALE' ? 'Female' : selectedStaffProfile.gender)) : '—' }}</span>
+                    <span *ngIf="selectedStaffProfile.bloodGroup" class="px-2 py-0.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold">
+                      Blood: {{ selectedStaffProfile.bloodGroup }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="p-3.5 bg-[#f8fafc] rounded-2xl border border-slate-200/80 space-y-1">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date of Birth (DOB)</div>
+                  <div class="text-xs font-bold text-slate-900 font-mono">
+                    {{ selectedStaffProfile.dateOfBirth || selectedStaffProfile.dob || '—' }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Address -->
+              <div *ngIf="selectedStaffProfile.address" class="mt-3 p-3.5 bg-[#f8fafc] rounded-2xl border border-slate-200/80 space-y-1">
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Residential Address</div>
+                <div class="text-xs text-slate-800 font-medium leading-relaxed">{{ selectedStaffProfile.address }}</div>
+              </div>
+            </div>
+
+            <!-- 2. Academic & Teaching Role Details -->
+            <div>
+              <div class="p-2.5 bg-slate-100/70 border border-slate-200 rounded-xl text-slate-800 font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5 mb-3">
+                <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                </svg>
+                <span>2. Professional Credentials & Experience</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="p-3.5 bg-[#f8fafc] rounded-2xl border border-slate-200/80 space-y-1">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Qualification</div>
+                  <div class="text-xs font-bold text-slate-900">{{ selectedStaffProfile.qualification || '—' }}</div>
+                </div>
+
+                <div class="p-3.5 bg-[#f8fafc] rounded-2xl border border-slate-200/80 space-y-1">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Experience</div>
+                  <div class="text-xs font-bold text-slate-900">{{ selectedStaffProfile.experience || '—' }}</div>
+                </div>
+
+                <div class="p-3.5 bg-[#f8fafc] rounded-2xl border border-slate-200/80 space-y-1">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Joining Date</div>
+                  <div class="text-xs font-bold text-slate-900 font-mono">{{ selectedStaffProfile.joiningDate || '—' }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Class Teacher & Subject Allocations -->
+            <div>
+              <div class="p-2.5 bg-slate-100/70 border border-slate-200 rounded-xl text-slate-800 font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5 mb-3">
+                <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <span>3. Class Incharge & Teaching Allocations</span>
+              </div>
+              <div class="space-y-3">
+                <!-- Class Teacher incharge sections -->
+                <div class="p-3.5 bg-[#f8fafc] rounded-2xl border border-slate-200/80 space-y-2">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Class Teacher Incharge of:</div>
+                  <div *ngIf="selectedStaffProfile.classTeacherSections && selectedStaffProfile.classTeacherSections.length > 0" class="flex flex-wrap gap-2">
+                    <span *ngFor="let cts of selectedStaffProfile.classTeacherSections"
+                          class="px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs">
+                      <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>{{ cts.className }} - {{ cts.sectionName }}</span>
+                    </span>
+                  </div>
+                  <div *ngIf="!selectedStaffProfile.classTeacherSections || selectedStaffProfile.classTeacherSections.length === 0" class="text-slate-400 italic text-xs">
+                    No class incharge assigned.
+                  </div>
+                </div>
+
+                <!-- Subject assignments -->
+                <div class="p-3.5 bg-[#f8fafc] rounded-2xl border border-slate-200/80 space-y-2">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assigned Subjects:</div>
+                  <div *ngIf="selectedStaffProfile.subjectAssignments && selectedStaffProfile.subjectAssignments.length > 0" class="flex flex-wrap gap-2">
+                    <span *ngFor="let sa of selectedStaffProfile.subjectAssignments"
+                          class="px-2.5 py-1 bg-white text-slate-800 border border-slate-200 rounded-xl text-xs font-semibold shadow-2xs">
+                      {{ sa.subjectName }} ({{ sa.className }}-{{ sa.sectionName }})
+                    </span>
+                  </div>
+                  <div *ngIf="!selectedStaffProfile.subjectAssignments || selectedStaffProfile.subjectAssignments.length === 0" class="text-slate-400 italic text-xs">
+                    No subjects allocated.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. Emergency Contact Info -->
+            <div *ngIf="selectedStaffProfile.emergencyContactName || selectedStaffProfile.emergencyContactPhone">
+              <div class="p-2.5 bg-slate-100/70 border border-slate-200 rounded-xl text-slate-800 font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5 mb-3">
+                <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span>4. Emergency Contact</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="p-3.5 bg-[#f8fafc] rounded-2xl border border-slate-200/80 space-y-1">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Contact Person</div>
+                  <div class="text-xs font-bold text-slate-900">{{ selectedStaffProfile.emergencyContactName || '—' }}</div>
+                </div>
+                <div class="p-3.5 bg-[#f8fafc] rounded-2xl border border-slate-200/80 space-y-1">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Emergency Phone</div>
+                  <a *ngIf="selectedStaffProfile.emergencyContactPhone" [href]="'tel:' + selectedStaffProfile.emergencyContactPhone" class="text-xs font-bold text-slate-900 font-mono hover:text-indigo-600 hover:underline">
+                    {{ selectedStaffProfile.emergencyContactPhone }}
+                  </a>
+                  <div *ngIf="!selectedStaffProfile.emergencyContactPhone" class="text-xs text-slate-400">—</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Modal Footer Actions -->
+          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-between gap-2.5 shrink-0">
+            <button type="button" (click)="navigateToFacultyTimetable(selectedStaffProfile)"
+                    class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95">
+              <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span>Weekly Routine</span>
+            </button>
+
+            <div class="flex items-center gap-2">
+              <button *ngIf="canManage" type="button" (click)="openEditStaffModal(selectedStaffProfile)"
+                      class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5 active:scale-95">
+                <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span>Edit Details</span>
+              </button>
+
+              <button (click)="closeStaffProfileModal()" class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs active:scale-95">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- MODAL: EDIT FACULTY / STAFF DETAILS                            -->
+      <!-- ============================================================== -->
+      <div *ngIf="showEditStaffModal" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[75] animate-fadeIn">
+        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" (click)="closeEditStaffModal()"></div>
+        <div class="bg-white rounded-3xl max-w-2xl w-full flex flex-col max-h-[90vh] sm:max-h-[92vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp z-10">
+          
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center shrink-0 shadow-xs">
+                <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight">Edit Faculty Details</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Update staff personal details, role designation, and qualifications.</p>
+              </div>
+            </div>
+            <button (click)="closeEditStaffModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+          </div>
+
+          <div class="p-5 sm:px-6 py-4 space-y-4 text-xs overflow-y-auto flex-1 custom-clay-scroll bg-white">
+            <!-- Staff Photo Upload Card -->
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex items-center gap-3.5">
+              <div class="w-14 h-14 rounded-2xl bg-white border border-slate-300 flex items-center justify-center shrink-0 overflow-hidden shadow-inner relative group">
+                <img *ngIf="editStaffForm.photoUrl" [src]="editStaffForm.photoUrl" class="w-full h-full object-cover" alt="Faculty Preview" />
+                <span *ngIf="!editStaffForm.photoUrl" class="text-base font-black text-slate-400">
+                  {{ (editStaffForm.firstName || 'T').charAt(0).toUpperCase() }}
+                </span>
+                <label class="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity text-[10px] font-bold">
+                  <span>{{ editStaffForm.photoUrl ? 'Change' : 'Upload' }}</span>
+                  <input type="file" accept="image/*" (change)="onEditStaffPhotoSelected($event)" class="hidden" />
+                </label>
+              </div>
+              <div class="flex-1 space-y-1">
+                <div class="flex items-center gap-2">
+                  <label [class.opacity-50]="uploadingEditStaffPhoto"
+                         class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-xl text-[11px] font-bold transition-all cursor-pointer shadow-2xs inline-flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    </svg>
+                    <span>{{ uploadingEditStaffPhoto ? 'Optimizing...' : (editStaffForm.photoUrl ? 'Change Faculty Photo' : 'Upload Faculty Photo') }}</span>
+                    <input type="file" accept="image/*" (change)="onEditStaffPhotoSelected($event)" [disabled]="uploadingEditStaffPhoto" class="hidden" />
+                  </label>
+                  <button *ngIf="editStaffForm.photoUrl" type="button" (click)="removeEditStaffPhoto()"
+                          class="px-2.5 py-1.5 text-rose-600 hover:bg-rose-50 text-[11px] font-bold rounded-xl border border-rose-200 transition-colors">
+                    Remove
+                  </button>
+                </div>
+                <p class="text-[10px] text-slate-400">Official profile picture for faculty directory, class assignments, and student timetable.</p>
+              </div>
+            </div>
+
+            <!-- SECTION 1: Basic Identity & Role -->
+            <div class="p-2.5 bg-slate-100/70 border border-slate-200 rounded-xl text-slate-800 font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span>1. Basic Identity & Role</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">First Name *</label>
+                <input type="text" [(ngModel)]="editStaffForm.firstName" placeholder="e.g. Vikram"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Last Name</label>
+                <input type="text" [(ngModel)]="editStaffForm.lastName" placeholder="e.g. Malhotra"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Role Designation *</label>
+                <select [(ngModel)]="editStaffForm.role"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
+                  <option value="TEACHER">Teacher / Faculty</option>
+                  <option value="CLASS_TEACHER">Class Teacher</option>
+                  <option value="PRINCIPAL">Principal</option>
+                  <option value="SCHOOL_ADMIN">School Admin</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Primary Subject Specialization</label>
+                <select [(ngModel)]="editStaffForm.primarySubjectId"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
+                  <option value="">-- General / Subject Specialist --</option>
+                  <option *ngFor="let sub of subjects" [value]="sub.id">
+                    {{ sub.name }} ({{ sub.code }})
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Phone Number</label>
+                <input type="text" [(ngModel)]="editStaffForm.phone" placeholder="+91 98765 43210"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Email Address</label>
+                <input type="email" [value]="editStaffForm.email" disabled
+                       class="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-2xl text-xs text-slate-500 cursor-not-allowed shadow-inner" />
+              </div>
+            </div>
+
+            <!-- SECTION 2: Personal & Biographical Details -->
+            <div class="p-2.5 bg-slate-100/70 border border-slate-200 rounded-xl text-slate-800 font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5 mt-3">
+              <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+              </svg>
+              <span>2. Personal & Biographical Details</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Gender</label>
+                <select [(ngModel)]="editStaffForm.gender"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
+                  <option value="MALE">Male</option>
+                  <option value="FEMALE">Female</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Date of Birth (DOB)</label>
+                <input type="date" [(ngModel)]="editStaffForm.dateOfBirth"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Blood Group</label>
+                <select [(ngModel)]="editStaffForm.bloodGroup"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
+                  <option value="">-- Select --</option>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- SECTION 3: Professional Qualifications & Experience -->
+            <div class="p-2.5 bg-slate-100/70 border border-slate-200 rounded-xl text-slate-800 font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5 mt-3">
+              <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+              </svg>
+              <span>3. Professional Qualifications & Background</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Highest Qualification / Degree</label>
+                <input type="text" [(ngModel)]="editStaffForm.qualification" placeholder="e.g. M.Sc Mathematics, B.Ed"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Teaching Experience</label>
+                <input type="text" [(ngModel)]="editStaffForm.experience" placeholder="e.g. 5 Years, 8+ Years"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Date of Joining</label>
+                <input type="date" [(ngModel)]="editStaffForm.joiningDate"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Department / Division</label>
+                <input type="text" [(ngModel)]="editStaffForm.department" placeholder="e.g. Science & Maths / Senior Wing"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+            </div>
+
+            <!-- SECTION 4: Residential Address & Emergency Contact -->
+            <div class="p-2.5 bg-slate-100/70 border border-slate-200 rounded-xl text-slate-800 font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5 mt-3">
+              <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span>4. Residential Address & Emergency Contact</span>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Residential / Contact Address</label>
+              <textarea [(ngModel)]="editStaffForm.address" rows="2" placeholder="e.g. Flat 402, Lotus Tower, Civil Lines, New Delhi - 110054"
+                        class="w-full px-3.5 py-2 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner resize-none"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Emergency Contact Person</label>
+                <input type="text" [(ngModel)]="editStaffForm.emergencyContactName" placeholder="e.g. Spouse / Parent Name"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Emergency Contact Phone</label>
+                <input type="text" [(ngModel)]="editStaffForm.emergencyContactPhone" placeholder="+91 98111 22233"
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              </div>
+            </div>
+
+            <div *ngIf="editStaffModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+              {{ editStaffModalError }}
+            </div>
+          </div>
+
+          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
+            <button (click)="closeEditStaffModal()" class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs active:scale-95">
+              Cancel
+            </button>
+            <button (click)="saveEditStaff()" [disabled]="savingStaffEdit"
+                    class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-xs transition-all disabled:opacity-50 cursor-pointer active:scale-95 flex items-center gap-1.5">
+              <span *ngIf="!savingStaffEdit">Save Changes</span>
+              <span *ngIf="savingStaffEdit">Saving...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- MODAL: DELETE / REMOVE FACULTY CONFIRMATION                    -->
+      <!-- ============================================================== -->
+      <div *ngIf="showDeleteStaffModal && staffToDelete" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[80] animate-fadeIn">
+        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" (click)="closeDeleteStaffModal()"></div>
+        <div class="bg-white rounded-3xl max-w-md w-full flex flex-col shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp z-10">
+          
+          <div class="p-6 text-center space-y-3">
+            <div class="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center mx-auto shadow-inner">
+              <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </div>
+            
+            <h3 class="text-base font-black text-slate-900 tracking-tight">Remove Faculty Member?</h3>
+            <p class="text-xs text-slate-500 leading-relaxed">
+              Are you sure you want to remove <strong class="text-slate-900">{{ staffToDelete.fullName }}</strong> ({{ staffToDelete.email }}) from the school directory?
+            </p>
+            <div class="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-[11px] text-amber-800 text-left">
+              <strong>Notice:</strong> This will detach the faculty member from active class teacher and subject assignments in your school.
+            </div>
+          </div>
+
+          <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
+            <button (click)="closeDeleteStaffModal()" class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
+              Cancel
+            </button>
+            <button (click)="executeDeleteStaff()" [disabled]="deletingStaff"
+                    class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95 flex items-center gap-1.5">
+              <span *ngIf="!deletingStaff">Confirm Removal</span>
+              <span *ngIf="deletingStaff">Removing...</span>
             </button>
           </div>
         </div>
@@ -5586,6 +6221,39 @@ export class AcademicsComponent implements OnInit {
   staffRoleFilter: 'ALL' | 'PRINCIPAL' | 'SCHOOL_ADMIN' | 'CLASS_TEACHER' | 'TEACHER' = 'ALL';
   staffCurrentPage = 1;
   staffPageSize = 25;
+
+  // Staff 3-Dot Actions & Profile/Edit State
+  activeStaffMenuId: string | null = null;
+  staffMenuStyle: { [key: string]: string } = {};
+  showStaffProfileModal = false;
+  selectedStaffProfile: StaffMember | null = null;
+  showEditStaffModal = false;
+  editingStaffId: string | null = null;
+  editStaffForm: any = {
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    photoUrl: '',
+    role: 'TEACHER',
+    primarySubjectId: '',
+    gender: 'MALE',
+    dateOfBirth: '',
+    qualification: '',
+    experience: '',
+    joiningDate: '',
+    bloodGroup: '',
+    address: '',
+    emergencyContactName: '',
+    emergencyContactPhone: '',
+    department: '',
+  };
+  savingStaffEdit = false;
+  editStaffModalError = '';
+  uploadingEditStaffPhoto = false;
+  showDeleteStaffModal = false;
+  staffToDelete: StaffMember | null = null;
+  deletingStaff = false;
 
   get teachersList(): StaffMember[] {
     return (this.staffList || []).filter(
@@ -8795,6 +9463,188 @@ export class AcademicsComponent implements OnInit {
     });
   }
 
+  // --- Staff 3-Dot Actions & Profile/Edit Modal Handlers ---
+  toggleStaffMenu(staffId: string, event: Event) {
+    event.stopPropagation();
+    if (this.activeStaffMenuId === staffId) {
+      this.activeStaffMenuId = null;
+      return;
+    }
+
+    const btn = (event.currentTarget || event.target) as HTMLElement;
+    if (btn && typeof btn.getBoundingClientRect === 'function') {
+      const rect = btn.getBoundingClientRect();
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const rightPos = Math.max(12, viewportWidth - rect.right);
+
+      const styleObj: { [key: string]: string } = {
+        right: `${rightPos}px`,
+      };
+
+      if (spaceBelow < 250 && spaceAbove > 200) {
+        styleObj['bottom'] = `${viewportHeight - rect.top + 6}px`;
+      } else {
+        styleObj['top'] = `${rect.bottom + 6}px`;
+      }
+
+      this.staffMenuStyle = styleObj;
+    } else {
+      this.staffMenuStyle = {};
+    }
+
+    this.activeStaffMenuId = staffId;
+    this.activeStudentMenuId = null;
+    this.activeClassMenuId = null;
+    this.activeSectionMenuId = null;
+    this.activeAlumniMenuId = null;
+  }
+
+  openViewStaffProfile(staff: StaffMember, event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeStaffMenuId = null;
+    this.selectedStaffProfile = staff;
+    this.modalService.open('STAFF_PROFILE_MODAL');
+    this.showStaffProfileModal = true;
+  }
+
+  closeStaffProfileModal() {
+    this.modalService.close();
+    this.showStaffProfileModal = false;
+    this.selectedStaffProfile = null;
+  }
+
+  navigateToFacultyTimetable(staff: StaffMember, event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeStaffMenuId = null;
+    this.router.navigate(['/timetable'], { queryParams: { type: 'faculty', staffId: staff.id } });
+  }
+
+  openEditStaffModal(staff: StaffMember, event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeStaffMenuId = null;
+    this.editingStaffId = staff.id;
+    this.editStaffForm = {
+      firstName: staff.firstName || staff.fullName?.split(' ')[0] || '',
+      lastName: staff.lastName || (staff.fullName?.includes(' ') ? staff.fullName.substring(staff.fullName.indexOf(' ') + 1) : ''),
+      email: staff.email || '',
+      phone: staff.phone || '',
+      photoUrl: staff.photoUrl || staff.avatarUrl || '',
+      role: staff.role || 'TEACHER',
+      primarySubjectId: staff.primarySubjectId || '',
+      gender: staff.gender || 'MALE',
+      dateOfBirth: staff.dateOfBirth || staff.dob || '',
+      qualification: staff.qualification || '',
+      experience: staff.experience || '',
+      joiningDate: staff.joiningDate || '',
+      bloodGroup: staff.bloodGroup || '',
+      address: staff.address || '',
+      emergencyContactName: staff.emergencyContactName || '',
+      emergencyContactPhone: staff.emergencyContactPhone || '',
+      department: staff.department || '',
+    };
+    this.editStaffModalError = '';
+    this.modalService.open('EDIT_STAFF_MODAL');
+    this.showEditStaffModal = true;
+  }
+
+  closeEditStaffModal() {
+    this.modalService.close();
+    this.showEditStaffModal = false;
+    this.editingStaffId = null;
+  }
+
+  async onEditStaffPhotoSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    try {
+      this.uploadingEditStaffPhoto = true;
+      const url = await this.imageUploadService.processAndUploadImage(file, 'staff', 600, 600, 0.85);
+      this.editStaffForm.photoUrl = url;
+      this.toast.success('Faculty photo updated successfully.');
+    } catch (err: any) {
+      this.toast.error(err.message || 'Failed to upload faculty photo.');
+    } finally {
+      this.uploadingEditStaffPhoto = false;
+      input.value = '';
+    }
+  }
+
+  removeEditStaffPhoto() {
+    this.editStaffForm.photoUrl = '';
+  }
+
+  saveEditStaff() {
+    if (!this.editStaffForm.firstName?.trim()) {
+      this.editStaffModalError = 'First name is required.';
+      return;
+    }
+    if (!this.editingStaffId) return;
+
+    this.savingStaffEdit = true;
+    this.editStaffModalError = '';
+
+    this.api.patch(`academics/staff/${this.editingStaffId}`, this.editStaffForm).subscribe({
+      next: (res: any) => {
+        this.savingStaffEdit = false;
+        this.toast.success('Faculty details updated successfully!');
+        
+        if (this.selectedStaffProfile && this.selectedStaffProfile.id === this.editingStaffId) {
+          Object.assign(this.selectedStaffProfile, {
+            ...this.editStaffForm,
+            fullName: `${this.editStaffForm.firstName} ${this.editStaffForm.lastName || ''}`.trim()
+          });
+        }
+        
+        this.closeEditStaffModal();
+        this.loadStaffList();
+      },
+      error: (err) => {
+        this.savingStaffEdit = false;
+        this.editStaffModalError = this.formatErrorMessage(err, 'Failed to update faculty member.');
+      }
+    });
+  }
+
+  confirmDeleteStaff(staff: StaffMember, event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeStaffMenuId = null;
+    this.staffToDelete = staff;
+    this.modalService.open('DELETE_STAFF_MODAL');
+    this.showDeleteStaffModal = true;
+  }
+
+  closeDeleteStaffModal() {
+    this.modalService.close();
+    this.showDeleteStaffModal = false;
+    this.staffToDelete = null;
+  }
+
+  executeDeleteStaff() {
+    if (!this.staffToDelete) return;
+    const target = this.staffToDelete;
+    this.deletingStaff = true;
+
+    this.api.delete(`academics/staff/${target.id}`).subscribe({
+      next: () => {
+        this.deletingStaff = false;
+        this.closeDeleteStaffModal();
+        this.toast.success(`Faculty member "${target.fullName}" was removed from the directory.`);
+        if (this.selectedStaffProfile?.id === target.id) {
+          this.closeStaffProfileModal();
+        }
+        this.loadStaffList();
+      },
+      error: (err: any) => {
+        this.deletingStaff = false;
+        this.toast.error(err.error?.message || err.message || 'Failed to remove staff member.');
+      }
+    });
+  }
+
   // --- Exports ---
   exportDirectoryCsv() {
     const className = this.selectedClass?.name || 'Class';
@@ -9158,6 +10008,9 @@ export class AcademicsComponent implements OnInit {
     if (this.activeAlumniMenuId) {
       this.activeAlumniMenuId = null;
     }
+    if (this.activeStaffMenuId) {
+      this.activeStaffMenuId = null;
+    }
   }
 
   @HostListener('document:click')
@@ -9166,6 +10019,7 @@ export class AcademicsComponent implements OnInit {
     this.activeSectionMenuId = null;
     this.activeStudentMenuId = null;
     this.activeAlumniMenuId = null;
+    this.activeStaffMenuId = null;
     this.isSessionDropdownOpen = false;
   }
 

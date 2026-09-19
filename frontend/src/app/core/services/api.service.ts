@@ -85,7 +85,17 @@ export class ApiService {
   }
 
   get<T>(endpoint: string, params?: Record<string, any>): Observable<T> {
-    const cleanEndpoint = endpoint.split('?')[0];
+    const [cleanEndpoint, queryString] = endpoint.split('?');
+    const mergedParams: Record<string, any> = { ...(params || {}) };
+    if (queryString) {
+      const searchParams = new URLSearchParams(queryString);
+      searchParams.forEach((val, key) => {
+        if (mergedParams[key] === undefined) {
+          mergedParams[key] = val;
+        }
+      });
+    }
+    params = mergedParams;
 
     // Dashboard Overview
     if (cleanEndpoint === 'dashboard/overview' || cleanEndpoint === 'dashboard') {
@@ -243,6 +253,11 @@ export class ApiService {
       return from(this.getTeacherTimetable(params?.['teacherId'])) as unknown as Observable<T>;
     }
 
+    // Whole-School Academic Timetable & Calendar
+    if (cleanEndpoint === 'timetable/academic-calendar' || cleanEndpoint.startsWith('timetable/academic-calendar')) {
+      return from(this.getAcademicCalendar(params?.['sessionId'], params?.['sessionName'])) as unknown as Observable<T>;
+    }
+
     // Default fallback
     return of([] as unknown as T);
   }
@@ -366,6 +381,16 @@ export class ApiService {
       return from(this.updateComplaintStatus(ticketId, body.status)) as unknown as Observable<T>;
     }
 
+    // Timetable Period Creation & Editing
+    if (cleanEndpoint === 'timetable/periods') {
+      return from(this.createTimetablePeriod(body)) as unknown as Observable<T>;
+    }
+
+    // Whole-School Academic Timetable & Calendar Save / Update
+    if (cleanEndpoint === 'timetable/academic-calendar') {
+      return from(this.saveAcademicCalendar(body)) as unknown as Observable<T>;
+    }
+
     return of({ success: true, ...body } as unknown as T);
   }
 
@@ -386,6 +411,12 @@ export class ApiService {
     const staffStatusMatch = cleanEndpoint.match(/^academics\/staff\/(.+)\/status$/);
     if (staffStatusMatch) {
       return from(this.updateStaffStatus(staffStatusMatch[1], body.status)) as unknown as Observable<T>;
+    }
+
+    // Staff Full Profile Update (Admin / Principal)
+    const staffEditMatch = cleanEndpoint.match(/^academics\/staff\/([^/]+)$/) || cleanEndpoint.match(/^staff\/([^/]+)$/);
+    if (staffEditMatch && !cleanEndpoint.includes('status')) {
+      return from(this.updateStaff(staffEditMatch[1], body)) as unknown as Observable<T>;
     }
 
     // Student Status Update (Admin / Principal)
@@ -472,6 +503,11 @@ export class ApiService {
     if (cleanEndpoint.startsWith('academics/subjects/')) {
       const id = cleanEndpoint.replace('academics/subjects/', '');
       return from(this.deleteSubject(id)) as unknown as Observable<T>;
+    }
+
+    if (cleanEndpoint.startsWith('academics/staff/')) {
+      const id = cleanEndpoint.replace('academics/staff/', '');
+      return from(this.deleteStaff(id)) as unknown as Observable<T>;
     }
 
     if (cleanEndpoint.startsWith('timetable/periods/')) {
@@ -1719,6 +1755,134 @@ export class ApiService {
     }
 
     return { success: true, status: cleanStatus, message: `Staff member marked as ${cleanStatus}` };
+  }
+
+  private async updateStaff(id: string, body: any): Promise<any> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) throw new Error('No active school context found.');
+
+    const cleanFirstName = (body.firstName || '').trim();
+    const cleanLastName = (body.lastName || '').trim();
+    const cleanPhone = body.phone ? body.phone.trim() : null;
+    const rawRole = (body.role || '').trim().toUpperCase();
+
+    // 1. Update user identity in `users`
+    const userUpdates: any = { updated_at: new Date().toISOString() };
+    if (cleanFirstName) userUpdates.first_name = cleanFirstName;
+    if (cleanLastName !== undefined) userUpdates.last_name = cleanLastName;
+    if (cleanPhone !== undefined) userUpdates.phone = cleanPhone;
+
+    try {
+      if (Object.keys(userUpdates).length > 0) {
+        await this.supabase
+          .from('users')
+          .update(userUpdates)
+          .eq('id', id);
+      }
+    } catch (uErr) {
+      console.warn('User update error:', uErr);
+    }
+
+    // 2. Update role in `user_school_roles` if provided
+    if (rawRole) {
+      let roleCode = 'TEACHER';
+      let roleName = 'Teacher';
+      if (rawRole === 'SCHOOL_ADMIN' || rawRole.includes('ADMIN')) {
+        roleCode = 'SCHOOL_ADMIN';
+        roleName = 'School Admin';
+      } else if (rawRole === 'PRINCIPAL' || rawRole.includes('PRINCIPAL')) {
+        roleCode = 'PRINCIPAL';
+        roleName = 'Principal';
+      } else if (rawRole === 'CLASS_TEACHER') {
+        roleCode = 'CLASS_TEACHER';
+        roleName = 'Class Teacher';
+      }
+
+      try {
+        const { data: roles } = await this.supabase
+          .from('roles')
+          .select('id, code')
+          .or(`code.eq.${roleCode},code.eq.${roleCode === 'CLASS_TEACHER' ? 'TEACHER' : roleCode}`)
+          .limit(1);
+
+        if (roles && roles.length > 0) {
+          await this.supabase
+            .from('user_school_roles')
+            .update({ role_id: roles[0].id, updated_at: new Date().toISOString() })
+            .eq('user_id', id)
+            .eq('school_id', schoolId);
+        }
+      } catch (rErr) {
+        console.warn('Role update warning:', rErr);
+      }
+    }
+
+    // 3. Update staff photo in local cache / storage
+    const photo = body.photoUrl || body.avatarUrl || body.photo_url;
+    if (photo !== undefined) {
+      try {
+        const staffPhotosMap = JSON.parse(localStorage.getItem('schoolsense_staff_photos') || '{}');
+        staffPhotosMap[id] = { photoUrl: photo, photo_url: photo, avatar_url: photo };
+        if (body.email) staffPhotosMap[body.email.toLowerCase()] = { photoUrl: photo, photo_url: photo, avatar_url: photo };
+        localStorage.setItem('schoolsense_staff_photos', JSON.stringify(staffPhotosMap));
+      } catch {}
+    }
+
+    // 4. Update enriched profile (qualifications, experience, department, gender, blood group, DOB, etc.)
+    const extraProfile = {
+      gender: body.gender || '',
+      dateOfBirth: body.dateOfBirth || body.dob || '',
+      dob: body.dateOfBirth || body.dob || '',
+      qualification: body.qualification || '',
+      experience: body.experience || '',
+      joiningDate: body.joiningDate || '',
+      bloodGroup: body.bloodGroup || '',
+      address: body.address || '',
+      emergencyContactName: body.emergencyContactName || '',
+      emergencyContactPhone: body.emergencyContactPhone || '',
+      department: body.department || '',
+      primarySubjectId: body.primarySubjectId || '',
+    };
+
+    try {
+      const staffProfilesMap = JSON.parse(localStorage.getItem('schoolsense_staff_profiles') || '{}');
+      staffProfilesMap[id] = { ...(staffProfilesMap[id] || {}), ...extraProfile };
+      if (body.email) staffProfilesMap[body.email.toLowerCase()] = { ...(staffProfilesMap[body.email.toLowerCase()] || {}), ...extraProfile };
+      localStorage.setItem('schoolsense_staff_profiles', JSON.stringify(staffProfilesMap));
+    } catch {}
+
+    return {
+      success: true,
+      id,
+      firstName: cleanFirstName,
+      lastName: cleanLastName,
+      fullName: `${cleanFirstName} ${cleanLastName}`.trim(),
+      phone: cleanPhone,
+      role: rawRole,
+      ...extraProfile,
+      message: 'Staff profile updated successfully.',
+    };
+  }
+
+  private async deleteStaff(id: string): Promise<any> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) throw new Error('No active school context found.');
+
+    try {
+      await this.supabase
+        .from('user_school_roles')
+        .delete()
+        .eq('user_id', id)
+        .eq('school_id', schoolId);
+    } catch {}
+
+    try {
+      const staffProfilesMap = JSON.parse(localStorage.getItem('schoolsense_staff_profiles') || '{}');
+      delete staffProfilesMap[id];
+      localStorage.setItem('schoolsense_staff_profiles', JSON.stringify(staffProfilesMap));
+    } catch {}
+
+    return { success: true, message: 'Staff member removed from school directory.' };
   }
 
   /**
@@ -3614,17 +3778,30 @@ export class ApiService {
     let availableSubjects: any[] = [];
 
     if (selectedChild?.sectionId) {
-      periods = await this.getTimetable(selectedChild.sectionId);
+      const res = await this.getTimetable(selectedChild.sectionId);
+      periods = res.periods || [];
+      availableSubjects = res.availableSubjects || [];
     } else if (selectedChild) {
       const sections = await this.getSections();
       if (sections.length > 0) {
-        periods = await this.getTimetable(sections[0].id);
+        const res = await this.getTimetable(sections[0].id);
+        periods = res.periods || [];
+        availableSubjects = res.availableSubjects || [];
       }
     }
 
-    try {
-      availableSubjects = await this.getSubjects();
-    } catch {}
+    if (availableSubjects.length === 0) {
+      try {
+        const subs = await this.getSubjects();
+        availableSubjects = subs.map((s: any) => ({
+          classSubjectId: s.id,
+          subjectId: s.id,
+          name: s.name,
+          code: s.code,
+          subjectType: s.subject_type || 'THEORY',
+        }));
+      } catch {}
+    }
 
     return {
       childrenList: children,
@@ -3669,23 +3846,283 @@ export class ApiService {
     };
   }
 
-  private async getTimetable(sectionId: string): Promise<any[]> {
-    const { data, error } = await this.supabase
-      .from('timetable_periods')
-      .select('*, subject:subjects(*), teacher:users(*)')
-      .eq('section_id', sectionId);
-    if (error) throw error;
-    return data || [];
+  private async getTimetable(sectionId: string): Promise<any> {
+    const schoolId = this.getSchoolId();
+
+    // 1. Fetch section and its class details
+    let sectionInfo: any = null;
+    try {
+      const { data: sec } = await this.supabase
+        .from('sections')
+        .select('id, name, code, class_id, class:classes(id, name, code)')
+        .eq('id', sectionId)
+        .maybeSingle();
+      if (sec) {
+        sectionInfo = {
+          id: sec.id,
+          name: sec.name,
+          code: sec.code,
+          classId: sec.class_id,
+          className: (sec as any).class?.name || 'Class',
+        };
+      }
+    } catch {}
+
+    if (!sectionInfo) {
+      try {
+        const classes = await this.getClasses();
+        for (const c of classes) {
+          const s = c.sections.find((sec: any) => sec.id === sectionId);
+          if (s) {
+            sectionInfo = {
+              id: s.id,
+              name: s.name,
+              code: s.code,
+              classId: c.id,
+              className: c.name,
+            };
+            break;
+          }
+        }
+      } catch {}
+    }
+
+    // 2. Fetch available subjects for this school / class
+    let allSubjects: SubjectItem[] = [];
+    try {
+      allSubjects = await this.getSubjects();
+    } catch {}
+
+    // Filter available subjects for this section or class
+    let availableSubjects = allSubjects.filter((sub) => {
+      if (sectionInfo?.classId && sub.class_id && sub.class_id === sectionInfo.classId) {
+        if (sub.is_all_sections) return true;
+        if (sub.section_ids && sub.section_ids.includes(sectionId)) return true;
+      }
+      return false;
+    });
+
+    if (availableSubjects.length === 0) {
+      availableSubjects = allSubjects;
+    }
+
+    // 3. Fetch timetable periods for this section
+    let periodsData: any[] = [];
+    try {
+      const { data, error } = await this.supabase
+        .from('timetable_periods')
+        .select('*, subject:subjects(*), teacher:users(*)')
+        .eq('section_id', sectionId);
+      if (!error && data) {
+        periodsData = data;
+      }
+    } catch {}
+
+    // Read local storage cache for timetable periods
+    const localPeriodsMap: Record<string, any[]> = JSON.parse(localStorage.getItem('schoolsense_timetable_periods') || '{}');
+    const localSectionPeriods = localPeriodsMap[sectionId] || [];
+
+    const combinedPeriodsMap = new Map<string, any>();
+    periodsData.forEach((p) => {
+      const key = `${p.day_of_week}_${p.period_number}`;
+      combinedPeriodsMap.set(key, p);
+    });
+    localSectionPeriods.forEach((p) => {
+      const key = `${p.day_of_week || p.dayOfWeek}_${p.period_number || p.periodNumber}`;
+      combinedPeriodsMap.set(key, p);
+    });
+
+    const dayNames: Record<number, string> = {
+      1: 'MONDAY',
+      2: 'TUESDAY',
+      3: 'WEDNESDAY',
+      4: 'THURSDAY',
+      5: 'FRIDAY',
+      6: 'SATURDAY',
+    };
+
+    const formattedPeriods = Array.from(combinedPeriodsMap.values()).map((p: any) => {
+      const dayNum = Number(p.day_of_week || p.dayOfWeek || 1);
+      const subObj = p.subject || allSubjects.find((s) => s.id === (p.subject_id || p.classSubjectId));
+      const teacherObj = p.teacher;
+      const teacherName = teacherObj
+        ? (teacherObj.full_name || `${teacherObj.first_name || ''} ${teacherObj.last_name || ''}`.trim())
+        : (p.teacherName || null);
+
+      return {
+        id: p.id || `ttp_${sectionId}_${dayNum}_${p.period_number || p.periodNumber}`,
+        dayOfWeek: dayNum,
+        dayName: dayNames[dayNum] || 'MONDAY',
+        periodNumber: Number(p.period_number || p.periodNumber || 1),
+        startTime: p.start_time || p.startTime || '08:30',
+        endTime: p.end_time || p.endTime || '09:15',
+        slotType: p.slot_type || p.slotType || 'ACADEMIC',
+        title: p.title || subObj?.name || '',
+        subjectName: subObj?.name || p.subjectName || null,
+        subjectCode: subObj?.code || p.subjectCode || null,
+        classSubjectId: p.subject_id || p.classSubjectId || subObj?.id || '',
+        teacherId: p.teacher_id || p.teacherId || '',
+        teacherName: teacherName,
+        roomNumber: p.room_number || p.roomNumber || 'Room 101',
+        className: sectionInfo?.className || '',
+        sectionName: sectionInfo?.name || '',
+      };
+    });
+
+    // 4. Fetch all school periods across all sections for teacher availability conflict checking
+    let allSchoolPeriods: any[] = [];
+    try {
+      const { data: allP } = await this.supabase
+        .from('timetable_periods')
+        .select('id, section_id, teacher_id, day_of_week, period_number, start_time, end_time, room_number, slot_type, section:sections(id, name, class:classes(name))')
+        .eq('school_id', schoolId);
+      if (allP) {
+        allSchoolPeriods = allP.map((ap: any) => ({
+          id: ap.id,
+          sectionId: ap.section_id,
+          teacherId: ap.teacher_id,
+          dayOfWeek: Number(ap.day_of_week),
+          periodNumber: Number(ap.period_number),
+          startTime: ap.start_time,
+          endTime: ap.end_time,
+          roomNumber: ap.room_number,
+          slotType: ap.slot_type,
+          sectionName: ap.section?.name || '',
+          className: ap.section?.class?.name || '',
+        }));
+      }
+    } catch {}
+
+    Object.keys(localPeriodsMap).forEach((secId) => {
+      const list = localPeriodsMap[secId] || [];
+      list.forEach((lp) => {
+        if (!allSchoolPeriods.some((ap) => ap.id === lp.id)) {
+          allSchoolPeriods.push({
+            id: lp.id,
+            sectionId: secId,
+            teacherId: lp.teacher_id || lp.teacherId,
+            dayOfWeek: Number(lp.day_of_week || lp.dayOfWeek),
+            periodNumber: Number(lp.period_number || lp.periodNumber),
+            startTime: lp.start_time || lp.startTime,
+            endTime: lp.end_time || lp.endTime,
+            roomNumber: lp.room_number || lp.roomNumber,
+            slotType: lp.slot_type || lp.slotType,
+            sectionName: lp.sectionName || '',
+            className: lp.className || '',
+          });
+        }
+      });
+    });
+
+    return {
+      section: sectionInfo || { id: sectionId, name: 'Section', className: 'Class' },
+      periods: formattedPeriods,
+      availableSubjects: availableSubjects.map((sub) => ({
+        classSubjectId: sub.id,
+        subjectId: sub.id,
+        name: sub.name,
+        code: sub.code,
+        subjectType: sub.subject_type || 'THEORY',
+      })),
+      allSchoolPeriods: allSchoolPeriods,
+    };
   }
 
-  private async getTeacherTimetable(teacherId?: string): Promise<any[]> {
+  private async getTeacherTimetable(teacherId?: string): Promise<any> {
+    const schoolId = this.getSchoolId();
     const id = teacherId || this.getUserId();
-    const { data, error } = await this.supabase
-      .from('timetable_periods')
-      .select('*, subject:subjects(*), section:sections(*, class:classes(*))')
-      .eq('teacher_id', id);
-    if (error) throw error;
-    return data || [];
+
+    let sectionMap = new Map<string, { name: string; className: string }>();
+    try {
+      const classes = await this.getClasses();
+      for (const c of classes) {
+        for (const s of c.sections) {
+          sectionMap.set(s.id, { name: s.name, className: c.name });
+        }
+      }
+    } catch {}
+
+    let subjectsMap = new Map<string, any>();
+    try {
+      const allSubs = await this.getSubjects();
+      allSubs.forEach((s) => subjectsMap.set(s.id, s));
+    } catch {}
+
+    let periodsData: any[] = [];
+    try {
+      const { data, error } = await this.supabase
+        .from('timetable_periods')
+        .select('*, subject:subjects(*), section:sections(*, class:classes(*))')
+        .eq('teacher_id', id);
+      if (!error && data) {
+        periodsData = data;
+      }
+    } catch {}
+
+    const localPeriodsMap: Record<string, any[]> = JSON.parse(localStorage.getItem('schoolsense_timetable_periods') || '{}');
+    const localTeacherPeriods: any[] = [];
+    Object.keys(localPeriodsMap).forEach((secId) => {
+      const list = localPeriodsMap[secId] || [];
+      list.forEach((p) => {
+        const pTeacherId = p.teacher_id || p.teacherId;
+        if (pTeacherId && String(pTeacherId) === String(id)) {
+          localTeacherPeriods.push({ ...p, section_id: p.section_id || p.sectionId || secId });
+        }
+      });
+    });
+
+    const combinedMap = new Map<string, any>();
+    periodsData.forEach((p) => {
+      const key = `${p.day_of_week}_${p.period_number}_${p.section_id}`;
+      combinedMap.set(key, p);
+    });
+    localTeacherPeriods.forEach((p) => {
+      const key = `${p.day_of_week || p.dayOfWeek}_${p.period_number || p.periodNumber}_${p.section_id || p.sectionId}`;
+      combinedMap.set(key, p);
+    });
+
+    const dayNames: Record<number, string> = {
+      1: 'MONDAY',
+      2: 'TUESDAY',
+      3: 'WEDNESDAY',
+      4: 'THURSDAY',
+      5: 'FRIDAY',
+      6: 'SATURDAY',
+    };
+
+    const formattedPeriods = Array.from(combinedMap.values()).map((p: any) => {
+      const dayNum = Number(p.day_of_week || p.dayOfWeek || 1);
+      const targetSecId = p.section_id || p.sectionId;
+      const secInfo = sectionMap.get(targetSecId) || {
+        name: p.section?.name || p.sectionName || '',
+        className: p.section?.class?.name || p.className || '',
+      };
+      const subObj = p.subject || subjectsMap.get(p.subject_id || p.subjectId || p.classSubjectId);
+
+      return {
+        id: p.id,
+        dayOfWeek: dayNum,
+        dayName: dayNames[dayNum] || 'MONDAY',
+        periodNumber: Number(p.period_number || p.periodNumber || 1),
+        startTime: p.start_time || p.startTime || '08:30',
+        endTime: p.end_time || p.endTime || '09:15',
+        slotType: p.slot_type || p.slotType || 'ACADEMIC',
+        title: p.title || subObj?.name || p.subjectName || '',
+        subjectName: subObj?.name || p.subjectName || p.title || 'Subject',
+        subjectCode: subObj?.code || p.subjectCode || 'SUB',
+        classSubjectId: p.subject_id || p.subjectId || p.classSubjectId || '',
+        teacherId: id,
+        teacherName: p.teacherName || '',
+        roomNumber: p.room_number || p.roomNumber || 'Room 101',
+        className: secInfo.className || p.className || '',
+        sectionName: secInfo.name || p.sectionName || '',
+      };
+    });
+
+    return {
+      teacherId: id,
+      periods: formattedPeriods,
+    };
   }
 
   // --- CRUD Actions ---
@@ -4184,27 +4621,253 @@ export class ApiService {
     return { success: true };
   }
 
-  private async createTimetablePeriod(body: any) {
+  private async createTimetablePeriod(body: any): Promise<any> {
     const schoolId = this.getSchoolId();
-    const { data, error } = await this.supabase.from('timetable_periods').insert({
+    const sectionId = body.sectionId;
+    const dayOfWeek = Number(body.dayOfWeek);
+    const periodNumber = Number(body.periodNumber);
+    const newId = body.id || `ttp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+    const record = {
+      id: newId,
       school_id: schoolId,
-      section_id: body.sectionId,
-      subject_id: body.subjectId,
-      teacher_id: body.teacherId,
-      day_of_week: body.dayOfWeek,
-      period_number: body.periodNumber,
+      section_id: sectionId,
+      sectionId: sectionId,
+      subject_id: body.subjectId || body.classSubjectId || null,
+      subjectId: body.subjectId || body.classSubjectId || null,
+      classSubjectId: body.classSubjectId || body.subjectId || null,
+      teacher_id: body.teacherId || null,
+      teacherId: body.teacherId || null,
+      day_of_week: dayOfWeek,
+      dayOfWeek: dayOfWeek,
+      period_number: periodNumber,
+      periodNumber: periodNumber,
       start_time: body.startTime,
+      startTime: body.startTime,
       end_time: body.endTime,
-      room_number: body.roomNumber,
-    });
-    if (error) throw error;
-    return data;
+      endTime: body.endTime,
+      room_number: body.roomNumber || 'Room 101',
+      roomNumber: body.roomNumber || 'Room 101',
+      slot_type: body.slotType || 'ACADEMIC',
+      slotType: body.slotType || 'ACADEMIC',
+      title: body.title || null,
+      className: body.className || '',
+      sectionName: body.sectionName || '',
+      teacherName: body.teacherName || '',
+      subjectName: body.subjectName || '',
+      subjectCode: body.subjectCode || '',
+    };
+
+    // 1. Save to Supabase (delete existing slot at same section/day/period first)
+    try {
+      await this.supabase
+        .from('timetable_periods')
+        .delete()
+        .eq('section_id', sectionId)
+        .eq('day_of_week', dayOfWeek)
+        .eq('period_number', periodNumber);
+
+      await this.supabase
+        .from('timetable_periods')
+        .insert({
+          id: newId,
+          school_id: schoolId,
+          section_id: sectionId,
+          subject_id: record.subject_id,
+          teacher_id: record.teacher_id,
+          day_of_week: dayOfWeek,
+          period_number: periodNumber,
+          start_time: record.start_time,
+          end_time: record.end_time,
+          room_number: record.room_number,
+        });
+    } catch (err) {
+      console.warn('Supabase createTimetablePeriod fallback note:', err);
+    }
+
+    // 2. Persist to LocalStorage for full resilience & reactive offline sync
+    try {
+      const localMap = JSON.parse(localStorage.getItem('schoolsense_timetable_periods') || '{}');
+      if (!localMap[sectionId]) localMap[sectionId] = [];
+
+      localMap[sectionId] = localMap[sectionId].filter(
+        (p: any) => !(Number(p.day_of_week || p.dayOfWeek) === dayOfWeek && Number(p.period_number || p.periodNumber) === periodNumber)
+      );
+
+      localMap[sectionId].push(record);
+
+      localStorage.setItem('schoolsense_timetable_periods', JSON.stringify(localMap));
+    } catch {}
+
+    return { success: true, id: newId };
   }
 
-  private async deleteTimetablePeriod(id: string) {
-    const { error } = await this.supabase.from('timetable_periods').delete().eq('id', id);
-    if (error) throw error;
+  private async deleteTimetablePeriod(id: string): Promise<any> {
+    try {
+      await this.supabase.from('timetable_periods').delete().eq('id', id);
+    } catch {}
+
+    try {
+      const localMap = JSON.parse(localStorage.getItem('schoolsense_timetable_periods') || '{}');
+      Object.keys(localMap).forEach((secId) => {
+        localMap[secId] = (localMap[secId] || []).filter((p: any) => p.id !== id);
+      });
+      localStorage.setItem('schoolsense_timetable_periods', JSON.stringify(localMap));
+    } catch {}
+
     return { success: true };
+  }
+
+  // ============================================================================
+  // Whole-School Academic Timetable & Calendar Handlers
+  // ============================================================================
+
+  public async getAcademicCalendar(sessionId?: string, sessionName?: string): Promise<any> {
+    const schoolId = this.getSchoolId();
+    const sessions = await this.getAcademicSessions();
+    const currentSession = sessionId 
+      ? sessions.find((s) => s.id === sessionId) 
+      : (sessionName ? sessions.find((s) => s.name === sessionName) : (sessions.find((s) => s.is_current) || sessions[0]));
+
+    const sName = currentSession?.name || sessionName || '2026-2027';
+    const sId = currentSession?.id || sessionId || 'curr_session';
+
+    let startYear = 2026;
+    let endYear = 2027;
+    const parts = sName.split(/[-/]/);
+    if (parts.length >= 2) {
+      const y1 = parseInt(parts[0].trim(), 10);
+      const y2 = parseInt(parts[1].trim(), 10);
+      if (!isNaN(y1)) startYear = y1;
+      if (!isNaN(y2)) endYear = y2 > 100 ? y2 : 2000 + y2;
+    } else if (parts.length === 1 && !isNaN(parseInt(parts[0], 10))) {
+      startYear = parseInt(parts[0], 10);
+      endYear = startYear + 1;
+    }
+
+    const storageKey = `schoolsense_academic_calendars_${schoolId}`;
+    const allCalendars = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    const existing = allCalendars[sName];
+
+    const startDate = existing?.startDate || `${startYear}-03-01`;
+    const endDate = existing?.endDate || `${endYear}-02-28`;
+
+    const defaultDays: Record<string, any> = {
+      // March
+      [`${startYear}-03-04`]: { type: 'HOLIDAY', title: 'Holi Festival / Rangotsav', note: 'School closed for Holi', wing: 'ALL' },
+      [`${startYear}-03-21`]: { type: 'HOLIDAY', title: 'Eid-ul-Fitr (Id-Ul-Fitr)', note: 'Public Holiday', wing: 'ALL' },
+      [`${startYear}-03-27`]: { type: 'HOLIDAY', title: 'Ram Navami', note: 'Festival Holiday', wing: 'ALL' },
+      
+      // April
+      [`${startYear}-04-03`]: { type: 'HOLIDAY', title: 'Good Friday', note: 'Gazetted Holiday', wing: 'ALL' },
+      [`${startYear}-04-14`]: { type: 'HOLIDAY', title: 'Dr. B.R. Ambedkar Jayanti', note: 'Institutional Holiday', wing: 'ALL' },
+      [`${startYear}-04-21`]: { type: 'EVENT_DAY', title: 'Earth Day & Science Exhibition', note: 'Inter-House Competitions', wing: 'ALL' },
+
+      // May
+      [`${startYear}-05-01`]: { type: 'HOLIDAY', title: 'International Workers Day / May Day', note: 'Staff & Student Holiday', wing: 'ALL' },
+      [`${startYear}-05-18`]: { type: 'VACATION', title: 'Summer Vacation Begins', note: 'Campus closed for summer break', wing: 'ALL' },
+      [`${startYear}-05-19`]: { type: 'VACATION', title: 'Summer Vacation', note: 'Summer Break', wing: 'ALL' },
+      [`${startYear}-05-20`]: { type: 'VACATION', title: 'Summer Vacation', note: 'Summer Break', wing: 'ALL' },
+      [`${startYear}-05-21`]: { type: 'VACATION', title: 'Summer Vacation', note: 'Summer Break', wing: 'ALL' },
+      [`${startYear}-05-22`]: { type: 'VACATION', title: 'Summer Vacation', note: 'Summer Break', wing: 'ALL' },
+      [`${startYear}-05-25`]: { type: 'VACATION', title: 'Summer Vacation', note: 'Summer Break', wing: 'ALL' },
+      [`${startYear}-05-26`]: { type: 'VACATION', title: 'Summer Vacation', note: 'Summer Break', wing: 'ALL' },
+      [`${startYear}-05-27`]: { type: 'VACATION', title: 'Summer Vacation', note: 'Summer Break', wing: 'ALL' },
+      [`${startYear}-05-28`]: { type: 'VACATION', title: 'Summer Vacation', note: 'Summer Break', wing: 'ALL' },
+      [`${startYear}-05-29`]: { type: 'VACATION', title: 'Summer Vacation', note: 'Summer Break', wing: 'ALL' },
+
+      // June
+      [`${startYear}-06-01`]: { type: 'VACATION', title: 'Summer Vacation', note: 'Summer Break', wing: 'ALL' },
+      [`${startYear}-06-15`]: { type: 'VACATION', title: 'Summer Vacation', note: 'Summer Break', wing: 'ALL' },
+      [`${startYear}-06-17`]: { type: 'HOLIDAY', title: 'Bakrid / Eid-ul-Adha', note: 'Festival Holiday', wing: 'ALL' },
+      [`${startYear}-06-30`]: { type: 'VACATION', title: 'Summer Vacation Ends', note: 'School reopens tomorrow', wing: 'ALL' },
+
+      // July
+      [`${startYear}-07-01`]: { type: 'EVENT_DAY', title: 'School Re-opening & Induction Assembly', note: 'Second Term Inception', wing: 'ALL' },
+      [`${startYear}-07-17`]: { type: 'HOLIDAY', title: 'Muharram', note: 'Gazetted Holiday', wing: 'ALL' },
+
+      // August
+      [`${startYear}-08-15`]: { type: 'EVENT_DAY', title: '79th Independence Day Celebration', note: 'Flag hoisting & cultural fest', wing: 'ALL' },
+      [`${startYear}-08-28`]: { type: 'HOLIDAY', title: 'Raksha Bandhan', note: 'Festival Holiday', wing: 'ALL' },
+
+      // September
+      [`${startYear}-09-04`]: { type: 'HOLIDAY', title: 'Janmashtami (Krishna Jayanti)', note: 'Festival Holiday', wing: 'ALL' },
+      [`${startYear}-09-05`]: { type: 'EVENT_DAY', title: 'Teachers Day Celebration', note: 'Student-led felicitation', wing: 'ALL' },
+      [`${startYear}-09-15`]: { type: 'EXAM_DAY', title: 'Mid-Term Examinations: Day 1', note: 'Mid-Term Half-Yearly Exam', wing: 'ALL' },
+      [`${startYear}-09-16`]: { type: 'EXAM_DAY', title: 'Mid-Term Examinations: Day 2', note: 'Mid-Term Half-Yearly Exam', wing: 'ALL' },
+      [`${startYear}-09-17`]: { type: 'EXAM_DAY', title: 'Mid-Term Examinations: Day 3', note: 'Mid-Term Half-Yearly Exam', wing: 'ALL' },
+      [`${startYear}-09-18`]: { type: 'EXAM_DAY', title: 'Mid-Term Examinations: Day 4', note: 'Mid-Term Half-Yearly Exam', wing: 'ALL' },
+      [`${startYear}-09-21`]: { type: 'EXAM_DAY', title: 'Mid-Term Examinations: Day 5', note: 'Mid-Term Half-Yearly Exam', wing: 'ALL' },
+      [`${startYear}-09-22`]: { type: 'EXAM_DAY', title: 'Mid-Term Examinations: Day 6', note: 'Mid-Term Half-Yearly Exam', wing: 'ALL' },
+
+      // October
+      [`${startYear}-10-02`]: { type: 'HOLIDAY', title: 'Mahatma Gandhi Jayanti & Shastri Jayanti', note: 'National Holiday', wing: 'ALL' },
+      [`${startYear}-10-19`]: { type: 'HOLIDAY', title: 'Maha Ashtami / Navratri Break', note: 'Festival Holiday', wing: 'ALL' },
+      [`${startYear}-10-20`]: { type: 'HOLIDAY', title: 'Vijayadashami / Dussehra', note: 'Gazetted Holiday', wing: 'ALL' },
+      [`${startYear}-10-31`]: { type: 'EVENT_DAY', title: 'Annual Parent-Teacher Meeting (PTM 1)', note: 'Report Card Discussion', wing: 'ALL' },
+
+      // November
+      [`${startYear}-11-08`]: { type: 'HOLIDAY', title: 'Diwali Eve / Dhanteras', note: 'Diwali Break', wing: 'ALL' },
+      [`${startYear}-11-09`]: { type: 'HOLIDAY', title: 'Diwali (Deepavali Festival)', note: 'Festival of Lights', wing: 'ALL' },
+      [`${startYear}-11-10`]: { type: 'HOLIDAY', title: 'Govardhan Puja', note: 'Diwali Break', wing: 'ALL' },
+      [`${startYear}-11-11`]: { type: 'HOLIDAY', title: 'Bhai Dooj', note: 'Diwali Break', wing: 'ALL' },
+      [`${startYear}-11-14`]: { type: 'EVENT_DAY', title: 'Childrens Day & Sports Carnival', note: 'Bal Diwas Celebrations', wing: 'ALL' },
+      [`${startYear}-11-24`]: { type: 'HOLIDAY', title: 'Guru Nanak Jayanti', note: 'Gurupurab', wing: 'ALL' },
+
+      // December
+      [`${startYear}-12-18`]: { type: 'EVENT_DAY', title: 'Annual Cultural Day Fest', note: 'Main Auditorium Fest', wing: 'ALL' },
+      [`${startYear}-12-25`]: { type: 'HOLIDAY', title: 'Christmas Day', note: 'Gazetted Holiday', wing: 'ALL' },
+      [`${startYear}-12-26`]: { type: 'VACATION', title: 'Winter Vacation', note: 'Winter Break', wing: 'ALL' },
+      [`${startYear}-12-28`]: { type: 'VACATION', title: 'Winter Vacation', note: 'Winter Break', wing: 'ALL' },
+      [`${startYear}-12-29`]: { type: 'VACATION', title: 'Winter Vacation', note: 'Winter Break', wing: 'ALL' },
+      [`${startYear}-12-30`]: { type: 'VACATION', title: 'Winter Vacation', note: 'Winter Break', wing: 'ALL' },
+      [`${startYear}-12-31`]: { type: 'VACATION', title: 'Winter Vacation', note: 'Winter Break', wing: 'ALL' },
+
+      // January
+      [`${endYear}-01-01`]: { type: 'HOLIDAY', title: 'New Year Day', note: 'New Year Holiday', wing: 'ALL' },
+      [`${endYear}-01-14`]: { type: 'HOLIDAY', title: 'Makar Sankranti / Pongal / Maghi', note: 'Harvest Festival', wing: 'ALL' },
+      [`${endYear}-01-26`]: { type: 'EVENT_DAY', title: 'Republic Day Celebration', note: 'Ceremonial Parade & Fest', wing: 'ALL' },
+
+      // February
+      [`${endYear}-02-15`]: { type: 'EXAM_DAY', title: 'Annual Final Examinations: Day 1', note: 'Annual Board / Final Exams', wing: 'ALL' },
+      [`${endYear}-02-17`]: { type: 'EXAM_DAY', title: 'Annual Final Examinations: Day 2', note: 'Annual Board / Final Exams', wing: 'ALL' },
+      [`${endYear}-02-19`]: { type: 'EXAM_DAY', title: 'Annual Final Examinations: Day 3', note: 'Annual Board / Final Exams', wing: 'ALL' },
+      [`${endYear}-02-22`]: { type: 'EXAM_DAY', title: 'Annual Final Examinations: Day 4', note: 'Annual Board / Final Exams', wing: 'ALL' },
+      [`${endYear}-02-24`]: { type: 'EXAM_DAY', title: 'Annual Final Examinations: Day 5', note: 'Annual Board / Final Exams', wing: 'ALL' },
+      [`${endYear}-02-26`]: { type: 'EXAM_DAY', title: 'Annual Final Examinations: Day 6', note: 'Annual Board / Final Exams', wing: 'ALL' },
+    };
+
+    const mergedDays = { ...defaultDays, ...(existing?.days || {}) };
+
+    return {
+      sessionId: sId,
+      sessionName: sName,
+      availableSessions: sessions.map((s) => ({ id: s.id, name: s.name })),
+      startDate,
+      endDate,
+      days: mergedDays,
+      lastUpdated: existing?.lastUpdated || new Date().toISOString(),
+    };
+  }
+
+  public async saveAcademicCalendar(payload: any): Promise<any> {
+    const schoolId = this.getSchoolId();
+    const sessionName = payload.sessionName || '2026-2027';
+
+    const storageKey = `schoolsense_academic_calendars_${schoolId}`;
+    const allCalendars = JSON.parse(localStorage.getItem(storageKey) || '{}');
+
+    allCalendars[sessionName] = {
+      sessionId: payload.sessionId,
+      sessionName: sessionName,
+      startDate: payload.startDate,
+      endDate: payload.endDate,
+      days: payload.days || {},
+      lastUpdated: new Date().toISOString(),
+    };
+
+    localStorage.setItem(storageKey, JSON.stringify(allCalendars));
+    return { success: true, message: 'Academic calendar saved successfully.' };
   }
 
   // ============================================================================
