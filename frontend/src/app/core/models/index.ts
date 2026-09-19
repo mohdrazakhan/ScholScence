@@ -268,11 +268,13 @@ export interface AttendanceStudent {
 export interface AttendanceRegisterResponse {
   sectionId: string;
   date: string;
+  classTeacherName?: string;
   summary: {
     totalStudents: number;
     presentCount: number;
     absentCount: number;
     lateCount: number;
+    halfDayCount?: number;
     attendancePercentage: string;
   };
   register: AttendanceStudent[];

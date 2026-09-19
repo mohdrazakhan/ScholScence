@@ -704,135 +704,271 @@ export interface MonthItem {
         </div>
 
         <!-- VIEW 1: WEEKLY MATRIX GRID VIEW -->
-        <div *ngIf="viewLayout === 'GRID'" class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] overflow-hidden">
-          <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-[#f8fafc]">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700 shadow-inner">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <div *ngIf="viewLayout === 'GRID'" class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_20px_#e2e8f0,-6px_-6px_20px_#ffffff] overflow-hidden">
+          
+          <!-- Grid Header Bar & Legend -->
+          <div class="p-5 sm:p-6 border-b border-slate-100/90 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-slate-50/90 via-white to-indigo-50/20">
+            <div class="flex items-center gap-3.5">
+              <div class="w-11 h-11 rounded-2xl bg-white border border-slate-200/80 flex items-center justify-center text-indigo-600 shadow-[3px_3px_8px_#e2e8f0,-3px_-3px_8px_#ffffff] shrink-0">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
               <div>
-                <h3 class="text-sm font-extrabold text-slate-900">
-                  {{ timetableMode === 'FACULTY' ? 'Faculty Weekly Teaching Schedule' : 'Weekly Class Timetable Schedule' }}
-                </h3>
-                <p class="text-[11px] text-slate-500">
-                  {{ timetableMode === 'FACULTY' ? 'Weekly periods and room allocations for the selected faculty member' : 'Periods 1 through 8 with standard Recess and Lunch intervals' }}
+                <div class="flex items-center gap-2.5 flex-wrap">
+                  <h3 class="text-base font-black text-slate-900 tracking-tight">
+                    {{ timetableMode === 'FACULTY' ? 'Faculty Weekly Routine Schedule' : 'Weekly Class Timetable Schedule' }}
+                  </h3>
+                  <span class="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/80 shadow-2xs">
+                    {{ timetableMode === 'FACULTY' ? 'Teaching Matrix' : 'Class Matrix' }}
+                  </span>
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5 font-medium">
+                  {{ timetableMode === 'FACULTY' ? 'Assigned periods, room numbers, and class sections across the week.' : 'Mon to Sat schedule covering 8 periods with configured breaks & intervals.' }}
                 </p>
               </div>
             </div>
 
-            <!-- Quick legend -->
-            <div class="hidden sm:flex items-center gap-4 text-xs">
-              <span class="flex items-center gap-1.5">
-                <span class="w-3 h-3 rounded-md bg-blue-100 border border-blue-300 inline-block"></span>
-                <span class="text-slate-600 font-medium">Academic</span>
+            <!-- Subject Category Quick Legend -->
+            <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] font-bold p-1.5 bg-white/90 rounded-2xl border border-slate-200/80 shadow-[inset_1px_1px_3px_#f1f5f9,1px_1px_3px_#ffffff]">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50 hover:bg-blue-50/50 text-slate-700 border border-slate-200/70 transition-colors shadow-2xs">
+                <span class="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.5)]"></span>
+                Math
               </span>
-              <span class="flex items-center gap-1.5">
-                <span class="w-3 h-3 rounded-md bg-amber-100 border border-amber-300 inline-block"></span>
-                <span class="text-slate-600 font-medium">Recess Break</span>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50 hover:bg-emerald-50/50 text-slate-700 border border-slate-200/70 transition-colors shadow-2xs">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]"></span>
+                Science & Tech
               </span>
-              <span class="flex items-center gap-1.5">
-                <span class="w-3 h-3 rounded-md bg-emerald-100 border border-emerald-300 inline-block"></span>
-                <span class="text-slate-600 font-medium">Lunch Interval</span>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50 hover:bg-purple-50/50 text-slate-700 border border-slate-200/70 transition-colors shadow-2xs">
+                <span class="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.5)]"></span>
+                Languages
+              </span>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50 hover:bg-amber-50/50 text-slate-700 border border-slate-200/70 transition-colors shadow-2xs">
+                <span class="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]"></span>
+                Social / EVS
+              </span>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50 hover:bg-rose-50/50 text-slate-700 border border-slate-200/70 transition-colors shadow-2xs">
+                <span class="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.5)]"></span>
+                Arts & PE
+              </span>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50/90 text-amber-900 border border-amber-200/90 shadow-2xs">
+                <span class="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]"></span>
+                Recess
+              </span>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50/90 text-emerald-900 border border-emerald-200/90 shadow-2xs">
+                <span class="w-2 h-2 rounded-full bg-emerald-600 shadow-[0_0_6px_rgba(5,150,105,0.5)]"></span>
+                Lunch
               </span>
             </div>
           </div>
 
+          <!-- The Matrix Table -->
           <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse min-w-[900px]">
+            <table class="w-full text-left border-collapse min-w-[1020px]">
               <thead>
-                <tr class="bg-slate-50/75 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                  <th class="p-4 w-32 sticky left-0 bg-slate-50 border-r border-slate-200/80 z-10">Day / Period</th>
-                  <th *ngFor="let pNum of periodSlots" class="p-4 text-center min-w-[140px] border-r border-slate-200/60 last:border-r-0">
-                    <div class="text-slate-900 font-black">Period {{ pNum.number }}</div>
-                    <div class="text-[10px] text-slate-500 font-semibold mt-0.5">{{ pNum.time }}</div>
+                <tr class="bg-slate-50/90 border-b border-slate-200/80 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                  <th class="p-4 w-36 sticky left-0 bg-slate-50/95 border-r border-slate-200/90 z-20 shadow-[2px_0_6px_rgba(0,0,0,0.02)] backdrop-blur-sm">
+                    <div class="flex items-center gap-2 text-[11px] font-black text-slate-600 uppercase tracking-wider">
+                      <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>Day / Slot</span>
+                    </div>
+                  </th>
+                  <th *ngFor="let pNum of periodSlots" class="p-3.5 text-center min-w-[150px] border-r border-slate-200/60 last:border-r-0">
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border border-slate-200/80 shadow-[2px_2px_6px_#edf2f7,-2px_-2px_6px_#ffffff] text-slate-900 font-extrabold text-xs">
+                      <span>Period {{ pNum.number }}</span>
+                    </div>
+                    <div class="text-[10px] text-slate-500 font-bold mt-1 tracking-tight font-mono">
+                      {{ pNum.time }}
+                    </div>
                   </th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-100 text-xs">
-                <tr *ngFor="let day of days" class="hover:bg-slate-50/40 transition-colors">
-                  <!-- Day Column (Sticky) -->
-                  <td class="p-4 font-bold text-slate-900 bg-white sticky left-0 border-r border-slate-200/80 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                    <div class="text-sm font-black">{{ day.name }}</div>
-                    <div class="text-[10px] text-slate-400 font-semibold">{{ day.short }}</div>
+              <tbody class="divide-y divide-slate-100/80 text-xs">
+                <tr *ngFor="let day of days" class="hover:bg-slate-50/30 transition-colors">
+                  <!-- Sticky Day Column -->
+                  <td class="p-4 bg-white/95 sticky left-0 border-r border-slate-200/90 z-10 shadow-[3px_0_8px_rgba(0,0,0,0.02)] backdrop-blur-xs">
+                    <div class="flex flex-col gap-1.5">
+                      <div class="text-xs sm:text-sm font-black text-slate-900 tracking-wide uppercase">
+                        {{ day.name }}
+                      </div>
+                      <div class="flex items-center gap-1.5">
+                        <span class="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-600 bg-slate-100/80 px-2 py-0.5 rounded-md border border-slate-200/60 shadow-2xs">
+                          <span class="w-1.5 h-1.5 rounded-full" [class.bg-emerald-500]="getPeriodsForDay(day.name).length > 0" [class.bg-slate-300]="getPeriodsForDay(day.name).length === 0"></span>
+                          {{ getPeriodsForDay(day.name).length }} / {{ periodSlots.length }} slots
+                        </span>
+                      </div>
+                    </div>
                   </td>
 
-                  <!-- Periods 1 to 8 -->
-                  <td *ngFor="let pNum of periodSlots" class="p-2.5 border-r border-slate-100 last:border-r-0 align-top">
+                  <!-- Period Cells -->
+                  <td *ngFor="let pNum of periodSlots" class="p-2 border-r border-slate-100/80 last:border-r-0 align-top">
                     <ng-container *ngIf="getPeriod(day.name, pNum.number) as slot; else emptySlot">
                       
                       <!-- RECESSS / BREAK SLOT -->
                       <div *ngIf="slot.slotType === 'BREAK'"
-                           class="h-full min-h-[90px] p-3 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/90 text-amber-900 flex flex-col justify-between shadow-xs">
-                        <div class="flex items-center justify-between">
-                          <span class="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-lg border border-amber-300/50">
-                            Recess
-                          </span>
-                          <span class="text-[10px] font-bold text-amber-600">{{ slot.startTime }} - {{ slot.endTime }}</span>
-                        </div>
-                        <div class="font-black text-xs text-amber-950 mt-1.5">{{ slot.title || 'Morning Break' }}</div>
-                        <div class="text-[10px] text-amber-700/80 font-medium">15 Mins Interval</div>
-                      </div>
-
-                      <!-- LUNCH INTERVAL SLOT -->
-                      <div *ngIf="slot.slotType === 'LUNCH'"
-                           class="h-full min-h-[90px] p-3 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200/90 text-emerald-900 flex flex-col justify-between shadow-xs">
-                        <div class="flex items-center justify-between">
-                          <span class="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-lg border border-emerald-300/50">
-                            Lunch
-                          </span>
-                          <span class="text-[10px] font-bold text-emerald-600">{{ slot.startTime }} - {{ slot.endTime }}</span>
-                        </div>
-                        <div class="font-black text-xs text-emerald-950 mt-1.5">{{ slot.title || 'Lunch Interval' }}</div>
-                        <div class="text-[10px] text-emerald-700/80 font-medium">Refuel & Recreation</div>
-                      </div>
-
-                      <!-- ACADEMIC / SUBJECT SLOT -->
-                      <div *ngIf="slot.slotType === 'ACADEMIC' || slot.slotType === 'SPORTS' || slot.slotType === 'LIBRARY' || slot.slotType === 'ACTIVITY'"
-                           class="group relative h-full min-h-[90px] p-3 rounded-2xl bg-white border border-slate-200/90 hover:border-indigo-300 shadow-[2px_2px_8px_#edf2f7] hover:shadow-[4px_4px_12px_#d9e2ec] transition-all flex flex-col justify-between">
+                           class="group relative h-full min-h-[96px] p-3 rounded-2xl bg-gradient-to-br from-amber-50/90 via-orange-50/50 to-amber-100/40 border border-amber-200 text-amber-950 flex flex-col justify-between shadow-[2px_2px_8px_#fef3c7,-2px_-2px_8px_#ffffff] hover:border-amber-300 transition-all">
                         <div>
                           <div class="flex items-center justify-between gap-1">
-                            <span class="text-[10px] font-black text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">
-                              {{ slot.subjectCode || 'SUB' }}
+                            <span class="text-[9px] font-black uppercase tracking-wider text-amber-800 bg-amber-100/90 px-2 py-0.5 rounded-lg border border-amber-300/60 flex items-center gap-1">
+                              <span>☕</span> Recess
                             </span>
-                            <span class="text-[10px] font-bold text-slate-500">{{ slot.startTime }} - {{ slot.endTime }}</span>
+                            <span class="text-[9px] font-bold text-amber-700/90 font-mono">{{ slot.startTime }}</span>
                           </div>
-                          <div class="font-extrabold text-xs text-slate-900 mt-1.5 leading-snug">
-                            {{ slot.subjectName || slot.title }}
+                          <div class="font-extrabold text-xs text-amber-950 mt-1.5 leading-snug">
+                            {{ slot.title || 'Morning Break' }}
                           </div>
                         </div>
-
-                        <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600">
-                          <span class="truncate font-medium text-slate-700" title="{{ slot.className ? slot.className + ' - ' + slot.sectionName : (slot.teacherName || 'Faculty') }}">
-                            {{ slot.className ? (slot.className + ' Sec ' + slot.sectionName) : (slot.teacherName || 'Assigned Teacher') }}
-                          </span>
-                          <span class="text-[10px] font-bold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
-                            {{ slot.roomNumber || 'Room' }}
-                          </span>
+                        <div class="mt-2 pt-1.5 border-t border-amber-200/60 flex items-center justify-between text-[10px] text-amber-800/80 font-semibold">
+                          <span>15 Min Interval</span>
+                          <span *ngIf="slot.roomNumber" class="text-[9px] text-amber-900 bg-amber-200/60 px-1.5 py-0.5 rounded">{{ slot.roomNumber }}</span>
                         </div>
 
-                        <!-- Edit/Delete Action for Teachers/Admins on Hover -->
-                        <div *ngIf="canEditCurrentTimetable && timetableMode === 'STUDENT'" class="absolute top-2 right-2 hidden group-hover:flex items-center gap-1 bg-white/95 p-1 rounded-xl shadow-md border border-slate-200">
+                        <!-- Hover Actions for Admin/Teacher -->
+                        <div *ngIf="canEditCurrentTimetable && timetableMode === 'STUDENT'" class="absolute top-1.5 right-1.5 hidden group-hover:flex items-center gap-1 bg-white/95 p-0.5 rounded-xl shadow-md border border-amber-200">
+                          <button (click)="openEditPeriodModal(slot, $event)" title="Edit Slot"
+                                  class="p-1 text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-lg cursor-pointer">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
                           <button (click)="deletePeriod(slot.id)" title="Remove Period"
                                   class="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg cursor-pointer">
-                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                           </button>
                         </div>
                       </div>
 
+                      <!-- LUNCH INTERVAL SLOT -->
+                      <div *ngIf="slot.slotType === 'LUNCH'"
+                           class="group relative h-full min-h-[96px] p-3 rounded-2xl bg-gradient-to-br from-emerald-50/90 via-teal-50/50 to-emerald-100/40 border border-emerald-200 text-emerald-950 flex flex-col justify-between shadow-[2px_2px_8px_#d1fae5,-2px_-2px_8px_#ffffff] hover:border-emerald-300 transition-all">
+                        <div>
+                          <div class="flex items-center justify-between gap-1">
+                            <span class="text-[9px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded-lg border border-emerald-300/60 flex items-center gap-1">
+                              <span>🍱</span> Lunch
+                            </span>
+                            <span class="text-[9px] font-bold text-emerald-700/90 font-mono">{{ slot.startTime }}</span>
+                          </div>
+                          <div class="font-extrabold text-xs text-emerald-950 mt-1.5 leading-snug">
+                            {{ slot.title || 'Lunch Break' }}
+                          </div>
+                        </div>
+                        <div class="mt-2 pt-1.5 border-t border-emerald-200/60 flex items-center justify-between text-[10px] text-emerald-800/80 font-semibold">
+                          <span>Midday Interval</span>
+                          <span *ngIf="slot.roomNumber" class="text-[9px] text-emerald-900 bg-emerald-200/60 px-1.5 py-0.5 rounded">{{ slot.roomNumber }}</span>
+                        </div>
+
+                        <!-- Hover Actions for Admin/Teacher -->
+                        <div *ngIf="canEditCurrentTimetable && timetableMode === 'STUDENT'" class="absolute top-1.5 right-1.5 hidden group-hover:flex items-center gap-1 bg-white/95 p-0.5 rounded-xl shadow-md border border-emerald-200">
+                          <button (click)="openEditPeriodModal(slot, $event)" title="Edit Slot"
+                                  class="p-1 text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-lg cursor-pointer">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button (click)="deletePeriod(slot.id)" title="Remove Period"
+                                  class="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg cursor-pointer">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- ACADEMIC / SUBJECT SLOT -->
+                      <div *ngIf="slot.slotType !== 'BREAK' && slot.slotType !== 'LUNCH'"
+                           [ngClass]="[getSubjectTheme(slot).cardBg, getSubjectTheme(slot).borderHover]"
+                           class="group relative h-full min-h-[96px] p-3 rounded-2xl border shadow-[3px_3px_10px_#e2e8f0,-3px_-3px_10px_#ffffff] hover:shadow-[4px_4px_14px_#cbd5e1] transition-all flex flex-col justify-between">
+                        
+                        <div>
+                          <!-- Top Row: Category Badge + Start Time -->
+                          <div class="flex items-center justify-between gap-1">
+                            <span [ngClass]="getSubjectTheme(slot).badgeBg"
+                                  class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg border flex items-center gap-1 shadow-2xs">
+                              {{ getSubjectTheme(slot).badgeText }}
+                            </span>
+                            <span class="text-[9px] font-semibold text-slate-500 font-mono">
+                              {{ slot.startTime }}
+                            </span>
+                          </div>
+
+                          <!-- Middle Row: Subject Title -->
+                          <div class="font-extrabold text-xs text-slate-900 mt-1.5 leading-snug break-words">
+                            {{ slot.subjectName || slot.title }}
+                          </div>
+                        </div>
+
+                        <!-- Bottom Row: Teacher / Class Pill + Room -->
+                        <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 text-[10px]">
+                          <!-- If in Faculty Mode: Show Target Class & Section -->
+                          <div *ngIf="timetableMode === 'FACULTY'" class="flex items-center gap-1 min-w-0 text-slate-700">
+                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>
+                            <span class="truncate font-bold" title="{{ slot.className ? (slot.className + ' - ' + slot.sectionName) : 'Class' }}">
+                              {{ slot.className ? (slot.className + ' • ' + slot.sectionName) : 'Class' }}
+                            </span>
+                          </div>
+
+                          <!-- If in Class / Student Mode: Show Assigned Teacher with Initial Avatar OR 'No teacher assigned' -->
+                          <div *ngIf="timetableMode !== 'FACULTY'" class="flex items-center gap-1.5 min-w-0">
+                            <ng-container *ngIf="getTeacherDisplayName(slot) as tName; else unassignedTeacher">
+                              <div class="w-4 h-4 rounded-full bg-slate-900 text-white text-[8px] font-black flex items-center justify-center shrink-0">
+                                {{ getInitials(tName) }}
+                              </div>
+                              <span class="truncate font-bold text-slate-700" [title]="tName">
+                                {{ tName }}
+                              </span>
+                            </ng-container>
+                            <ng-template #unassignedTeacher>
+                              <div class="flex items-center gap-1 text-[9px] font-bold text-amber-750 bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-200/90 truncate">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                                <span class="truncate">No teacher assigned</span>
+                              </div>
+                            </ng-template>
+                          </div>
+
+                          <!-- Room badge -->
+                          <span class="text-[9px] font-bold text-slate-500 bg-slate-100/90 px-1.5 py-0.5 rounded-md border border-slate-200/60 shrink-0">
+                            {{ slot.roomNumber || 'Rm' }}
+                          </span>
+                        </div>
+
+                        <!-- Hover Action Toolbar (Edit ✏️ & Delete 🗑️) -->
+                        <div *ngIf="canEditCurrentTimetable && timetableMode === 'STUDENT'"
+                             class="absolute top-1.5 right-1.5 hidden group-hover:flex items-center gap-0.5 bg-white/95 p-0.5 rounded-xl shadow-md border border-slate-200/80 backdrop-blur-xs">
+                          <button (click)="openEditPeriodModal(slot, $event)" title="Edit Period"
+                                  class="p-1 text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button (click)="deletePeriod(slot.id)" title="Remove Period"
+                                  class="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg cursor-pointer transition-colors">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+
+                      </div>
+
                     </ng-container>
 
                     <!-- EMPTY SLOT TEMPLATE -->
                     <ng-template #emptySlot>
-                      <div class="h-full min-h-[90px] p-3 rounded-2xl border-2 border-dashed border-slate-200/70 flex flex-col items-center justify-center text-center text-slate-400">
-                        <span class="text-[10px] font-medium">Free Slot</span>
-                        <button *ngIf="canEditCurrentTimetable && timetableMode === 'STUDENT'" (click)="openAddPeriodModal(day.id, pNum.number, pNum.start, pNum.end)"
-                                class="mt-1 text-[10px] font-bold text-indigo-600 hover:underline cursor-pointer">
-                          + Assign
-                        </button>
+                      <div class="h-full min-h-[96px] p-2 rounded-2xl border-2 border-dashed border-slate-200/70 hover:border-slate-300 hover:bg-slate-50/40 transition-all flex flex-col items-center justify-center text-center">
+                        <ng-container *ngIf="canEditCurrentTimetable && timetableMode === 'STUDENT'; else readOnlyEmpty">
+                          <button (click)="openAddPeriodModal(day.id, pNum.number, pNum.start, pNum.end)"
+                                  class="px-2.5 py-1.5 rounded-xl bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 shadow-[2px_2px_6px_#edf2f7] text-[10px] font-bold text-indigo-700 hover:text-indigo-800 transition-all flex items-center gap-1 cursor-pointer">
+                            <span class="text-xs leading-none font-black">+</span>
+                            <span>Assign</span>
+                          </button>
+                        </ng-container>
+                        <ng-template #readOnlyEmpty>
+                          <span class="text-[10px] font-medium text-slate-300">— Free —</span>
+                        </ng-template>
                       </div>
                     </ng-template>
                   </td>
@@ -845,66 +981,86 @@ export interface MonthItem {
         <!-- VIEW 2: DAILY TIMELINE CARDS VIEW -->
         <div *ngIf="viewLayout === 'DAY'" class="space-y-3">
           <div *ngFor="let slot of getPeriodsForDay(getSelectedDayName())"
-               class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+               [ngClass]="[getSubjectTheme(slot).cardBg, getSubjectTheme(slot).borderHover]"
+               class="p-5 rounded-3xl border shadow-[4px_4px_14px_#e2e8f0,-4px_-4px_14px_#ffffff] flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all">
             
             <div class="flex items-center gap-4">
-              <!-- Period Circle Indicator -->
-              <div class="w-12 h-12 rounded-2xl flex flex-col items-center justify-center shrink-0 border"
-                   [ngClass]="{
-                     'bg-amber-50 text-amber-700 border-amber-200': slot.slotType === 'BREAK',
-                     'bg-emerald-50 text-emerald-700 border-emerald-200': slot.slotType === 'LUNCH',
-                     'bg-slate-900 text-white border-slate-900 shadow-md': slot.slotType === 'ACADEMIC'
-                   }">
-                <span class="text-[9px] font-bold uppercase tracking-wider">Slot</span>
-                <span class="text-base font-black leading-none mt-0.5">{{ slot.periodNumber }}</span>
+              <!-- Period Slot Indicator with Theme -->
+              <div class="w-13 h-13 rounded-2xl flex flex-col items-center justify-center shrink-0 border shadow-xs"
+                   [ngClass]="getSubjectTheme(slot).badgeBg">
+                <span class="text-[8px] font-extrabold uppercase tracking-wider">Slot</span>
+                <span class="text-lg font-black leading-none mt-0.5">{{ slot.periodNumber }}</span>
               </div>
 
               <div>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-xs font-black px-2.5 py-0.5 rounded-lg border font-mono shadow-2xs"
+                        [ngClass]="getSubjectTheme(slot).badgeBg">
                     {{ slot.startTime }} - {{ slot.endTime }}
                   </span>
-                  <span *ngIf="slot.roomNumber" class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg">
-                    {{ slot.roomNumber }}
+                  <span [ngClass]="getSubjectTheme(slot).badgeBg"
+                        class="text-[10px] font-bold px-2 py-0.5 rounded-lg border uppercase tracking-wider">
+                    {{ getSubjectTheme(slot).category }}
+                  </span>
+                  <span *ngIf="slot.roomNumber" class="text-[10px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
+                    📍 {{ slot.roomNumber }}
                   </span>
                 </div>
-                <h3 class="text-base font-black text-slate-900 mt-1">
+
+                <h3 class="text-base font-black text-slate-900 mt-1.5">
                   {{ slot.subjectName || slot.title }}
                 </h3>
-                <p *ngIf="slot.teacherName || slot.className" class="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
-                  <svg class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span>{{ slot.className ? ('Class: ' + slot.className + ' - ' + slot.sectionName) : ('Faculty: ' + slot.teacherName) }}</span>
-                </p>
+
+                <div *ngIf="slot.teacherName || slot.className || !slot.teacherId" class="text-xs text-slate-600 mt-1 flex items-center gap-2 flex-wrap">
+                  <div *ngIf="timetableMode !== 'FACULTY'">
+                    <div *ngIf="getTeacherDisplayName(slot) as tName; else dailyUnassigned" class="flex items-center gap-1.5">
+                      <div class="w-4 h-4 rounded-full bg-slate-900 text-white text-[8px] font-black flex items-center justify-center">
+                        {{ getInitials(tName) }}
+                      </div>
+                      <span class="font-bold text-slate-800">{{ tName }}</span>
+                    </div>
+                    <ng-template #dailyUnassigned>
+                      <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-bold">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                        <span>No teacher assigned</span>
+                      </div>
+                    </ng-template>
+                  </div>
+                  <div *ngIf="slot.className" class="flex items-center gap-1 text-slate-600">
+                    <span class="text-slate-400 font-normal">Class:</span>
+                    <span class="font-bold text-slate-800">{{ slot.className }} - {{ slot.sectionName }}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div class="flex items-center gap-3">
-              <span class="px-3 py-1.5 rounded-xl text-xs font-bold border"
-                    [ngClass]="{
-                      'bg-amber-50 text-amber-800 border-amber-200': slot.slotType === 'BREAK',
-                      'bg-emerald-50 text-emerald-800 border-emerald-200': slot.slotType === 'LUNCH',
-                      'bg-blue-50 text-blue-800 border-blue-200': slot.slotType === 'ACADEMIC'
-                    }">
-                {{ slot.slotType }}
-              </span>
+            <div class="flex items-center gap-2 self-end sm:self-center">
+              <button *ngIf="canEditCurrentTimetable && timetableMode === 'STUDENT'" (click)="openEditPeriodModal(slot, $event)"
+                      class="px-3.5 py-2 rounded-xl bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-700 text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span>Edit</span>
+              </button>
 
               <button *ngIf="canEditCurrentTimetable && timetableMode === 'STUDENT'" (click)="deletePeriod(slot.id)"
-                      class="px-3 py-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 text-xs font-bold transition-all cursor-pointer">
-                Remove
+                      class="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <span>Remove</span>
               </button>
             </div>
           </div>
 
           <div *ngIf="getPeriodsForDay(getSelectedDayName()).length === 0"
-               class="bg-white p-12 rounded-3xl border border-slate-200/80 text-center shadow-sm">
-            <div class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-3">
+               class="bg-white p-12 rounded-3xl border border-slate-200/80 text-center shadow-[4px_4px_16px_#e2e8f0,-4px_-4px_16px_#ffffff]">
+            <div class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-3 shadow-inner">
               <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h4 class="text-sm font-bold text-slate-800">No scheduled periods for {{ getSelectedDayName() }}</h4>
+            <h4 class="text-sm font-extrabold text-slate-800">No scheduled periods for {{ getSelectedDayName() }}</h4>
             <p class="text-xs text-slate-500 mt-1">Free day or schedule not yet configured for this day.</p>
           </div>
         </div>
@@ -1447,13 +1603,11 @@ export class TimetableComponent implements OnInit {
 
   initData() {
     this.loadAcademicCalendar();
+    this.loadClassesAndTeachers();
     if (this.auth.isParent()) {
       this.loadParentTimetable();
     } else if (this.auth.isTeacher() && !this.auth.isAdmin()) {
       this.loadTeacherTimetable();
-      this.loadClassesAndTeachers();
-    } else {
-      this.loadClassesAndTeachers();
     }
   }
 
@@ -1497,8 +1651,9 @@ export class TimetableComponent implements OnInit {
 
     this.api.get<any[]>('academics/staff').subscribe({
       next: (staff) => {
-        this.teachersList = staff
+        this.teachersList = (staff || [])
           .filter((u) => u.role !== 'GUARDIAN' && u.role !== 'PARENT' && u.role !== 'STUDENT')
+          .filter((u) => (u.status || 'ACTIVE').toUpperCase() === 'ACTIVE')
           .map((u) => ({
             id: u.id,
             name: u.fullName || `${u.firstName} ${u.lastName || ''}`.trim(),
@@ -1873,17 +2028,36 @@ export class TimetableComponent implements OnInit {
         this.childrenList = res.childrenList || [];
         if (res.selectedChild) {
           this.selectedChildId = res.selectedChild.studentId;
+          this.selectedClassId = res.selectedChild.classId || '';
+          this.selectedSectionId = res.selectedChild.sectionId || '';
           this.currentSectionTitle = `${res.selectedChild.className} - ${res.selectedChild.sectionName}`;
         }
         if (res.timetable) {
           this.periods = res.timetable.periods || [];
           this.availableSubjects = res.timetable.availableSubjects || [];
+          this.allSchoolPeriods = res.timetable.allSchoolPeriods || [];
         }
       },
       error: () => {
         this.toast.error('Unable to load child timetable');
       },
     });
+
+    if (this.teachersList.length === 0) {
+      this.api.get<any[]>('academics/staff').subscribe({
+        next: (staff) => {
+          this.teachersList = (staff || [])
+            .filter((u) => u.role !== 'GUARDIAN' && u.role !== 'PARENT' && u.role !== 'STUDENT')
+            .filter((u) => (u.status || 'ACTIVE').toUpperCase() === 'ACTIVE')
+            .map((u) => ({
+              id: u.id,
+              name: u.fullName || `${u.firstName} ${u.lastName || ''}`.trim(),
+              email: u.email,
+              role: u.role || 'STAFF',
+            }));
+        },
+      });
+    }
   }
 
   loadTeacherTimetable() {
@@ -1984,14 +2158,16 @@ export class TimetableComponent implements OnInit {
 
   getPeriod(dayName: string, periodNumber: number): TimetablePeriodItem | undefined {
     return this.periods.find(
-      (p) => (p.dayName === dayName || this.getDayNameFromNumber(p.dayOfWeek) === dayName) && p.periodNumber === periodNumber,
+      (p) =>
+        (p.dayName === dayName || this.getDayNameFromNumber(p.dayOfWeek) === dayName) &&
+        Number(p.periodNumber) === Number(periodNumber),
     );
   }
 
   getPeriodsForDay(dayName: string): TimetablePeriodItem[] {
     return this.periods
       .filter((p) => p.dayName === dayName || this.getDayNameFromNumber(p.dayOfWeek) === dayName)
-      .sort((a, b) => a.periodNumber - b.periodNumber);
+      .sort((a, b) => Number(a.periodNumber) - Number(b.periodNumber));
   }
 
   getSelectedDayName(): string {
@@ -2071,10 +2247,6 @@ export class TimetableComponent implements OnInit {
     const initialStartTime = matchingPeriodSlot?.start || startTime;
     const initialEndTime = matchingPeriodSlot?.end || endTime;
 
-    const availableTeacher = this.teachersList.find(
-      (t) => this.getTeacherAvailability(t.id, dayOfWeek, periodNumber).isAvailable
-    );
-
     this.modalForm = {
       dayOfWeek,
       periodNumber,
@@ -2083,7 +2255,7 @@ export class TimetableComponent implements OnInit {
       slotType: 'ACADEMIC',
       title: '',
       classSubjectId: this.availableSubjects[0]?.classSubjectId || '',
-      teacherId: availableTeacher?.id || this.teachersList[0]?.id || '',
+      teacherId: '', // Default to unassigned / "-- Select Teacher / Staff --"
       roomNumber: 'Room 101',
     };
     this.showAddModal = true;
@@ -2113,7 +2285,7 @@ export class TimetableComponent implements OnInit {
 
     this.savingPeriod = true;
     const selectedSubject = this.availableSubjects.find((s) => s.classSubjectId === this.modalForm.classSubjectId);
-    const selectedTeacher = this.teachersList.find((t) => t.id === this.modalForm.teacherId);
+    const selectedTeacher = this.modalForm.teacherId ? this.teachersList.find((t) => t.id === this.modalForm.teacherId) : null;
     const activeSec = this.flatSections.find((s) => s.sectionId === this.selectedSectionId);
 
     const payload = {
@@ -2128,8 +2300,8 @@ export class TimetableComponent implements OnInit {
       subjectId: isAcademicSlot ? (selectedSubject?.subjectId || this.modalForm.classSubjectId) : undefined,
       subjectName: selectedSubject?.name || undefined,
       subjectCode: selectedSubject?.code || undefined,
-      teacherId: isAcademicSlot ? (this.modalForm.teacherId || undefined) : undefined,
-      teacherName: selectedTeacher?.name || undefined,
+      teacherId: isAcademicSlot && this.modalForm.teacherId ? this.modalForm.teacherId : undefined,
+      teacherName: isAcademicSlot && selectedTeacher ? selectedTeacher.name : undefined,
       roomNumber: this.modalForm.roomNumber || undefined,
       className: activeSec?.className || '',
       sectionName: activeSec?.sectionName || '',
@@ -2147,6 +2319,171 @@ export class TimetableComponent implements OnInit {
         this.savingPeriod = false;
       },
     });
+  }
+
+  getSubjectTheme(slot?: TimetablePeriodItem): {
+    cardBg: string;
+    badgeBg: string;
+    badgeText: string;
+    borderHover: string;
+    accentBar: string;
+    category: string;
+    iconBg: string;
+  } {
+    if (!slot) {
+      return {
+        cardBg: 'bg-white',
+        badgeBg: 'bg-slate-100 text-slate-700',
+        badgeText: 'SUB',
+        borderHover: 'hover:border-indigo-300',
+        accentBar: 'bg-slate-400',
+        category: 'General',
+        iconBg: 'bg-slate-100 text-slate-700'
+      };
+    }
+
+    if (slot.slotType === 'BREAK') {
+      return {
+        cardBg: 'bg-gradient-to-br from-amber-50/90 to-orange-50/60 border-amber-200/90 text-amber-900',
+        badgeBg: 'bg-amber-100/90 text-amber-800 border-amber-200',
+        badgeText: 'RECESS',
+        borderHover: 'hover:border-amber-400',
+        accentBar: 'bg-amber-400',
+        category: 'Break',
+        iconBg: 'bg-amber-200/70 text-amber-900'
+      };
+    }
+
+    if (slot.slotType === 'LUNCH') {
+      return {
+        cardBg: 'bg-gradient-to-br from-emerald-50/90 to-teal-50/60 border-emerald-200/90 text-emerald-900',
+        badgeBg: 'bg-emerald-100/90 text-emerald-800 border-emerald-200',
+        badgeText: 'LUNCH',
+        borderHover: 'hover:border-emerald-400',
+        accentBar: 'bg-emerald-500',
+        category: 'Interval',
+        iconBg: 'bg-emerald-200/70 text-emerald-900'
+      };
+    }
+
+    const name = (slot.subjectName || slot.title || '').toLowerCase();
+    const code = (slot.subjectCode || '').toLowerCase();
+
+    // Mathematics
+    if (name.includes('math') || name.includes('algebra') || name.includes('geom') || code.includes('mat')) {
+      return {
+        cardBg: 'bg-gradient-to-br from-blue-50/70 via-white to-indigo-50/30 border-blue-200/80',
+        badgeBg: 'bg-blue-100 text-blue-800 border-blue-200',
+        badgeText: slot.subjectCode || 'MATH',
+        borderHover: 'hover:border-blue-400',
+        accentBar: 'bg-blue-500',
+        category: 'Mathematics',
+        iconBg: 'bg-blue-100 text-blue-700'
+      };
+    }
+
+    // Science / Physics / Chemistry / Biology / Computer Science / IT
+    if (name.includes('scien') || name.includes('phys') || name.includes('chem') || name.includes('bio') || name.includes('comp') || name.includes('tech') || name.includes('i.t') || code.includes('sci') || code.includes('cs')) {
+      return {
+        cardBg: 'bg-gradient-to-br from-emerald-50/70 via-white to-teal-50/30 border-emerald-200/80',
+        badgeBg: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+        badgeText: slot.subjectCode || 'SCI',
+        borderHover: 'hover:border-emerald-400',
+        accentBar: 'bg-emerald-500',
+        category: 'Science & Tech',
+        iconBg: 'bg-emerald-100 text-emerald-700'
+      };
+    }
+
+    // Languages / English / Hindi / French / Spanish / Sanskrit / Urdu
+    if (name.includes('eng') || name.includes('hindi') || name.includes('french') || name.includes('span') || name.includes('lang') || name.includes('sans') || name.includes('urdu') || code.includes('eng')) {
+      return {
+        cardBg: 'bg-gradient-to-br from-purple-50/70 via-white to-violet-50/30 border-purple-200/80',
+        badgeBg: 'bg-purple-100 text-purple-800 border-purple-200',
+        badgeText: slot.subjectCode || 'LANG',
+        borderHover: 'hover:border-purple-400',
+        accentBar: 'bg-purple-500',
+        category: 'Languages',
+        iconBg: 'bg-purple-100 text-purple-700'
+      };
+    }
+
+    // Social Studies / History / Geography / Civics / EVS
+    if (name.includes('soc') || name.includes('hist') || name.includes('geo') || name.includes('civ') || name.includes('evs') || name.includes('env')) {
+      return {
+        cardBg: 'bg-gradient-to-br from-amber-50/70 via-white to-orange-50/30 border-amber-200/80',
+        badgeBg: 'bg-amber-100 text-amber-800 border-amber-200',
+        badgeText: slot.subjectCode || 'SOC',
+        borderHover: 'hover:border-amber-400',
+        accentBar: 'bg-amber-500',
+        category: 'Social Studies',
+        iconBg: 'bg-amber-100 text-amber-700'
+      };
+    }
+
+    // Arts / Music / Sports / PE / Library / Activity
+    if (name.includes('art') || name.includes('music') || name.includes('sport') || name.includes('p.e') || name.includes('dance') || slot.slotType === 'SPORTS' || slot.slotType === 'LIBRARY' || slot.slotType === 'ACTIVITY') {
+      return {
+        cardBg: 'bg-gradient-to-br from-rose-50/70 via-white to-pink-50/30 border-rose-200/80',
+        badgeBg: 'bg-rose-100 text-rose-800 border-rose-200',
+        badgeText: slot.subjectCode || (slot.slotType === 'LIBRARY' ? 'LIB' : slot.slotType === 'SPORTS' ? 'PE' : 'ART'),
+        borderHover: 'hover:border-rose-400',
+        accentBar: 'bg-rose-500',
+        category: 'Arts & Sports',
+        iconBg: 'bg-rose-100 text-rose-700'
+      };
+    }
+
+    // Default Academic Slot
+    return {
+      cardBg: 'bg-gradient-to-br from-slate-50/80 via-white to-indigo-50/20 border-slate-200/80',
+      badgeBg: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+      badgeText: slot.subjectCode || 'ACAD',
+      borderHover: 'hover:border-indigo-300',
+      accentBar: 'bg-indigo-500',
+      category: 'Academic',
+      iconBg: 'bg-slate-100 text-slate-700'
+    };
+  }
+
+  getTeacherDisplayName(slot: TimetablePeriodItem): string | null {
+    if (!slot) return null;
+    if (slot.teacherId && this.teachersList.length > 0) {
+      const found = this.teachersList.find((t) => t.id === slot.teacherId);
+      return found ? found.name : null;
+    }
+    if (slot.teacherName && slot.teacherName !== 'Faculty' && slot.teacherName !== 'Assigned Teacher') {
+      if (this.teachersList.length > 0) {
+        const found = this.teachersList.find((t) => t.name.toLowerCase() === slot.teacherName!.trim().toLowerCase());
+        return found ? found.name : null;
+      }
+      return slot.teacherName;
+    }
+    return null;
+  }
+
+  getInitials(name?: string): string {
+    if (!name || name === 'Faculty' || name === 'Assigned Teacher') return 'T';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  openEditPeriodModal(slot: TimetablePeriodItem, event?: Event) {
+    if (event) event.stopPropagation();
+    const isTeacherActive = slot.teacherId ? this.teachersList.some((t) => t.id === slot.teacherId) : false;
+    this.modalForm = {
+      dayOfWeek: Number(slot.dayOfWeek),
+      periodNumber: Number(slot.periodNumber),
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      slotType: slot.slotType as any,
+      title: slot.title || '',
+      classSubjectId: slot.classSubjectId || '',
+      teacherId: isTeacherActive ? (slot.teacherId || '') : '',
+      roomNumber: slot.roomNumber || 'Room 101',
+    };
+    this.showAddModal = true;
   }
 
   deletePeriod(periodId: string) {
