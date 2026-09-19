@@ -562,14 +562,9 @@ export class AuthService {
 
     // Trigger Supabase SMTP email dispatch using configured custom Gmail SMTP
     try {
-      await this.supabase.auth.signInWithOtp({
-        email: cleanEmail,
-        options: {
-          shouldCreateUser: true,
-        },
-      });
+      await this.supabase.auth.resetPasswordForEmail(cleanEmail);
     } catch (e: any) {
-      console.warn('Supabase email dispatch notice:', e?.message || e);
+      console.warn('Supabase resetPasswordForEmail dispatch notice:', e?.message || e);
     }
 
     // Mask email for display: e.g. j***n@domain.com
