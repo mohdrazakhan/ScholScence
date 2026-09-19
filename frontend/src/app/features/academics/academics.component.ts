@@ -877,10 +877,10 @@ interface StaffMember {
                         </svg>
                       </button>
 
-                      <!-- Student Dropdown Actions List (Viewport Fixed on Top of Everything) -->
+                      <!-- Student Dropdown Actions List (Directly Anchored to 3-Dot Button) -->
                       <div *ngIf="activeStudentMenuId === (st.studentId || st.id)"
-                           [ngStyle]="studentMenuStyle"
-                           class="fixed w-52 bg-white rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.25)] border border-slate-200 py-1.5 z-[100] animate-fadeIn text-xs text-left">
+                           [ngClass]="getStudentMenuPlacement(st)"
+                           class="absolute right-0 w-52 bg-white rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.22)] border border-slate-200/90 py-1.5 z-50 animate-fadeIn text-xs text-left">
                         
                         <!-- 0. View Details & Logs Option -->
                         <button type="button" (click)="viewStudentDetails(st, $event)"
@@ -1103,10 +1103,10 @@ interface StaffMember {
                       </svg>
                     </button>
 
-                    <!-- Student Dropdown Actions List (Viewport Fixed on Top of Everything) -->
+                    <!-- Student Dropdown Actions List (Directly Anchored to 3-Dot Button) -->
                     <div *ngIf="activeStudentMenuId === (st.studentId || st.id)"
-                         [ngStyle]="studentMenuStyle"
-                         class="fixed w-52 bg-white rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.25)] border border-slate-200 py-1.5 z-[100] animate-fadeIn text-xs text-left">
+                         [ngClass]="getStudentMenuPlacement(st)"
+                         class="absolute right-0 w-52 bg-white rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.22)] border border-slate-200/90 py-1.5 z-50 animate-fadeIn text-xs text-left">
                       
                       <!-- 0. View Details & Logs Option -->
                       <button type="button" (click)="viewStudentDetails(st, $event)"
@@ -1435,7 +1435,7 @@ interface StaffMember {
           </div>
 
           <!-- DESKTOP TABLE VIEW (md:block) -->
-          <div *ngIf="!loadingAlumni" class="hidden md:block overflow-x-auto">
+          <div *ngIf="!loadingAlumni" class="hidden md:block overflow-x-auto min-h-[380px] pb-32">
             <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
               <thead class="bg-[#f8fafc] text-slate-600 font-bold uppercase tracking-wider">
                 <tr>
@@ -1870,7 +1870,7 @@ interface StaffMember {
           </div>
 
           <!-- VIEW 1: DESKTOP TABLE VIEW (md:block) -->
-          <div *ngIf="!loadingStaff" class="hidden md:block overflow-x-auto">
+          <div *ngIf="!loadingStaff" class="hidden md:block overflow-x-auto min-h-[380px] pb-32">
             <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
               <thead class="bg-[#f8fafc] text-slate-600 font-bold uppercase tracking-wider">
                 <tr>
@@ -2011,8 +2011,8 @@ interface StaffMember {
                   </td>
 
                   <!-- Action Buttons (Vertical 3-Dot Action Menu) -->
-                  <td class="px-6 py-3.5 text-right relative" (click)="$event.stopPropagation()">
-                    <div class="flex items-center justify-end gap-1">
+                  <td class="px-6 py-3.5 text-right" [class.relative]="activeStaffMenuId === staff.id" [class.z-40]="activeStaffMenuId === staff.id" (click)="$event.stopPropagation()">
+                    <div class="relative inline-block text-right">
                       <!-- 3-Dot Action Button -->
                       <button type="button" (click)="toggleStaffMenu(staff.id, $event)" title="Faculty Actions"
                               class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer shadow-2xs active:scale-95">
@@ -2023,10 +2023,10 @@ interface StaffMember {
                         </svg>
                       </button>
 
-                      <!-- Staff Dropdown Actions Menu (Fixed Floating Overlay) -->
+                      <!-- Staff Dropdown Actions Menu (Directly Anchored to 3-Dot Button) -->
                       <div *ngIf="activeStaffMenuId === staff.id"
-                           [ngStyle]="staffMenuStyle"
-                           class="fixed w-56 bg-white rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.25)] border border-slate-200 py-1.5 z-[100] animate-fadeIn text-xs text-left">
+                           [ngClass]="getStaffMenuPlacement(staff)"
+                           class="absolute right-0 w-56 bg-white rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.22)] border border-slate-200/90 py-1.5 z-50 animate-fadeIn text-xs text-left">
                         
                         <!-- 1. View Full Profile -->
                         <button type="button" (click)="openViewStaffProfile(staff, $event)"
@@ -2157,10 +2157,10 @@ interface StaffMember {
                     </svg>
                   </button>
 
-                  <!-- Floating Dropdown Menu -->
+                  <!-- Mobile Attached Dropdown Menu -->
                   <div *ngIf="activeStaffMenuId === staff.id"
-                       [ngStyle]="staffMenuStyle"
-                       class="fixed w-52 bg-white rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.25)] border border-slate-200 py-1.5 z-[100] animate-fadeIn text-xs text-left">
+                       [ngClass]="getStaffMenuPlacement(staff)"
+                       class="absolute right-0 w-52 bg-white rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.22)] border border-slate-200/90 py-1.5 z-50 animate-fadeIn text-xs text-left">
                     <button type="button" (click)="openViewStaffProfile(staff, $event)"
                             class="w-full px-3.5 py-2 text-left font-bold text-slate-800 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-slate-100">
                       <svg class="w-4 h-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -9023,6 +9023,17 @@ export class AcademicsComponent implements OnInit {
     return candidate;
   }
 
+  getStudentMenuPlacement(student: any): string {
+    const sId = student.studentId || student.id;
+    const idx = this.paginatedStudents.findIndex(s => (s.studentId || s.id) === sId);
+    const total = this.paginatedStudents.length;
+    // If it's near the bottom of the visible page, open upwards to prevent cutting off
+    if ((total >= 3 && idx >= total - 2) || (total === 2 && idx === 1)) {
+      return 'bottom-full mb-1.5 origin-bottom-right';
+    }
+    return 'top-full mt-1.5 origin-top-right';
+  }
+
   toggleStudentMenu(studentId: string, event: Event) {
     event.stopPropagation();
     if (this.activeStudentMenuId === studentId) {
@@ -9030,34 +9041,11 @@ export class AcademicsComponent implements OnInit {
       return;
     }
 
-    const btn = (event.currentTarget || event.target) as HTMLElement;
-    if (btn && typeof btn.getBoundingClientRect === 'function') {
-      const rect = btn.getBoundingClientRect();
-      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-      const spaceBelow = viewportHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      const rightPos = Math.max(12, viewportWidth - rect.right);
-
-      const styleObj: { [key: string]: string } = {
-        right: `${rightPos}px`,
-      };
-
-      // If less than 210px below and space above is sufficient, position above button, else below
-      if (spaceBelow < 210 && spaceAbove > 180) {
-        styleObj['bottom'] = `${viewportHeight - rect.top + 6}px`;
-      } else {
-        styleObj['top'] = `${rect.bottom + 6}px`;
-      }
-
-      this.studentMenuStyle = styleObj;
-    } else {
-      this.studentMenuStyle = {};
-    }
-
     this.activeStudentMenuId = studentId;
+    this.activeStaffMenuId = null;
     this.activeClassMenuId = null;
     this.activeSectionMenuId = null;
+    this.activeAlumniMenuId = null;
   }
 
   openAddStudentModal() {
@@ -9464,35 +9452,21 @@ export class AcademicsComponent implements OnInit {
   }
 
   // --- Staff 3-Dot Actions & Profile/Edit Modal Handlers ---
+  getStaffMenuPlacement(staff: StaffMember): string {
+    const idx = this.paginatedStaff.findIndex(s => s.id === staff.id);
+    const total = this.paginatedStaff.length;
+    // If it's near the bottom of a large list (last 2 rows in 4+ list), open upwards to stay fully visible
+    if (total >= 4 && idx >= total - 2) {
+      return 'bottom-full mb-1.5 origin-bottom-right';
+    }
+    return 'top-full mt-1.5 origin-top-right';
+  }
+
   toggleStaffMenu(staffId: string, event: Event) {
     event.stopPropagation();
     if (this.activeStaffMenuId === staffId) {
       this.activeStaffMenuId = null;
       return;
-    }
-
-    const btn = (event.currentTarget || event.target) as HTMLElement;
-    if (btn && typeof btn.getBoundingClientRect === 'function') {
-      const rect = btn.getBoundingClientRect();
-      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-      const spaceBelow = viewportHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      const rightPos = Math.max(12, viewportWidth - rect.right);
-
-      const styleObj: { [key: string]: string } = {
-        right: `${rightPos}px`,
-      };
-
-      if (spaceBelow < 250 && spaceAbove > 200) {
-        styleObj['bottom'] = `${viewportHeight - rect.top + 6}px`;
-      } else {
-        styleObj['top'] = `${rect.bottom + 6}px`;
-      }
-
-      this.staffMenuStyle = styleObj;
-    } else {
-      this.staffMenuStyle = {};
     }
 
     this.activeStaffMenuId = staffId;
