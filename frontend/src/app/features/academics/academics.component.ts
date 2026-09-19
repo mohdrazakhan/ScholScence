@@ -2626,12 +2626,18 @@ interface StaffMember {
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label class="block font-bold text-slate-700 mb-1">First Name *</label>
-                <input type="text" [(ngModel)]="newStudent.firstName" placeholder="e.g. Aryan"
+                <input type="text" [(ngModel)]="newStudent.firstName"
+                       (keypress)="allowOnlyLetters($event)"
+                       (input)="newStudent.firstName = sanitizeName(newStudent.firstName)"
+                       placeholder="e.g. Aryan"
                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
               </div>
               <div>
                 <label class="block font-bold text-slate-700 mb-1">Last Name</label>
-                <input type="text" [(ngModel)]="newStudent.lastName" placeholder="e.g. Khan"
+                <input type="text" [(ngModel)]="newStudent.lastName"
+                       (keypress)="allowOnlyLetters($event)"
+                       (input)="newStudent.lastName = sanitizeName(newStudent.lastName)"
+                       placeholder="e.g. Khan"
                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
               </div>
             </div>
@@ -2653,7 +2659,10 @@ interface StaffMember {
               </div>
               <div>
                 <label class="block font-bold text-slate-700 mb-1">Roll Number</label>
-                <input type="text" [(ngModel)]="newStudent.rollNumber" placeholder="e.g. 15"
+                <input type="text" [(ngModel)]="newStudent.rollNumber"
+                       (keypress)="allowOnlyNumbers($event)"
+                       (input)="newStudent.rollNumber = sanitizeNumber(newStudent.rollNumber)"
+                       placeholder="e.g. 15"
                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
               </div>
             </div>
@@ -2703,14 +2712,27 @@ interface StaffMember {
               </div>
               <div>
                 <label class="block font-bold text-slate-700 mb-1">Blood Group</label>
-                <input type="text" [(ngModel)]="newStudent.bloodGroup" placeholder="e.g. O+, B+, A+"
-                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+                <select [(ngModel)]="newStudent.bloodGroup"
+                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
+                  <option value="">-- Select Blood Group --</option>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                </select>
               </div>
             </div>
 
-            <!-- Guardian Section -->
-            <div class="p-3 bg-slate-100 border border-slate-200 rounded-2xl text-slate-900 mt-2 flex items-center justify-between">
-              <strong class="font-bold">Primary Guardian / Parent Linkage</strong>
+            <!-- Guardian / Parent Linkage Section -->
+            <div class="p-3 bg-slate-100 border border-slate-200 rounded-2xl text-slate-900 mt-3 flex items-center justify-between">
+              <div>
+                <strong class="font-black text-xs block text-slate-900">Parent & Guardian Linkage</strong>
+                <span class="text-[10px] text-slate-500">Record parents' contact details & assign a primary login email</span>
+              </div>
               <span *ngIf="newStudent.guardianPhotoUrl" (click)="removeGuardianPhoto()" class="text-[10px] font-bold text-rose-600 hover:underline cursor-pointer">
                 Remove Photo
               </span>
@@ -2721,7 +2743,7 @@ interface StaffMember {
               <div class="w-12 h-12 rounded-2xl bg-white border border-slate-300 flex items-center justify-center shrink-0 overflow-hidden shadow-inner relative group">
                 <img *ngIf="newStudent.guardianPhotoUrl" [src]="newStudent.guardianPhotoUrl" class="w-full h-full object-cover" alt="Guardian Preview" />
                 <span *ngIf="!newStudent.guardianPhotoUrl" class="text-sm font-black text-slate-400">
-                  {{ (newStudent.guardianName || 'G').charAt(0).toUpperCase() }}
+                  {{ (newStudent.fatherName || newStudent.motherName || newStudent.guardianName || 'P').charAt(0).toUpperCase() }}
                 </span>
                 <label class="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity text-[9px] font-bold">
                   <span>{{ newStudent.guardianPhotoUrl ? 'Change' : 'Upload' }}</span>
@@ -2734,41 +2756,198 @@ interface StaffMember {
                   <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                   </svg>
-                  <span>{{ uploadingGuardianPhoto ? 'Optimizing...' : (newStudent.guardianPhotoUrl ? 'Change Guardian Photo' : 'Upload Guardian Photo') }}</span>
+                  <span>{{ uploadingGuardianPhoto ? 'Optimizing...' : (newStudent.guardianPhotoUrl ? 'Change Photo' : 'Upload Guardian Photo') }}</span>
                   <input type="file" accept="image/*" (change)="onGuardianPhotoSelected($event)" [disabled]="uploadingGuardianPhoto" class="hidden" />
                 </label>
-                <p class="text-[10px] text-slate-400">Guardian identity photo for student security and gate pass verification.</p>
+                <p class="text-[10px] text-slate-400">Parent identity photo for campus gate pass verification.</p>
               </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">Guardian Name</label>
-                <input type="text" [(ngModel)]="newStudent.guardianName" placeholder="e.g. Alex Johnson"
-                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+            <!-- 1. Father Details -->
+            <div class="p-3.5 bg-slate-50/70 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                  <span class="text-xs font-black text-slate-800 uppercase tracking-wide">1. Father's Details</span>
+                </div>
+                <label class="flex items-center gap-1.5 cursor-pointer text-[11px] font-bold text-slate-700 bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
+                  <input type="radio" name="primaryGuardianType" [(ngModel)]="newStudent.primaryGuardianType" value="FATHER" class="text-indigo-600 focus:ring-indigo-500" />
+                  <span>Primary Login</span>
+                </label>
               </div>
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">Relationship</label>
-                <select [(ngModel)]="newStudent.relationship"
-                        class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
-                  <option value="FATHER">Father</option>
-                  <option value="MOTHER">Mother</option>
-                  <option value="GUARDIAN">Guardian</option>
-                </select>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block font-bold text-slate-700 text-xs mb-1">Father's Name</label>
+                  <input type="text" [(ngModel)]="newStudent.fatherName"
+                         (keypress)="allowOnlyLetters($event)"
+                         (input)="newStudent.fatherName = sanitizeName(newStudent.fatherName)"
+                         placeholder="e.g. Rajesh Sharma"
+                         class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-inner" />
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 text-xs mb-1">Father's Phone Number</label>
+                  <input type="text" [(ngModel)]="newStudent.fatherPhone"
+                         (keypress)="allowPhoneChars($event)"
+                         (input)="newStudent.fatherPhone = sanitizePhone(newStudent.fatherPhone)"
+                         placeholder="+91 98765 43210"
+                         class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-inner" />
+                </div>
               </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">Guardian Phone</label>
-                <input type="text" [(ngModel)]="newStudent.guardianPhone" placeholder="+91 98765 43210"
-                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+            <!-- 2. Mother Details -->
+            <div class="p-3.5 bg-slate-50/70 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-pink-500"></span>
+                  <span class="text-xs font-black text-slate-800 uppercase tracking-wide">2. Mother's Details</span>
+                </div>
+                <label class="flex items-center gap-1.5 cursor-pointer text-[11px] font-bold text-slate-700 bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
+                  <input type="radio" name="primaryGuardianType" [(ngModel)]="newStudent.primaryGuardianType" value="MOTHER" class="text-indigo-600 focus:ring-indigo-500" />
+                  <span>Primary Login</span>
+                </label>
               </div>
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">Guardian Email (For Login)</label>
-                <input type="email" [(ngModel)]="newStudent.guardianEmail" placeholder="parent@gmail.com"
-                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block font-bold text-slate-700 text-xs mb-1">Mother's Name</label>
+                  <input type="text" [(ngModel)]="newStudent.motherName"
+                         (keypress)="allowOnlyLetters($event)"
+                         (input)="newStudent.motherName = sanitizeName(newStudent.motherName)"
+                         placeholder="e.g. Sunita Sharma"
+                         class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-inner" />
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 text-xs mb-1">Mother's Phone Number</label>
+                  <input type="text" [(ngModel)]="newStudent.motherPhone"
+                         (keypress)="allowPhoneChars($event)"
+                         (input)="newStudent.motherPhone = sanitizePhone(newStudent.motherPhone)"
+                         placeholder="+91 98765 43211"
+                         class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-inner" />
+                </div>
               </div>
+            </div>
+
+            <!-- 3. Other / Local Guardian Details (Optional) -->
+            <div class="p-3.5 bg-slate-50/70 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                  <span class="text-xs font-black text-slate-800 uppercase tracking-wide">3. Other / Local Guardian (Optional)</span>
+                </div>
+                <label class="flex items-center gap-1.5 cursor-pointer text-[11px] font-bold text-slate-700 bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
+                  <input type="radio" name="primaryGuardianType" [(ngModel)]="newStudent.primaryGuardianType" value="GUARDIAN" class="text-indigo-600 focus:ring-indigo-500" />
+                  <span>Primary Login</span>
+                </label>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block font-bold text-slate-700 text-xs mb-1">Guardian Name</label>
+                  <input type="text" [(ngModel)]="newStudent.guardianName"
+                         (keypress)="allowOnlyLetters($event)"
+                         (input)="newStudent.guardianName = sanitizeName(newStudent.guardianName)"
+                         placeholder="e.g. Ramesh Sharma"
+                         class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-inner" />
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 text-xs mb-1">Guardian Phone</label>
+                  <input type="text" [(ngModel)]="newStudent.guardianPhone"
+                         (keypress)="allowPhoneChars($event)"
+                         (input)="newStudent.guardianPhone = sanitizePhone(newStudent.guardianPhone)"
+                         placeholder="+91 98765 43212"
+                         class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-inner" />
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 text-xs mb-1">Relationship</label>
+                  <select [(ngModel)]="newStudent.guardianRelationship"
+                          class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-slate-800 shadow-inner">
+                    <option value="GUARDIAN">Legal Guardian</option>
+                    <option value="UNCLE">Uncle</option>
+                    <option value="AUNT">Aunt</option>
+                    <option value="GRANDPARENT">Grandparent</option>
+                    <option value="SIBLING">Elder Sibling</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Single Login Email Account for Parent Portal with Double Entry / Confirmation -->
+            <div class="p-3.5 bg-indigo-50/80 border border-indigo-100 rounded-2xl space-y-2.5">
+              <div class="flex items-center justify-between">
+                <div>
+                  <label class="block font-black text-slate-900 text-xs">
+                    Parent Portal Login Email
+                    <span class="text-indigo-600 font-semibold">(Single Account)</span>
+                  </label>
+                  <span class="text-[10px] text-slate-500">Enter and verify the primary email address for parent portal access</span>
+                </div>
+                <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200 shrink-0">
+                  {{ newStudent.primaryGuardianType === 'FATHER' ? "Father's Login" : (newStudent.primaryGuardianType === 'MOTHER' ? "Mother's Login" : "Guardian's Login") }}
+                </span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="block font-bold text-slate-700 text-xs">
+                      Login Email Address
+                    </label>
+                    <button *ngIf="newStudent.guardianEmail" type="button" (click)="hideLoginEmail = !hideLoginEmail"
+                            class="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 focus:outline-none transition-colors">
+                      <svg *ngIf="!hideLoginEmail" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      <svg *ngIf="hideLoginEmail" class="w-3 h-3 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                      </svg>
+                      <span>{{ hideLoginEmail ? 'Show' : 'Hide' }}</span>
+                    </button>
+                  </div>
+                  <input [type]="hideLoginEmail ? 'password' : 'email'"
+                         [(ngModel)]="newStudent.guardianEmail"
+                         (focus)="hideLoginEmail = false"
+                         (copy)="$event.preventDefault()"
+                         (cut)="$event.preventDefault()"
+                         placeholder="e.g. parent@gmail.com"
+                         class="w-full px-3.5 py-2 bg-white border border-indigo-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-indigo-600 shadow-inner select-none" />
+                </div>
+
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="block font-bold text-slate-700 text-xs">
+                      Verify / Confirm Email *
+                    </label>
+                    <span *ngIf="newStudent.guardianEmail && newStudent.confirmGuardianEmail && (newStudent.guardianEmail.trim().toLowerCase() === newStudent.confirmGuardianEmail.trim().toLowerCase())"
+                          class="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                      <svg class="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Emails match</span>
+                    </span>
+                    <span *ngIf="newStudent.guardianEmail && newStudent.confirmGuardianEmail && (newStudent.guardianEmail.trim().toLowerCase() !== newStudent.confirmGuardianEmail.trim().toLowerCase())"
+                          class="text-[10px] font-bold text-rose-500 flex items-center gap-1">
+                      <svg class="w-3 h-3 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      <span>Mismatch</span>
+                    </span>
+                  </div>
+                  <input type="email"
+                         [(ngModel)]="newStudent.confirmGuardianEmail"
+                         (focus)="hideLoginEmail = true"
+                         (input)="hideLoginEmail = true"
+                         (paste)="$event.preventDefault()"
+                         (drop)="$event.preventDefault()"
+                         placeholder="Re-enter email to verify"
+                         [ngClass]="newStudent.guardianEmail && newStudent.confirmGuardianEmail && (newStudent.guardianEmail.trim().toLowerCase() !== newStudent.confirmGuardianEmail.trim().toLowerCase()) ? 'border-rose-400 bg-rose-50/40 focus:border-rose-500' : 'border-indigo-200 bg-white focus:border-indigo-600'"
+                         class="w-full px-3.5 py-2 border rounded-xl text-xs text-slate-900 focus:outline-none shadow-inner" />
+                </div>
+              </div>
+
+              <p class="text-[10px] text-slate-500 leading-tight">
+                This verified email will be used by the family to log into the SchoolSense Parent Portal to track attendance, fees, homework, and report cards.
+              </p>
             </div>
 
             <div *ngIf="studentModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
@@ -5343,6 +5522,7 @@ export class AcademicsComponent implements OnInit {
   uploadingStudentPhoto = false;
   uploadingGuardianPhoto = false;
   uploadingStaffPhoto = false;
+  hideLoginEmail = false;
 
   newStudent = {
     firstName: '',
@@ -5354,9 +5534,16 @@ export class AcademicsComponent implements OnInit {
     dateOfBirth: '',
     bloodGroup: '',
     photoUrl: '',
+    fatherName: '',
+    fatherPhone: '',
+    motherName: '',
+    motherPhone: '',
     guardianName: '',
     guardianPhone: '',
+    guardianRelationship: 'GUARDIAN',
+    primaryGuardianType: 'FATHER' as 'FATHER' | 'MOTHER' | 'GUARDIAN',
     guardianEmail: '',
+    confirmGuardianEmail: '',
     guardianPhotoUrl: '',
     relationship: 'FATHER',
   };
@@ -8224,16 +8411,64 @@ export class AcademicsComponent implements OnInit {
       dateOfBirth: '2015-05-15',
       bloodGroup: 'B+',
       photoUrl: '',
+      fatherName: '',
+      fatherPhone: '',
+      motherName: '',
+      motherPhone: '',
       guardianName: '',
       guardianPhone: '',
+      guardianRelationship: 'GUARDIAN',
+      primaryGuardianType: 'FATHER',
       guardianEmail: '',
+      confirmGuardianEmail: '',
       guardianPhotoUrl: '',
       relationship: 'FATHER',
     };
     this.studentModalError = '';
+    this.hideLoginEmail = false;
     this.autoGenerateAdmissionNumber();
     this.modalService.open('ADD_STUDENT');
     this.showAddStudentModal = true;
+  }
+
+  // --- Input Validation and Sanitization Helpers ---
+  sanitizeName(value: string): string {
+    return (value || '').replace(/[^a-zA-Z\s.'-]/g, '');
+  }
+
+  sanitizeNumber(value: string): string {
+    return (value || '').replace(/\D/g, '');
+  }
+
+  sanitizePhone(value: string): string {
+    return (value || '').replace(/[^0-9+\-\s()]/g, '');
+  }
+
+  allowOnlyLetters(event: KeyboardEvent): boolean {
+    const char = event.key;
+    if (char.length > 1 || /^[a-zA-Z\s.'-]$/.test(char) || event.ctrlKey || event.metaKey || event.altKey) {
+      return true;
+    }
+    event.preventDefault();
+    return false;
+  }
+
+  allowOnlyNumbers(event: KeyboardEvent): boolean {
+    const char = event.key;
+    if (char.length > 1 || /^[0-9]$/.test(char) || event.ctrlKey || event.metaKey || event.altKey) {
+      return true;
+    }
+    event.preventDefault();
+    return false;
+  }
+
+  allowPhoneChars(event: KeyboardEvent): boolean {
+    const char = event.key;
+    if (char.length > 1 || /^[0-9+\-\s()]$/.test(char) || event.ctrlKey || event.metaKey || event.altKey) {
+      return true;
+    }
+    event.preventDefault();
+    return false;
   }
 
   // --- Photo Upload Handlers for Students & Guardians ---
@@ -8342,6 +8577,11 @@ export class AcademicsComponent implements OnInit {
       } catch {}
     }
 
+    const primaryRel = ((student as any).primaryGuardianType || student.primaryContact?.relationship || 'FATHER').toUpperCase() as 'FATHER' | 'MOTHER' | 'GUARDIAN';
+    const primaryFullName = `${student.primaryContact?.first_name || ''} ${student.primaryContact?.last_name || ''}`.trim();
+    const primaryPhone = student.primaryContact?.phone || '';
+    const existingEmail = (student as any).guardianEmail || student.primaryContact?.email || '';
+
     this.newStudent = {
       firstName: firstName,
       lastName: lastName,
@@ -8352,14 +8592,22 @@ export class AcademicsComponent implements OnInit {
       dateOfBirth: formattedDob,
       bloodGroup: student.bloodGroup || '',
       photoUrl: student.photoUrl || student.photo_url || '',
-      guardianName: `${student.primaryContact?.first_name || ''} ${student.primaryContact?.last_name || ''}`.trim(),
-      guardianPhone: student.primaryContact?.phone || '',
-      guardianEmail: student.primaryContact?.email || '',
+      fatherName: (student as any).fatherName || (student as any).father_name || (primaryRel === 'FATHER' ? primaryFullName : ''),
+      fatherPhone: (student as any).fatherPhone || (student as any).father_phone || (primaryRel === 'FATHER' ? primaryPhone : ''),
+      motherName: (student as any).motherName || (student as any).mother_name || (primaryRel === 'MOTHER' ? primaryFullName : ''),
+      motherPhone: (student as any).motherPhone || (student as any).mother_phone || (primaryRel === 'MOTHER' ? primaryPhone : ''),
+      guardianName: (student as any).guardianName || (student as any).guardian_name || (primaryRel === 'GUARDIAN' ? primaryFullName : ''),
+      guardianPhone: (student as any).guardianPhone || (student as any).guardian_phone || (primaryRel === 'GUARDIAN' ? primaryPhone : ''),
+      guardianRelationship: (student as any).guardianRelationship || 'GUARDIAN',
+      primaryGuardianType: primaryRel === 'MOTHER' ? 'MOTHER' : (primaryRel === 'GUARDIAN' ? 'GUARDIAN' : 'FATHER'),
+      guardianEmail: existingEmail,
+      confirmGuardianEmail: existingEmail,
       guardianPhotoUrl: student.guardianPhotoUrl || (student as any).guardian_photo_url || student.primaryContact?.photoUrl || (student.primaryContact as any)?.photo_url || '',
-      relationship: student.primaryContact?.relationship || 'FATHER',
+      relationship: primaryRel,
     };
 
     this.studentModalError = '';
+    this.hideLoginEmail = false;
     this.modalService.open('EDIT_STUDENT');
     this.showAddStudentModal = true;
   }
@@ -8410,11 +8658,56 @@ export class AcademicsComponent implements OnInit {
       this.studentModalError = 'First Name, Admission Number, Class, and Section are required.';
       return;
     }
+
+    // Verify login email double entry matching
+    const email1 = (this.newStudent.guardianEmail || '').trim().toLowerCase();
+    const email2 = (this.newStudent.confirmGuardianEmail || '').trim().toLowerCase();
+
+    if (email1 || email2) {
+      if (email1 !== email2) {
+        this.studentModalError = 'Parent Portal Login Email and Confirmation Email do not match. Please verify both fields.';
+        return;
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email1)) {
+        this.studentModalError = 'Please enter a valid email address (e.g. parent@gmail.com).';
+        return;
+      }
+    }
+
     this.savingStudent = true;
     this.studentModalError = '';
 
+    // Resolve primary guardian contact details based on selected login user
+    let primaryName = this.newStudent.fatherName;
+    let primaryPhone = this.newStudent.fatherPhone;
+    let primaryRelationship = 'FATHER';
+
+    if (this.newStudent.primaryGuardianType === 'MOTHER') {
+      primaryName = this.newStudent.motherName || this.newStudent.fatherName;
+      primaryPhone = this.newStudent.motherPhone || this.newStudent.fatherPhone;
+      primaryRelationship = 'MOTHER';
+    } else if (this.newStudent.primaryGuardianType === 'GUARDIAN') {
+      primaryName = this.newStudent.guardianName || this.newStudent.fatherName || this.newStudent.motherName;
+      primaryPhone = this.newStudent.guardianPhone || this.newStudent.fatherPhone || this.newStudent.motherPhone;
+      primaryRelationship = this.newStudent.guardianRelationship || 'GUARDIAN';
+    } else {
+      if (!primaryName && this.newStudent.motherName) {
+        primaryName = this.newStudent.motherName;
+        primaryPhone = this.newStudent.motherPhone;
+        primaryRelationship = 'MOTHER';
+      } else if (!primaryName && this.newStudent.guardianName) {
+        primaryName = this.newStudent.guardianName;
+        primaryPhone = this.newStudent.guardianPhone;
+        primaryRelationship = this.newStudent.guardianRelationship || 'GUARDIAN';
+      }
+    }
+
     const payload = {
       ...this.newStudent,
+      guardianName: primaryName || this.newStudent.guardianName || 'Parent',
+      guardianPhone: primaryPhone || this.newStudent.guardianPhone || '',
+      relationship: primaryRelationship,
       classId: this.studentEnrollClassId,
       academicYearId: this.auth.activeAcademicSession()?.id,
     };

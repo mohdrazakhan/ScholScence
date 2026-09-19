@@ -481,3 +481,36 @@ export interface MonthlyCalculationResponse {
   cycle_month: string;
   students_breakdown: StudentBillingBreakdownItem[];
 }
+
+export interface VisualEmailTemplateConfig {
+  subject: string;
+  headerTitle: string;
+  headerSubtitle: string;
+  greeting: string;
+  openingMessage: string;
+  showDetailsCard: boolean;
+  detailsCardTitle: string;
+  showCredentialsBox: boolean;
+  credentialsBoxTitle: string;
+  credentialsNote: string;
+  buttonText: string;
+  showKeyFeatures: boolean;
+  keyFeaturesTitle: string;
+  keyFeaturesList: string[];
+  closingMessage: string;
+  footerNote: string;
+}
+
+export interface OnboardingEmailTemplateItem {
+  subject: string;
+  bodyHtml: string;
+  visualConfig?: VisualEmailTemplateConfig;
+  config?: VisualEmailTemplateConfig;
+}
+
+export interface OnboardingEmailTemplates {
+  parentWelcome: OnboardingEmailTemplateItem;
+  teacherWelcome: OnboardingEmailTemplateItem;
+  updatedAt?: string;
+}
+

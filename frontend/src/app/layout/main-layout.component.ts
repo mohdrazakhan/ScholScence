@@ -1620,6 +1620,8 @@ export interface RoleSectionItem {
         </div>
       </div>
 
+
+
       <!-- Global Full Viewport Modal Backdrop Dimmer (Dims entire viewport including header & sidebar) -->
       <div *ngIf="modalService.isOpen()"
            class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-[60] animate-fadeIn"></div>
