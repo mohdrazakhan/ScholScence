@@ -255,12 +255,19 @@ export interface StudentDeactivationRequest {
   created_at: string;
 }
 
+export interface AttendanceConfig {
+  frequency: 'ONCE_DAILY' | 'TWICE_DAILY';
+  isConfigured: boolean;
+  updatedAt?: string;
+}
+
 export interface AttendanceStudent {
   studentId: string;
   rollNumber: string | number;
   admissionNumber: string;
   name: string;
   status: 'PRESENT' | 'ABSENT' | 'LATE' | 'HALF_DAY' | 'EXCUSED' | 'NOT_MARKED';
+  session?: 'MORNING' | 'AFTERNOON';
   reason?: string | null;
   markedAt?: string | null;
 }
@@ -268,6 +275,8 @@ export interface AttendanceStudent {
 export interface AttendanceRegisterResponse {
   sectionId: string;
   date: string;
+  session?: 'MORNING' | 'AFTERNOON' | 'FULL_DAY';
+  frequency?: 'ONCE_DAILY' | 'TWICE_DAILY';
   classTeacherName?: string;
   summary: {
     totalStudents: number;
