@@ -1,0 +1,1038 @@
+openapi: 3.0.3
+info:
+  title: SchoolSense Enterprise Campus OS - REST API Specification
+  description: >
+    Comprehensive OpenAPI 3.0 specification for the SchoolSense Multi-Tenant
+    Campus Management System. Includes authentication, academic matrices,
+    attendance diaries, homework feeds, marksheets, grievance ticketing, and
+    communication circulars with detailed payload and response examples.
+  version: 1.0.0
+  contact:
+    name: SchoolSense Developer Support
+    email: support@schoolsense.edu
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local Development API Server
+  - url: https://api.schoolsense.app/api/v1
+    description: Production Cloud Gateway
+tags:
+  - name: Authentication
+    description: Token issuance, multi-tenant credential verification, profile inspection, and campus switching
+  - name: Dashboard
+    description: Role-scoped institutional KPIs, attendance metrics, faculty workloads, and parent student widgets
+  - name: Schools
+    description: School directories, multi-branch profiles, academic sessions, and super-admin onboarding
+  - name: Academics
+    description: Classes, sections, curriculum subjects, student enrollment rosters, and faculty directories
+  - name: Timetable
+    description: Weekly period matrices, teacher teaching routines, parent child timetables, and interval slots
+  - name: Attendance
+    description: Section daily registers, bulk student marking, parent live attendance diary, and subject-wise logs
+  - name: Homework
+    description: Subject assignments, submission deadlines, attachment uploads, and student homework feeds
+  - name: Exams & Marks
+    description: Examination papers, grading criteria, marksheet bulk entry, and student academic report cards
+  - name: Complaints & Grievances
+    description: Multi-tier grievance tickets, role-scoped inboxes, delegation, and real-time conversation threads
+  - name: Communication
+    description: Broadcast circulars, school notices, and academic events calendar
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Provide JWT Bearer token obtained from POST /auth/login
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+        message:
+          type: string
+          example: Operation completed successfully
+        timestamp:
+          type: string
+          example: '2026-09-23T16:50:00.000Z'
+    LoginRequest:
+      type: object
+      required:
+        - identifier
+        - password
+      properties:
+        identifier:
+          type: string
+          description: Email address or phone number
+          example: admin@demo-school.com
+        password:
+          type: string
+          description: Account password
+          example: password123
+        schoolCode:
+          type: string
+          description: Unique school code identifier (optional if single tenant)
+          example: DIS001
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            accessToken:
+              type: string
+              example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+            refreshToken:
+              type: string
+              example: dGhpc2lzYXJlZnJlc2h0b2tlbjEyMzQ1Ng...
+            user:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  example: 8f3b2e50-9c1a-4e2b-8a71-6c2e3d4f5a6b
+                name:
+                  type: string
+                  example: Rajesh Gupta
+                email:
+                  type: string
+                  example: admin@demo-school.com
+                phone:
+                  type: string
+                  example: '+91 98765 43210'
+                role:
+                  type: string
+                  example: SCHOOL_ADMIN
+                schoolId:
+                  type: string
+                  format: uuid
+                  example: a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d
+                schoolName:
+                  type: string
+                  example: Delhi Heritage Academy
+                schoolCode:
+                  type: string
+                  example: DHA01
+                permissions:
+                  type: array
+                  items:
+                    type: string
+                  example:
+                    - MANAGE_TIMETABLE
+                    - MANAGE_ACADEMICS
+                    - VIEW_REPORTS
+                    - MANAGE_ATTENDANCE
+    CreateTimetablePeriodRequest:
+      type: object
+      required:
+        - sectionId
+        - dayOfWeek
+        - periodNumber
+        - startTime
+        - endTime
+      properties:
+        sectionId:
+          type: string
+          format: uuid
+          example: c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f
+        dayOfWeek:
+          type: integer
+          minimum: 1
+          maximum: 6
+          description: 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+          example: 1
+        periodNumber:
+          type: integer
+          minimum: 1
+          maximum: 12
+          example: 1
+        startTime:
+          type: string
+          example: '08:30'
+        endTime:
+          type: string
+          example: '09:15'
+        slotType:
+          type: string
+          enum:
+            - ACADEMIC
+            - BREAK
+            - LUNCH
+            - ASSEMBLY
+            - SPORTS
+            - LIBRARY
+            - ACTIVITY
+          example: ACADEMIC
+        title:
+          type: string
+          example: Computer Science
+        classSubjectId:
+          type: string
+          format: uuid
+          example: e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b
+        teacherId:
+          type: string
+          format: uuid
+          example: 8f3b2e50-9c1a-4e2b-8a71-6c2e3d4f5a6b
+        roomNumber:
+          type: string
+          example: Room 101
+    BulkMarkAttendanceRequest:
+      type: object
+      required:
+        - sectionId
+        - date
+        - records
+      properties:
+        sectionId:
+          type: string
+          format: uuid
+          example: c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f
+        date:
+          type: string
+          format: date
+          example: '2026-09-23'
+        classSubjectId:
+          type: string
+          format: uuid
+          nullable: true
+          example: e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b
+        periodNumber:
+          type: integer
+          nullable: true
+          example: 1
+        records:
+          type: array
+          items:
+            type: object
+            required:
+              - studentId
+              - status
+            properties:
+              studentId:
+                type: string
+                format: uuid
+                example: f07f88be-6d92-4b17-87a5-a4753498aace
+              status:
+                type: string
+                enum:
+                  - PRESENT
+                  - ABSENT
+                  - LATE
+                  - HALF_DAY
+                  - EXCUSED
+                example: PRESENT
+              reason:
+                type: string
+                nullable: true
+                example: Medical leave verified
+    CreateHomeworkRequest:
+      type: object
+      required:
+        - sectionId
+        - classSubjectId
+        - title
+        - description
+        - dueDate
+      properties:
+        sectionId:
+          type: string
+          format: uuid
+          example: c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f
+        classSubjectId:
+          type: string
+          format: uuid
+          example: e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b
+        title:
+          type: string
+          example: 'Chapter 4: Linear Equations Practice Set'
+        description:
+          type: string
+          example: Complete exercises 4.1 & 4.2 in homework notebook. Show all steps.
+        dueDate:
+          type: string
+          format: date
+          example: '2026-09-26'
+        attachmentUrl:
+          type: string
+          format: uri
+          nullable: true
+          example: https://schoolsense-files.s3.amazonaws.com/math_ch4.pdf
+        attachmentFileName:
+          type: string
+          nullable: true
+          example: math_worksheet_ch4.pdf
+    BulkEnterMarksRequest:
+      type: object
+      required:
+        - examSubjectId
+        - marks
+      properties:
+        examSubjectId:
+          type: string
+          format: uuid
+          example: d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a
+        marks:
+          type: array
+          items:
+            type: object
+            required:
+              - studentId
+            properties:
+              studentId:
+                type: string
+                format: uuid
+                example: f07f88be-6d92-4b17-87a5-a4753498aace
+              marksObtained:
+                type: number
+                example: 92.5
+              isAbsent:
+                type: boolean
+                default: false
+                example: false
+              grade:
+                type: string
+                example: A1
+              remarks:
+                type: string
+                example: Outstanding problem solving skills
+    CreateComplaintRequest:
+      type: object
+      required:
+        - category
+        - subject
+        - message
+      properties:
+        category:
+          type: string
+          enum:
+            - ACADEMIC
+            - BEHAVIOR
+            - FACILITIES
+            - TRANSPORT
+            - FEES
+            - BULLYING
+            - OTHER
+          example: ACADEMIC
+        subject:
+          type: string
+          example: Query regarding Science chapter 3 assessment evaluation
+        message:
+          type: string
+          example: My child needs clarity on question 4 marks deduction. Please arrange a discussion.
+        studentId:
+          type: string
+          format: uuid
+          nullable: true
+          example: f07f88be-6d92-4b17-87a5-a4753498aace
+        priority:
+          type: string
+          enum:
+            - LOW
+            - MEDIUM
+            - HIGH
+            - URGENT
+          default: MEDIUM
+          example: MEDIUM
+    CreateNoticeRequest:
+      type: object
+      required:
+        - title
+        - content
+      properties:
+        title:
+          type: string
+          example: Annual Sports Day 2026 - Registration & Schedule
+        content:
+          type: string
+          example: The Annual Sports Meet will be held on October 15-16. All students can register with sports faculty.
+        targetAudience:
+          type: string
+          enum:
+            - ALL
+            - TEACHERS
+            - PARENTS
+            - STUDENTS
+          default: ALL
+          example: ALL
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-10-31T23:59:59Z'
+    OnboardSchoolRequest:
+      type: object
+      required:
+        - name
+        - code
+        - adminFirstName
+        - adminEmail
+      properties:
+        name:
+          type: string
+          example: Delhi Heritage Academy
+        code:
+          type: string
+          example: DHA01
+        affiliation:
+          type: string
+          example: CBSE
+        email:
+          type: string
+          format: email
+          example: contact@delhiheritage.edu
+        phone:
+          type: string
+          example: '+91 11 23456789'
+        addressLine1:
+          type: string
+          example: 'Institutional Area, Phase 2'
+        city:
+          type: string
+          example: New Delhi
+        state:
+          type: string
+          example: Delhi
+        postalCode:
+          type: string
+          example: '110025'
+        adminFirstName:
+          type: string
+          example: Rajesh
+        adminLastName:
+          type: string
+          example: Gupta
+        adminEmail:
+          type: string
+          format: email
+          example: admin@delhiheritage.edu
+        adminPhone:
+          type: string
+          example: '+91 98765 43210'
+        adminPassword:
+          type: string
+          example: AdminPass123!
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User Login & JWT Issuance
+      description: Authenticates users across all roles (Admin, Teacher, Parent, Student) and returns access token with scoped profile.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              identifier: admin@demo-school.com
+              password: password123
+              schoolCode: DHA01
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials or inactive account
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get Authenticated User Profile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current profile retrieved
+          content:
+            application/json:
+              example:
+                success: true
+                data:
+                  id: 8f3b2e50-9c1a-4e2b-8a71-6c2e3d4f5a6b
+                  name: Rajesh Gupta
+                  email: admin@demo-school.com
+                  role: SCHOOL_ADMIN
+                  schoolId: a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d
+                  school:
+                    id: a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d
+                    name: Delhi Heritage Academy
+                    code: DHA01
+                    affiliation: CBSE
+
+  /dashboard/overview:
+    get:
+      tags:
+        - Dashboard
+      summary: Role-Scoped Dashboard Metrics
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: academicYearId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dashboard analytics
+          content:
+            application/json:
+              example:
+                success: true
+                data:
+                  metrics:
+                    totalStudents: 420
+                    totalFaculty: 28
+                    totalClasses: 14
+                    attendanceToday: 94.8
+                    pendingGrievances: 3
+                  recentNotices:
+                    - id: n1
+                      title: PTM Scheduled for Saturday
+                      createdAt: '2026-09-22T08:00:00Z'
+
+  /timetable/section/{sectionId}:
+    get:
+      tags:
+        - Timetable
+      summary: Get Section Weekly Timetable Matrix
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f
+      responses:
+        '200':
+          description: Weekly matrix schedule returned
+          content:
+            application/json:
+              example:
+                success: true
+                data:
+                  section:
+                    id: c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f
+                    name: Section B
+                    className: Nursery
+                  periods:
+                    - id: 11111111-2222-3333-4444-555555555555
+                      dayOfWeek: 1
+                      dayName: MONDAY
+                      periodNumber: 1
+                      startTime: '08:30'
+                      endTime: '09:15'
+                      slotType: ACADEMIC
+                      subjectName: Computer Science
+                      subjectCode: CS-NUR
+                      teacherName: Rajesh Gupta
+                      roomNumber: Room 101
+                    - id: 22222222-3333-4444-5555-666666666666
+                      dayOfWeek: 1
+                      dayName: MONDAY
+                      periodNumber: 2
+                      startTime: '09:15'
+                      endTime: '10:00'
+                      slotType: ACADEMIC
+                      subjectName: Computer Science
+                      subjectCode: CS-NUR
+                      teacherName: Mohd Raza Khan
+                      roomNumber: Room 101
+                    - id: 33333333-4444-5555-6666-777777777777
+                      dayOfWeek: 1
+                      dayName: MONDAY
+                      periodNumber: 3
+                      startTime: '10:00'
+                      endTime: '10:20'
+                      slotType: ACADEMIC
+                      subjectName: Computer Science
+                      subjectCode: CS-NUR
+                      teacherName: Teacher Faculty
+                      roomNumber: Room 101
+
+  /timetable/my-child:
+    get:
+      tags:
+        - Timetable
+      summary: Get Child Timetable for Logged-In Parent
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: studentId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Optional child UUID if parent has multiple children
+      responses:
+        '200':
+          description: Child weekly schedule synchronized from database
+          content:
+            application/json:
+              example:
+                success: true
+                data:
+                  student:
+                    id: f07f88be-6d92-4b17-87a5-a4753498aace
+                    name: Aarav Sharma
+                    className: Nursery
+                    sectionName: Section B
+                  periods:
+                    - dayOfWeek: 1
+                      periodNumber: 1
+                      startTime: '08:30'
+                      endTime: '09:15'
+                      slotType: ACADEMIC
+                      subjectName: Computer Science
+                      teacherName: Rajesh Gupta
+                      roomNumber: Room 101
+                    - dayOfWeek: 1
+                      periodNumber: 2
+                      startTime: '09:15'
+                      endTime: '10:00'
+                      slotType: ACADEMIC
+                      subjectName: Computer Science
+                      teacherName: Mohd Raza Khan
+                      roomNumber: Room 101
+                    - dayOfWeek: 1
+                      periodNumber: 3
+                      startTime: '10:00'
+                      endTime: '10:20'
+                      slotType: ACADEMIC
+                      subjectName: Computer Science
+                      teacherName: Teacher Faculty
+                      roomNumber: Room 101
+
+  /timetable/periods:
+    post:
+      tags:
+        - Timetable
+      summary: Create or Save Timetable Period Slot
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTimetablePeriodRequest'
+            example:
+              sectionId: c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f
+              dayOfWeek: 1
+              periodNumber: 3
+              startTime: '10:00'
+              endTime: '10:20'
+              slotType: ACADEMIC
+              title: Computer Science
+              classSubjectId: e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b
+              teacherId: 8f3b2e50-9c1a-4e2b-8a71-6c2e3d4f5a6b
+              roomNumber: Room 101
+      responses:
+        '201':
+          description: Period slot saved and synchronized
+          content:
+            application/json:
+              example:
+                success: true
+                id: 33333333-4444-5555-6666-777777777777
+                message: Period slot saved successfully
+
+  /timetable/periods/{id}:
+    delete:
+      tags:
+        - Timetable
+      summary: Delete Timetable Period Slot
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: 33333333-4444-5555-6666-777777777777
+      responses:
+        '200':
+          description: Period slot removed
+          content:
+            application/json:
+              example:
+                success: true
+                message: Period slot removed successfully
+
+  /attendance/bulk:
+    post:
+      tags:
+        - Attendance
+      summary: Bulk Mark Student Attendance
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkMarkAttendanceRequest'
+            example:
+              sectionId: c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f
+              date: '2026-09-23'
+              records:
+                - studentId: f07f88be-6d92-4b17-87a5-a4753498aace
+                  status: PRESENT
+                - studentId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                  status: ABSENT
+                  reason: Fever / Medical
+      responses:
+        '201':
+          description: Attendance successfully recorded
+          content:
+            application/json:
+              example:
+                success: true
+                message: Attendance marked for 2 students
+                summary:
+                  present: 1
+                  absent: 1
+                  total: 2
+
+  /attendance/my-children:
+    get:
+      tags:
+        - Attendance
+      summary: Parent Live Child Attendance Diary
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: studentId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Child attendance diary and subject rates
+          content:
+            application/json:
+              example:
+                success: true
+                data:
+                  attendanceRate: 96.2
+                  presentDays: 51
+                  absentDays: 2
+                  totalDays: 53
+                  subjectRates:
+                    - subject: Mathematics
+                      rate: 98
+                      total: 45
+                      attended: 44
+                    - subject: Computer Science
+                      rate: 100
+                      total: 40
+                      attended: 40
+                  recentLogs:
+                    - date: '2026-09-23'
+                      status: PRESENT
+                    - date: '2026-09-22'
+                      status: PRESENT
+
+  /homework:
+    post:
+      tags:
+        - Homework
+      summary: Publish New Homework Assignment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHomeworkRequest'
+            example:
+              sectionId: c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f
+              classSubjectId: e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b
+              title: 'Chapter 4: Linear Equations Practice Set'
+              description: Complete exercises 4.1 & 4.2 in homework notebook.
+              dueDate: '2026-09-26'
+              attachmentUrl: https://schoolsense-files.s3.amazonaws.com/math_ch4.pdf
+              attachmentFileName: math_worksheet_ch4.pdf
+      responses:
+        '201':
+          description: Homework created and published to section feed
+          content:
+            application/json:
+              example:
+                success: true
+                data:
+                  id: h1h2h3h4-5555-6666-7777-888888888888
+                  title: 'Chapter 4: Linear Equations Practice Set'
+                  dueDate: '2026-09-26'
+
+  /exams/marks/bulk:
+    post:
+      tags:
+        - Exams & Marks
+      summary: Bulk Enter Student Exam Marks
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkEnterMarksRequest'
+            example:
+              examSubjectId: d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a
+              marks:
+                - studentId: f07f88be-6d92-4b17-87a5-a4753498aace
+                  marksObtained: 92.5
+                  grade: A1
+                  remarks: Excellent mastery of concepts
+                - studentId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                  marksObtained: 78
+                  grade: B1
+                  remarks: Good performance
+      responses:
+        '201':
+          description: Marks successfully stored and grades computed
+          content:
+            application/json:
+              example:
+                success: true
+                message: Marks entered for 2 students
+
+  /exams/student/{studentId}/report:
+    get:
+      tags:
+        - Exams & Marks
+      summary: Get Student Academic Report Card
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: f07f88be-6d92-4b17-87a5-a4753498aace
+        - name: examId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Academic report card with marks, grades, and percentage
+          content:
+            application/json:
+              example:
+                success: true
+                data:
+                  student:
+                    id: f07f88be-6d92-4b17-87a5-a4753498aace
+                    name: Aarav Sharma
+                    rollNumber: '01'
+                    className: Nursery - B
+                  exam:
+                    id: ex1
+                    name: Term 1 Assessment 2026
+                  totalMaxMarks: 500
+                  totalObtainedMarks: 465
+                  percentage: 93
+                  overallGrade: A1
+                  subjectMarks:
+                    - subjectName: Mathematics
+                      maxMarks: 100
+                      marksObtained: 95
+                      grade: A1
+                    - subjectName: Computer Science
+                      maxMarks: 100
+                      marksObtained: 92.5
+                      grade: A1
+                    - subjectName: English
+                      maxMarks: 100
+                      marksObtained: 88
+                      grade: A2
+
+  /complaints:
+    get:
+      tags:
+        - Complaints & Grievances
+      summary: List Grievance Tickets
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - OPEN
+              - IN_PROGRESS
+              - RESOLVED
+              - CLOSED
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - ACADEMIC
+              - BEHAVIOR
+              - FACILITIES
+              - TRANSPORT
+              - FEES
+              - BULLYING
+              - OTHER
+      responses:
+        '200':
+          description: Grievance ticket list returned
+          content:
+            application/json:
+              example:
+                success: true
+                data:
+                  - id: t1t2t3t4-5555-6666-7777-888888888888
+                    ticketNumber: GRV-2026-0042
+                    subject: Query regarding Science chapter 3 assessment evaluation
+                    category: ACADEMIC
+                    status: OPEN
+                    priority: MEDIUM
+                    createdAt: '2026-09-23T10:30:00Z'
+    post:
+      tags:
+        - Complaints & Grievances
+      summary: Submit Grievance Ticket
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateComplaintRequest'
+            example:
+              category: ACADEMIC
+              subject: Query regarding Science chapter 3 assessment evaluation
+              message: My child needs clarity on question 4 marks deduction. Please arrange a discussion.
+              studentId: f07f88be-6d92-4b17-87a5-a4753498aace
+              priority: MEDIUM
+      responses:
+        '201':
+          description: Ticket submitted and assigned ticket number
+          content:
+            application/json:
+              example:
+                success: true
+                data:
+                  id: t1t2t3t4-5555-6666-7777-888888888888
+                  ticketNumber: GRV-2026-0042
+                  status: OPEN
+
+  /communication/notices:
+    get:
+      tags:
+        - Communication
+      summary: List Broadcast Notices & Circulars
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Notices circular list
+          content:
+            application/json:
+              example:
+                success: true
+                data:
+                  - id: n1
+                    title: Annual Sports Day 2026 - Registration & Schedule
+                    content: The Annual Sports Meet will be held on October 15-16.
+                    targetAudience:
+                      - ALL
+                    publishedAt: '2026-09-23T08:00:00Z'
+    post:
+      tags:
+        - Communication
+      summary: Publish Notice Circular
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNoticeRequest'
+            example:
+              title: Annual Sports Day 2026 - Registration & Schedule
+              content: The Annual Sports Meet will be held on October 15-16. All students can register with sports faculty.
+              targetAudience: ALL
+      responses:
+        '201':
+          description: Notice broadcasted
+          content:
+            application/json:
+              example:
+                success: true
+                data:
+                  id: n1
+                  title: Annual Sports Day 2026 - Registration & Schedule
+
+  /schools/onboard:
+    post:
+      tags:
+        - Schools
+      summary: Onboard New School Tenant (Super Admin Only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OnboardSchoolRequest'
+            example:
+              name: Delhi Heritage Academy
+              code: DHA01
+              affiliation: CBSE
+              email: contact@delhiheritage.edu
+              phone: '+91 11 23456789'
+              addressLine1: 'Institutional Area, Phase 2'
+              city: New Delhi
+              state: Delhi
+              postalCode: '110025'
+              adminFirstName: Rajesh
+              adminLastName: Gupta
+              adminEmail: admin@delhiheritage.edu
+              adminPassword: AdminPass123!
+      responses:
+        '201':
+          description: School provisioned with initial admin user and baseline curriculum
+          content:
+            application/json:
+              example:
+                success: true
+                data:
+                  schoolId: a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d
+                  schoolName: Delhi Heritage Academy
+                  adminEmail: admin@delhiheritage.edu

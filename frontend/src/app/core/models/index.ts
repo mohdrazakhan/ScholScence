@@ -270,6 +270,8 @@ export interface AttendanceStudent {
   session?: 'MORNING' | 'AFTERNOON';
   reason?: string | null;
   markedAt?: string | null;
+  markedByName?: string | null;
+  markedByRole?: string | null;
 }
 
 export interface AttendanceRegisterResponse {
@@ -278,6 +280,10 @@ export interface AttendanceRegisterResponse {
   session?: 'MORNING' | 'AFTERNOON' | 'FULL_DAY';
   frequency?: 'ONCE_DAILY' | 'TWICE_DAILY';
   classTeacherName?: string;
+  isMarked?: boolean;
+  lastMarkedAt?: string | null;
+  lastMarkedByName?: string | null;
+  lastMarkedByRole?: string | null;
   summary: {
     totalStudents: number;
     presentCount: number;

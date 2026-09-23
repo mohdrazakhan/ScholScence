@@ -211,11 +211,23 @@ interface FlatSection {
               </div>
 
               <!-- Sync status indicator & Export Actions -->
-              <div class="flex items-center gap-2">
-                <span *ngIf="syncStatus === 'SAVED'" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  Synced ({{ lastSyncTime }})
-                </span>
+              <div class="flex items-center gap-2 flex-wrap">
+                <!-- If marked or saved -->
+                <div *ngIf="registerData?.isMarked || syncStatus === 'SAVED'"
+                     class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-emerald-50 text-emerald-800 border border-emerald-200/90 text-xs font-bold shadow-xs">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                  <span>Updated: <strong>{{ getFormattedUpdateTime() }}</strong></span>
+                  <span class="text-emerald-300">•</span>
+                  <span class="truncate max-w-[220px]" [title]="getUpdatedByName()">By: <strong>{{ getUpdatedByName() }}</strong></span>
+                </div>
+
+                <!-- If not marked yet -->
+                <div *ngIf="!registerData?.isMarked && syncStatus !== 'SAVED' && syncStatus !== 'SAVING'"
+                     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-amber-50 text-amber-800 border border-amber-200/90 text-[11px] font-semibold">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+                  <span>Not marked yet for {{ getFormattedSelectedDate() }}</span>
+                </div>
+
                 <span *ngIf="syncStatus === 'SAVING'" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                   <span class="w-2 h-2 rounded-full bg-amber-500 animate-spin"></span>
                   Saving...
@@ -301,6 +313,7 @@ interface FlatSection {
                       {{ attendanceConfig.frequency === 'TWICE_DAILY' ? (selectedSession === 'MORNING' ? 'Morning Roll Status' : 'Afternoon Roll Status') : 'Daily Status' }}
                     </th>
                     <th class="px-5 py-3.5">Teacher Remark / Leave Reason</th>
+                    <th class="px-5 py-3.5">Updated When & By</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 font-medium">
@@ -352,9 +365,25 @@ interface FlatSection {
                       <input type="text" [(ngModel)]="student.reason" (blur)="saveChanges()" placeholder="Medical leave, family function, etc..."
                              class="w-full max-w-xs px-3 py-1.5 bg-[#f8fafc] border border-slate-200 rounded-xl text-xs text-slate-700 focus:bg-white focus:outline-none focus:border-slate-800 shadow-[inset_1px_1px_2px_#e2e8f0]" />
                     </td>
+                    <td class="px-5 py-3">
+                      <div *ngIf="student.status !== 'NOT_MARKED'" class="flex flex-col text-[11px] leading-tight">
+                        <div class="flex items-center gap-1 font-semibold text-slate-700">
+                          <svg class="w-3 h-3 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span class="font-mono font-bold text-slate-800">{{ formatTimestamp(student.markedAt) || getFormattedUpdateTime() }}</span>
+                        </div>
+                        <div class="text-[10px] text-slate-500 truncate max-w-[150px] mt-0.5" [title]="student.markedByName || getUpdatedByName()">
+                          by <span class="font-semibold text-slate-700">{{ student.markedByName || getUpdatedByName() }}</span>
+                        </div>
+                      </div>
+                      <div *ngIf="student.status === 'NOT_MARKED'" class="text-[11px] text-slate-400 italic">
+                        Not marked
+                      </div>
+                    </td>
                   </tr>
                   <tr *ngIf="paginatedStudents.length === 0">
-                    <td colspan="5" class="px-6 py-8 text-center text-slate-400 text-xs">
+                    <td colspan="6" class="px-6 py-8 text-center text-slate-400 text-xs">
                       No students found in this section.
                     </td>
                   </tr>
@@ -922,6 +951,7 @@ export class AttendanceComponent implements OnInit {
   saving = false;
   syncStatus: 'IDLE' | 'SAVING' | 'SAVED' | 'ERROR' = 'IDLE';
   lastSyncTime = '';
+  lastMarkedBy = '';
   
   searchQuery = '';
   currentPage = 1;
@@ -1312,9 +1342,69 @@ export class AttendanceComponent implements OnInit {
           this.registerData = res;
           this.students = res.register;
           this.syncStatus = 'IDLE';
+          if (res.lastMarkedAt) {
+            const d = new Date(res.lastMarkedAt);
+            this.lastSyncTime = isNaN(d.getTime()) ? res.lastMarkedAt : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const role = res.lastMarkedByRole ? ` (${res.lastMarkedByRole.replace('_', ' ')})` : '';
+            this.lastMarkedBy = res.lastMarkedByName ? `${res.lastMarkedByName}${role}` : '';
+          } else {
+            this.lastSyncTime = '';
+            this.lastMarkedBy = '';
+          }
           this.currentPage = 1;
         },
       });
+  }
+
+  getFormattedUpdateTime(): string {
+    if (this.lastSyncTime) {
+      return this.lastSyncTime;
+    }
+    if (this.registerData?.lastMarkedAt) {
+      const d = new Date(this.registerData.lastMarkedAt);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      }
+      return this.registerData.lastMarkedAt;
+    }
+    return '';
+  }
+
+  getUpdatedByName(): string {
+    if (this.lastMarkedBy) {
+      return this.lastMarkedBy;
+    }
+    if (this.registerData?.lastMarkedByName) {
+      const role = this.registerData.lastMarkedByRole ? ` (${this.registerData.lastMarkedByRole.replace('_', ' ')})` : '';
+      return `${this.registerData.lastMarkedByName}${role}`;
+    }
+    const u = this.auth.currentUser();
+    const currentUserName = u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Class Teacher' : 'Class Teacher';
+    return currentUserName;
+  }
+
+  formatTimestamp(timeStr?: string | null): string {
+    if (!timeStr) return '';
+    try {
+      const d = new Date(timeStr);
+      if (isNaN(d.getTime())) return timeStr;
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    } catch {
+      return timeStr;
+    }
+  }
+
+  getFormattedSelectedDate(): string {
+    if (!this.selectedDate) return 'Today';
+    if (this.isToday()) return 'Today';
+    if (this.isYesterday()) return 'Yesterday';
+    try {
+      const d = new Date(this.selectedDate);
+      if (isNaN(d.getTime())) return this.selectedDate;
+      return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch {
+      return this.selectedDate;
+    }
   }
 
   get filteredStudents(): AttendanceStudent[] {
@@ -1348,11 +1438,25 @@ export class AttendanceComponent implements OnInit {
 
   updateStudentStatus(student: AttendanceStudent, status: 'PRESENT' | 'ABSENT' | 'LATE' | 'HALF_DAY') {
     student.status = status;
+    student.markedAt = new Date().toISOString();
+    const u = this.auth.currentUser();
+    const uName = u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'You' : 'You';
+    student.markedByName = uName;
+    student.markedByRole = u?.role || 'Staff';
     this.saveChanges();
   }
 
   markAll(status: 'PRESENT' | 'ABSENT' | 'HALF_DAY') {
-    this.students.forEach((s) => (s.status = status));
+    const nowIso = new Date().toISOString();
+    const u = this.auth.currentUser();
+    const uName = u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'You' : 'You';
+    const uRole = u?.role || 'Staff';
+    this.students.forEach((s) => {
+      s.status = status;
+      s.markedAt = nowIso;
+      s.markedByName = uName;
+      s.markedByRole = uRole;
+    });
     this.saveChanges();
   }
 
@@ -1411,6 +1515,10 @@ export class AttendanceComponent implements OnInit {
     }
 
     this.autoSaveTimer = setTimeout(() => {
+      const u = this.auth.currentUser();
+      const uName = u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'You' : 'You';
+      const uRole = u?.role || 'Staff';
+
       const body: any = {
         sectionId: this.selectedSectionId,
         date: this.selectedDate,
@@ -1419,13 +1527,35 @@ export class AttendanceComponent implements OnInit {
           studentId: s.studentId,
           status: s.status === 'NOT_MARKED' ? 'PRESENT' : s.status,
           reason: s.reason || undefined,
+          markedAt: s.markedAt || (s.status !== 'NOT_MARKED' ? new Date().toISOString() : null),
+          markedByName: s.markedByName || (s.status !== 'NOT_MARKED' ? uName : null),
+          markedByRole: s.markedByRole || (s.status !== 'NOT_MARKED' ? uRole : null),
         })),
       };
 
       this.api.post('attendance/bulk', body).subscribe({
         next: () => {
           this.syncStatus = 'SAVED';
-          this.lastSyncTime = new Date().toLocaleTimeString();
+          const now = new Date();
+          this.lastSyncTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const userObj = this.auth.currentUser();
+          const nameDisp = userObj ? `${userObj.firstName || ''} ${userObj.lastName || ''}`.trim() || 'You' : 'You';
+          const roleDisp = userObj?.role ? ` (${userObj.role.replace('_', ' ')})` : '';
+          this.lastMarkedBy = `${nameDisp}${roleDisp}`;
+          if (this.registerData) {
+            this.registerData.isMarked = true;
+            this.registerData.lastMarkedAt = now.toISOString();
+            this.registerData.lastMarkedByName = nameDisp;
+            this.registerData.lastMarkedByRole = userObj?.role || 'Staff';
+          }
+          const nowIso = now.toISOString();
+          this.students.forEach((s) => {
+            if (s.status !== 'NOT_MARKED' && !s.markedAt) {
+              s.markedAt = nowIso;
+              s.markedByName = nameDisp;
+              s.markedByRole = userObj?.role || 'Staff';
+            }
+          });
         },
         error: (err) => {
           console.error('Auto-save attendance error:', err);
@@ -1439,6 +1569,10 @@ export class AttendanceComponent implements OnInit {
     if (!this.selectedSectionId || this.students.length === 0) return;
     this.saving = true;
 
+    const u = this.auth.currentUser();
+    const uName = u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'You' : 'You';
+    const uRole = u?.role || 'Staff';
+
     const body: any = {
       sectionId: this.selectedSectionId,
       date: this.selectedDate,
@@ -1447,6 +1581,9 @@ export class AttendanceComponent implements OnInit {
         studentId: s.studentId,
         status: s.status === 'NOT_MARKED' ? 'PRESENT' : s.status,
         reason: s.reason || undefined,
+        markedAt: s.markedAt || (s.status !== 'NOT_MARKED' ? new Date().toISOString() : null),
+        markedByName: s.markedByName || (s.status !== 'NOT_MARKED' ? uName : null),
+        markedByRole: s.markedByRole || (s.status !== 'NOT_MARKED' ? uRole : null),
       })),
     };
 
@@ -1454,7 +1591,27 @@ export class AttendanceComponent implements OnInit {
       next: () => {
         this.saving = false;
         this.syncStatus = 'SAVED';
-        this.lastSyncTime = new Date().toLocaleTimeString();
+        const now = new Date();
+        this.lastSyncTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const userObj = this.auth.currentUser();
+        const nameDisp = userObj ? `${userObj.firstName || ''} ${userObj.lastName || ''}`.trim() || 'You' : 'You';
+        const roleDisp = userObj?.role ? ` (${userObj.role.replace('_', ' ')})` : '';
+        this.lastMarkedBy = `${nameDisp}${roleDisp}`;
+        if (this.registerData) {
+          this.registerData.isMarked = true;
+          this.registerData.lastMarkedAt = now.toISOString();
+          this.registerData.lastMarkedByName = nameDisp;
+          this.registerData.lastMarkedByRole = userObj?.role || 'Staff';
+        }
+        const nowIso = now.toISOString();
+        this.students.forEach((s) => {
+          if (s.status !== 'NOT_MARKED' && !s.markedAt) {
+            s.markedAt = nowIso;
+            s.markedByName = nameDisp;
+            s.markedByRole = userObj?.role || 'Staff';
+          }
+        });
+
         const dateStr = this.isYesterday() ? 'Yesterday' : this.selectedDate;
         const sessionLabel = this.attendanceConfig.frequency === 'TWICE_DAILY' ? ` (${this.selectedSession === 'MORNING' ? 'Morning' : 'Afternoon'})` : '';
         this.toast.success(`Attendance register for ${this.getSelectedSectionName()}${sessionLabel} on ${dateStr} successfully saved!`);
@@ -1475,6 +1632,8 @@ export class AttendanceComponent implements OnInit {
       status: s.status,
       session: this.attendanceConfig.frequency === 'TWICE_DAILY' ? this.selectedSession : 'DAILY',
       reason: s.reason || '',
+      updatedAt: s.markedAt ? this.formatTimestamp(s.markedAt) : (this.lastSyncTime || '—'),
+      updatedBy: s.markedByName || this.getUpdatedByName(),
       date: this.selectedDate,
       section: this.getSelectedSectionName(),
     }));
@@ -1489,6 +1648,8 @@ export class AttendanceComponent implements OnInit {
         { key: 'status', label: 'Attendance Status' },
         { key: 'session', label: 'Session' },
         { key: 'reason', label: 'Remarks / Reason' },
+        { key: 'updatedAt', label: 'Updated Time' },
+        { key: 'updatedBy', label: 'Updated By' },
         { key: 'date', label: 'Date' },
         { key: 'section', label: 'Section' },
       ]
@@ -1506,6 +1667,7 @@ export class AttendanceComponent implements OnInit {
           <td>${s.admissionNumber}</td>
           <td><strong>${s.name}</strong></td>
           <td><span class="badge badge-${s.status.toLowerCase()}">${s.status}</span></td>
+          <td>${s.markedAt ? this.formatTimestamp(s.markedAt) : (this.lastSyncTime || '—')} (${s.markedByName || this.getUpdatedByName()})</td>
           <td>${s.reason || '—'}</td>
         </tr>`
       )
@@ -1515,7 +1677,7 @@ export class AttendanceComponent implements OnInit {
 
     const tableHtml = `
       <div style="margin-bottom: 12px; font-size: 13px;">
-        <strong>Section:</strong> ${this.getSelectedSectionName()} | <strong>Date:</strong> ${this.selectedDate}${sessionInfo} | <strong>Total Strength:</strong> ${this.students.length}
+        <strong>Section:</strong> ${this.getSelectedSectionName()} | <strong>Date:</strong> ${this.selectedDate}${sessionInfo} | <strong>Total Strength:</strong> ${this.students.length} | <strong>Last Updated:</strong> ${this.getFormattedUpdateTime()} by ${this.getUpdatedByName()}
       </div>
       <table>
         <thead>
@@ -1524,6 +1686,7 @@ export class AttendanceComponent implements OnInit {
             <th>Admission No</th>
             <th>Student Name</th>
             <th>Status</th>
+            <th>Updated</th>
             <th>Notes</th>
           </tr>
         </thead>

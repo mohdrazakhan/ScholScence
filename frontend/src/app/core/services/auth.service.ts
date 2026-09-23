@@ -781,19 +781,32 @@ export class AuthService {
           let children: any[] = [];
           const roleCode = usr.role?.code || 'GUARDIAN';
           if (roleCode === 'GUARDIAN' || roleCode === 'PARENT') {
-            const { data: sgData } = await this.supabase
-              .from('student_guardians')
-              .select('*, student:students(*, student_enrollments(*, class:classes(name), section:sections(name)))')
-              .eq('guardian.user_id', user.id);
-            if (sgData && sgData.length > 0) {
-              children = sgData.map((sg: any) => ({
-                id: sg.student?.id,
-                studentId: sg.student?.id,
-                name: `${sg.student?.first_name || ''} ${sg.student?.last_name || ''}`.trim(),
-                admissionNumber: sg.student?.admission_number,
-                className: sg.student?.student_enrollments?.[0]?.class?.name || 'Class 1',
-                sectionName: sg.student?.student_enrollments?.[0]?.section?.name || 'Section A',
-              }));
+            const { data: gList } = await this.supabase
+              .from('guardians')
+              .select('id')
+              .eq('user_id', user.id);
+            const gIds = (gList || []).map((g: any) => g.id);
+
+            if (gIds.length > 0) {
+              const { data: sgData } = await this.supabase
+                .from('student_guardians')
+                .select('*, student:students(*, student_enrollments(*, class:classes(id, name), section:sections(id, name)))')
+                .in('guardian_id', gIds);
+              if (sgData && sgData.length > 0) {
+                children = sgData.map((sg: any) => {
+                  const enr = sg.student?.student_enrollments?.[0];
+                  return {
+                    id: sg.student?.id,
+                    studentId: sg.student?.id,
+                    name: `${sg.student?.first_name || ''} ${sg.student?.last_name || ''}`.trim(),
+                    admissionNumber: sg.student?.admission_number,
+                    classId: enr?.class?.id || enr?.class_id || sg.student?.class_id || '',
+                    className: enr?.class?.name || 'Nursery',
+                    sectionId: enr?.section?.id || enr?.section_id || sg.student?.section_id || '',
+                    sectionName: enr?.section?.name || 'Section B',
+                  };
+                });
+              }
             }
           }
 
@@ -895,8 +908,10 @@ export class AuthService {
               name: `${matchedStudent.first_name || ''} ${matchedStudent.last_name || ''}`.trim(),
               admissionNumber: matchedStudent.admission_number,
               rollNumber: enr?.roll_number || '1',
-              className: enr?.class?.name || 'Class 1',
-              sectionName: enr?.section?.name || 'Section A',
+              classId: enr?.class?.id || enr?.class_id || matchedStudent.class_id || '',
+              className: enr?.class?.name || 'Nursery',
+              sectionId: enr?.section?.id || enr?.section_id || matchedStudent.section_id || '',
+              sectionName: enr?.section?.name || 'Section B',
             };
 
             return {

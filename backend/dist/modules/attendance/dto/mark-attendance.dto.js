@@ -42,6 +42,24 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], StudentAttendanceItemDto.prototype, "reason", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ required: false, description: 'Individual record ISO timestamp', example: '2026-09-23T11:53:20.000Z' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], StudentAttendanceItemDto.prototype, "markedAt", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ required: false, description: 'Name of the user who marked this record', example: 'Rajesh Gupta' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], StudentAttendanceItemDto.prototype, "markedByName", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ required: false, description: 'Role of the user who marked this record', example: 'School Admin' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], StudentAttendanceItemDto.prototype, "markedByRole", void 0);
 class BulkMarkAttendanceDto {
 }
 exports.BulkMarkAttendanceDto = BulkMarkAttendanceDto;

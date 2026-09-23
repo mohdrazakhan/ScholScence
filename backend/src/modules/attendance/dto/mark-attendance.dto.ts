@@ -25,6 +25,21 @@ export class StudentAttendanceItemDto {
   @IsOptional()
   @IsString()
   reason?: string;
+
+  @ApiProperty({ required: false, description: 'Individual record ISO timestamp', example: '2026-09-23T11:53:20.000Z' })
+  @IsOptional()
+  @IsDateString()
+  markedAt?: string;
+
+  @ApiProperty({ required: false, description: 'Name of the user who marked this record', example: 'Rajesh Gupta' })
+  @IsOptional()
+  @IsString()
+  markedByName?: string;
+
+  @ApiProperty({ required: false, description: 'Role of the user who marked this record', example: 'School Admin' })
+  @IsOptional()
+  @IsString()
+  markedByRole?: string;
 }
 
 export class BulkMarkAttendanceDto {

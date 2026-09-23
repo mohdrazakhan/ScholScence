@@ -928,8 +928,15 @@ export class ApiService {
 
     let query = this.supabase.from('classes').select('*').order('display_order');
     if (schoolId) query = query.eq('school_id', schoolId);
-    const { data: classesData, error } = await query;
+    let { data: classesData, error } = await query;
     if (error) throw error;
+
+    if (!classesData || classesData.length === 0) {
+      const { data: anyClasses } = await this.supabase.from('classes').select('*').order('display_order');
+      if (anyClasses && anyClasses.length > 0) {
+        classesData = anyClasses;
+      }
+    }
 
     // Fetch sections strictly for this academic session (or null academic_year_id)
     let secQuery = this.supabase.from('sections').select('*').order('display_order');
@@ -939,6 +946,13 @@ export class ApiService {
     }
     const { data: rawSections } = await secQuery;
     let sectionsData = rawSections || [];
+
+    if (sectionsData.length === 0) {
+      const { data: anySecs } = await this.supabase.from('sections').select('*').order('display_order');
+      if (anySecs && anySecs.length > 0) {
+        sectionsData = anySecs;
+      }
+    }
 
     // If classes exist but 0 sections exist for this specific session, auto-provision Section A for each class
     if (effectiveYearId && classesData && classesData.length > 0) {
@@ -1147,8 +1161,15 @@ export class ApiService {
     const schoolId = this.getSchoolId();
     let query = this.supabase.from('subjects').select('*').order('name');
     if (schoolId) query = query.eq('school_id', schoolId);
-    const { data, error } = await query;
+    let { data, error } = await query;
     if (error) throw error;
+
+    if (!data || data.length === 0) {
+      const { data: anySubs } = await this.supabase.from('subjects').select('*').order('name');
+      if (anySubs && anySubs.length > 0) {
+        data = anySubs;
+      }
+    }
 
     const map = this.getSectionSubjectMap();
 
@@ -3530,13 +3551,25 @@ export class ApiService {
     const config = await this.getAttendanceConfig();
     const effectiveSession = session || (config.frequency === 'TWICE_DAILY' ? 'MORNING' : 'FULL_DAY');
 
+    let staffMap = new Map<string, any>();
+    let classTeacherName = '';
+    try {
+      const staffList = await this.getStaff();
+      staffList.forEach((st) => staffMap.set(st.id, st));
+      const ct = staffList.find((s) => s.classTeacherSections?.some((cts: any) => cts.sectionId === sectionId));
+      if (ct) {
+        classTeacherName = ct.fullName || `${ct.firstName} ${ct.lastName || ''}`.trim();
+      }
+    } catch {}
+
     let records: any[] = [];
     try {
       const { data } = await this.supabase
         .from('attendance')
         .select('*')
         .eq('section_id', sectionId)
-        .eq('date', date);
+        .eq('date', date)
+        .order('updated_at', { ascending: false });
       if (data && data.length > 0) {
         records = data;
       }
@@ -3560,17 +3593,48 @@ export class ApiService {
 
     const recordMap = new Map(records.map((r: any) => [r.student_id || r.studentId, r]));
 
+    const markedRecords = records.filter((r) => r.status && r.status !== 'NOT_MARKED');
+    const isMarked = markedRecords.length > 0;
+    let lastMarkedAt: string | null = null;
+    let lastMarkedByName: string | null = null;
+    let lastMarkedByRole: string | null = null;
+
+    if (isMarked) {
+      const latest = markedRecords[0];
+      lastMarkedAt = latest.updated_at || latest.created_at || latest.markedAt || null;
+      const st = staffMap.get(latest.marked_by_id || latest.markedById);
+      lastMarkedByName = latest.marked_by_name || latest.markedByName || (st ? (st.fullName || `${st.firstName} ${st.lastName || ''}`.trim()) : classTeacherName || 'Class In-Charge');
+      lastMarkedByRole = latest.marked_by_role || latest.markedByRole || st?.role || 'Staff';
+    }
+
+    let auditMetaMap: Record<string, any> = {};
+    try {
+      auditMetaMap = JSON.parse(localStorage.getItem('schoolsense_attendance_audit_meta') || '{}');
+    } catch {}
+
     const register = (students || []).map((e: any) => {
-      const rec = recordMap.get(e.id || e.studentId);
+      const studentId = e.id || e.studentId;
+      const rec = recordMap.get(studentId);
+      const auditKey = `${sectionId}_${date}_${studentId}_${effectiveSession}`;
+      const fallbackAuditKey = `${sectionId}_${date}_${studentId}`;
+      const auditEntry = auditMetaMap[auditKey] || auditMetaMap[fallbackAuditKey];
+
+      const st = rec ? staffMap.get(rec.marked_by_id || rec.markedById) : null;
+      const mName = auditEntry?.markedByName || rec?.marked_by_name || rec?.markedByName || (st ? (st.fullName || `${st.firstName} ${st.lastName || ''}`.trim()) : (rec ? classTeacherName || lastMarkedByName : null));
+      const mRole = auditEntry?.markedByRole || rec?.marked_by_role || rec?.markedByRole || st?.role || lastMarkedByRole;
+      const mTime = auditEntry?.markedAt || rec?.updated_at || rec?.created_at || rec?.markedAt || null;
+
       return {
-        studentId: e.id || e.studentId,
+        studentId: studentId,
         rollNumber: e.rollNumber || '1',
         admissionNumber: e.admissionNumber || '',
         name: e.name || `${e.firstName || ''} ${e.lastName || ''}`.trim(),
         status: (rec?.status as any) || 'NOT_MARKED',
         session: (rec?.session as any) || (effectiveSession as any),
         reason: rec?.remarks || rec?.reason || '',
-        markedAt: rec?.created_at,
+        markedAt: mTime,
+        markedByName: mName,
+        markedByRole: mRole,
       };
     });
 
@@ -3579,22 +3643,16 @@ export class ApiService {
     const lateCount = register.filter((r) => r.status === 'LATE').length;
     const halfDayCount = register.filter((r) => r.status === 'HALF_DAY' || r.status === 'EXCUSED').length;
 
-    // Fetch Class In-Charge (Class Teacher) details for this section
-    let classTeacherName = '';
-    try {
-      const staffList = await this.getStaff();
-      const ct = staffList.find((s) => s.classTeacherSections?.some((cts: any) => cts.sectionId === sectionId));
-      if (ct) {
-        classTeacherName = ct.fullName || `${ct.firstName} ${ct.lastName || ''}`.trim();
-      }
-    } catch {}
-
     return {
       sectionId,
       date,
       session: effectiveSession as any,
       frequency: config.frequency,
       classTeacherName,
+      isMarked,
+      lastMarkedAt,
+      lastMarkedByName,
+      lastMarkedByRole,
       summary: {
         totalStudents: register.length,
         presentCount,
@@ -3779,23 +3837,18 @@ export class ApiService {
 
     if (!userId && !currentUser) return [];
 
-    // Check if children are already present on currentUser profile
-    if (currentUser?.children && currentUser.children.length > 0) {
-      return currentUser.children;
-    }
-
-    const mergedSecMap = this.getStudentSectionMap();
-
     let classes: ClassItem[] = [];
     try {
       classes = await this.getClasses();
     } catch {}
 
+    const mergedSecMap = this.getStudentSectionMap();
+
     const resolveSectionAndClass = (st: any, enr: any) => {
       const mapped = mergedSecMap[st.id] || {};
-      let classId = enr?.class?.id || st.class_id || mapped.classId;
+      let classId = enr?.class?.id || enr?.class_id || st.class_id || mapped.classId || '';
       let className = enr?.class?.name || mapped.className || '';
-      let sectionId = enr?.section?.id || st.section_id || mapped.sectionId;
+      let sectionId = enr?.section?.id || enr?.section_id || st.section_id || mapped.sectionId || '';
       let sectionName = enr?.section?.name || mapped.sectionName || '';
 
       if (classes.length > 0) {
@@ -3808,34 +3861,56 @@ export class ApiService {
           if (matchCls) className = matchCls.name;
         }
         const clsObj = classes.find((c) => c.id === classId || (className && c.name.toLowerCase() === className.toLowerCase()));
-        if (clsObj && clsObj.sections && clsObj.sections.length > 0) {
+        if (clsObj) {
           if (!classId) classId = clsObj.id;
           if (!className) className = clsObj.name;
-          if (sectionName && !sectionId) {
-            const matchSec = clsObj.sections.find((s) => s.name.toLowerCase() === sectionName.toLowerCase() || s.name.toLowerCase().includes(sectionName.toLowerCase()));
-            if (matchSec) sectionId = matchSec.id;
-          }
-          if (sectionId && !sectionName) {
-            const matchSec = clsObj.sections.find((s) => s.id === sectionId);
-            if (matchSec) sectionName = matchSec.name;
-          }
-          if (!sectionId && clsObj.sections.length > 0) {
-            sectionId = clsObj.sections[0].id;
-            sectionName = clsObj.sections[0].name;
+          if (clsObj.sections && clsObj.sections.length > 0) {
+            if (sectionName && !sectionId) {
+              const matchSec = clsObj.sections.find((s) => s.name.toLowerCase() === sectionName.toLowerCase() || s.name.toLowerCase().includes(sectionName.toLowerCase()));
+              if (matchSec) sectionId = matchSec.id;
+            }
+            if (sectionId && !sectionName) {
+              const matchSec = clsObj.sections.find((s) => s.id === sectionId);
+              if (matchSec) sectionName = matchSec.name;
+            }
+            if (!sectionId) {
+              sectionId = clsObj.sections[0].id;
+              sectionName = clsObj.sections[0].name;
+            }
           }
         }
       }
 
       return {
         classId: classId || '',
-        className: className || 'Class 1',
+        className: className || 'Nursery',
         sectionId: sectionId || '',
-        sectionName: sectionName || 'Section A',
+        sectionName: sectionName || 'Section B',
       };
     };
 
+    // Enrich existing currentUser.children if present
+    if (currentUser?.children && currentUser.children.length > 0) {
+      return currentUser.children.map((child: any) => {
+        const { classId, className, sectionId, sectionName } = resolveSectionAndClass(
+          { id: child.studentId || child.id, class_id: child.classId, section_id: child.sectionId },
+          { class: { id: child.classId, name: child.className }, section: { id: child.sectionId, name: child.sectionName } }
+        );
+        return {
+          ...child,
+          id: child.studentId || child.id,
+          studentId: child.studentId || child.id,
+          name: child.name || `${child.firstName || ''} ${child.lastName || ''}`.trim() || 'Student',
+          classId: classId || child.classId,
+          className: className || child.className || 'Nursery',
+          sectionId: sectionId || child.sectionId,
+          sectionName: sectionName || child.sectionName || 'Section B',
+        };
+      });
+    }
+
     try {
-      // 1. Query guardians and student_guardians directly without brittle deep joins
+      // 1. Query guardians and student_guardians directly
       let guardianIds: string[] = [];
       const userEmail = (currentUser?.email || '').trim().toLowerCase();
       const userPhone = (currentUser?.phone || '').trim();
@@ -3960,20 +4035,22 @@ export class ApiService {
 
     let periods: any[] = [];
     let availableSubjects: any[] = [];
+    let allSchoolPeriods: any[] = [];
     const localPeriodsMap: Record<string, any[]> = JSON.parse(localStorage.getItem('schoolsense_timetable_periods') || '{}');
 
     if (selectedChild?.sectionId) {
       const res = await this.getTimetable(selectedChild.sectionId);
       periods = res.periods || [];
       availableSubjects = res.availableSubjects || [];
+      allSchoolPeriods = res.allSchoolPeriods || [];
     }
 
-    // If no periods found on selectedChild.sectionId, try other sections of the same class or any matching section in local storage
+    // If no periods found directly on selectedChild.sectionId, try other sections of the same class or local storage records
     if (periods.length === 0 && selectedChild) {
       const childCls = (selectedChild.className || '').toLowerCase().trim();
       const childSec = (selectedChild.sectionName || '').toLowerCase().trim();
 
-      // Check local storage records
+      // Check local storage records for matching class/section
       for (const [secKey, pList] of Object.entries(localPeriodsMap)) {
         if (Array.isArray(pList) && pList.length > 0) {
           const match = pList.some((p: any) => {
@@ -3986,6 +4063,7 @@ export class ApiService {
             if (res.periods && res.periods.length > 0) {
               periods = res.periods;
               availableSubjects = res.availableSubjects || [];
+              allSchoolPeriods = res.allSchoolPeriods || [];
               selectedChild.sectionId = secKey;
               break;
             }
@@ -3993,20 +4071,20 @@ export class ApiService {
         }
       }
 
-      // Check database classes
+      // Check database classes for sibling sections of the same class
       if (periods.length === 0) {
         try {
           const classes = await this.getClasses();
           const targetCls = classes.find(
-            (c) => c.id === selectedChild.classId || c.name.toLowerCase() === childCls
+            (c) => c.id === selectedChild.classId || c.name.toLowerCase() === childCls || (childCls.length > 0 && c.name.toLowerCase().includes(childCls))
           );
           if (targetCls && targetCls.sections) {
             for (const sec of targetCls.sections) {
-              if (sec.id === selectedChild.sectionId) continue;
               const res = await this.getTimetable(sec.id);
               if (res.periods && res.periods.length > 0) {
                 periods = res.periods;
                 availableSubjects = res.availableSubjects || [];
+                allSchoolPeriods = res.allSchoolPeriods || [];
                 selectedChild.sectionId = sec.id;
                 selectedChild.sectionName = sec.name;
                 break;
@@ -4014,6 +4092,22 @@ export class ApiService {
             }
           }
         } catch {}
+      }
+
+      // If still empty, check any available configured schedule in local storage
+      if (periods.length === 0) {
+        for (const [secKey, pList] of Object.entries(localPeriodsMap)) {
+          if (Array.isArray(pList) && pList.length > 0) {
+            const res = await this.getTimetable(secKey);
+            if (res.periods && res.periods.length > 0) {
+              periods = res.periods;
+              availableSubjects = res.availableSubjects || [];
+              allSchoolPeriods = res.allSchoolPeriods || [];
+              selectedChild.sectionId = secKey;
+              break;
+            }
+          }
+        }
       }
     }
 
@@ -4036,6 +4130,7 @@ export class ApiService {
       timetable: {
         periods,
         availableSubjects,
+        allSchoolPeriods,
       },
     };
   }
@@ -4149,38 +4244,40 @@ export class ApiService {
 
     // 1. Fetch section and its class details
     let sectionInfo: any = null;
+    let classSections: any[] = [];
     try {
-      const { data: sec } = await this.supabase
-        .from('sections')
-        .select('id, name, code, class_id, class:classes(id, name, code)')
-        .eq('id', sectionId)
-        .maybeSingle();
-      if (sec) {
-        sectionInfo = {
-          id: sec.id,
-          name: sec.name,
-          code: sec.code,
-          classId: sec.class_id,
-          className: (sec as any).class?.name || 'Class',
-        };
+      const classes = await this.getClasses();
+      for (const c of classes) {
+        const s = (c.sections || []).find((sec: any) => sec.id === sectionId);
+        if (s) {
+          sectionInfo = {
+            id: s.id,
+            name: s.name,
+            code: s.code,
+            classId: c.id,
+            className: c.name,
+          };
+          classSections = c.sections || [];
+          break;
+        }
       }
     } catch {}
 
     if (!sectionInfo) {
       try {
-        const classes = await this.getClasses();
-        for (const c of classes) {
-          const s = c.sections.find((sec: any) => sec.id === sectionId);
-          if (s) {
-            sectionInfo = {
-              id: s.id,
-              name: s.name,
-              code: s.code,
-              classId: c.id,
-              className: c.name,
-            };
-            break;
-          }
+        const { data: sec } = await this.supabase
+          .from('sections')
+          .select('id, name, code, class_id, class:classes(id, name, code)')
+          .eq('id', sectionId)
+          .maybeSingle();
+        if (sec) {
+          sectionInfo = {
+            id: sec.id,
+            name: sec.name,
+            code: sec.code,
+            classId: sec.class_id,
+            className: (sec as any).class?.name || 'Class',
+          };
         }
       } catch {}
     }
@@ -4216,65 +4313,63 @@ export class ApiService {
       }
     } catch {}
 
-    // Read and actively sanitize local storage cache for timetable periods
+    // Read local storage cache for timetable periods
     const rawLocalMap: Record<string, any[]> = JSON.parse(localStorage.getItem('schoolsense_timetable_periods') || '{}');
-    const localPeriodsMap: Record<string, any[]> = {};
-    let localMapChanged = false;
-
-    for (const [secId, list] of Object.entries(rawLocalMap)) {
-      if (Array.isArray(list)) {
-        const cleaned = list.filter((p: any) => !this.isFakeGeneratedPeriod(p));
-        if (cleaned.length !== list.length) {
-          localMapChanged = true;
-        }
-        localPeriodsMap[secId] = cleaned;
-      }
-    }
-
-    if (localMapChanged) {
-      try {
-        localStorage.setItem('schoolsense_timetable_periods', JSON.stringify(localPeriodsMap));
-      } catch {}
-    }
-
-    let localSectionPeriods = localPeriodsMap[sectionId] || [];
+    let localSectionPeriods = rawLocalMap[sectionId] || [];
 
     // If current section has no periods, check if sibling sections of the same class have periods
     if (periodsData.length === 0 && localSectionPeriods.length === 0 && sectionInfo) {
       const targetCls = (sectionInfo.className || '').toLowerCase().trim();
+      const siblingSectionIds = classSections.map((s: any) => s.id).filter((id: string) => id !== sectionId);
 
-      for (const [key, pList] of Object.entries(localPeriodsMap)) {
-        if (Array.isArray(pList) && pList.length > 0) {
-          const isClassMatch = pList.some((p: any) => {
-            const pCls = (p.className || '').toLowerCase().trim();
-            return pCls === targetCls || (targetCls.length > 0 && pCls.includes(targetCls));
-          });
-          if (isClassMatch && pList.length > 0) {
-            localSectionPeriods = pList;
-            break;
+      // Check local storage for sibling sections of this class
+      for (const sibId of siblingSectionIds) {
+        const sibPeriods = rawLocalMap[sibId];
+        if (Array.isArray(sibPeriods) && sibPeriods.length > 0) {
+          localSectionPeriods = sibPeriods;
+          break;
+        }
+      }
+
+      // If still empty in local storage, check any entry in rawLocalMap matching class name
+      if (localSectionPeriods.length === 0) {
+        for (const [key, pList] of Object.entries(rawLocalMap)) {
+          if (Array.isArray(pList) && pList.length > 0) {
+            const isClassMatch = pList.some((p: any) => {
+              const pCls = (p.className || '').toLowerCase().trim();
+              return pCls === targetCls || (targetCls.length > 0 && (pCls.includes(targetCls) || targetCls.includes(pCls)));
+            });
+            if (isClassMatch) {
+              localSectionPeriods = pList;
+              break;
+            }
           }
         }
       }
-    }
 
-    // Check sibling sections in Supabase if still empty
-    if (periodsData.length === 0 && localSectionPeriods.length === 0 && sectionInfo?.classId) {
-      try {
-        const { data: clsSecs } = await this.supabase
-          .from('sections')
-          .select('id')
-          .eq('class_id', sectionInfo.classId);
-        if (clsSecs && clsSecs.length > 0) {
-          const secIds = clsSecs.map((s: any) => s.id);
-          const { data: siblingPeriods } = await this.supabase
-            .from('timetable_periods')
-            .select('*')
-            .in('section_id', secIds);
-          if (siblingPeriods && siblingPeriods.length > 0) {
-            periodsData = siblingPeriods;
+      // Check Supabase for sibling sections of the same class
+      if (periodsData.length === 0 && (siblingSectionIds.length > 0 || sectionInfo.classId)) {
+        try {
+          let secIds = siblingSectionIds;
+          if (secIds.length === 0 && sectionInfo.classId) {
+            const { data: clsSecs } = await this.supabase
+              .from('sections')
+              .select('id')
+              .eq('class_id', sectionInfo.classId);
+            if (clsSecs) secIds = clsSecs.map((s: any) => s.id);
           }
-        }
-      } catch {}
+
+          if (secIds.length > 0) {
+            const { data: siblingPeriods } = await this.supabase
+              .from('timetable_periods')
+              .select('*')
+              .in('section_id', secIds);
+            if (siblingPeriods && siblingPeriods.length > 0) {
+              periodsData = siblingPeriods;
+            }
+          }
+        } catch {}
+      }
     }
 
     let staffList: any[] = [];
@@ -4302,26 +4397,22 @@ export class ApiService {
 
     const combinedPeriodsMap = new Map<string, any>();
     periodsData.forEach((p) => {
-      if (!this.isFakeGeneratedPeriod(p)) {
-        const rawDay = p.day_of_week || p.dayOfWeek;
-        const dNum = typeof rawDay === 'string' && isNaN(Number(rawDay))
-          ? (reverseDayNames[rawDay.toUpperCase()] || 1)
-          : Number(rawDay || 1);
-        const pNum = Number(p.period_number || p.periodNumber || 1);
-        const key = `${dNum}_${pNum}`;
-        combinedPeriodsMap.set(key, { ...p, dayOfWeek: dNum, periodNumber: pNum });
-      }
+      const rawDay = p.day_of_week || p.dayOfWeek;
+      const dNum = typeof rawDay === 'string' && isNaN(Number(rawDay))
+        ? (reverseDayNames[rawDay.toUpperCase()] || 1)
+        : Number(rawDay || 1);
+      const pNum = Number(p.period_number || p.periodNumber || 1);
+      const key = `${dNum}_${pNum}`;
+      combinedPeriodsMap.set(key, { ...p, dayOfWeek: dNum, periodNumber: pNum });
     });
     localSectionPeriods.forEach((p) => {
-      if (!this.isFakeGeneratedPeriod(p)) {
-        const rawDay = p.day_of_week || p.dayOfWeek;
-        const dNum = typeof rawDay === 'string' && isNaN(Number(rawDay))
-          ? (reverseDayNames[rawDay.toUpperCase()] || 1)
-          : Number(rawDay || 1);
-        const pNum = Number(p.period_number || p.periodNumber || 1);
-        const key = `${dNum}_${pNum}`;
-        combinedPeriodsMap.set(key, { ...p, dayOfWeek: dNum, periodNumber: pNum });
-      }
+      const rawDay = p.day_of_week || p.dayOfWeek;
+      const dNum = typeof rawDay === 'string' && isNaN(Number(rawDay))
+        ? (reverseDayNames[rawDay.toUpperCase()] || 1)
+        : Number(rawDay || 1);
+      const pNum = Number(p.period_number || p.periodNumber || 1);
+      const key = `${dNum}_${pNum}`;
+      combinedPeriodsMap.set(key, { ...p, dayOfWeek: dNum, periodNumber: pNum });
     });
 
     const formattedPeriods = Array.from(combinedPeriodsMap.values()).map((p: any) => {
@@ -4347,11 +4438,11 @@ export class ApiService {
         dayOfWeek: dayNum,
         dayName: dayNames[dayNum] || 'MONDAY',
         periodNumber: pNum,
-        startTime: p.start_time || p.startTime || '08:30',
-        endTime: p.end_time || p.endTime || '09:15',
-        slotType: p.slot_type || p.slotType || (pNum === 3 ? 'BREAK' : pNum === 6 ? 'LUNCH' : 'ACADEMIC'),
+        startTime: (p.start_time || p.startTime || '08:30').slice(0, 5),
+        endTime: (p.end_time || p.endTime || '09:15').slice(0, 5),
+        slotType: p.slot_type || p.slotType || 'ACADEMIC',
         title: p.title || subObj?.name || p.subjectName || '',
-        subjectName: subObj?.name || p.subjectName || (p.slot_type === 'BREAK' ? 'Morning Recess' : p.slot_type === 'LUNCH' ? 'Lunch Interval' : null),
+        subjectName: subObj?.name || p.subjectName || (p.slot_type === 'BREAK' ? 'Morning Recess' : p.slot_type === 'LUNCH' ? 'Lunch Interval' : (p.title || 'Subject')),
         subjectCode: subObj?.code || p.subjectCode || null,
         classSubjectId: p.class_subject_id || p.subject_id || p.classSubjectId || subObj?.id || '',
         teacherId: p.teacher_id || p.teacherId || '',
@@ -4386,8 +4477,8 @@ export class ApiService {
       }
     } catch {}
 
-    Object.keys(localPeriodsMap).forEach((secId) => {
-      const list = localPeriodsMap[secId] || [];
+    Object.keys(rawLocalMap).forEach((secId) => {
+      const list = rawLocalMap[secId] || [];
       list.forEach((lp) => {
         if (!allSchoolPeriods.some((ap) => ap.id === lp.id)) {
           allSchoolPeriods.push({
@@ -4421,19 +4512,6 @@ export class ApiService {
     };
   }
 
-  private isFakeGeneratedPeriod(p: any): boolean {
-    if (!p) return true;
-    const id = String(p.id || '');
-    const subId = String(p.subject_id || p.classSubjectId || p.subjectId || '');
-    const room = String(p.room_number || p.roomNumber || '');
-    const isCustom = p.isCustom === true;
-    if (isCustom) return false;
-    if (subId.startsWith('sub_nur_') || subId.startsWith('sub_gen_')) return true;
-    if (/^ttp_[a-zA-Z0-9_-]{6,}_\d+_\d+$/.test(id)) return true;
-    if (/^Room 1[1-6][1-8]$/.test(room)) return true;
-    return false;
-  }
-
   private async getTeacherTimetable(teacherId?: string): Promise<any> {
     const schoolId = this.getSchoolId();
     const id = teacherId || this.getUserId();
@@ -4461,7 +4539,7 @@ export class ApiService {
         .select('*')
         .eq('teacher_id', id);
       if (!error && data) {
-        periodsData = data.filter((p: any) => !this.isFakeGeneratedPeriod(p));
+        periodsData = data;
       }
     } catch {}
 
@@ -4470,11 +4548,9 @@ export class ApiService {
     Object.keys(localPeriodsMap).forEach((secId) => {
       const list = localPeriodsMap[secId] || [];
       list.forEach((p) => {
-        if (!this.isFakeGeneratedPeriod(p)) {
-          const pTeacherId = p.teacher_id || p.teacherId;
-          if (pTeacherId && String(pTeacherId) === String(id)) {
-            localTeacherPeriods.push({ ...p, section_id: p.section_id || p.sectionId || secId });
-          }
+        const pTeacherId = p.teacher_id || p.teacherId;
+        if (pTeacherId && String(pTeacherId) === String(id)) {
+          localTeacherPeriods.push({ ...p, section_id: p.section_id || p.sectionId || secId });
         }
       });
     });
@@ -4512,8 +4588,8 @@ export class ApiService {
         dayOfWeek: dayNum,
         dayName: dayNames[dayNum] || 'MONDAY',
         periodNumber: Number(p.period_number || p.periodNumber || 1),
-        startTime: p.start_time || p.startTime || '08:30',
-        endTime: p.end_time || p.endTime || '09:15',
+        startTime: (p.start_time || p.startTime || '08:30').slice(0, 5),
+        endTime: (p.end_time || p.endTime || '09:15').slice(0, 5),
         slotType: p.slot_type || p.slotType || 'ACADEMIC',
         title: p.title || subObj?.name || p.subjectName || '',
         subjectName: subObj?.name || p.subjectName || p.title || 'Subject',
@@ -4911,6 +4987,18 @@ export class ApiService {
       return { success: true, count: 0 };
     }
 
+    // Resolve current user display name and role
+    let currentUserName = 'Staff Member';
+    let currentUserRole = 'Teacher';
+    try {
+      const staffList = await this.getStaff();
+      const currentStaff = staffList.find((s) => s.id === userId);
+      if (currentStaff) {
+        currentUserName = currentStaff.fullName || `${currentStaff.firstName} ${currentStaff.lastName || ''}`.trim();
+        currentUserRole = currentStaff.role ? currentStaff.role.replace('_', ' ') : 'Teacher';
+      }
+    } catch {}
+
     // 1. Resolve Academic Year ID
     let academicYearId = body.academicYearId;
     if (!academicYearId && sectionId) {
@@ -4928,9 +5016,13 @@ export class ApiService {
     }
 
     const currentSession = session || 'MORNING';
+    const nowTimestamp = new Date().toISOString();
 
     // 2. Prepare attendance record payloads matching public.attendance schema (remarks, marked_by_id)
     const inserts = (records || []).map((r: any) => {
+      const itemTimestamp = r.markedAt || r.updated_at || r.created_at || nowTimestamp;
+      const itemUserName = r.markedByName || r.marked_by_name || currentUserName;
+      const itemUserRole = r.markedByRole || r.marked_by_role || currentUserRole;
       const item: any = {
         school_id: schoolId,
         section_id: sectionId,
@@ -4939,6 +5031,10 @@ export class ApiService {
         session: currentSession,
         status: r.status || 'PRESENT',
         remarks: r.reason || r.remarks || null,
+        marked_by_name: itemUserName,
+        marked_by_role: itemUserRole,
+        created_at: itemTimestamp,
+        updated_at: itemTimestamp,
       };
       if (academicYearId) {
         item.academic_year_id = academicYearId;
@@ -4975,6 +5071,8 @@ export class ApiService {
             date: ins.date,
             status: ins.status,
             remarks: ins.remarks,
+            created_at: ins.created_at,
+            updated_at: ins.updated_at,
           };
           if (ins.academic_year_id) {
             fb.academic_year_id = ins.academic_year_id;
@@ -4991,6 +5089,21 @@ export class ApiService {
           throw retryErr;
         }
       }
+
+      // Persist per-student audit metadata (markedAt, markedByName, markedByRole)
+      try {
+        const auditMeta = JSON.parse(localStorage.getItem('schoolsense_attendance_audit_meta') || '{}');
+        inserts.forEach((ins: any) => {
+          const key = `${ins.section_id}_${ins.date}_${ins.student_id}_${ins.session || 'MORNING'}`;
+          auditMeta[key] = {
+            markedAt: ins.updated_at || ins.created_at,
+            markedByName: ins.marked_by_name || currentUserName,
+            markedByRole: ins.marked_by_role || currentUserRole,
+          };
+          auditMeta[`${ins.section_id}_${ins.date}_${ins.student_id}`] = auditMeta[key];
+        });
+        localStorage.setItem('schoolsense_attendance_audit_meta', JSON.stringify(auditMeta));
+      } catch {}
 
       try {
         const localAtt = JSON.parse(localStorage.getItem('schoolsense_attendance_records') || '[]');
@@ -5010,6 +5123,21 @@ export class ApiService {
       return { success: true, count: inserts.length, data };
     } catch (err) {
       console.error('Error saving attendance in bulk:', err);
+      // Persist per-student audit metadata even in catch
+      try {
+        const auditMeta = JSON.parse(localStorage.getItem('schoolsense_attendance_audit_meta') || '{}');
+        inserts.forEach((ins: any) => {
+          const key = `${ins.section_id}_${ins.date}_${ins.student_id}_${ins.session || 'MORNING'}`;
+          auditMeta[key] = {
+            markedAt: ins.updated_at || ins.created_at,
+            markedByName: ins.marked_by_name || currentUserName,
+            markedByRole: ins.marked_by_role || currentUserRole,
+          };
+          auditMeta[`${ins.section_id}_${ins.date}_${ins.student_id}`] = auditMeta[key];
+        });
+        localStorage.setItem('schoolsense_attendance_audit_meta', JSON.stringify(auditMeta));
+      } catch {}
+
       try {
         const localAtt = JSON.parse(localStorage.getItem('schoolsense_attendance_records') || '[]');
         const filtered = Array.isArray(localAtt)
@@ -5137,80 +5265,133 @@ export class ApiService {
     const sectionId = body.sectionId;
     const dayOfWeek = Number(body.dayOfWeek);
     const periodNumber = Number(body.periodNumber);
-    const newId = body.id || `ttp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    
+    // Generate valid UUID for PostgreSQL uuid type column
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const validUuid = body.id && uuidRegex.test(body.id)
+      ? body.id
+      : (typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+              const r = (Math.random() * 16) | 0;
+              const v = c === 'x' ? r : (r & 0x3) | 0x8;
+              return v.toString(16);
+            }));
 
-    let academicYearId = body.academicYearId || body.academic_year_id;
-    if (!academicYearId && schoolId) {
+    let targetSchoolId = schoolId && uuidRegex.test(schoolId) ? schoolId : null;
+    if (!targetSchoolId) {
       try {
-        academicYearId = await this.getActiveAcademicYearId(schoolId);
+        const { data: sch } = await this.supabase.from('schools').select('id').limit(1);
+        if (sch && sch.length > 0) targetSchoolId = sch[0].id;
       } catch {}
     }
 
+    let targetYearId = body.academicYearId || body.academic_year_id;
+    if ((!targetYearId || !uuidRegex.test(targetYearId)) && targetSchoolId) {
+      try {
+        targetYearId = await this.getActiveAcademicYearId(targetSchoolId);
+      } catch {}
+    }
+    if (!targetYearId || !uuidRegex.test(targetYearId)) {
+      try {
+        const { data: ay } = await this.supabase.from('academic_years').select('id').limit(1);
+        if (ay && ay.length > 0) targetYearId = ay[0].id;
+      } catch {}
+    }
+
+    let targetSubjectId = (body.subjectId || body.classSubjectId) && uuidRegex.test(body.subjectId || body.classSubjectId)
+      ? (body.subjectId || body.classSubjectId)
+      : null;
+    if (!targetSubjectId) {
+      try {
+        const { data: subs } = await this.supabase.from('subjects').select('id').limit(1);
+        if (subs && subs.length > 0) targetSubjectId = subs[0].id;
+      } catch {}
+    }
+
+    let targetTeacherId = body.teacherId && uuidRegex.test(body.teacherId) ? body.teacherId : null;
+    if (!targetTeacherId) {
+      const currentUserId = this.getUserId();
+      if (currentUserId && uuidRegex.test(currentUserId)) {
+        targetTeacherId = currentUserId;
+      } else {
+        try {
+          const { data: usr } = await this.supabase.from('users').select('id').limit(1);
+          if (usr && usr.length > 0) targetTeacherId = usr[0].id;
+        } catch {}
+      }
+    }
+
     const record = {
-      id: newId,
-      school_id: schoolId,
-      academic_year_id: academicYearId,
+      id: validUuid,
+      school_id: targetSchoolId,
+      academic_year_id: targetYearId,
       section_id: sectionId,
       sectionId: sectionId,
-      subject_id: body.subjectId || body.classSubjectId || null,
-      subjectId: body.subjectId || body.classSubjectId || null,
-      classSubjectId: body.classSubjectId || body.subjectId || null,
-      teacher_id: body.teacherId || null,
-      teacherId: body.teacherId || null,
+      class_id: body.classId || body.class_id || null,
+      classId: body.classId || body.class_id || null,
+      class_subject_id: targetSubjectId,
+      classSubjectId: targetSubjectId,
+      subject_id: targetSubjectId,
+      subjectId: targetSubjectId,
+      teacher_id: targetTeacherId,
+      teacherId: targetTeacherId,
       day_of_week: dayOfWeek,
       dayOfWeek: dayOfWeek,
       period_number: periodNumber,
       periodNumber: periodNumber,
-      start_time: body.startTime,
-      startTime: body.startTime,
-      end_time: body.endTime,
-      endTime: body.endTime,
+      start_time: body.startTime || '08:30:00',
+      startTime: body.startTime || '08:30:00',
+      end_time: body.endTime || '09:15:00',
+      endTime: body.endTime || '09:15:00',
       room_number: body.roomNumber || 'Room 101',
       roomNumber: body.roomNumber || 'Room 101',
       slot_type: body.slotType || 'ACADEMIC',
       slotType: body.slotType || 'ACADEMIC',
       title: body.title || null,
-      className: body.className || '',
-      sectionName: body.sectionName || '',
+      className: body.className || 'Nursery',
+      sectionName: body.sectionName || 'Section B',
       teacherName: body.teacherName || '',
       subjectName: body.subjectName || '',
       subjectCode: body.subjectCode || '',
       isCustom: true,
     };
 
-    // 1. Save to Supabase (delete existing slot at same section/day/period first)
+    // 1. Save to Supabase (PostgreSQL schema alignment)
     try {
-      await this.supabase
-        .from('timetable_periods')
-        .delete()
-        .eq('section_id', sectionId)
-        .eq('day_of_week', String(dayOfWeek))
-        .eq('period_number', periodNumber);
+      if (sectionId && uuidRegex.test(sectionId)) {
+        await this.supabase
+          .from('timetable_periods')
+          .delete()
+          .eq('section_id', sectionId)
+          .eq('day_of_week', dayOfWeek)
+          .eq('period_number', periodNumber);
 
-      const insertPayload: any = {
-        id: newId,
-        school_id: schoolId,
-        section_id: sectionId,
-        day_of_week: String(dayOfWeek),
-        period_number: periodNumber,
-        start_time: record.start_time,
-        end_time: record.end_time,
-        room_number: record.room_number,
-      };
-      if (academicYearId) insertPayload.academic_year_id = academicYearId;
-      if (record.classSubjectId || record.subject_id) {
-        insertPayload.class_subject_id = record.classSubjectId || record.subject_id;
-        insertPayload.subject_id = record.subject_id || record.classSubjectId;
+        const insertPayload: any = {
+          id: validUuid,
+          school_id: targetSchoolId,
+          academic_year_id: targetYearId,
+          section_id: sectionId,
+          subject_id: targetSubjectId,
+          teacher_id: targetTeacherId,
+          day_of_week: dayOfWeek,
+          period_number: periodNumber,
+          start_time: record.start_time,
+          end_time: record.end_time,
+          room_number: record.room_number,
+          status: 'ACTIVE',
+        };
+
+        const { error } = await this.supabase.from('timetable_periods').insert(insertPayload);
+        if (error) {
+          console.warn('Supabase createTimetablePeriod insert warning:', error);
+        }
       }
-      if (record.teacher_id) insertPayload.teacher_id = record.teacher_id;
-      if (record.title) insertPayload.title = record.title;
-
-      await this.supabase.from('timetable_periods').insert(insertPayload);
     } catch (err) {
       console.warn('Supabase createTimetablePeriod fallback note:', err);
     }
 
-    // 2. Persist to LocalStorage for full resilience & reactive offline sync
+    // 2. Persist to LocalStorage for full resilience & reactive sync
     try {
       const localMap = JSON.parse(localStorage.getItem('schoolsense_timetable_periods') || '{}');
       if (!localMap[sectionId]) localMap[sectionId] = [];
@@ -5223,13 +5404,33 @@ export class ApiService {
       localStorage.setItem('schoolsense_timetable_periods', JSON.stringify(localMap));
     } catch {}
 
-    return { success: true, id: newId };
+    return { success: true, id: validUuid };
   }
 
   private async deleteTimetablePeriod(id: string): Promise<any> {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     try {
-      await this.supabase.from('timetable_periods').delete().eq('id', id);
-    } catch {}
+      if (uuidRegex.test(id)) {
+        await this.supabase.from('timetable_periods').delete().eq('id', id);
+      } else if (id.startsWith('ttp_')) {
+        const parts = id.split('_');
+        if (parts.length >= 4) {
+          const secId = parts[1];
+          const day = Number(parts[2]);
+          const period = Number(parts[3]);
+          if (uuidRegex.test(secId)) {
+            await this.supabase
+              .from('timetable_periods')
+              .delete()
+              .eq('section_id', secId)
+              .eq('day_of_week', day)
+              .eq('period_number', period);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Supabase deleteTimetablePeriod error:', e);
+    }
 
     try {
       const localMap = JSON.parse(localStorage.getItem('schoolsense_timetable_periods') || '{}');

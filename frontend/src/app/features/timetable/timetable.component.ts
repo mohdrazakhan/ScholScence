@@ -1539,8 +1539,9 @@ export class TimetableComponent implements OnInit {
 
   get headerTitle(): string {
     if (this.auth.isParent()) {
-      const child = this.childrenList.find((c) => c.studentId === this.selectedChildId);
-      return child ? `${child.name}'s Weekly Timetable` : 'Child Weekly Schedule';
+      const child = this.childrenList.find((c) => c.studentId === this.selectedChildId) || this.childrenList[0];
+      const validName = child && child.name && isNaN(Number(child.name)) ? child.name : null;
+      return validName ? `${validName}'s Weekly Timetable` : (child?.className ? `${child.className} (${child.sectionName || 'Schedule'}) Timetable` : 'Child Weekly Schedule');
     }
     if (this.timetableMode === 'ACADEMIC') {
       return `Whole-School Academic Year Calendar & Timetable`;
@@ -1642,7 +1643,7 @@ export class TimetableComponent implements OnInit {
             if (matchCls) this.selectedClassId = matchCls.id;
           }
 
-          if (this.timetableMode === 'STUDENT' && this.selectedSectionId) {
+          if (!this.auth.isParent() && this.timetableMode === 'STUDENT' && this.selectedSectionId) {
             this.loadSectionTimetable(this.selectedSectionId);
           }
         }
@@ -2288,6 +2289,9 @@ export class TimetableComponent implements OnInit {
     const selectedTeacher = this.modalForm.teacherId ? this.teachersList.find((t) => t.id === this.modalForm.teacherId) : null;
     const activeSec = this.flatSections.find((s) => s.sectionId === this.selectedSectionId);
 
+    const cls = this.classesList.find((c) => c.id === this.selectedClassId);
+    const sec = cls?.sections?.find((s) => s.id === this.selectedSectionId);
+
     const payload = {
       sectionId: this.selectedSectionId,
       dayOfWeek: Number(this.modalForm.dayOfWeek),
@@ -2303,8 +2307,9 @@ export class TimetableComponent implements OnInit {
       teacherId: isAcademicSlot && this.modalForm.teacherId ? this.modalForm.teacherId : undefined,
       teacherName: isAcademicSlot && selectedTeacher ? selectedTeacher.name : undefined,
       roomNumber: this.modalForm.roomNumber || undefined,
-      className: activeSec?.className || '',
-      sectionName: activeSec?.sectionName || '',
+      classId: this.selectedClassId || cls?.id || '',
+      className: activeSec?.className || cls?.name || 'Nursery',
+      sectionName: activeSec?.sectionName || sec?.name || 'Section B',
     };
 
     this.api.post('timetable/periods', payload).subscribe({

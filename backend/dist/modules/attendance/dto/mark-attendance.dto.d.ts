@@ -9,6 +9,9 @@ export declare class StudentAttendanceItemDto {
     studentId: string;
     status: AttendanceStatus;
     reason?: string;
+    markedAt?: string;
+    markedByName?: string;
+    markedByRole?: string;
 }
 export declare class BulkMarkAttendanceDto {
     sectionId: string;
