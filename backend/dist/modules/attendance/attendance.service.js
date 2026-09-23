@@ -35,6 +35,7 @@ let AttendanceService = class AttendanceService {
                 },
             });
             for (const item of dto.records) {
+                const itemTimestamp = item.markedAt ? new Date(item.markedAt) : new Date();
                 await tx.attendance.create({
                     data: {
                         school_id: schoolId,
@@ -47,6 +48,8 @@ let AttendanceService = class AttendanceService {
                         status: item.status,
                         reason: item.reason || null,
                         marked_by: userId,
+                        created_at: itemTimestamp,
+                        updated_at: itemTimestamp,
                     },
                 });
             }
@@ -72,10 +75,28 @@ let AttendanceService = class AttendanceService {
                 date: queryDate,
                 class_subject_id: null,
             },
+            include: {
+                teacher: {
+                    include: {
+                        user_school_roles: {
+                            include: {
+                                role: true,
+                            },
+                        },
+                    },
+                },
+            },
+            orderBy: {
+                updated_at: 'desc',
+            },
         });
         const recordMap = new Map(attendanceRecords.map((r) => [r.student_id, r]));
         const register = students.map((enr) => {
             const record = recordMap.get(enr.student_id);
+            const teacherName = record?.teacher
+                ? `${record.teacher.first_name} ${record.teacher.last_name || ''}`.trim()
+                : null;
+            const teacherRole = record?.teacher?.user_school_roles?.[0]?.role?.name || null;
             return {
                 studentId: enr.student_id,
                 rollNumber: enr.roll_number,
@@ -83,21 +104,36 @@ let AttendanceService = class AttendanceService {
                 name: `${enr.student.first_name} ${enr.student.last_name || ''}`.trim(),
                 status: record?.status || 'NOT_MARKED',
                 reason: record?.reason || null,
-                markedAt: record?.created_at || null,
+                markedAt: record?.updated_at || record?.created_at || null,
+                markedByName: teacherName,
+                markedByRole: teacherRole,
             };
         });
         const totalStudents = students.length;
         const presentCount = register.filter((r) => r.status === 'PRESENT').length;
         const absentCount = register.filter((r) => r.status === 'ABSENT').length;
         const lateCount = register.filter((r) => r.status === 'LATE').length;
+        const halfDayCount = register.filter((r) => r.status === 'HALF_DAY').length;
+        const isMarked = attendanceRecords.length > 0 && attendanceRecords.some((r) => r.status !== 'NOT_MARKED');
+        const latestRecord = attendanceRecords[0];
+        const lastMarkedAt = latestRecord ? (latestRecord.updated_at || latestRecord.created_at) : null;
+        const lastMarkedByName = latestRecord?.teacher
+            ? `${latestRecord.teacher.first_name} ${latestRecord.teacher.last_name || ''}`.trim()
+            : null;
+        const lastMarkedByRole = latestRecord?.teacher?.user_school_roles?.[0]?.role?.name || null;
         return {
             sectionId,
             date: dateStr,
+            isMarked,
+            lastMarkedAt,
+            lastMarkedByName,
+            lastMarkedByRole,
             summary: {
                 totalStudents,
                 presentCount,
                 absentCount,
                 lateCount,
+                halfDayCount,
                 attendancePercentage: totalStudents > 0 ? ((presentCount / totalStudents) * 100).toFixed(1) : '0.0',
             },
             register,

@@ -12,11 +12,16 @@ export declare class AttendanceService {
     getSectionAttendance(schoolId: string, sectionId: string, dateStr: string): Promise<{
         sectionId: string;
         date: string;
+        isMarked: boolean;
+        lastMarkedAt: Date;
+        lastMarkedByName: string;
+        lastMarkedByRole: string;
         summary: {
             totalStudents: number;
             presentCount: number;
             absentCount: number;
             lateCount: number;
+            halfDayCount: number;
             attendancePercentage: string;
         };
         register: {
@@ -27,6 +32,8 @@ export declare class AttendanceService {
             status: string;
             reason: string;
             markedAt: Date;
+            markedByName: string;
+            markedByRole: string;
         }[];
     }>;
     getStudentAttendance(studentId: string, month?: string): Promise<{
