@@ -35,13 +35,13 @@ export declare class DashboardController {
             };
         } & {
             id: string;
+            school_id: string;
+            academic_year_id: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
             title: string;
-            school_id: string;
-            academic_year_id: string;
             content: string;
             published_by: string;
             target_audience: string;
@@ -50,14 +50,14 @@ export declare class DashboardController {
         })[];
         upcomingExams: {
             id: string;
-            code: string;
+            school_id: string;
+            academic_year_id: string;
             name: string;
+            code: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
-            school_id: string;
-            academic_year_id: string;
             start_date: Date;
             end_date: Date;
             grading_scheme_id: string | null;
@@ -69,13 +69,13 @@ export declare class DashboardController {
             childStats: any;
             recentNotices: {
                 id: string;
+                school_id: string;
+                academic_year_id: string;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
                 title: string;
-                school_id: string;
-                academic_year_id: string;
                 content: string;
                 published_by: string;
                 target_audience: string;
@@ -114,13 +114,13 @@ export declare class DashboardController {
             };
         } & {
             id: string;
+            school_id: string;
+            academic_year_id: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
             title: string;
-            school_id: string;
-            academic_year_id: string;
             content: string;
             published_by: string;
             target_audience: string;
@@ -129,14 +129,14 @@ export declare class DashboardController {
         })[];
         upcomingExams: {
             id: string;
-            code: string;
+            school_id: string;
+            academic_year_id: string;
             name: string;
+            code: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
-            school_id: string;
-            academic_year_id: string;
             start_date: Date;
             end_date: Date;
             grading_scheme_id: string | null;

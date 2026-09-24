@@ -6,8 +6,8 @@ export declare class SchoolsController {
     constructor(schoolsService: SchoolsService);
     getPublicSchools(): Promise<{
         id: string;
-        code: string;
         name: string;
+        code: string;
         email: string;
         phone: string;
         address_line1: string;
@@ -18,20 +18,25 @@ export declare class SchoolsController {
         disabledServices: string[];
         academic_years: {
             id: string;
+            school_id: string;
             name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
-            school_id: string;
             start_date: Date;
             end_date: Date;
             is_current: boolean;
         }[];
         branches: {
             id: string;
-            code: string;
+            school_id: string;
             name: string;
+            code: string;
+            status: string;
+            created_at: Date;
+            updated_at: Date;
+            deleted_at: Date | null;
             email: string | null;
             phone: string | null;
             address_line1: string | null;
@@ -40,15 +45,14 @@ export declare class SchoolsController {
             state: string | null;
             country: string | null;
             postal_code: string | null;
-            status: string;
-            created_at: Date;
-            updated_at: Date;
-            deleted_at: Date | null;
-            school_id: string;
         }[];
         id: string;
-        code: string;
         name: string;
+        code: string;
+        status: string;
+        created_at: Date;
+        updated_at: Date;
+        deleted_at: Date | null;
         email: string | null;
         phone: string | null;
         address_line1: string | null;
@@ -57,27 +61,28 @@ export declare class SchoolsController {
         state: string | null;
         country: string | null;
         postal_code: string | null;
-        status: string;
-        created_at: Date;
-        updated_at: Date;
-        deleted_at: Date | null;
     }>;
     getAcademicYears(schoolId: string): Promise<{
         id: string;
+        school_id: string;
         name: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
-        school_id: string;
         start_date: Date;
         end_date: Date;
         is_current: boolean;
     }[]>;
     getBranches(schoolId: string): Promise<{
         id: string;
-        code: string;
+        school_id: string;
         name: string;
+        code: string;
+        status: string;
+        created_at: Date;
+        updated_at: Date;
+        deleted_at: Date | null;
         email: string | null;
         phone: string | null;
         address_line1: string | null;
@@ -86,11 +91,6 @@ export declare class SchoolsController {
         state: string | null;
         country: string | null;
         postal_code: string | null;
-        status: string;
-        created_at: Date;
-        updated_at: Date;
-        deleted_at: Date | null;
-        school_id: string;
     }[]>;
     getAllSchools(user: AuthenticatedUser): Promise<{
         id: string;
