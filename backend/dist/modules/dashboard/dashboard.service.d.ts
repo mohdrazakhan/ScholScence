@@ -5,11 +5,27 @@ export declare class DashboardService {
     getAdminDashboard(schoolId: string, academicYearId?: string): Promise<{
         stats: {
             totalStudents: number;
+            activeStudents: number;
+            inactiveStudents: number;
             totalClasses: number;
             totalTeachers: number;
             attendanceTodayPercentage: string;
             attendanceMarkedCount: number;
             pendingComplaints: number;
+        };
+        campusInfo: {
+            id: string;
+            name: string;
+            code: string;
+            email: string;
+            phone: string;
+            address: string;
+            city: string;
+            state: string;
+            logoUrl: any;
+            status: string;
+            activeSession: string;
+            activeSessionId: string;
         };
         recentNotices: ({
             publisher: {
@@ -69,11 +85,27 @@ export declare class DashboardService {
     getOverview(schoolId: string, user: any, academicYearId?: string): Promise<{
         stats: {
             totalStudents: number;
+            activeStudents: number;
+            inactiveStudents: number;
             totalClasses: number;
             totalTeachers: number;
             attendanceTodayPercentage: string;
             attendanceMarkedCount: number;
             pendingComplaints: number;
+        };
+        campusInfo: {
+            id: string;
+            name: string;
+            code: string;
+            email: string;
+            phone: string;
+            address: string;
+            city: string;
+            state: string;
+            logoUrl: any;
+            status: string;
+            activeSession: string;
+            activeSessionId: string;
         };
         recentNotices: ({
             publisher: {
@@ -132,11 +164,27 @@ export declare class DashboardService {
         };
         stats: {
             totalStudents: number;
+            activeStudents: number;
+            inactiveStudents: number;
             totalClasses: number;
             totalTeachers: number;
             attendanceTodayPercentage: string;
             attendanceMarkedCount: number;
             pendingComplaints: number;
+        };
+        campusInfo: {
+            id: string;
+            name: string;
+            code: string;
+            email: string;
+            phone: string;
+            address: string;
+            city: string;
+            state: string;
+            logoUrl: any;
+            status: string;
+            activeSession: string;
+            activeSessionId: string;
         };
         recentNotices: ({
             publisher: {

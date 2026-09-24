@@ -322,53 +322,68 @@ export class AuthService {
     }
   }
 
+  private syncSchoolProfilePromise = new Map<string, Promise<void>>();
+
   async syncSchoolProfileFromDb(schoolId?: string): Promise<void> {
     const sId = schoolId || this.currentUser()?.school?.id;
     if (!sId) return;
 
-    try {
-      // 1. Fetch latest record from Supabase
-      const { data: school } = await this.supabase
-        .from('schools')
-        .select('*')
-        .eq('id', sId)
-        .maybeSingle();
-
-      let metaObj: any = {};
-      if (school?.address_line2 && typeof school.address_line2 === 'string' && school.address_line2.startsWith('{')) {
-        try {
-          metaObj = JSON.parse(school.address_line2);
-        } catch {}
-      }
-
-      const merged = { ...(school || {}), ...metaObj };
-      let logo = merged?.logo_url || merged?.logoUrl;
-      let name = merged?.name;
-      let code = merged?.code;
-
-      // 2. Also check local profiles cache override
-      try {
-        const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
-        if (localProfiles[sId]) {
-          const lp = localProfiles[sId];
-          logo = lp.logoUrl || lp.logo_url || logo;
-          name = lp.name || name;
-          code = lp.code || code;
-        }
-      } catch (e) {}
-
-      if (logo || name || code) {
-        this.updateCurrentSchool({
-          ...merged,
-          name: name || this.currentUser()?.school?.name,
-          code: code || this.currentUser()?.school?.code,
-          logoUrl: logo,
-          logo_url: logo,
-        });
-      }
-    } catch (e) {
-      console.warn('syncSchoolProfileFromDb error:', e);
+    if (this.syncSchoolProfilePromise.has(sId)) {
+      return this.syncSchoolProfilePromise.get(sId)!;
     }
+
+    const task = (async () => {
+      try {
+        // 1. Fetch latest record from Supabase
+        const { data: school } = await this.supabase
+          .from('schools')
+          .select('*')
+          .eq('id', sId)
+          .maybeSingle();
+
+        let metaObj: any = {};
+        if (school?.address_line2 && typeof school.address_line2 === 'string' && school.address_line2.startsWith('{')) {
+          try {
+            metaObj = JSON.parse(school.address_line2);
+          } catch {}
+        }
+
+        const merged = { ...(school || {}), ...metaObj };
+        let logo = merged?.logo_url || merged?.logoUrl;
+        let name = merged?.name;
+        let code = merged?.code;
+
+        // 2. Also check local profiles cache override
+        try {
+          const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
+          if (localProfiles[sId]) {
+            const lp = localProfiles[sId];
+            logo = lp.logoUrl || lp.logo_url || logo;
+            name = lp.name || name;
+            code = lp.code || code;
+          }
+        } catch (e) {}
+
+        if (logo || name || code) {
+          this.updateCurrentSchool({
+            ...merged,
+            name: name || this.currentUser()?.school?.name,
+            code: code || this.currentUser()?.school?.code,
+            logoUrl: logo,
+            logo_url: logo,
+          });
+        }
+      } catch (e) {
+        console.warn('syncSchoolProfileFromDb error:', e);
+      } finally {
+        setTimeout(() => {
+          this.syncSchoolProfilePromise.delete(sId);
+        }, 10000);
+      }
+    })();
+
+    this.syncSchoolProfilePromise.set(sId, task);
+    return task;
   }
 
   async getSchoolProfileById(schoolIdOrCode: string): Promise<any> {

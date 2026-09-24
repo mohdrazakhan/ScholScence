@@ -293,21 +293,54 @@
         ],
         "responses": {
           "200": {
-            "description": "Dashboard analytics",
+            "description": "Unified all-in-one dashboard overview metrics, campus info, and announcements",
             "content": {
               "application/json": {
                 "example": {
                   "success": true,
                   "data": {
-                    "metrics": {
-                      "totalStudents": 420,
-                      "totalFaculty": 28,
-                      "totalClasses": 14,
-                      "attendanceToday": 94.8,
-                      "pendingGrievances": 3
+                    "stats": {
+                      "totalStudents": 21,
+                      "activeStudents": 21,
+                      "inactiveStudents": 0,
+                      "totalClasses": 15,
+                      "totalTeachers": 5,
+                      "attendanceTodayPercentage": "96.5",
+                      "attendanceMarkedCount": 20,
+                      "pendingComplaints": 1
+                    },
+                    "campusInfo": {
+                      "id": "9dfdbc1d-e491-46e5-b356-0be260841856",
+                      "name": "Delhi Heritage Academy",
+                      "code": "DHA-DEL-01",
+                      "email": "contact@dha.edu.in",
+                      "phone": "+91 98765 43210",
+                      "address": "Sector 14, Dwarka, New Delhi",
+                      "city": "New Delhi",
+                      "state": "Delhi",
+                      "logoUrl": "https://img.freepik.com/free-vector/school-crest-symbol_1017-7945.jpg",
+                      "status": "ONLINE",
+                      "activeSession": "2028–2029",
+                      "activeSessionId": "9dfdbc1d-e491-46e5-b356-0be260841857"
                     },
                     "recentNotices": [
-                      { "id": "n1", "title": "PTM Scheduled for Saturday", "createdAt": "2026-09-22T08:00:00Z" }
+                      {
+                        "id": "n1",
+                        "title": "Annual Sports Day Schedule Announcement",
+                        "content": "Sports day events will begin this Friday from 8:00 AM.",
+                        "target_audience": "ALL",
+                        "published_at": "2026-09-24T08:00:00Z"
+                      }
+                    ],
+                    "upcomingExams": [
+                      {
+                        "id": "ex1",
+                        "name": "Mid-Term Assessment 2026",
+                        "code": "MID-TERM-26",
+                        "start_date": "2026-10-05T00:00:00Z",
+                        "end_date": "2026-10-15T00:00:00Z",
+                        "status": "SCHEDULED"
+                      }
                     ]
                   }
                 }

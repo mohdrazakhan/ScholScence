@@ -6,11 +6,27 @@ export declare class DashboardController {
     getOverview(schoolId: string, user: AuthenticatedUser, academicYearId?: string): Promise<{
         stats: {
             totalStudents: number;
+            activeStudents: number;
+            inactiveStudents: number;
             totalClasses: number;
             totalTeachers: number;
             attendanceTodayPercentage: string;
             attendanceMarkedCount: number;
             pendingComplaints: number;
+        };
+        campusInfo: {
+            id: string;
+            name: string;
+            code: string;
+            email: string;
+            phone: string;
+            address: string;
+            city: string;
+            state: string;
+            logoUrl: any;
+            status: string;
+            activeSession: string;
+            activeSessionId: string;
         };
         recentNotices: ({
             publisher: {
@@ -69,11 +85,27 @@ export declare class DashboardController {
         };
         stats: {
             totalStudents: number;
+            activeStudents: number;
+            inactiveStudents: number;
             totalClasses: number;
             totalTeachers: number;
             attendanceTodayPercentage: string;
             attendanceMarkedCount: number;
             pendingComplaints: number;
+        };
+        campusInfo: {
+            id: string;
+            name: string;
+            code: string;
+            email: string;
+            phone: string;
+            address: string;
+            city: string;
+            state: string;
+            logoUrl: any;
+            status: string;
+            activeSession: string;
+            activeSessionId: string;
         };
         recentNotices: ({
             publisher: {

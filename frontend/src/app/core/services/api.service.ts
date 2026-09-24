@@ -1,5 +1,7 @@
 import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Observable, from, of, map, catchError } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import { SupabaseService } from './supabase.service';
 import {
   DashboardStats,
@@ -52,6 +54,7 @@ export function getClassPedagogicalRank(name: string, code?: string, displayOrde
   providedIn: 'root',
 })
 export class ApiService {
+  private http = inject(HttpClient);
   private supabase = inject(SupabaseService);
 
   private getSchoolId(): string {
@@ -98,9 +101,16 @@ export class ApiService {
     }
     params = mergedParams;
 
-    // Dashboard Overview
+    // Dashboard Overview -> Calls unified backend API /api/v1/dashboard/overview
     if (cleanEndpoint === 'dashboard/overview' || cleanEndpoint === 'dashboard') {
-      return from(this.getDashboardOverview(params?.['academicYearId'])) as unknown as Observable<T>;
+      const url = `${environment.apiUrl}/dashboard/overview`;
+      return this.http.get<{ success?: boolean; data?: DashboardStats } | DashboardStats>(url, { params }).pipe(
+        map((res: any) => (res?.data ? res.data : res)),
+        catchError((err) => {
+          console.warn('Backend API /dashboard/overview offline, using fallback aggregation:', err);
+          return from(this.getDashboardOverview(params?.['academicYearId']));
+        })
+      ) as unknown as Observable<T>;
     }
 
     // School Profile
@@ -632,15 +642,17 @@ export class ApiService {
       }
     })();
 
-    const [cRes, staffList, compRes] = await Promise.all([
+    const [cRes, staffRes, compRes, noticesRes, examsRes] = await Promise.all([
       this.supabase.from('classes').select('id', { count: 'exact', head: true }).eq('school_id', schoolId) as any,
-      this.getStaff(),
+      this.supabase.from('user_school_roles').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).neq('status', 'INACTIVE') as any,
       this.supabase.from('complaints').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).eq('status', 'OPEN') as any,
+      this.supabase.from('notices').select('id, title, content, target_audience, publish_date, created_at').eq('school_id', schoolId).order('created_at', { ascending: false }).limit(5) as any,
+      this.supabase.from('exams').select('id, name, code, start_date, end_date, status').eq('school_id', schoolId).order('start_date', { ascending: true }).limit(3) as any,
     ]);
 
-    classCount = cRes.count || 0;
-    teacherCount = (staffList || []).length;
-    complaintsCount = compRes.count || 0;
+    classCount = cRes?.count || 0;
+    teacherCount = staffRes?.count || 0;
+    complaintsCount = compRes?.count || 0;
 
     if (effectiveYearId) {
       // 1. Query enrollments strictly for this selected academic session
@@ -719,17 +731,18 @@ export class ApiService {
       } catch {}
     }
 
-    const { data: notices } = await this.supabase
-      .from('notices')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(5);
+    const notices = noticesRes?.data || [];
+    const exams = examsRes?.data || [];
 
-    const { data: exams } = await this.supabase
-      .from('exams')
-      .select('*')
-      .order('start_date', { ascending: true })
-      .limit(5);
+    const currentUser = this.getCurrentUser();
+    let sessionName = '2026–2027';
+    try {
+      const sesRaw = localStorage.getItem('schoolsense_active_session');
+      if (sesRaw) {
+        const sesObj = JSON.parse(sesRaw);
+        sessionName = sesObj?.name || sessionName;
+      }
+    } catch {}
 
     const overview: DashboardStats = {
       stats: {
@@ -742,14 +755,23 @@ export class ApiService {
         attendanceMarkedCount: attendanceMarkedCount,
         pendingComplaints: complaintsCount,
       },
-      recentNotices: (notices || []).map((n: any) => ({
+      campusInfo: {
+        id: schoolId,
+        name: currentUser?.school?.name || 'SchoolSense Academy',
+        code: currentUser?.school?.code || 'CAMPUS-01',
+        logoUrl: currentUser?.school?.logoUrl || currentUser?.school?.logo_url || '',
+        status: currentUser?.school?.status || 'ONLINE',
+        activeSession: sessionName,
+        activeSessionId: effectiveYearId,
+      },
+      recentNotices: notices.map((n: any) => ({
         id: n.id,
         title: n.title,
         content: n.content,
         target_audience: n.target_audience?.[0] || 'ALL',
         published_at: n.publish_date || n.created_at,
       })),
-      upcomingExams: (exams || []).map((e: any) => ({
+      upcomingExams: exams.map((e: any) => ({
         id: e.id,
         name: e.name,
         code: e.code,
@@ -3742,23 +3764,44 @@ export class ApiService {
     }));
   }
 
+  private noticesInFlightPromise: Promise<Notice[]> | null = null;
+  private noticesCache: { data: Notice[]; timestamp: number; schoolId?: string } | null = null;
+
   private async getNotices(): Promise<Notice[]> {
     const schoolId = this.getSchoolId();
-    let query = this.supabase.from('notices').select('*, publisher:users(*)').order('created_at', { ascending: false });
-    if (schoolId) query = query.eq('school_id', schoolId);
-    const { data, error } = await query;
-    if (error) throw error;
-    return (data || []).map((n: any) => ({
-      id: n.id,
-      title: n.title,
-      content: n.content,
-      target_audience: n.target_audience?.[0] || 'ALL',
-      published_at: n.publish_date || n.created_at,
-      publisher: {
-        first_name: n.publisher?.first_name,
-        last_name: n.publisher?.last_name,
-      },
-    }));
+    const now = Date.now();
+    if (this.noticesCache && this.noticesCache.schoolId === schoolId && now - this.noticesCache.timestamp < 3000) {
+      return this.noticesCache.data;
+    }
+    if (this.noticesInFlightPromise) {
+      return this.noticesInFlightPromise;
+    }
+
+    this.noticesInFlightPromise = (async () => {
+      try {
+        let query = this.supabase.from('notices').select('*, publisher:users(*)').order('created_at', { ascending: false });
+        if (schoolId) query = query.eq('school_id', schoolId);
+        const { data, error } = await query;
+        if (error) throw error;
+        const mapped = (data || []).map((n: any) => ({
+          id: n.id,
+          title: n.title,
+          content: n.content,
+          target_audience: n.target_audience?.[0] || 'ALL',
+          published_at: n.publish_date || n.created_at,
+          publisher: {
+            first_name: n.publisher?.first_name,
+            last_name: n.publisher?.last_name,
+          },
+        }));
+        this.noticesCache = { data: mapped, timestamp: Date.now(), schoolId };
+        return mapped;
+      } finally {
+        this.noticesInFlightPromise = null;
+      }
+    })();
+
+    return this.noticesInFlightPromise;
   }
 
   private async getEvents(): Promise<SchoolEventItem[]> {

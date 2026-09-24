@@ -2105,7 +2105,6 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       this.auth.currentUser();
       this.filterMenu();
       this.expandActiveGroup();
-      this.loadNotifications();
     });
   }
 
@@ -2115,7 +2114,6 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.auth.syncSchoolProfileFromDb();
     this.filterMenu();
     this.loadSessions();
     this.loadNotifications();
