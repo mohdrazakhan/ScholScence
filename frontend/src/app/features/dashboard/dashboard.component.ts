@@ -429,7 +429,12 @@ export class DashboardComponent implements OnInit {
   loadDashboardStats(academicYearId?: string) {
     const params = academicYearId ? { academicYearId } : undefined;
     this.api.get<DashboardStats>('dashboard/overview', params).subscribe({
-      next: (res) => (this.stats = res),
+      next: (res) => {
+        this.stats = res;
+        if (res?.campusInfo) {
+          this.auth.updateCurrentSchool(res.campusInfo);
+        }
+      },
     });
   }
 }

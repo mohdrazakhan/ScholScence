@@ -317,7 +317,7 @@ export class AuthService {
 
   constructor() {
     const user = this.currentUser();
-    if (user?.school?.id) {
+    if (user?.school?.id && !user.school.name && !user.school.logoUrl) {
       this.syncSchoolProfileFromDb(user.school.id);
     }
   }
