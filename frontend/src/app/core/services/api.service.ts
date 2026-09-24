@@ -619,12 +619,17 @@ export class ApiService {
     }
 
     const effectiveYearId = academicYearId || (await this.getActiveAcademicYearId(schoolId));
+    const user = this.getCurrentUser();
+    const userId = user?.id || null;
+    const userRole = user?.role || null;
 
-    // 1. Try Pure Supabase Cloud RPC (1 Single Cloud DB Call)
+    // 1. Try Pure Supabase Cloud RPC (Role Scoped Single Cloud DB Call)
     try {
       const { data: rpcData, error: rpcError } = await this.supabase.rpc('get_dashboard_overview', {
         p_school_id: schoolId,
         p_academic_year_id: effectiveYearId || null,
+        p_user_id: userId,
+        p_role: userRole,
       });
 
       if (!rpcError && rpcData && rpcData.stats) {
