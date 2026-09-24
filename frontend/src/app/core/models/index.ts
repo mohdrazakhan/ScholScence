@@ -68,8 +68,23 @@ export interface DashboardStats {
     attendanceMarkedCount: number;
     pendingComplaints: number;
   };
+  campusInfo?: {
+    id: string;
+    name: string;
+    code: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    logoUrl?: string;
+    status?: string;
+    activeSession?: string;
+    activeSessionId?: string;
+  };
   recentNotices: Notice[];
   upcomingExams: Exam[];
+  parentData?: any;
 }
 
 export interface AcademicSession {
