@@ -7,12 +7,12 @@ export declare class ExamsController {
     getExams(schoolId: string): Promise<({
         academic_year: {
             id: string;
+            school_id: string;
             name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
-            school_id: string;
             start_date: Date;
             end_date: Date;
             is_current: boolean;
@@ -21,37 +21,37 @@ export declare class ExamsController {
             class_subject: {
                 class: {
                     id: string;
-                    code: string;
+                    school_id: string;
                     name: string;
+                    code: string;
+                    display_order: number;
                     status: string;
                     created_at: Date;
                     updated_at: Date;
                     deleted_at: Date | null;
-                    school_id: string;
-                    display_order: number;
                 };
                 subject: {
                     id: string;
-                    code: string;
+                    school_id: string;
                     name: string;
+                    code: string;
+                    display_order: number;
                     status: string;
                     created_at: Date;
                     updated_at: Date;
                     deleted_at: Date | null;
                     description: string | null;
-                    school_id: string;
-                    display_order: number;
                     subject_type: string;
                 };
             } & {
                 id: string;
+                academic_year_id: string;
+                class_id: string;
+                display_order: number;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
-                academic_year_id: string;
-                class_id: string;
-                display_order: number;
                 subject_id: string;
                 is_optional: boolean;
             };
@@ -61,34 +61,34 @@ export declare class ExamsController {
             created_at: Date;
             updated_at: Date;
             class_subject_id: string;
-            exam_id: string;
-            exam_date: Date | null;
             start_time: Date | null;
             end_time: Date | null;
+            exam_id: string;
+            exam_date: Date | null;
             max_marks: import("@prisma/client/runtime/library").Decimal;
             passing_marks: import("@prisma/client/runtime/library").Decimal;
         })[];
         grading_scheme: {
             id: string;
+            school_id: string;
             name: string;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
             description: string | null;
-            school_id: string;
             grades_json: import("@prisma/client/runtime/library").JsonValue;
         };
     } & {
         id: string;
-        code: string;
+        school_id: string;
+        academic_year_id: string;
         name: string;
+        code: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
-        school_id: string;
-        academic_year_id: string;
         start_date: Date;
         end_date: Date;
         grading_scheme_id: string | null;
@@ -97,37 +97,37 @@ export declare class ExamsController {
         class_subject: {
             class: {
                 id: string;
-                code: string;
+                school_id: string;
                 name: string;
+                code: string;
+                display_order: number;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
-                school_id: string;
-                display_order: number;
             };
             subject: {
                 id: string;
-                code: string;
+                school_id: string;
                 name: string;
+                code: string;
+                display_order: number;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
                 description: string | null;
-                school_id: string;
-                display_order: number;
                 subject_type: string;
             };
         } & {
             id: string;
+            academic_year_id: string;
+            class_id: string;
+            display_order: number;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
-            academic_year_id: string;
-            class_id: string;
-            display_order: number;
             subject_id: string;
             is_optional: boolean;
         };
@@ -137,65 +137,65 @@ export declare class ExamsController {
         created_at: Date;
         updated_at: Date;
         class_subject_id: string;
-        exam_id: string;
-        exam_date: Date | null;
         start_time: Date | null;
         end_time: Date | null;
+        exam_id: string;
+        exam_date: Date | null;
         max_marks: import("@prisma/client/runtime/library").Decimal;
         passing_marks: import("@prisma/client/runtime/library").Decimal;
     })[]>;
     getExamSubjectMarks(examSubjectId: string, sectionId?: string): Promise<{
         examSubject: {
-            exam: {
-                id: string;
-                code: string;
-                name: string;
-                status: string;
-                created_at: Date;
-                updated_at: Date;
-                deleted_at: Date | null;
-                school_id: string;
-                academic_year_id: string;
-                start_date: Date;
-                end_date: Date;
-                grading_scheme_id: string | null;
-            };
             class_subject: {
                 class: {
                     id: string;
-                    code: string;
+                    school_id: string;
                     name: string;
+                    code: string;
+                    display_order: number;
                     status: string;
                     created_at: Date;
                     updated_at: Date;
                     deleted_at: Date | null;
-                    school_id: string;
-                    display_order: number;
                 };
                 subject: {
                     id: string;
-                    code: string;
+                    school_id: string;
                     name: string;
+                    code: string;
+                    display_order: number;
                     status: string;
                     created_at: Date;
                     updated_at: Date;
                     deleted_at: Date | null;
                     description: string | null;
-                    school_id: string;
-                    display_order: number;
                     subject_type: string;
                 };
             } & {
                 id: string;
+                academic_year_id: string;
+                class_id: string;
+                display_order: number;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
-                academic_year_id: string;
-                class_id: string;
-                display_order: number;
                 subject_id: string;
                 is_optional: boolean;
+            };
+            exam: {
+                id: string;
+                school_id: string;
+                academic_year_id: string;
+                name: string;
+                code: string;
+                status: string;
+                created_at: Date;
+                updated_at: Date;
+                deleted_at: Date | null;
+                start_date: Date;
+                end_date: Date;
+                grading_scheme_id: string | null;
             };
         } & {
             id: string;
@@ -203,10 +203,10 @@ export declare class ExamsController {
             created_at: Date;
             updated_at: Date;
             class_subject_id: string;
-            exam_id: string;
-            exam_date: Date | null;
             start_time: Date | null;
             end_time: Date | null;
+            exam_id: string;
+            exam_date: Date | null;
             max_marks: import("@prisma/client/runtime/library").Decimal;
             passing_marks: import("@prisma/client/runtime/library").Decimal;
         };

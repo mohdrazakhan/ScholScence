@@ -97,20 +97,20 @@ export declare class TimetableController {
     }>;
     savePeriod(schoolId: string, user: AuthenticatedUser, dto: CreateTimetablePeriodDto): Promise<{
         id: string;
+        school_id: string;
+        academic_year_id: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
-        title: string | null;
-        school_id: string;
-        academic_year_id: string;
         section_id: string;
         class_subject_id: string | null;
-        period_number: number;
         teacher_id: string | null;
+        day_of_week: string;
+        period_number: number;
         start_time: string;
         end_time: string;
-        day_of_week: string;
         slot_type: string;
+        title: string | null;
         room_number: string | null;
     }>;
     bulkSaveSectionTimetable(schoolId: string, sectionId: string, user: AuthenticatedUser, dto: BulkUpsertTimetableDto): Promise<{

@@ -11,13 +11,13 @@ export declare class CommunicationController {
         };
     } & {
         id: string;
+        school_id: string;
+        academic_year_id: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
         title: string;
-        school_id: string;
-        academic_year_id: string;
         content: string;
         published_by: string;
         target_audience: string;
@@ -31,13 +31,13 @@ export declare class CommunicationController {
         };
     } & {
         id: string;
+        school_id: string;
+        academic_year_id: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
         title: string;
-        school_id: string;
-        academic_year_id: string;
         content: string;
         published_by: string;
         target_audience: string;
@@ -51,14 +51,14 @@ export declare class CommunicationController {
         };
     } & {
         id: string;
+        school_id: string;
+        academic_year_id: string;
         created_at: Date;
         updated_at: Date;
         description: string | null;
-        title: string;
-        school_id: string;
-        academic_year_id: string;
         start_time: Date;
         end_time: Date;
+        title: string;
         target_audience: string;
         location: string | null;
         is_holiday: boolean;
@@ -66,14 +66,14 @@ export declare class CommunicationController {
     })[]>;
     createEvent(schoolId: string, user: AuthenticatedUser, dto: CreateEventDto): Promise<{
         id: string;
+        school_id: string;
+        academic_year_id: string;
         created_at: Date;
         updated_at: Date;
         description: string | null;
-        title: string;
-        school_id: string;
-        academic_year_id: string;
         start_time: Date;
         end_time: Date;
+        title: string;
         target_audience: string;
         location: string | null;
         is_holiday: boolean;

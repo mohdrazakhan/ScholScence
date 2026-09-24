@@ -8,26 +8,26 @@ export declare class HomeworkController {
         class_subject: {
             subject: {
                 id: string;
-                code: string;
+                school_id: string;
                 name: string;
+                code: string;
+                display_order: number;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
                 description: string | null;
-                school_id: string;
-                display_order: number;
                 subject_type: string;
             };
         } & {
             id: string;
+            academic_year_id: string;
+            class_id: string;
+            display_order: number;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
-            academic_year_id: string;
-            class_id: string;
-            display_order: number;
             subject_id: string;
             is_optional: boolean;
         };
@@ -42,44 +42,44 @@ export declare class HomeworkController {
         }[];
     } & {
         id: string;
+        school_id: string;
+        academic_year_id: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
         description: string;
-        title: string;
-        school_id: string;
-        academic_year_id: string;
         section_id: string;
         class_subject_id: string;
+        teacher_id: string;
+        title: string;
         assigned_date: Date;
         due_date: Date;
-        teacher_id: string;
     }>;
     getSectionHomework(sectionId: string): Promise<({
         class_subject: {
             subject: {
                 id: string;
-                code: string;
+                school_id: string;
                 name: string;
+                code: string;
+                display_order: number;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
                 description: string | null;
-                school_id: string;
-                display_order: number;
                 subject_type: string;
             };
         } & {
             id: string;
+            academic_year_id: string;
+            class_id: string;
+            display_order: number;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
-            academic_year_id: string;
-            class_id: string;
-            display_order: number;
             subject_id: string;
             is_optional: boolean;
         };
@@ -99,44 +99,44 @@ export declare class HomeworkController {
         }[];
     } & {
         id: string;
+        school_id: string;
+        academic_year_id: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
         description: string;
-        title: string;
-        school_id: string;
-        academic_year_id: string;
         section_id: string;
         class_subject_id: string;
+        teacher_id: string;
+        title: string;
         assigned_date: Date;
         due_date: Date;
-        teacher_id: string;
     })[]>;
     getStudentHomework(studentId: string): Promise<({
         class_subject: {
             subject: {
                 id: string;
-                code: string;
+                school_id: string;
                 name: string;
+                code: string;
+                display_order: number;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
                 description: string | null;
-                school_id: string;
-                display_order: number;
                 subject_type: string;
             };
         } & {
             id: string;
+            academic_year_id: string;
+            class_id: string;
+            display_order: number;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
-            academic_year_id: string;
-            class_id: string;
-            display_order: number;
             subject_id: string;
             is_optional: boolean;
         };
@@ -156,70 +156,70 @@ export declare class HomeworkController {
         }[];
     } & {
         id: string;
+        school_id: string;
+        academic_year_id: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
         description: string;
-        title: string;
-        school_id: string;
-        academic_year_id: string;
         section_id: string;
         class_subject_id: string;
+        teacher_id: string;
+        title: string;
         assigned_date: Date;
         due_date: Date;
-        teacher_id: string;
     })[]>;
     getHomeworkById(id: string): Promise<{
         section: {
             id: string;
-            code: string;
+            school_id: string;
+            academic_year_id: string;
+            class_id: string;
             name: string;
+            code: string;
+            capacity: number | null;
+            display_order: number;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
-            school_id: string;
-            academic_year_id: string;
-            class_id: string;
-            capacity: number | null;
-            display_order: number;
             branch_id: string;
         };
         class_subject: {
             class: {
                 id: string;
-                code: string;
+                school_id: string;
                 name: string;
+                code: string;
+                display_order: number;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
-                school_id: string;
-                display_order: number;
             };
             subject: {
                 id: string;
-                code: string;
+                school_id: string;
                 name: string;
+                code: string;
+                display_order: number;
                 status: string;
                 created_at: Date;
                 updated_at: Date;
                 deleted_at: Date | null;
                 description: string | null;
-                school_id: string;
-                display_order: number;
                 subject_type: string;
             };
         } & {
             id: string;
+            academic_year_id: string;
+            class_id: string;
+            display_order: number;
             status: string;
             created_at: Date;
             updated_at: Date;
             deleted_at: Date | null;
-            academic_year_id: string;
-            class_id: string;
-            display_order: number;
             subject_id: string;
             is_optional: boolean;
         };
@@ -238,18 +238,18 @@ export declare class HomeworkController {
         }[];
     } & {
         id: string;
+        school_id: string;
+        academic_year_id: string;
         status: string;
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
         description: string;
-        title: string;
-        school_id: string;
-        academic_year_id: string;
         section_id: string;
         class_subject_id: string;
+        teacher_id: string;
+        title: string;
         assigned_date: Date;
         due_date: Date;
-        teacher_id: string;
     }>;
 }
