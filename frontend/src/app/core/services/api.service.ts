@@ -101,16 +101,9 @@ export class ApiService {
     }
     params = mergedParams;
 
-    // Dashboard Overview -> Calls unified backend API /api/v1/dashboard/overview
+    // Dashboard Overview -> Calls pure Supabase Cloud RPC get_dashboard_overview
     if (cleanEndpoint === 'dashboard/overview' || cleanEndpoint === 'dashboard') {
-      const url = `${environment.apiUrl}/dashboard/overview`;
-      return this.http.get<{ success?: boolean; data?: DashboardStats } | DashboardStats>(url, { params }).pipe(
-        map((res: any) => (res?.data ? res.data : res)),
-        catchError((err) => {
-          console.warn('Backend API /dashboard/overview offline, using fallback aggregation:', err);
-          return from(this.getDashboardOverview(params?.['academicYearId']));
-        })
-      ) as unknown as Observable<T>;
+      return from(this.getDashboardOverview(params?.['academicYearId'])) as unknown as Observable<T>;
     }
 
     // School Profile
@@ -626,6 +619,23 @@ export class ApiService {
     }
 
     const effectiveYearId = academicYearId || (await this.getActiveAcademicYearId(schoolId));
+
+    // 1. Try Pure Supabase Cloud RPC (1 Single Cloud DB Call)
+    try {
+      const { data: rpcData, error: rpcError } = await this.supabase.rpc('get_dashboard_overview', {
+        p_school_id: schoolId,
+        p_academic_year_id: effectiveYearId || null,
+      });
+
+      if (!rpcError && rpcData && rpcData.stats) {
+        return rpcData as DashboardStats;
+      }
+      if (rpcError) {
+        console.warn('Supabase RPC get_dashboard_overview not detected, running client aggregation fallback:', rpcError);
+      }
+    } catch (e) {
+      console.warn('Supabase RPC get_dashboard_overview error, running client aggregation fallback:', e);
+    }
 
     let activeStudentCount = 0;
     let inactiveStudentCount = 0;
