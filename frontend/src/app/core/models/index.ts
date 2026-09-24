@@ -57,6 +57,77 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface TeacherStudentGuardian {
+  name: string;
+  relationship: string;
+  phone: string;
+  isPrimary: boolean;
+}
+
+export interface TeacherStudentItem {
+  id: string;
+  admissionNumber: string;
+  rollNumber?: string | number;
+  firstName: string;
+  lastName?: string;
+  fullName: string;
+  gender?: string;
+  photoUrl?: string;
+  todayAttendance?: 'PRESENT' | 'ABSENT' | 'LATE' | 'HALF_DAY' | 'UNMARKED';
+  guardians: TeacherStudentGuardian[];
+}
+
+export interface TeacherTimetablePeriod {
+  id: string;
+  periodNumber: number;
+  startTime: string;
+  endTime: string;
+  classId: string;
+  className: string;
+  sectionId: string;
+  sectionName: string;
+  subjectId: string;
+  subjectName: string;
+  subjectCode?: string;
+  roomNumber?: string;
+}
+
+export interface TeacherSubjectAssignment {
+  classId: string;
+  className: string;
+  sectionId: string;
+  sectionName: string;
+  subjectId: string;
+  subjectName: string;
+  subjectCode?: string;
+}
+
+export interface TeacherDashboardData {
+  isClassTeacher: boolean;
+  classTeacherSection?: {
+    sectionId: string;
+    sectionName: string;
+    classId: string;
+    className: string;
+  } | null;
+  assignedClassStrength?: {
+    activeStudents: number;
+    inactiveStudents: number;
+    totalStudents: number;
+  };
+  todayClassAttendance?: {
+    isMarked: boolean;
+    percentage: string;
+    presentCount: number;
+    absentCount: number;
+    lateCount: number;
+    totalCount: number;
+  };
+  classStudents: TeacherStudentItem[];
+  todayTimetable: TeacherTimetablePeriod[];
+  subjectAssignments: TeacherSubjectAssignment[];
+}
+
 export interface DashboardStats {
   stats: {
     totalStudents: number;
@@ -67,6 +138,7 @@ export interface DashboardStats {
     attendanceTodayPercentage: string;
     attendanceMarkedCount: number;
     pendingComplaints: number;
+    roleCounts?: Record<string, number>;
   };
   campusInfo?: {
     id: string;
@@ -79,11 +151,12 @@ export interface DashboardStats {
     state?: string;
     logoUrl?: string;
     status?: string;
-    activeSession?: string;
+    activeSession?: any;
     activeSessionId?: string;
   };
   recentNotices: Notice[];
   upcomingExams: Exam[];
+  teacherData?: TeacherDashboardData;
   parentData?: any;
 }
 
