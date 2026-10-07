@@ -1111,41 +1111,12 @@ export class AuthService {
         }
       }
 
-      // Step C: Self-Healing Fallback: Match user by email, domain, or school code
-      if (!adminUser) {
-        const sEmail = (s.email || '').toLowerCase().trim();
-        const sNameClean = (s.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-        const sCodeClean = (s.code || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-
-        const candidateUser = users.find((u: any) => {
-          if (!u.email) return false;
-          const uEmail = u.email.toLowerCase().trim();
-          // 1. Direct school email match
-          if (sEmail && uEmail === sEmail) return true;
-          // 2. Email contains school code (e.g. admin@ts01.edu.in or ts01)
-          if (sCodeClean.length >= 2 && uEmail.includes(sCodeClean)) return true;
-          // 3. Email starts with admin@ and contains school domain or name slug
-          const domain = uEmail.split('@')[1] || '';
-          const domainClean = domain.replace(/[^a-z0-9]/g, '');
-          if (sNameClean.length >= 4 && domainClean.length >= 3 && (sNameClean.includes(domainClean) || domainClean.includes(sNameClean.slice(0, 6)))) {
-            return true;
-          }
-          return false;
-        });
-
+      // Step C: Match strictly by exact school email if configured
+      if (!adminUser && s.email) {
+        const sEmail = s.email.toLowerCase().trim();
+        const candidateUser = users.find((u: any) => u.email && u.email.toLowerCase().trim() === sEmail);
         if (candidateUser) {
           adminUser = candidateUser;
-          // Self-heal: link missing role in database asynchronously
-          if (schoolAdminRole && !schoolRoles.some((sr: any) => sr.user_id === candidateUser.id)) {
-            Promise.resolve(
-              this.supabase.from('user_school_roles').insert({
-                user_id: candidateUser.id,
-                school_id: s.id,
-                role_id: schoolAdminRole.id,
-                status: 'ACTIVE',
-              })
-            ).catch(() => {});
-          }
         }
       }
 

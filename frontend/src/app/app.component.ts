@@ -16,6 +16,8 @@ export class AppComponent {
   constructor() {
     effect(() => {
       const user = this.auth.currentUser();
+      // Guests browse the public marketing site — leave per-page SEO titles & favicon untouched.
+      if (!user) return;
       const school = user?.school;
       const isSuperPlatform =
         (user?.role === 'SUPER_ADMIN' || user?.role === 'PLATFORM_ADMIN') && !user?.isSupportSession;
@@ -25,8 +27,6 @@ export class AppComponent {
         this.titleService.setTitle(`${school.name}`);
       } else if (isSuperPlatform) {
         this.titleService.setTitle('SchoolSense — Super Admin Platform Console');
-      } else {
-        this.titleService.setTitle('SchoolSense — Multi-Tenant School OS');
       }
 
       // 2. Dynamic Favicon: Show logged-in school logo or custom generated monogram

@@ -233,7 +233,13 @@ export interface ClassItem {
   name: string;
   code: string;
   display_order: number;
-  sections: SectionItem[];
+  displayOrder?: number;
+  status?: string;
+  sectionCount?: number;
+  totalCapacity?: number;
+  subjectCount?: number;
+  enrolledCount?: number;
+  sections?: SectionItem[];
   subjects?: SubjectItem[];
 }
 

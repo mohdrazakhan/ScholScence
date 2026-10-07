@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
 export interface SchoolItem {
@@ -104,9 +104,18 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   template: `
-    <div class="min-h-screen w-full bg-gradient-to-br from-slate-100 via-[#eef2f8] to-[#e2e8f0] flex flex-col lg:flex-row items-stretch font-sans text-slate-800 selection:bg-blue-500 selection:text-white">
+    <div class="min-h-screen w-full bg-gradient-to-br from-slate-100 via-[#eef2f8] to-[#e2e8f0] flex flex-col lg:flex-row items-stretch font-sans text-slate-800 selection:bg-blue-500 selection:text-white relative">
+      
+      <!-- Back to Public Website Floating Link -->
+      <a routerLink="/"
+         class="absolute top-4 left-4 z-50 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/90 hover:bg-white text-slate-700 hover:text-indigo-600 font-bold text-xs shadow-sm border border-slate-200 transition-all backdrop-blur-sm">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span>Back to Home</span>
+      </a>
       
       <!-- ================================================================================== -->
       <!-- LEFT COLUMN (50% Split Screen - Centered Content & SchoolSense Showcase) -->

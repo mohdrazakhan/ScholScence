@@ -57,6 +57,9 @@ export class ApiService {
   private http = inject(HttpClient);
   private supabase = inject(SupabaseService);
 
+  private cachedSessions: any[] | null = null;
+  private sessionsPromise: Promise<any[]> | null = null;
+
   private getSchoolId(): string {
     const raw = localStorage.getItem('schoolsense_user');
     if (raw) {
@@ -156,6 +159,17 @@ export class ApiService {
       !cleanEndpoint.includes('academic-requests')
     ) {
       return from(this.getStudentFullProfile(studentProfileMatch[1])) as unknown as Observable<T>;
+    }
+
+    // Academics: Classes Overview (Optimized Single RPC Call)
+    if (cleanEndpoint === 'academics/classes/overview') {
+      return from(this.getClassesOverview(params?.['academicYearId'])) as unknown as Observable<T>;
+    }
+
+    // Academics: Single Class Details (On-Demand Lazy RPC Call)
+    const classDetailsMatch = cleanEndpoint.match(/^academics\/classes\/([^/]+)\/details$/);
+    if (classDetailsMatch) {
+      return from(this.getClassDetails(classDetailsMatch[1], params?.['academicYearId'])) as unknown as Observable<T>;
     }
 
     // Academics: Classes
@@ -779,13 +793,15 @@ export class ApiService {
         activeSession: sessionName,
         activeSessionId: effectiveYearId,
       },
-      recentNotices: notices.map((n: any) => ({
-        id: n.id,
-        title: n.title,
-        content: n.content,
-        target_audience: n.target_audience?.[0] || 'ALL',
-        published_at: n.publish_date || n.created_at,
-      })),
+      recentNotices: notices
+        .filter((n: any) => this.isNoticeAllowedForRole(n.target_audience, userRole))
+        .map((n: any) => ({
+          id: n.id,
+          title: n.title,
+          content: n.content,
+          target_audience: n.target_audience?.[0] || (Array.isArray(n.target_audience) ? n.target_audience[0] : n.target_audience) || 'ALL',
+          published_at: n.publish_date || n.created_at,
+        })),
       upcomingExams: exams.map((e: any) => ({
         id: e.id,
         name: e.name,
@@ -953,6 +969,174 @@ export class ApiService {
     })();
 
     return this.ensuringEnrollmentsPromise;
+  }
+
+  async getClassesOverview(academicYearId?: string): Promise<{
+    summary: { totalClasses: number; totalSections: number; totalCapacity: number; enrolledStudents: number };
+    classes: ClassItem[];
+    academicYearId: string;
+  }> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) {
+      return {
+        summary: { totalClasses: 0, totalSections: 0, totalCapacity: 0, enrolledStudents: 0 },
+        classes: [],
+        academicYearId: '',
+      };
+    }
+
+    try {
+      const { data: rpcData, error: rpcError } = await this.supabase.rpc('get_classes_overview', {
+        p_school_id: schoolId,
+        p_academic_year_id: academicYearId || null,
+      });
+
+      if (!rpcError && rpcData && rpcData.summary) {
+        return {
+          summary: rpcData.summary,
+          academicYearId: rpcData.academicYearId || academicYearId || '',
+          classes: (rpcData.classes || []).map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            code: c.code,
+            display_order: c.displayOrder ?? c.display_order ?? 0,
+            displayOrder: c.displayOrder ?? c.display_order ?? 0,
+            status: c.status || 'ACTIVE',
+            sectionCount: c.sectionCount ?? 0,
+            totalCapacity: c.totalCapacity ?? 0,
+            subjectCount: c.subjectCount ?? 0,
+            enrolledCount: c.enrolledCount ?? 0,
+            sections: [],
+            subjects: [],
+          })),
+        };
+      }
+      if (rpcError) {
+        console.warn('Supabase RPC get_classes_overview not found or error, running client aggregation fallback:', rpcError);
+      }
+    } catch (e) {
+      console.warn('Supabase RPC get_classes_overview error, running client aggregation fallback:', e);
+    }
+
+    // Fallback: Use existing client aggregation
+    const classes = await this.getClasses(academicYearId);
+    const totalSections = classes.reduce((acc, c) => acc + (c.sections?.length || 0), 0);
+    const totalCapacity = classes.reduce((acc, c) => acc + (c.sections?.reduce((sAcc, s) => sAcc + (s.capacity || 40), 0) || 0), 0);
+    const enrolledStudents = classes.reduce((acc, c) => acc + (c.sections?.reduce((sAcc, s) => sAcc + (Number(s.enrolled_count) || 0), 0) || 0), 0);
+
+    return {
+      summary: {
+        totalClasses: classes.length,
+        totalSections,
+        totalCapacity,
+        enrolledStudents,
+      },
+      academicYearId: academicYearId || '',
+      classes: classes.map((c) => ({
+        ...c,
+        displayOrder: c.display_order,
+        sectionCount: c.sections?.length || 0,
+        totalCapacity: c.sections?.reduce((sAcc, s) => sAcc + (s.capacity || 40), 0) || 0,
+        subjectCount: c.subjects?.length || 0,
+        enrolledCount: c.sections?.reduce((sAcc, s) => sAcc + (Number(s.enrolled_count) || 0), 0) || 0,
+      })),
+    };
+  }
+
+  async getClassDetails(
+    classId: string,
+    academicYearId?: string
+  ): Promise<{
+    class: { id: string; name: string; code: string; displayOrder?: number; status?: string };
+    sections: any[];
+    subjects: any[];
+    academicYearId: string;
+  }> {
+    try {
+      const { data: rpcData, error: rpcError } = await this.supabase.rpc('get_class_details', {
+        p_class_id: classId,
+        p_academic_year_id: academicYearId || null,
+      });
+
+      if (!rpcError && rpcData && rpcData.class) {
+        return {
+          class: rpcData.class,
+          sections: (rpcData.sections || []).map((s: any) => ({
+            id: s.id,
+            class_id: classId,
+            academic_year_id: rpcData.academicYearId || academicYearId || '',
+            name: s.name,
+            code: s.code,
+            capacity: s.capacity || 40,
+            enrolled_count: s.enrolledCount ?? 0,
+            display_order: s.displayOrder ?? 1,
+            class_teacher_id: s.classTeacherId || null,
+            classTeacherName: s.classTeacherName || null,
+          })),
+          subjects: (rpcData.subjects || []).map((sub: any) => ({
+            id: sub.subjectId,
+            classSubjectId: sub.classSubjectId,
+            name: sub.name,
+            code: sub.code,
+            subject_type: sub.type || 'THEORY',
+            display_order: 1,
+            periods_per_week: sub.periodsPerWeek,
+            is_elective: sub.isElective,
+            is_all_sections: true,
+          })),
+          academicYearId: rpcData.academicYearId || academicYearId || '',
+        };
+      }
+      if (rpcError) {
+        console.warn('Supabase RPC get_class_details error, running fallback:', rpcError);
+      }
+    } catch (e) {
+      console.warn('Supabase RPC get_class_details error, running fallback:', e);
+    }
+
+    // Fallback: Fetch single class sections & subjects directly
+    const schoolId = this.getSchoolId();
+    const effectiveYearId = academicYearId || (await this.getActiveAcademicYearId(schoolId));
+    const { data: cls } = await this.supabase.from('classes').select('*').eq('id', classId).single();
+
+    let secQuery = this.supabase.from('sections').select('*').eq('class_id', classId).order('display_order');
+    if (effectiveYearId) {
+      secQuery = secQuery.or(`academic_year_id.eq.${effectiveYearId},academic_year_id.is.null`);
+    }
+    const { data: secs } = await secQuery;
+
+    let subQuery = this.supabase.from('class_subjects').select('*, subject:subjects(*)').eq('class_id', classId);
+    if (effectiveYearId) {
+      subQuery = subQuery.or(`academic_year_id.eq.${effectiveYearId},academic_year_id.is.null`);
+    }
+    const { data: rawSubs } = await subQuery;
+
+    return {
+      class: cls || { id: classId, name: '', code: '' },
+      sections: (secs || []).map((s: any) => ({
+        id: s.id,
+        class_id: classId,
+        academic_year_id: s.academic_year_id || effectiveYearId || '',
+        name: s.name,
+        code: s.code,
+        capacity: s.capacity || 40,
+        enrolled_count: 0,
+        display_order: s.display_order || 1,
+        class_teacher_id: s.class_teacher_id || null,
+      })),
+      subjects: (rawSubs || []).map((cs: any) => ({
+        id: cs.subject_id || cs.subject?.id,
+        classSubjectId: cs.id,
+        name: cs.subject?.name || '',
+        code: cs.subject?.code || '',
+        subject_type: cs.subject?.type || 'THEORY',
+        display_order: 1,
+        periods_per_week: cs.periods_per_week,
+        is_elective: cs.is_elective,
+        is_all_sections: true,
+      })),
+      academicYearId: effectiveYearId || '',
+    };
   }
 
   private async getClasses(academicYearId?: string): Promise<ClassItem[]> {
@@ -1219,7 +1403,7 @@ export class ApiService {
       const [sectionsRes, classesRes, stRes] = await Promise.all([
         this.supabase.from('sections').select('id, name, class_id').eq('school_id', schoolId),
         this.supabase.from('classes').select('id, name').eq('school_id', schoolId),
-        this.supabase.from('subject_teachers').select('subject_id, section_id').then((res) => res, () => ({ data: [], error: null })),
+        this.supabase.from('subject_teachers').select('subject_id, section_id').eq('school_id', schoolId).then((res) => res, () => ({ data: [], error: null })),
       ]);
 
       sectionMap = new Map((sectionsRes.data || []).map((s: any) => [s.id, s]));
@@ -1278,19 +1462,31 @@ export class ApiService {
     if (!schoolId) return [];
 
     try {
-      // 1. Fetch user_school_roles, users, roles, sections, subject teachers, classes, and guardians
-      const [usrRes, usersRes, rolesRes, sectionsRes, subjectTeachersRes, classesRes, subjectsRes, guardiansRes] = await Promise.all([
+      // 1. Fetch user_school_roles strictly for this school
+      const [usrRes, rolesRes, sectionsRes, subjectTeachersRes, classesRes, subjectsRes, guardiansRes] = await Promise.all([
         this.supabase.from('user_school_roles').select('*').eq('school_id', schoolId),
-        this.supabase.from('users').select('*'),
         this.supabase.from('roles').select('*'),
         this.supabase.from('sections').select('id, name, class_id').eq('school_id', schoolId),
-        this.supabase.from('subject_teachers').select('*').then((res) => res, () => ({ data: [], error: null })),
+        this.supabase.from('subject_teachers').select('*').eq('school_id', schoolId).then((res) => res, () => ({ data: [], error: null })),
         this.supabase.from('classes').select('id, name').eq('school_id', schoolId),
         this.supabase.from('subjects').select('id, name, code').eq('school_id', schoolId),
         this.supabase.from('guardians').select('id, user_id, school_id').eq('school_id', schoolId),
       ]);
 
-      const userMap = new Map((usersRes.data || []).map((u: any) => [u.id, u]));
+      const usrList = usrRes.data || [];
+      if (usrList.length === 0) {
+        return [];
+      }
+
+      // Fetch ONLY the users explicitly linked to this school in user_school_roles
+      const userIds = Array.from(new Set(usrList.map((usr: any) => usr.user_id).filter(Boolean)));
+      let users: any[] = [];
+      if (userIds.length > 0) {
+        const { data } = await this.supabase.from('users').select('*').in('id', userIds);
+        users = data || [];
+      }
+
+      const userMap = new Map(users.map((u: any) => [u.id, u]));
       const roleMap = new Map((rolesRes.data || []).map((r: any) => [r.id, r]));
       const classMap = new Map((classesRes.data || []).map((c: any) => [c.id, c]));
       const subjectMap = new Map((subjectsRes.data || []).map((s: any) => [s.id, s]));
@@ -1301,7 +1497,7 @@ export class ApiService {
       const seenUserIds = new Set<string>();
 
       // Clean up any stray root admin user_school_roles for this tenant school
-      const rootUser = (usersRes.data || []).find(
+      const rootUser = users.find(
         (u: any) => u.email?.toLowerCase() === 'admin@schoolscence.in' || u.id === '00000000-0000-0000-0000-000000000001'
       );
       if (rootUser) {
@@ -1316,10 +1512,11 @@ export class ApiService {
 
       const guardianRole = (rolesRes.data || []).find((ro: any) => ro.code === 'GUARDIAN' || ro.code === 'PARENT');
 
-      const usrList = usrRes.data || [];
       for (const usr of usrList) {
         const u = userMap.get(usr.user_id);
         if (!u) continue;
+        if (seenUserIds.has(u.id)) continue;
+
         const r = roleMap.get(usr.role_id);
         const roleCode = (r?.code || '').toUpperCase();
 
@@ -1430,85 +1627,6 @@ export class ApiService {
           status: usr.status || u.status || 'ACTIVE',
           createdAt: usr.created_at || u.created_at,
         });
-      }
-
-      // Self-healing: Find any staff/admin users specifically belonging to this school's domain
-      const { data: schoolData } = await this.supabase.from('schools').select('code, email, name').eq('id', schoolId).maybeSingle();
-      const schoolDomain = (schoolData?.email && schoolData.email.includes('@')) ? schoolData.email.split('@')[1].toLowerCase().trim() : '';
-
-      if (schoolDomain) {
-        const staffPhotosMap = (() => {
-          try {
-            return JSON.parse(localStorage.getItem('schoolsense_staff_photos') || '{}');
-          } catch {
-            return {};
-          }
-        })();
-        const staffProfilesMap = (() => {
-          try {
-            return JSON.parse(localStorage.getItem('schoolsense_staff_profiles') || '{}');
-          } catch {
-            return {};
-          }
-        })();
-
-        for (const u of (usersRes.data || [])) {
-          if (seenUserIds.has(u.id)) continue;
-          if (!u.email) continue;
-          const uEmail = u.email.toLowerCase();
-
-          // Never attach platform super admin / root user to school staff
-          if (uEmail === 'admin@schoolscence.in' || u.id === '00000000-0000-0000-0000-000000000001') continue;
-
-          // Only match if user email belongs to this school's specific domain
-          if (uEmail.endsWith('@' + schoolDomain)) {
-            const roleCode = uEmail.startsWith('admin@') ? 'SCHOOL_ADMIN' : (uEmail.startsWith('principal@') ? 'PRINCIPAL' : 'TEACHER');
-            const defaultRole = (rolesRes.data || []).find((r: any) => r.code === roleCode || r.code === 'TEACHER');
-            if (defaultRole) {
-              Promise.resolve(
-                this.supabase.from('user_school_roles').insert({
-                  user_id: u.id,
-                  school_id: schoolId,
-                  role_id: defaultRole.id,
-                  status: 'ACTIVE',
-                })
-              ).catch(() => {});
-            }
-
-            const staffLocal = staffPhotosMap[u.id] || staffPhotosMap[uEmail] || {};
-            const resolvedStaffPhoto = staffLocal.photoUrl || staffLocal.photo_url || staffLocal.avatar_url || '';
-            const profileLocal = staffProfilesMap[u.id] || staffProfilesMap[uEmail] || {};
-
-            staffList.push({
-              id: u.id,
-              firstName: u.first_name || 'Staff',
-              lastName: u.last_name || '',
-              fullName: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'Staff Member',
-              email: u.email,
-              phone: u.phone,
-              photoUrl: resolvedStaffPhoto,
-              avatarUrl: resolvedStaffPhoto,
-              gender: profileLocal.gender || '',
-              dateOfBirth: profileLocal.dateOfBirth || profileLocal.dob || '',
-              dob: profileLocal.dob || profileLocal.dateOfBirth || '',
-              qualification: profileLocal.qualification || '',
-              experience: profileLocal.experience || '',
-              joiningDate: profileLocal.joiningDate || '',
-              bloodGroup: profileLocal.bloodGroup || '',
-              address: profileLocal.address || '',
-              emergencyContactName: profileLocal.emergencyContactName || '',
-              emergencyContactPhone: profileLocal.emergencyContactPhone || '',
-              department: profileLocal.department || '',
-              role: roleCode,
-              roleName: roleCode === 'SCHOOL_ADMIN' ? 'School Admin' : (roleCode === 'PRINCIPAL' ? 'Principal' : 'Teacher'),
-              classTeacherSections: [],
-              subjectAssignments: [],
-              status: u.status || 'ACTIVE',
-              createdAt: u.created_at,
-            });
-            seenUserIds.add(u.id);
-          }
-        }
       }
 
       return staffList;
@@ -1746,6 +1864,7 @@ export class ApiService {
     if (body.sectionId && body.subjectId) {
       try {
         await this.supabase.from('subject_teachers').insert({
+          school_id: schoolId,
           section_id: body.sectionId,
           subject_id: body.subjectId,
           teacher_id: userId,
@@ -2717,7 +2836,11 @@ export class ApiService {
       enrUpdate.updated_at = new Date().toISOString();
 
       try {
-        await this.supabase.from('student_enrollments').update(enrUpdate).eq('student_id', studentId);
+        let enrQuery = this.supabase.from('student_enrollments').update(enrUpdate).eq('student_id', studentId);
+        if (body.academicYearId) {
+          enrQuery = enrQuery.eq('academic_year_id', body.academicYearId);
+        }
+        await enrQuery;
       } catch (e) {
         console.warn('Update student_enrollments note:', e);
       }
@@ -2729,8 +2852,11 @@ export class ApiService {
         classId: body.classId,
         sectionId: body.sectionId,
         rollNumber: body.rollNumber ? String(body.rollNumber) : undefined,
-      });
+      }, body.academicYearId);
     }
+
+    // Invalidate caches so UI immediately displays new student data
+    this.sectionStudentsCache.clear();
 
     // Update parent/guardian user if email or phone is updated
     if (guardianEmail || guardianPhone) {
@@ -3011,46 +3137,65 @@ export class ApiService {
     };
   }
 
+  private deactivationRequestsCache: { data: any[]; timestamp: number } | null = null;
+  private deactivationRequestsInFlight: Promise<any[]> | null = null;
+
   private async getStudentDeactivationRequests(): Promise<any[]> {
     const schoolId = this.getSchoolId();
-    let dbRequests: any[] = [];
-    try {
-      let query = this.supabase
-        .from('student_deactivation_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (schoolId) query = query.eq('school_id', schoolId);
-      const { data, error } = await query;
-      if (!error && data) dbRequests = data;
-    } catch (e) {
-      console.warn('Query student_deactivation_requests failed:', e);
+    const now = Date.now();
+    if (this.deactivationRequestsCache && now - this.deactivationRequestsCache.timestamp < 3000) {
+      return this.deactivationRequestsCache.data;
+    }
+    if (this.deactivationRequestsInFlight) {
+      return this.deactivationRequestsInFlight;
     }
 
-    let localRequests: any[] = [];
-    try {
-      const raw = localStorage.getItem('schoolsense_deactivation_requests');
-      if (raw) localRequests = JSON.parse(raw);
-    } catch {}
+    this.deactivationRequestsInFlight = (async () => {
+      try {
+        let dbRequests: any[] = [];
+        try {
+          let query = this.supabase
+            .from('student_deactivation_requests')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (schoolId) query = query.eq('school_id', schoolId);
+          const { data, error } = await query;
+          if (!error && data) dbRequests = data;
+        } catch {}
 
-    const combinedMap = new Map<string, any>();
-    for (const r of dbRequests) combinedMap.set(r.id, r);
-    for (const r of localRequests) {
-      if (!schoolId || r.school_id === schoolId) {
-        if (!combinedMap.has(r.id)) {
-          combinedMap.set(r.id, r);
-        } else {
-          // Local override if updated
-          const existing = combinedMap.get(r.id);
-          if (r.status !== existing.status || r.reviewed_at) {
-            combinedMap.set(r.id, { ...existing, ...r });
+        let localRequests: any[] = [];
+        try {
+          const raw = localStorage.getItem('schoolsense_deactivation_requests');
+          if (raw) localRequests = JSON.parse(raw);
+        } catch {}
+
+        const combinedMap = new Map<string, any>();
+        for (const r of dbRequests) combinedMap.set(r.id, r);
+        for (const r of localRequests) {
+          if (!schoolId || r.school_id === schoolId) {
+            if (!combinedMap.has(r.id)) {
+              combinedMap.set(r.id, r);
+            } else {
+              // Local override if updated
+              const existing = combinedMap.get(r.id);
+              if (r.status !== existing.status || r.reviewed_at) {
+                combinedMap.set(r.id, { ...existing, ...r });
+              }
+            }
           }
         }
-      }
-    }
 
-    return Array.from(combinedMap.values()).sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
+        const result = Array.from(combinedMap.values()).sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        this.deactivationRequestsCache = { data: result, timestamp: Date.now() };
+        return result;
+      } finally {
+        this.deactivationRequestsInFlight = null;
+      }
+    })();
+
+    return this.deactivationRequestsInFlight;
   }
 
   private async submitStudentDeactivationRequest(payload: any): Promise<any> {
@@ -3241,305 +3386,165 @@ export class ApiService {
     }
   }
 
+  private sectionStudentsInFlight = new Map<string, Promise<StudentItem[]>>();
+  private sectionStudentsCache = new Map<string, { data: StudentItem[]; timestamp: number }>();
+
   private async getSectionStudents(sectionId: string, academicYearId?: string): Promise<StudentItem[]> {
     const schoolId = this.getSchoolId();
     const effectiveYearId = academicYearId || (await this.getActiveAcademicYearId(schoolId));
+    const cacheKey = `${sectionId}_${effectiveYearId || 'default'}`;
+    const now = Date.now();
 
-    if (effectiveYearId) {
-      await this.ensureSessionEnrollments(schoolId, effectiveYearId);
+    if (this.sectionStudentsCache.has(cacheKey)) {
+      const cached = this.sectionStudentsCache.get(cacheKey)!;
+      if (now - cached.timestamp < 3000) {
+        return cached.data;
+      }
     }
 
-    // Fetch section and parent class info
-    let secName = '';
-    let clsName = '';
-    let classId = '';
-    try {
-      const { data: sec } = await this.supabase
-        .from('sections')
-        .select('id, name, class_id, class:classes(id, name)')
-        .eq('id', sectionId)
-        .maybeSingle();
-      secName = sec?.name || 'Section A';
-      clsName = (sec?.class as any)?.name || '';
-      classId = sec?.class_id || (sec?.class as any)?.id || '';
-    } catch {}
+    if (this.sectionStudentsInFlight.has(cacheKey)) {
+      return this.sectionStudentsInFlight.get(cacheKey)!;
+    }
 
-    const localStatusMap = (() => {
+    const fetchPromise = (async () => {
       try {
-        return JSON.parse(localStorage.getItem('schoolsense_student_statuses') || '{}');
-      } catch {
-        return {};
-      }
-    })();
-
-    const photosMap = (() => {
-      try {
-        return JSON.parse(localStorage.getItem('schoolsense_student_photos') || '{}');
-      } catch {
-        return {};
-      }
-    })();
-
-    const localMap = this.getStudentSectionMap(effectiveYearId);
-
-    let enrollments: any[] = [];
-
-    // 1. Query student_enrollments strictly for this academic session
-    try {
-      let query = this.supabase
-        .from('student_enrollments')
-        .select('*, student:students(*), section:sections(id, name, class_id, class:classes(id, name))');
-
-      if (effectiveYearId) {
-        query = query.eq('academic_year_id', effectiveYearId);
-      }
-
-      const { data: allSessionEnrolls, error } = await query;
-      if (!error && allSessionEnrolls && allSessionEnrolls.length > 0) {
-        // Group by student ID to ensure each student has exactly ONE authoritative enrollment record
-        const latestEnrollmentByStudent = new Map<string, any>();
-        for (const e of allSessionEnrolls) {
-          const sId = e.student_id || e.student?.id;
-          if (!sId) continue;
-          const existing = latestEnrollmentByStudent.get(sId);
-          if (!existing) {
-            latestEnrollmentByStudent.set(sId, e);
-          } else {
-            const prevTime = new Date(existing.updated_at || existing.created_at || 0).getTime();
-            const currTime = new Date(e.updated_at || e.created_at || 0).getTime();
-            if (currTime > prevTime) {
-              latestEnrollmentByStudent.set(sId, e);
-            }
+        const localStatusMap = (() => {
+          try {
+            return JSON.parse(localStorage.getItem('schoolsense_student_statuses') || '{}');
+          } catch {
+            return {};
           }
+        })();
+
+        const photosMap = (() => {
+          try {
+            return JSON.parse(localStorage.getItem('schoolsense_student_photos') || '{}');
+          } catch {
+            return {};
+          }
+        })();
+
+        const localMap = this.getStudentSectionMap(effectiveYearId);
+
+        // Resolve target class and section info
+        let targetClassId: string | null = null;
+        let targetSecName: string = 'Section A';
+        try {
+          const { data: secData } = await this.supabase
+            .from('sections')
+            .select('id, name, class_id')
+            .eq('id', sectionId)
+            .maybeSingle();
+          if (secData) {
+            targetClassId = secData.class_id;
+            targetSecName = secData.name || 'Section A';
+          }
+        } catch {}
+
+        let query = this.supabase
+          .from('student_enrollments')
+          .select('*, student:students(*), section:sections(id, name, class_id, class:classes(id, name))');
+
+        if (effectiveYearId) {
+          query = query.eq('academic_year_id', effectiveYearId);
         }
 
-        const uniqueEnrolls = Array.from(latestEnrollmentByStudent.values());
+        if (targetClassId) {
+          query = query.eq('class_id', targetClassId);
+        } else {
+          query = query.eq('section_id', sectionId);
+        }
 
-        // Strictly filter to the target class and section
-        enrollments = uniqueEnrolls.filter((e: any) => {
-          const sId = e.student_id || e.student?.id;
-          const stInfo = localMap[sId];
-
-          // Determine the student's current authoritative section and class
-          const effectiveSectionId = stInfo?.sectionId || e.section_id;
-          const effectiveClassId = stInfo?.classId || e.class_id || e.section?.class_id || (e.section?.class as any)?.id;
-          const effectiveClassName = (stInfo?.className || (e.section?.class as any)?.name || '').trim().toLowerCase();
-          const effectiveSecName = (stInfo?.sectionName || e.section?.name || 'section a').trim().toLowerCase();
-
-          const targetSecName = (secName || 'section a').trim().toLowerCase();
-          const targetClsName = (clsName || '').trim().toLowerCase();
-
-          // Direct section ID match
-          if (effectiveSectionId && sectionId && effectiveSectionId === sectionId) {
-            return true;
-          }
-
-          // Strict Class name and Section name match
-          const isClassMatch = (classId && effectiveClassId && effectiveClassId === classId) ||
-                               (targetClsName && effectiveClassName && effectiveClassName === targetClsName);
-          const isSecMatch = effectiveSecName === targetSecName;
-
-          return isClassMatch && isSecMatch;
-        });
-      }
-    } catch (e) {
-      console.warn('Query student_enrollments failed:', e);
-    }
-
-    // 2. If enrollments returned results, format and return
-    if (enrollments && enrollments.length > 0) {
-      return enrollments
-        .filter((e: any) => !!e.student)
-        .map((e: any) => {
-          const st = e.student || {};
-          const fullName = `${st.first_name || ''} ${st.last_name || ''}`.trim() || st.admission_number || 'Student';
-          const localOverride = localStatusMap[st.id]?.status || localStatusMap[e.id]?.status || (e.student_id ? localStatusMap[e.student_id]?.status : null);
-          const rawStatus = localOverride || (e.status && e.status !== 'ALUMNI' ? e.status : null) || (st.status === 'ALUMNI' ? 'ACTIVE' : st.status) || 'ACTIVE';
-          const stStatus = String(rawStatus).toUpperCase() === 'ALUMNI' ? 'ACTIVE' : String(rawStatus).toUpperCase();
-          const activeInfo = this.getStudentActiveTimeInfo(st.id || e.id, e.created_at || st.created_at, stStatus);
-
-          const studentLocalPhoto = photosMap[st.id] || photosMap[e.id] || (e.student_id ? photosMap[e.student_id] : null) || {};
-          const resolvedPhotoUrl = studentLocalPhoto.photoUrl || studentLocalPhoto.photo_url || st.photo_url || st.avatar_url || '';
-          const resolvedGuardianPhotoUrl = studentLocalPhoto.guardianPhotoUrl || studentLocalPhoto.guardian_photo_url || st.guardian_photo_url || st.emergency_contact_photo_url || '';
-
-          const stLocalInfo = localMap[st.id] || {};
-          const resolvedClassName = stLocalInfo.className || clsName || (e.section?.class as any)?.name || 'Class 1';
-          const resolvedSectionName = stLocalInfo.sectionName || secName || e.section?.name || 'Section A';
-
-          const guardiansMeta = JSON.parse(localStorage.getItem('schoolsense_student_guardians_meta') || '{}');
-          const gMeta = guardiansMeta[st.id] || {};
-
-          return {
-            id: st.id || e.id,
-            enrollmentId: e.id,
-            studentId: st.id,
-            admissionNumber: st.admission_number || '',
-            firstName: st.first_name || '',
-            lastName: st.last_name || '',
-            fullName,
-            rollNumber: Number(stLocalInfo.rollNumber || e.roll_number) || 1,
-            gender: st.gender || 'MALE',
-            dateOfBirth: st.date_of_birth,
-            bloodGroup: st.blood_group,
-            className: resolvedClassName,
-            sectionName: resolvedSectionName,
-            photoUrl: resolvedPhotoUrl,
-            photo_url: resolvedPhotoUrl,
-            guardianPhotoUrl: resolvedGuardianPhotoUrl,
-            fatherName: gMeta.fatherName || '',
-            fatherPhone: gMeta.fatherPhone || '',
-            motherName: gMeta.motherName || '',
-            motherPhone: gMeta.motherPhone || '',
-            guardianName: gMeta.guardianName || st.emergency_contact_name || '',
-            guardianPhone: gMeta.guardianPhone || st.emergency_contact_phone || '',
-            guardianRelationship: gMeta.guardianRelationship || 'GUARDIAN',
-            primaryGuardianType: gMeta.primaryGuardianType || 'FATHER',
-            guardianEmail: gMeta.guardianEmail || '',
-            primaryContact: {
-              first_name: st.emergency_contact_name || gMeta.fatherName || gMeta.motherName || gMeta.guardianName || 'Guardian',
-              last_name: '',
-              phone: st.emergency_contact_phone || gMeta.fatherPhone || gMeta.motherPhone || gMeta.guardianPhone || '',
-              email: gMeta.guardianEmail || '',
-              photo_url: resolvedGuardianPhotoUrl,
-              photoUrl: resolvedGuardianPhotoUrl,
-              relationship: gMeta.primaryGuardianType || 'Guardian',
-            },
-            status: stStatus,
-            activeHours: activeInfo.activeHours,
-            activeDays: activeInfo.activeDays,
-            activeTimeFormatted: activeInfo.activeTimeFormatted,
-            isBillable: activeInfo.isBillable,
-          };
-        })
-        .sort((a, b) => a.rollNumber - b.rollNumber);
-    }
-
-    // 3. Fallback: ONLY run if 0 enrollments exist in the entire database across ALL sessions (initial bootstrap)
-    try {
-      const { count: globalEnrCount } = await this.supabase
-        .from('student_enrollments')
-        .select('id', { count: 'exact', head: true });
-
-      if (!globalEnrCount || globalEnrCount === 0) {
-        const { data: allStudents } = await this.supabase
-          .from('students')
-          .select('*')
-          .eq('school_id', schoolId);
-
-        if (allStudents && allStudents.length > 0) {
-          const targetSecName = (secName || 'section a').trim().toLowerCase();
-
-          const matchedStudents = allStudents.filter((st: any) => {
-            const info = localMap[st.id];
-            if (!info) return false;
-            if (info.sectionId === sectionId) return true;
-
-            const classMatch = (classId && info.classId === classId) ||
-                               (clsName && info.className && info.className.trim().toLowerCase() === clsName.trim().toLowerCase());
-            const secMatch = (info.sectionName || 'section a').trim().toLowerCase() === targetSecName;
-            return classMatch && secMatch;
+        const { data: rawEnrolls, error } = await query;
+        if (!error && rawEnrolls && rawEnrolls.length > 0) {
+          const matchedEnrolls = rawEnrolls.filter((e: any) => {
+            if (e.section_id === sectionId) return true;
+            if (localMap[e.student_id]?.sectionId === sectionId) return true;
+            if (!e.section_id) return true;
+            const enrSecName = (e.section?.name || '').trim().toLowerCase();
+            return enrSecName === targetSecName.trim().toLowerCase();
           });
 
-          if (matchedStudents.length > 0) {
-            // Auto-persist enrollments into student_enrollments
-            if (effectiveYearId && sectionId) {
-              if (!classId && schoolId) {
-                try {
-                  const { data: cls } = await this.supabase
-                    .from('classes')
-                    .select('id, name')
-                    .eq('school_id', schoolId)
-                    .limit(1)
-                    .maybeSingle();
-                  if (cls) classId = cls.id;
-                } catch {}
-              }
+          const mapped: StudentItem[] = matchedEnrolls
+            .filter((e: any) => !!e.student)
+            .map((e: any) => {
+              const st = e.student || {};
+              const sId = st.id || e.student_id;
+              const fullName = `${st.first_name || ''} ${st.last_name || ''}`.trim() || st.admission_number || 'Student';
+              const localOverride = localStatusMap[sId]?.status || localStatusMap[e.id]?.status;
+              const rawStatus = localOverride || (e.status && e.status !== 'ALUMNI' ? e.status : null) || (st.status === 'ALUMNI' ? 'ACTIVE' : st.status) || 'ACTIVE';
+              const stStatus = String(rawStatus).toUpperCase() === 'ALUMNI' ? 'ACTIVE' : String(rawStatus).toUpperCase();
+              const activeInfo = this.getStudentActiveTimeInfo(sId || e.id, e.created_at || st.created_at, stStatus);
 
-              if (classId) {
-                const enrollmentsToCreate = matchedStudents.map((st: any) => ({
-                  student_id: st.id,
-                  section_id: sectionId,
-                  class_id: classId || localMap[st.id]?.classId,
-                  academic_year_id: effectiveYearId,
-                  roll_number: localMap[st.id]?.rollNumber ? String(localMap[st.id].rollNumber) : '1',
-                  status: 'ACTIVE',
-                })).filter((e: any) => !!e.class_id);
+              const studentLocalPhoto = photosMap[sId] || photosMap[e.id] || {};
+              const resolvedPhotoUrl = studentLocalPhoto.photoUrl || studentLocalPhoto.photo_url || st.photo_url || st.avatar_url || '';
+              const resolvedGuardianPhotoUrl = studentLocalPhoto.guardianPhotoUrl || studentLocalPhoto.guardian_photo_url || st.guardian_photo_url || st.emergency_contact_photo_url || '';
 
-                if (enrollmentsToCreate.length > 0) {
-                  try {
-                    await this.supabase.from('student_enrollments').insert(enrollmentsToCreate);
-                  } catch {}
-                }
-              }
-            }
+              const stLocalInfo = localMap[sId] || {};
+              const resolvedClassName = stLocalInfo.className || (e.section?.class as any)?.name || 'Class 1';
+              const resolvedSectionName = stLocalInfo.sectionName || e.section?.name || 'Section A';
 
-            return matchedStudents
-              .map((st: any) => {
-                const info = localMap[st.id] || {};
-                const fullName = `${st.first_name || ''} ${st.last_name || ''}`.trim() || st.admission_number || 'Student';
-                const localOverride = localStatusMap[st.id]?.status;
-                const rawStatus = localOverride || (st.status === 'ALUMNI' ? 'ACTIVE' : st.status) || 'ACTIVE';
-                const stStatus = String(rawStatus).toUpperCase() === 'ALUMNI' ? 'ACTIVE' : String(rawStatus).toUpperCase();
-                const activeInfo = this.getStudentActiveTimeInfo(st.id, st.created_at, stStatus);
+              const guardiansMeta = JSON.parse(localStorage.getItem('schoolsense_student_guardians_meta') || '{}');
+              const gMeta = guardiansMeta[sId] || {};
 
-                const studentLocalPhoto = photosMap[st.id] || {};
-                const resolvedPhotoUrl = studentLocalPhoto.photoUrl || studentLocalPhoto.photo_url || st.photo_url || st.avatar_url || '';
-                const resolvedGuardianPhotoUrl = studentLocalPhoto.guardianPhotoUrl || studentLocalPhoto.guardian_photo_url || st.guardian_photo_url || st.emergency_contact_photo_url || '';
+              return {
+                id: sId,
+                enrollmentId: e.id,
+                studentId: sId,
+                admissionNumber: st.admission_number || '',
+                firstName: st.first_name || '',
+                lastName: st.last_name || '',
+                fullName,
+                rollNumber: Number(stLocalInfo.rollNumber || e.roll_number) || 1,
+                gender: st.gender || 'MALE',
+                dateOfBirth: st.date_of_birth,
+                bloodGroup: st.blood_group,
+                className: resolvedClassName,
+                sectionName: resolvedSectionName,
+                classId: e.section?.class_id || (e.section?.class as any)?.id,
+                sectionId: sectionId,
+                photoUrl: resolvedPhotoUrl,
+                photo_url: resolvedPhotoUrl,
+                guardianPhotoUrl: resolvedGuardianPhotoUrl,
+                fatherName: gMeta.fatherName || '',
+                fatherPhone: gMeta.fatherPhone || '',
+                motherName: gMeta.motherName || '',
+                motherPhone: gMeta.motherPhone || '',
+                guardianName: gMeta.guardianName || st.emergency_contact_name || '',
+                guardianPhone: gMeta.guardianPhone || st.emergency_contact_phone || '',
+                guardianRelationship: gMeta.guardianRelationship || 'GUARDIAN',
+                primaryGuardianType: gMeta.primaryGuardianType || 'FATHER',
+                guardianEmail: gMeta.guardianEmail || '',
+                primaryContact: {
+                  first_name: st.emergency_contact_name || gMeta.fatherName || gMeta.motherName || gMeta.guardianName || 'Guardian',
+                  last_name: '',
+                  phone: st.emergency_contact_phone || gMeta.fatherPhone || gMeta.motherPhone || gMeta.guardianPhone || '',
+                  email: gMeta.guardianEmail || '',
+                  photo_url: resolvedGuardianPhotoUrl,
+                  photoUrl: resolvedGuardianPhotoUrl,
+                  relationship: gMeta.primaryGuardianType || 'Guardian',
+                },
+                status: stStatus,
+                activeHours: activeInfo.activeHours,
+                activeDays: activeInfo.activeDays,
+                activeTimeFormatted: activeInfo.activeTimeFormatted,
+                isBillable: activeInfo.isBillable,
+              };
+            })
+            .sort((a, b) => (Number(a.rollNumber) || 1) - (Number(b.rollNumber) || 1));
 
-                const guardiansMeta = JSON.parse(localStorage.getItem('schoolsense_student_guardians_meta') || '{}');
-                const gMeta = guardiansMeta[st.id] || {};
-
-                return {
-                  id: st.id,
-                  enrollmentId: st.id,
-                  studentId: st.id,
-                  admissionNumber: st.admission_number || '',
-                  firstName: st.first_name || '',
-                  lastName: st.last_name || '',
-                  fullName,
-                  rollNumber: Number(info.rollNumber) || 1,
-                  gender: st.gender || 'MALE',
-                  dateOfBirth: st.date_of_birth,
-                  bloodGroup: st.blood_group,
-                  className: clsName,
-                  sectionName: secName,
-                  photoUrl: resolvedPhotoUrl,
-                  photo_url: resolvedPhotoUrl,
-                  guardianPhotoUrl: resolvedGuardianPhotoUrl,
-                  fatherName: gMeta.fatherName || '',
-                  fatherPhone: gMeta.fatherPhone || '',
-                  motherName: gMeta.motherName || '',
-                  motherPhone: gMeta.motherPhone || '',
-                  guardianName: gMeta.guardianName || st.emergency_contact_name || '',
-                  guardianPhone: gMeta.guardianPhone || st.emergency_contact_phone || '',
-                  guardianRelationship: gMeta.guardianRelationship || 'GUARDIAN',
-                  primaryGuardianType: gMeta.primaryGuardianType || 'FATHER',
-                  guardianEmail: gMeta.guardianEmail || '',
-                  primaryContact: {
-                    first_name: st.emergency_contact_name || gMeta.fatherName || gMeta.motherName || gMeta.guardianName || 'Guardian',
-                    last_name: '',
-                    phone: st.emergency_contact_phone || gMeta.fatherPhone || gMeta.motherPhone || gMeta.guardianPhone || '',
-                    email: gMeta.guardianEmail || '',
-                    photo_url: resolvedGuardianPhotoUrl,
-                    photoUrl: resolvedGuardianPhotoUrl,
-                    relationship: gMeta.primaryGuardianType || 'Guardian',
-                  },
-                  status: stStatus,
-                  activeHours: activeInfo.activeHours,
-                  activeDays: activeInfo.activeDays,
-                  activeTimeFormatted: activeInfo.activeTimeFormatted,
-                  isBillable: activeInfo.isBillable,
-                };
-              })
-              .sort((a, b) => a.rollNumber - b.rollNumber);
-          }
+          this.sectionStudentsCache.set(cacheKey, { data: mapped, timestamp: Date.now() });
+          return mapped;
         }
-      }
-    } catch (fallbackErr) {
-      console.warn('Fallback section student resolution error:', fallbackErr);
-    }
 
-    return [];
+        return [];
+      } finally {
+        this.sectionStudentsInFlight.delete(cacheKey);
+      }
+    })();
+
+    this.sectionStudentsInFlight.set(cacheKey, fetchPromise);
+    return fetchPromise;
   }
 
   private async getSections(): Promise<any[]> {
@@ -3779,13 +3784,48 @@ export class ApiService {
     }));
   }
 
+  private isNoticeAllowedForRole(noticeAudience: any, role?: string): boolean {
+    const upperRole = (role || '').toUpperCase();
+    if (['SUPER_ADMIN', 'SCHOOL_ADMIN', 'ADMIN', 'PRINCIPAL'].includes(upperRole)) {
+      return true;
+    }
+
+    let audiences: string[] = [];
+    if (Array.isArray(noticeAudience)) {
+      audiences = noticeAudience.map((a: any) => String(a).toUpperCase());
+    } else if (typeof noticeAudience === 'string') {
+      audiences = [noticeAudience.toUpperCase()];
+    }
+
+    if (audiences.length === 0 || audiences.includes('ALL')) {
+      return true;
+    }
+
+    if (['TEACHER', 'CLASS_TEACHER', 'FACULTY', 'STAFF'].includes(upperRole)) {
+      return audiences.some(a => ['TEACHERS', 'TEACHER', 'STAFF', 'FACULTY', 'CLASS'].includes(a));
+    }
+
+    if (['GUARDIAN', 'PARENT'].includes(upperRole)) {
+      return audiences.some(a => ['GUARDIANS', 'GUARDIAN', 'PARENTS', 'PARENT', 'STUDENTS', 'STUDENT', 'CLASS'].includes(a));
+    }
+
+    if (upperRole === 'STUDENT') {
+      return audiences.some(a => ['STUDENTS', 'STUDENT', 'CLASS'].includes(a));
+    }
+
+    return audiences.includes('ALL');
+  }
+
   private noticesInFlightPromise: Promise<Notice[]> | null = null;
-  private noticesCache: { data: Notice[]; timestamp: number; schoolId?: string } | null = null;
+  private noticesCache: { data: Notice[]; timestamp: number; key: string } | null = null;
 
   private async getNotices(): Promise<Notice[]> {
     const schoolId = this.getSchoolId();
+    const user = this.getCurrentUser();
+    const role = (user?.role || '').toUpperCase();
+    const cacheKey = `${schoolId}_${role}`;
     const now = Date.now();
-    if (this.noticesCache && this.noticesCache.schoolId === schoolId && now - this.noticesCache.timestamp < 3000) {
+    if (this.noticesCache && this.noticesCache.key === cacheKey && now - this.noticesCache.timestamp < 3000) {
       return this.noticesCache.data;
     }
     if (this.noticesInFlightPromise) {
@@ -3798,18 +3838,19 @@ export class ApiService {
         if (schoolId) query = query.eq('school_id', schoolId);
         const { data, error } = await query;
         if (error) throw error;
-        const mapped = (data || []).map((n: any) => ({
+        const filtered = (data || []).filter((n: any) => this.isNoticeAllowedForRole(n.target_audience, role));
+        const mapped = filtered.map((n: any) => ({
           id: n.id,
           title: n.title,
           content: n.content,
-          target_audience: n.target_audience?.[0] || 'ALL',
+          target_audience: n.target_audience?.[0] || (Array.isArray(n.target_audience) ? n.target_audience[0] : n.target_audience) || 'ALL',
           published_at: n.publish_date || n.created_at,
           publisher: {
             first_name: n.publisher?.first_name,
             last_name: n.publisher?.last_name,
           },
         }));
-        this.noticesCache = { data: mapped, timestamp: Date.now(), schoolId };
+        this.noticesCache = { data: mapped, timestamp: Date.now(), key: cacheKey };
         return mapped;
       } finally {
         this.noticesInFlightPromise = null;
@@ -4730,6 +4771,7 @@ export class ApiService {
 
           if (!existingSt) {
             await this.supabase.from('subject_teachers').insert({
+              school_id: schoolId,
               subject_id: subjectData.id,
               section_id: secId,
               teacher_id: body.teacher_id || null,
@@ -5374,8 +5416,12 @@ export class ApiService {
         targetTeacherId = currentUserId;
       } else {
         try {
-          const { data: usr } = await this.supabase.from('users').select('id').limit(1);
-          if (usr && usr.length > 0) targetTeacherId = usr[0].id;
+          const { data: usrRole } = await this.supabase
+            .from('user_school_roles')
+            .select('user_id')
+            .eq('school_id', targetSchoolId)
+            .limit(1);
+          if (usrRole && usrRole.length > 0) targetTeacherId = usrRole[0].user_id;
         } catch {}
       }
     }
@@ -5657,36 +5703,54 @@ export class ApiService {
   // Academic Sessions & Rollover / Promotion Handlers
   // ============================================================================
 
-  private async getAcademicSessions(): Promise<AcademicSession[]> {
+  private async getAcademicSessions(force = false): Promise<AcademicSession[]> {
+    if (!force && this.cachedSessions && this.cachedSessions.length > 0) {
+      return this.cachedSessions;
+    }
+    if (this.sessionsPromise) {
+      return this.sessionsPromise;
+    }
+
     const schoolId = this.getSchoolId();
     if (!schoolId) return [];
 
-    const { data: sessions, error } = await this.supabase
-      .from('academic_years')
-      .select('*')
-      .eq('school_id', schoolId)
-      .order('start_date', { ascending: false });
-    if (error) {
-      console.warn('Failed to fetch academic_years', error);
-      return [];
-    }
+    this.sessionsPromise = (async () => {
+      try {
+        const { data: sessions, error } = await this.supabase
+          .from('academic_years')
+          .select('*')
+          .eq('school_id', schoolId)
+          .order('start_date', { ascending: false });
+        if (error) {
+          console.warn('Failed to fetch academic_years', error);
+          return [];
+        }
 
-    return (sessions || []).map((s: any) => ({
-      id: s.id,
-      school_id: s.school_id,
-      name: s.name,
-      start_date: s.start_date,
-      end_date: s.end_date,
-      is_current: s.is_current || false,
-      status: s.status || 'ACTIVE',
-      created_at: s.created_at,
-    }));
+        const mapped = (sessions || []).map((s: any) => ({
+          id: s.id,
+          school_id: s.school_id,
+          name: s.name,
+          start_date: s.start_date,
+          end_date: s.end_date,
+          is_current: s.is_current || false,
+          status: s.status || 'ACTIVE',
+          created_at: s.created_at,
+        }));
+        this.cachedSessions = mapped;
+        return mapped;
+      } finally {
+        this.sessionsPromise = null;
+      }
+    })();
+
+    return this.sessionsPromise;
   }
 
   private async createAcademicSession(body: any): Promise<any> {
     const schoolId = this.getSchoolId();
     if (!schoolId) throw new Error('School context missing');
 
+    this.cachedSessions = null;
     if (body.isCurrent || body.is_current) {
       await this.supabase.from('academic_years').update({ is_current: false }).eq('school_id', schoolId);
     }
@@ -5703,6 +5767,7 @@ export class ApiService {
       .select()
       .single();
     if (error) throw error;
+    this.cachedSessions = null;
     return { success: true, session_id: data.id, ...data };
   }
 
@@ -6515,6 +6580,7 @@ export class ApiService {
       throw new Error(error.message || 'Could not delete academic session');
     }
 
+    this.cachedSessions = null;
     return { success: true, message: 'Academic session deleted successfully' };
   }
 
