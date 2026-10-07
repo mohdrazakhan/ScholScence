@@ -622,6 +622,7 @@ export class HomeComponent {
     { src: '/assets/images/slider_classroom.jpg', alt: 'Teacher guiding students in a classroom — schools run on SchoolSense' },
     { src: '/assets/images/slider_leadership.jpg', alt: 'School leadership team planning together with SchoolSense' },
     { src: '/assets/images/slider_learning.jpg', alt: 'Students learning confidently with digital tools in class' },
+    { src: '/assets/images/slider_parents_1.jpg', alt: 'Student and parents staying connected with real-time school activity notifications' },
   ];
   currentSlide = signal(0);
   private slideTimer: ReturnType<typeof setInterval> | null = null;
@@ -660,7 +661,7 @@ export class HomeComponent {
   startSlideshow(): void {
     this.stopSlideshow();
     this.slideTimer = this.zone.runOutsideAngular(() =>
-      setInterval(() => this.zone.run(() => this.nextSlide()), 6000),
+      setInterval(() => this.zone.run(() => this.nextSlide()), 3500),
     );
   }
 
