@@ -12,11 +12,15 @@ export class SupabaseService {
   public currentUser$ = this.currentUserSubject.asObservable();
 
   constructor() {
+    // On the server (prerendering/SSR) there is no browser session to persist,
+    // and the auth auto-refresh ticker would keep the render zone unstable forever.
+    const isServer = typeof window === 'undefined';
+
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey, {
       auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true,
+        autoRefreshToken: !isServer,
+        persistSession: !isServer,
+        detectSessionInUrl: !isServer,
       },
     });
 

@@ -219,7 +219,7 @@ interface StaffMember {
             <div class="px-1.5 flex flex-col items-center justify-center">
               <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Classes</span>
               <span class="text-base font-black text-slate-900 mt-0.5">
-                {{ loadingClasses ? '—' : classes.length }}
+                {{ loadingClasses ? '—' : (classesOverviewSummary?.totalClasses ?? classes.length) }}
               </span>
               <span class="text-[9px] text-slate-500 truncate mt-0.5">Grade Levels</span>
             </div>
@@ -228,7 +228,7 @@ interface StaffMember {
             <div class="px-1.5 flex flex-col items-center justify-center">
               <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Sections</span>
               <span class="text-base font-black text-emerald-700 mt-0.5">
-                {{ loadingClasses ? '—' : totalSectionsCount }}
+                {{ loadingClasses ? '—' : (classesOverviewSummary?.totalSections ?? totalSectionsCount) }}
               </span>
               <span class="text-[9px] text-slate-500 truncate mt-0.5">Divisions</span>
             </div>
@@ -237,7 +237,7 @@ interface StaffMember {
             <div class="px-1.5 flex flex-col items-center justify-center">
               <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Intake</span>
               <span class="text-base font-black text-purple-700 mt-0.5">
-                {{ loadingClasses ? '—' : (totalEnrolledStudents + '/' + totalCampusCapacity) }}
+                {{ loadingClasses ? '—' : ((classesOverviewSummary?.enrolledStudents ?? totalEnrolledStudents) + '/' + (classesOverviewSummary?.totalCapacity ?? totalCampusCapacity)) }}
               </span>
               <span class="text-[9px] text-slate-500 truncate mt-0.5">Students/Cap</span>
             </div>
@@ -255,7 +255,7 @@ interface StaffMember {
             </div>
             <div>
               <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Grade Levels</div>
-              <div class="text-xl font-black text-slate-900 mt-0.5">{{ loadingClasses ? '—' : (classes.length + ' Classes') }}</div>
+              <div class="text-xl font-black text-slate-900 mt-0.5">{{ loadingClasses ? '—' : ((classesOverviewSummary?.totalClasses ?? classes.length) + ' Classes') }}</div>
               <div class="text-[10px] text-slate-500">From Pre-Nursery to Grade 12</div>
             </div>
           </div>
@@ -268,7 +268,7 @@ interface StaffMember {
             </div>
             <div>
               <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active Divisions</div>
-              <div class="text-xl font-black text-emerald-700 mt-0.5">{{ loadingClasses ? '—' : (totalSectionsCount + ' Sections') }}</div>
+              <div class="text-xl font-black text-emerald-700 mt-0.5">{{ loadingClasses ? '—' : ((classesOverviewSummary?.totalSections ?? totalSectionsCount) + ' Sections') }}</div>
               <div class="text-[10px] text-slate-500">Custom and lettered divisions</div>
             </div>
           </div>
@@ -281,7 +281,7 @@ interface StaffMember {
             </div>
             <div>
               <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Student Intake & Capacity</div>
-              <div class="text-xl font-black text-purple-700 mt-0.5">{{ loadingClasses ? '—' : (totalEnrolledStudents + ' / ' + totalCampusCapacity) }}</div>
+              <div class="text-xl font-black text-purple-700 mt-0.5">{{ loadingClasses ? '—' : ((classesOverviewSummary?.enrolledStudents ?? totalEnrolledStudents) + ' / ' + (classesOverviewSummary?.totalCapacity ?? totalCampusCapacity)) }}</div>
               <div class="text-[10px] text-slate-500">Enrolled out of total classroom capacity</div>
             </div>
           </div>
@@ -414,101 +414,109 @@ interface StaffMember {
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                       </svg>
                     </span>
-                    <span>Sections ({{ c.sections.length || 0 }})</span>
+                    <span>Sections ({{ c.sectionCount ?? (c.sections?.length || 0) }})</span>
                   </div>
-                  <span>Capacity: <strong class="text-slate-700">{{ getClassEnrolledCount(c) }} / {{ getClassCapacity(c) }}</strong></span>
+                  <span>Capacity: <strong class="text-slate-700">{{ (c.enrolledCount ?? getClassEnrolledCount(c)) }} / {{ (c.totalCapacity ?? getClassCapacity(c)) }}</strong></span>
                 </div>
 
                 <!-- Sections list (Collapsible, hidden by default unless expanded) -->
                 <div *ngIf="isSectionsExpanded(c.id)" class="grid grid-cols-1 gap-2 pt-1 animate-fadeIn">
-                  <div *ngFor="let sec of c.sections"
-                       class="p-3 bg-[#f8fafc] hover:bg-white border border-slate-200/80 rounded-2xl flex items-center justify-between transition-all group shadow-2xs relative">
-                    <div class="flex items-center gap-2.5 min-w-0">
-                      <div class="w-7 h-7 rounded-xl bg-indigo-100 text-indigo-800 font-bold text-xs flex items-center justify-center shrink-0">
-                        {{ (sec.code || sec.name).slice(0, 2).toUpperCase() }}
-                      </div>
-                      <div class="min-w-0">
-                        <div class="text-xs font-black text-slate-900 truncate">
-                          {{ formatSection(sec.name) }}
-                        </div>
-                        <div class="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 flex-wrap mt-0.5">
-                          <span>Capacity: <strong class="text-slate-700">{{ sec.enrolled_count || 0 }} / {{ sec.capacity || 40 }}</strong></span>
-                          <span class="text-slate-300">•</span>
-                          <span *ngIf="getSectionClassTeacher(sec)" class="text-emerald-700 font-bold inline-flex items-center gap-1">
-                            <svg class="w-3 h-3 text-emerald-600 inline shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                            <span>CT: {{ getSectionClassTeacher(sec)?.fullName }}</span>
-                          </span>
-                          <span *ngIf="!getSectionClassTeacher(sec)" class="text-slate-400 italic">
-                            CT: Unassigned
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+                  <!-- Loading spinner while fetching single class details -->
+                  <div *ngIf="classDetailsLoading[c.id]" class="p-3 text-center text-xs text-slate-400 bg-[#f8fafc] rounded-2xl flex items-center justify-center gap-2 border border-dashed border-slate-200">
+                    <div class="w-3.5 h-3.5 border-2 border-slate-300 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <span>Loading section details...</span>
+                  </div>
 
-                    <div class="flex items-center gap-1.5 shrink-0 relative">
-                      <button (click)="viewStudentsOfSection(c, sec)" title="View Enrolled Students"
-                              class="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 rounded-lg text-[10px] font-bold border border-slate-200 transition-all cursor-pointer shadow-2xs">
-                        View Roster
-                      </button>
+                  <ng-container *ngIf="!classDetailsLoading[c.id]">
+                    <div *ngFor="let sec of c.sections"
+                         class="p-3 bg-[#f8fafc] hover:bg-white border border-slate-200/80 rounded-2xl flex items-center justify-between transition-all group shadow-2xs relative">
+                      <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-7 h-7 rounded-xl bg-indigo-100 text-indigo-800 font-bold text-xs flex items-center justify-center shrink-0">
+                          {{ (sec.code || sec.name).slice(0, 2).toUpperCase() }}
+                        </div>
+                        <div class="min-w-0">
+                          <div class="text-xs font-black text-slate-900 truncate">
+                            {{ formatSection(sec.name) }}
+                          </div>
+                          <div class="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 flex-wrap mt-0.5">
+                            <span>Capacity: <strong class="text-slate-700">{{ sec.enrolled_count || 0 }} / {{ sec.capacity || 40 }}</strong></span>
+                            <span class="text-slate-300">•</span>
+                            <span *ngIf="getSectionClassTeacher(sec)" class="text-emerald-700 font-bold inline-flex items-center gap-1">
+                              <svg class="w-3 h-3 text-emerald-600 inline shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                              <span>CT: {{ getSectionClassTeacher(sec)?.fullName }}</span>
+                            </span>
+                            <span *ngIf="!getSectionClassTeacher(sec)" class="text-slate-400 italic">
+                              CT: Unassigned
+                            </span>
+                          </div>
+                        </div>
+                      </div>
 
-                      <!-- Section 3-Dot Menu -->
-                      <div class="relative">
-                        <button type="button" (click)="toggleSectionMenu(sec.id, $event)" title="Section Actions"
-                                class="w-7 h-7 rounded-lg bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-800 border border-slate-200 flex items-center justify-center transition-colors cursor-pointer shadow-2xs">
-                          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                            <circle cx="12" cy="5" r="2"/>
-                            <circle cx="12" cy="12" r="2"/>
-                            <circle cx="12" cy="19" r="2"/>
-                          </svg>
+                      <div class="flex items-center gap-1.5 shrink-0 relative">
+                        <button (click)="viewStudentsOfSection(c, sec)" title="View Enrolled Students"
+                                class="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 rounded-lg text-[10px] font-bold border border-slate-200 transition-all cursor-pointer shadow-2xs">
+                          View Roster
                         </button>
 
-                        <!-- Section Dropdown Menu -->
-                        <div *ngIf="activeSectionMenuId === sec.id"
-                             class="absolute right-0 top-8.5 w-44 bg-white rounded-2xl shadow-[0_12px_36px_rgba(0,0,0,0.18)] border border-slate-200 py-1.5 z-30 animate-fadeIn text-xs">
-                          <button type="button" (click)="viewStudentsOfSection(c, sec)"
-                                  class="w-full px-3 py-1.5 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors cursor-pointer">
-                            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        <!-- Section 3-Dot Menu -->
+                        <div class="relative">
+                          <button type="button" (click)="toggleSectionMenu(sec.id, $event)" title="Section Actions"
+                                  class="w-7 h-7 rounded-lg bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-800 border border-slate-200 flex items-center justify-center transition-colors cursor-pointer shadow-2xs">
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                              <circle cx="12" cy="5" r="2"/>
+                              <circle cx="12" cy="12" r="2"/>
+                              <circle cx="12" cy="19" r="2"/>
                             </svg>
-                            <span>View Roster</span>
                           </button>
 
-                          <button type="button" (click)="openAddSubjectToSection(sec, c, $event)"
-                                  class="w-full px-3 py-1.5 text-left font-bold text-indigo-700 hover:bg-indigo-50 flex items-center gap-2 transition-colors cursor-pointer">
-                            <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
-                            <span>Add Subject</span>
-                          </button>
+                          <!-- Section Dropdown Menu -->
+                          <div *ngIf="activeSectionMenuId === sec.id"
+                               class="absolute right-0 top-8.5 w-44 bg-white rounded-2xl shadow-[0_12px_36px_rgba(0,0,0,0.18)] border border-slate-200 py-1.5 z-30 animate-fadeIn text-xs">
+                            <button type="button" (click)="viewStudentsOfSection(c, sec)"
+                                    class="w-full px-3 py-1.5 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors cursor-pointer">
+                              <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                              <span>View Roster</span>
+                            </button>
 
-                          <button type="button" (click)="openEditSectionModal(sec, c, $event)"
-                                  class="w-full px-3 py-1.5 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors cursor-pointer">
-                            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            <span>Edit Section</span>
-                          </button>
+                            <button type="button" (click)="openAddSubjectToSection(sec, c, $event)"
+                                    class="w-full px-3 py-1.5 text-left font-bold text-indigo-700 hover:bg-indigo-50 flex items-center gap-2 transition-colors cursor-pointer">
+                              <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                              </svg>
+                              <span>Add Subject</span>
+                            </button>
 
-                          <div class="my-1 border-t border-slate-100"></div>
+                            <button type="button" (click)="openEditSectionModal(sec, c, $event)"
+                                    class="w-full px-3 py-1.5 text-left font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors cursor-pointer">
+                              <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                              <span>Edit Section</span>
+                            </button>
 
-                          <button type="button" (click)="promptDeleteSection(sec, c, $event)"
-                                  class="w-full px-3 py-1.5 text-left font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors cursor-pointer">
-                            <svg class="w-3.5 h-3.5 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            <span>Delete Section</span>
-                          </button>
+                            <div class="my-1 border-t border-slate-100"></div>
+
+                            <button type="button" (click)="promptDeleteSection(sec, c, $event)"
+                                    class="w-full px-3 py-1.5 text-left font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors cursor-pointer">
+                              <svg class="w-3.5 h-3.5 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              <span>Delete Section</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div *ngIf="!c.sections || c.sections.length === 0" class="p-4 text-center text-xs text-slate-400 italic bg-[#f8fafc] rounded-2xl border border-dashed border-slate-200">
-                    No sections added yet. Click "+ Add Section" below.
-                  </div>
+                    <div *ngIf="!c.sections || c.sections.length === 0" class="p-4 text-center text-xs text-slate-400 italic bg-[#f8fafc] rounded-2xl border border-dashed border-slate-200">
+                      No sections added yet. Click "+ Add Section" below.
+                    </div>
+                  </ng-container>
                 </div>
               </div>
 
@@ -528,7 +536,7 @@ interface StaffMember {
                     <svg class="w-3.5 h-3.5 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
-                    <span>Class Subjects ({{ getClassSubjects(c).length }})</span>
+                    <span>Class Subjects ({{ c.subjectCount ?? getClassSubjects(c).length }})</span>
                   </div>
 
                   <button type="button" (click)="openAddSubjectToClass(c, $event)"
@@ -540,39 +548,47 @@ interface StaffMember {
 
                 <!-- Subjects list (Collapsible, hidden by default unless expanded) -->
                 <div *ngIf="isSubjectsExpanded(c.id)" class="animate-fadeIn">
-                  <div *ngIf="getClassSubjects(c).length > 0" class="flex flex-wrap gap-1.5 pt-0.5">
-                    <span *ngFor="let sub of getClassSubjects(c)" 
-                          class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-white text-slate-800 border border-slate-200/90 shadow-2xs group/sub hover:border-slate-300 transition-colors">
-                      <span class="font-bold text-slate-900">{{ sub.name }}</span>
-                      <span *ngIf="!sub.is_all_sections && sub.section_names?.length" 
-                            class="text-[9px] px-1.5 py-0.2 rounded-md bg-amber-50 text-amber-900 font-bold border border-amber-200">
-                        {{ sub.section_names.join(', ') }}
-                      </span>
-                      <span *ngIf="sub.is_all_sections || !sub.section_names?.length" 
-                            class="text-[9px] px-1.5 py-0.2 rounded-md bg-emerald-50 text-emerald-800 font-bold border border-emerald-200">
-                        All Sec
-                      </span>
-                      <!-- Remove Subject Button -->
-                      <button *ngIf="canManage"
-                              type="button" 
-                              (click)="promptDeleteSubject(sub, c, $event)" 
-                              title="Remove Subject {{ sub.name }}"
-                              class="w-4 h-4 rounded-md hover:bg-rose-100 text-slate-400 hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer ml-0.5">
-                        <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                      </button>
-                    </span>
+                  <!-- Loading spinner while fetching single class subjects -->
+                  <div *ngIf="classDetailsLoading[c.id]" class="p-3 text-center text-xs text-slate-400 bg-[#f8fafc] rounded-2xl flex items-center justify-center gap-2 border border-dashed border-slate-200">
+                    <div class="w-3.5 h-3.5 border-2 border-slate-300 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <span>Loading curriculum subjects...</span>
                   </div>
 
-                  <div *ngIf="getClassSubjects(c).length === 0" 
-                       (click)="openAddSubjectToClass(c, $event)"
-                       class="py-2 px-3 bg-slate-50/70 hover:bg-indigo-50/50 border border-dashed border-slate-200 hover:border-indigo-300 rounded-xl text-center cursor-pointer transition-colors group">
-                    <span class="text-[11px] font-medium text-slate-400 group-hover:text-indigo-600 flex items-center justify-center gap-1">
-                      <svg class="w-3 h-3 text-slate-400 group-hover:text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-                      No subjects added yet. Click to add.
-                    </span>
-                  </div>
+                  <ng-container *ngIf="!classDetailsLoading[c.id]">
+                    <div *ngIf="getClassSubjects(c).length > 0" class="flex flex-wrap gap-1.5 pt-0.5">
+                      <span *ngFor="let sub of getClassSubjects(c)" 
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-white text-slate-800 border border-slate-200/90 shadow-2xs group/sub hover:border-slate-300 transition-colors">
+                        <span class="font-bold text-slate-900">{{ sub.name }}</span>
+                        <span *ngIf="!sub.is_all_sections && sub.section_names?.length" 
+                              class="text-[9px] px-1.5 py-0.2 rounded-md bg-amber-50 text-amber-900 font-bold border border-amber-200">
+                          {{ sub.section_names.join(', ') }}
+                        </span>
+                        <span *ngIf="sub.is_all_sections || !sub.section_names?.length" 
+                              class="text-[9px] px-1.5 py-0.2 rounded-md bg-emerald-50 text-emerald-800 font-bold border border-emerald-200">
+                          All Sec
+                        </span>
+                        <!-- Remove Subject Button -->
+                        <button *ngIf="canManage"
+                                type="button" 
+                                (click)="promptDeleteSubject(sub, c, $event)" 
+                                title="Remove Subject {{ sub.name }}"
+                                class="w-4 h-4 rounded-md hover:bg-rose-100 text-slate-400 hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer ml-0.5">
+                          <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                          </svg>
+                        </button>
+                      </span>
+                    </div>
+
+                    <div *ngIf="getClassSubjects(c).length === 0" 
+                         (click)="openAddSubjectToClass(c, $event)"
+                         class="py-2 px-3 bg-slate-50/70 hover:bg-indigo-50/50 border border-dashed border-slate-200 hover:border-indigo-300 rounded-xl text-center cursor-pointer transition-colors group">
+                      <span class="text-[11px] font-medium text-slate-400 group-hover:text-indigo-600 flex items-center justify-center gap-1">
+                        <svg class="w-3 h-3 text-slate-400 group-hover:text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                        No subjects added yet. Click to add.
+                      </span>
+                    </div>
+                  </ng-container>
                 </div>
               </div>
             </div>
@@ -6068,6 +6084,17 @@ export class AcademicsComponent implements OnInit {
   expandedClassSections = new Set<string>();
   expandedClassSubjects = new Set<string>();
 
+  // Optimized Overview & On-Demand Lazy Loading State
+  classesOverviewSummary: {
+    totalClasses: number;
+    totalSections: number;
+    totalCapacity: number;
+    enrolledStudents: number;
+  } | null = null;
+  classDetailsLoading: Record<string, boolean> = {};
+  classDetailsCache: Map<string, { sections: SectionItem[]; subjects: SubjectItem[] }> = new Map();
+  private classDetailsInFlight: Map<string, Promise<{ sections: SectionItem[]; subjects: SubjectItem[] }>> = new Map();
+
   // Edit Class Modal
   showEditClassModal = false;
   savingEditClass = false;
@@ -6261,8 +6288,12 @@ export class AcademicsComponent implements OnInit {
     );
   }
 
-  getSectionClassTeacher(sec: SectionItem | null | undefined): StaffMember | undefined {
-    if (!sec || !sec.class_teacher_id) return undefined;
+  getSectionClassTeacher(sec: SectionItem | null | undefined): { fullName: string } | StaffMember | undefined {
+    if (!sec) return undefined;
+    if ((sec as any).classTeacherName) {
+      return { fullName: (sec as any).classTeacherName };
+    }
+    if (!sec.class_teacher_id) return undefined;
     return this.staffList.find((s) => s.id === sec.class_teacher_id);
   }
 
@@ -6513,23 +6544,28 @@ export class AcademicsComponent implements OnInit {
   }
 
   get totalSectionsCount(): number {
-    return this.classes.reduce((sum, c) => sum + (c.sections?.length || 0), 0);
+    if (this.classesOverviewSummary) return this.classesOverviewSummary.totalSections;
+    return this.classes.reduce((sum, c) => sum + (c.sectionCount ?? (c.sections?.length || 0)), 0);
   }
 
   get totalCampusCapacity(): number {
+    if (this.classesOverviewSummary) return this.classesOverviewSummary.totalCapacity;
     return this.classes.reduce((sum, c) => sum + this.getClassCapacity(c), 0);
   }
 
   get totalEnrolledStudents(): number {
+    if (this.classesOverviewSummary) return this.classesOverviewSummary.enrolledStudents;
     return this.classes.reduce((sum, c) => sum + this.getClassEnrolledCount(c), 0);
   }
 
   getClassCapacity(c: ClassItem): number {
+    if (c.totalCapacity !== undefined && c.totalCapacity !== null) return c.totalCapacity;
     if (!c.sections || c.sections.length === 0) return 0;
     return c.sections.reduce((sum, s) => sum + (s.capacity || 40), 0);
   }
 
   getClassEnrolledCount(c: ClassItem): number {
+    if (c.enrolledCount !== undefined && c.enrolledCount !== null) return c.enrolledCount;
     if (!c.sections || c.sections.length === 0) return 0;
     return c.sections.reduce((sum, s: any) => sum + (Number(s.enrolled_count) || 0), 0);
   }
@@ -6703,13 +6739,21 @@ export class AcademicsComponent implements OnInit {
     return Math.max(1, Math.ceil(this.filteredAlumni.length / this.alumniPageSize));
   }
 
+  private currentSessionId: string | null = null;
+  private isOverviewLoading = false;
+
   constructor() {
     effect(() => {
       // Triggered reactively whenever user switches active session
       const activeSes = this.auth.activeAcademicSession();
-      if (activeSes) {
-        this.loadClassesAndSubjects();
-        this.loadAlumniList();
+      const sessionId = activeSes?.id || null;
+
+      if (this.currentSessionId !== null && this.currentSessionId !== sessionId) {
+        this.currentSessionId = sessionId;
+        this.classDetailsCache.clear();
+        this.loadTabData(this.activeTab, true);
+      } else if (this.currentSessionId === null && sessionId !== null) {
+        this.currentSessionId = sessionId;
       }
     });
   }
@@ -6721,8 +6765,30 @@ export class AcademicsComponent implements OnInit {
       queryParams: { tab: tab.toLowerCase() },
       queryParamsHandling: 'merge',
     });
-    if (tab === 'ALUMNI') {
-      this.loadAlumniList();
+    this.loadTabData(tab);
+  }
+
+  loadTabData(tab: 'CLASSES' | 'STUDENTS' | 'ALUMNI' | 'STAFF' | 'SUBJECTS', forceRefresh = false) {
+    if (tab === 'CLASSES') {
+      this.loadClassesAndSubjects();
+    } else if (tab === 'STUDENTS') {
+      if (this.classes.length === 0 || forceRefresh) {
+        this.loadClassesAndSubjects();
+      } else if (this.selectedClass) {
+        this.ensureClassDetailsLoaded(this.selectedClass.id);
+      }
+    } else if (tab === 'STAFF') {
+      if (this.staffList.length === 0 || forceRefresh) {
+        this.loadStaffList();
+      }
+    } else if (tab === 'SUBJECTS') {
+      if (this.subjects.length === 0 || forceRefresh) {
+        this.loadSubjectsMaster();
+      }
+    } else if (tab === 'ALUMNI') {
+      if (this.alumniList.length === 0 || forceRefresh) {
+        this.loadAlumniList();
+      }
     }
   }
 
@@ -6747,10 +6813,7 @@ export class AcademicsComponent implements OnInit {
     });
 
     this.loadAcademicSessions();
-    this.loadClassesAndSubjects();
-    this.loadStaffList();
-    this.loadAlumniList();
-    this.loadDeactivationRequests();
+    this.loadTabData(this.activeTab);
   }
 
   loadDeactivationRequests() {
@@ -7426,11 +7489,13 @@ export class AcademicsComponent implements OnInit {
   }
 
   loadAcademicSessions() {
+    if (this.academicSessions.length > 0) return;
     this.api.get<AcademicSession[]>('academics/sessions').subscribe({
       next: (res) => {
         this.academicSessions = res || [];
         if (!this.auth.activeAcademicSession() && this.academicSessions.length > 0) {
           const current = this.academicSessions.find((s) => s.is_current) || this.academicSessions[0];
+          this.currentSessionId = current.id;
           this.auth.setActiveSession(current);
         }
       },
@@ -8299,15 +8364,22 @@ export class AcademicsComponent implements OnInit {
     setTimeout(() => { printWindow.print(); }, 400);
   }
 
-  loadClassesAndSubjects() {
-    this.loadingClasses = true;
+  loadClassesAndSubjects(silent = false) {
+    if (this.isOverviewLoading) return;
+    this.isOverviewLoading = true;
+    if (!silent) this.loadingClasses = true;
     const activeSession = this.auth.activeAcademicSession();
     const params = activeSession ? { academicYearId: activeSession.id } : undefined;
 
-    this.api.get<ClassItem[]>('academics/classes', params).subscribe({
+    this.api.get<{ summary: any; classes: ClassItem[]; academicYearId: string }>('academics/classes/overview', params).subscribe({
       next: (res) => {
-        const sorted = (res || []).sort(
-          (a, b) => this.getClassRank(a.name, a.code, a.display_order) - this.getClassRank(b.name, b.code, b.display_order)
+        this.isOverviewLoading = false;
+        if (res && res.summary) {
+          this.classesOverviewSummary = res.summary;
+        }
+        const rawClasses = res?.classes || (Array.isArray(res) ? (res as unknown as ClassItem[]) : []);
+        const sorted = (rawClasses || []).sort(
+          (a, b) => this.getClassRank(a.name, a.code, a.display_order ?? a.displayOrder) - this.getClassRank(b.name, b.code, b.display_order ?? b.displayOrder)
         );
 
         // Scope classes for Teacher
@@ -8326,7 +8398,16 @@ export class AcademicsComponent implements OnInit {
 
         if (this.classes.length > 0) {
           const stillSelected = this.selectedClass ? this.classes.find((c) => c.id === this.selectedClass?.id) : null;
-          this.selectClass(stillSelected || this.classes[0]);
+          const targetToSelect = stillSelected || this.classes[0];
+          this.selectedClass = targetToSelect;
+          if (this.activeTab === 'STUDENTS') {
+            this.ensureClassDetailsLoaded(targetToSelect.id).then(() => {
+              if (targetToSelect.sections && targetToSelect.sections.length > 0) {
+                const stillSection = this.selectedSection ? targetToSelect.sections.find((s) => s.id === this.selectedSection?.id) : null;
+                this.selectSection(stillSection || targetToSelect.sections[0]);
+              }
+            });
+          }
         } else {
           this.selectedClass = null;
           this.selectedSection = null;
@@ -8335,11 +8416,14 @@ export class AcademicsComponent implements OnInit {
         this.loadingClasses = false;
       },
       error: () => {
+        this.isOverviewLoading = false;
         this.classes = [];
         this.loadingClasses = false;
       },
     });
+  }
 
+  loadSubjectsMaster() {
     this.api.get<SubjectItem[]>('academics/subjects').subscribe({
       next: (res) => {
         this.subjects = res || [];
@@ -8348,6 +8432,51 @@ export class AcademicsComponent implements OnInit {
         this.subjects = [];
       },
     });
+  }
+
+  async ensureClassDetailsLoaded(classId: string): Promise<{ sections: SectionItem[]; subjects: SubjectItem[] }> {
+    if (this.classDetailsCache.has(classId)) {
+      const cached = this.classDetailsCache.get(classId)!;
+      const targetClass = this.classes.find((c) => c.id === classId);
+      if (targetClass) {
+        targetClass.sections = cached.sections;
+        targetClass.subjects = cached.subjects;
+      }
+      return cached;
+    }
+
+    if (this.classDetailsInFlight.has(classId)) {
+      return this.classDetailsInFlight.get(classId)!;
+    }
+
+    this.classDetailsLoading[classId] = true;
+    const activeSession = this.auth.activeAcademicSession();
+
+    const promise = (async () => {
+      try {
+        const res = await this.api.getClassDetails(classId, activeSession?.id);
+        const details = {
+          sections: res.sections || [],
+          subjects: res.subjects || [],
+        };
+        this.classDetailsCache.set(classId, details);
+        const targetClass = this.classes.find((c) => c.id === classId);
+        if (targetClass) {
+          targetClass.sections = details.sections;
+          targetClass.subjects = details.subjects;
+        }
+        return details;
+      } catch (e) {
+        console.error(`Failed to load details for class ${classId}:`, e);
+        return { sections: [], subjects: [] };
+      } finally {
+        this.classDetailsLoading[classId] = false;
+        this.classDetailsInFlight.delete(classId);
+      }
+    })();
+
+    this.classDetailsInFlight.set(classId, promise);
+    return promise;
   }
 
   loadStaffList() {
@@ -8374,8 +8503,13 @@ export class AcademicsComponent implements OnInit {
     });
   }
 
-  selectClass(c: ClassItem) {
+  async selectClass(c: ClassItem) {
     this.selectedClass = c;
+    if (!c.sections || c.sections.length === 0) {
+      const details = await this.ensureClassDetailsLoaded(c.id);
+      c.sections = details.sections;
+      c.subjects = details.subjects;
+    }
     if (c.sections && c.sections.length > 0) {
       const stillSection = this.selectedSection ? c.sections.find((s) => s.id === this.selectedSection?.id) : null;
       this.selectSection(stillSection || c.sections[0]);
@@ -8635,11 +8769,14 @@ export class AcademicsComponent implements OnInit {
   }
 
   // --- Add Subject Handlers ---
-  openAddSubjectToClass(c: ClassItem, event?: Event) {
+  async openAddSubjectToClass(c: ClassItem, event?: Event) {
     if (event) event.stopPropagation();
     this.activeClassMenuId = null;
     this.subjectTargetClass = c;
     this.selectedSubjectClassId = c.id;
+    if (!c.sections || c.sections.length === 0) {
+      await this.ensureClassDetailsLoaded(c.id);
+    }
     this.newSubject = {
       name: '',
       code: '',
@@ -8837,6 +8974,7 @@ export class AcademicsComponent implements OnInit {
       this.expandedClassSections.delete(classId);
     } else {
       this.expandedClassSections.add(classId);
+      this.ensureClassDetailsLoaded(classId);
     }
   }
 
@@ -8850,6 +8988,7 @@ export class AcademicsComponent implements OnInit {
       this.expandedClassSubjects.delete(classId);
     } else {
       this.expandedClassSubjects.add(classId);
+      this.ensureClassDetailsLoaded(classId);
     }
   }
 
@@ -9374,7 +9513,11 @@ export class AcademicsComponent implements OnInit {
           this.savingStudent = false;
           this.closeAddStudentModal();
           this.toast.success(`Student ${res?.fullName || this.newStudent.firstName} updated successfully!`);
-          this.loadClassesAndSubjects();
+          this.classDetailsCache.clear();
+          if (this.selectedSection) {
+            this.selectSection(this.selectedSection);
+          }
+          this.loadClassesAndSubjects(true);
         },
         error: (err) => {
           this.savingStudent = false;
@@ -9387,7 +9530,11 @@ export class AcademicsComponent implements OnInit {
           this.savingStudent = false;
           this.closeAddStudentModal();
           this.toast.success(`Student ${res.fullName || this.newStudent.firstName} enrolled successfully!`);
-          this.loadClassesAndSubjects();
+          this.classDetailsCache.clear();
+          if (this.selectedSection) {
+            this.selectSection(this.selectedSection);
+          }
+          this.loadClassesAndSubjects(true);
         },
         error: (err) => {
           this.savingStudent = false;
@@ -9998,20 +10145,23 @@ export class AcademicsComponent implements OnInit {
   }
 
   // View Class Roster
-  viewClassRoster(c: ClassItem) {
+  async viewClassRoster(c: ClassItem) {
     this.selectedClass = c;
-    this.selectedSection = null;
     this.activeClassMenuId = null;
     this.setTab('STUDENTS');
+    await this.selectClass(c);
   }
 
   // View Section Roster
-  viewStudentsOfSection(c: ClassItem, sec: SectionItem) {
+  async viewStudentsOfSection(c: ClassItem, sec: SectionItem) {
     this.selectedClass = c;
-    this.selectedSection = sec;
     this.activeClassMenuId = null;
     this.activeSectionMenuId = null;
     this.setTab('STUDENTS');
+    if (!c.sections || c.sections.length === 0) {
+      await this.ensureClassDetailsLoaded(c.id);
+    }
+    this.selectSection(sec);
   }
 
   // Edit Class Modal Handlers
