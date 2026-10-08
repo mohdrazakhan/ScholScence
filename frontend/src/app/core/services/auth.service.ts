@@ -4,6 +4,146 @@ import { Observable, from, map, tap, of, throwError } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { AuthResponse, User, AcademicSession } from '../models';
 
+export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
+  SUPER_ADMIN: [
+    'dashboard',
+    'academics',
+    'academics_classes',
+    'academics_students',
+    'academics_alumni',
+    'academics_staff',
+    'academics_subjects',
+    'timetable',
+    'timetable_student',
+    'timetable_faculty',
+    'timetable_academic',
+    'attendance',
+    'homework',
+    'exams',
+    'communication',
+    'communication_notices',
+    'communication_complaints',
+    'subscription',
+  ],
+  SCHOOL_ADMIN: [
+    'dashboard',
+    'academics',
+    'academics_classes',
+    'academics_students',
+    'academics_alumni',
+    'academics_staff',
+    'academics_subjects',
+    'timetable',
+    'timetable_student',
+    'timetable_faculty',
+    'timetable_academic',
+    'attendance',
+    'homework',
+    'exams',
+    'communication',
+    'communication_notices',
+    'communication_complaints',
+    'subscription',
+  ],
+  PRINCIPAL: [
+    'dashboard',
+    'academics',
+    'academics_classes',
+    'academics_students',
+    'academics_alumni',
+    'academics_staff',
+    'academics_subjects',
+    'timetable',
+    'timetable_student',
+    'timetable_faculty',
+    'timetable_academic',
+    'attendance',
+    'homework',
+    'exams',
+    'communication',
+    'communication_notices',
+    'communication_complaints',
+    'subscription',
+  ],
+  CLASS_TEACHER: [
+    'dashboard',
+    'academics',
+    'academics_classes',
+    'academics_students',
+    'academics_alumni',
+    'academics_subjects',
+    'timetable',
+    'timetable_student',
+    'timetable_faculty',
+    'timetable_academic',
+    'attendance',
+    'homework',
+    'exams',
+    'communication',
+    'communication_notices',
+    'communication_complaints',
+  ],
+  TEACHER: [
+    'dashboard',
+    'academics',
+    'academics_subjects',
+    'timetable',
+    'timetable_student',
+    'timetable_faculty',
+    'timetable_academic',
+    'attendance',
+    'homework',
+    'exams',
+    'communication',
+    'communication_notices',
+    'communication_complaints',
+  ],
+  FEE_MANAGER: [
+    'dashboard',
+    'academics',
+    'academics_students',
+    'academics_alumni',
+    'communication',
+    'communication_notices',
+    'subscription',
+  ],
+  GUARDIAN: [
+    'dashboard',
+    'timetable',
+    'timetable_student',
+    'timetable_academic',
+    'attendance',
+    'homework',
+    'exams',
+    'communication',
+    'communication_notices',
+    'communication_complaints',
+  ],
+  PARENT: [
+    'dashboard',
+    'timetable',
+    'timetable_student',
+    'timetable_academic',
+    'attendance',
+    'homework',
+    'exams',
+    'communication',
+    'communication_notices',
+    'communication_complaints',
+  ],
+  STUDENT: [
+    'dashboard',
+    'timetable',
+    'timetable_student',
+    'timetable_academic',
+    'attendance',
+    'homework',
+    'exams',
+    'communication',
+    'communication_notices',
+  ],
+};
+
 @Injectable({
   providedIn: 'root',
 })
@@ -11,6 +151,7 @@ export class AuthService {
   private readonly TOKEN_KEY = 'schoolsense_token';
   private readonly USER_KEY = 'schoolsense_user';
   private readonly SESSION_KEY = 'schoolsense_active_session';
+  private readonly ROLE_PERMS_KEY_PREFIX = 'schoolsense_role_perms_';
 
   private supabase = inject(SupabaseService);
   private router = inject(Router);
@@ -20,6 +161,7 @@ export class AuthService {
   // Angular Signals for Reactive State
   currentUser = signal<User | null>(this.getStoredUser());
   activeAcademicSession = signal<AcademicSession | null>(this.getStoredSession());
+  rolePermissions = signal<Record<string, string[]>>(this.loadInitialRolePermissions());
   
   isAuthenticated = computed(() => !!this.currentUser());
   userRole = computed(() => this.currentUser()?.role || '');
@@ -37,45 +179,404 @@ export class AuthService {
   });
   isParent = computed(() => ['GUARDIAN', 'PARENT'].includes(this.userRole()));
 
-  isServiceEnabled(serviceCode: string): boolean {
-    if (this.isSuperAdmin()) return true;
-    const disabled = this.currentUser()?.school?.disabledServices || [];
-    return !disabled.includes(serviceCode);
+  /**
+   * Check if a specific section / service is allowed for the active user based on role permissions
+   */
+  isSectionAllowedForUser(sectionId: string): boolean {
+    if (this.isSuperAdmin() || this.isSupportSession()) return true;
+
+    const role = this.userRole();
+    if (!role) return false;
+
+    // Super Admin & Platform Admin have universal access
+    if (role === 'SUPER_ADMIN' || role === 'PLATFORM_ADMIN') return true;
+
+    // Map any aliases
+    const normalizedId = this.normalizeSectionId(sectionId);
+
+    const perms = this.rolePermissions();
+    const roleList = perms[role] || DEFAULT_ROLE_PERMISSIONS[role] || [];
+
+    // If checking child section (e.g. academics_students), ensure parent (academics) is also enabled
+    const parentMap: Record<string, string> = {
+      academics_classes: 'academics',
+      academics_students: 'academics',
+      academics_alumni: 'academics',
+      academics_staff: 'academics',
+      academics_subjects: 'academics',
+      timetable_student: 'timetable',
+      timetable_faculty: 'timetable',
+      timetable_academic: 'timetable',
+      communication_notices: 'communication',
+      communication_complaints: 'communication',
+    };
+
+    const parentId = parentMap[normalizedId];
+    if (parentId && !roleList.includes(parentId)) {
+      return false;
+    }
+
+    return roleList.includes(normalizedId);
   }
 
-  constructor() {}
+  private normalizeSectionId(sectionId: string): string {
+    const clean = (sectionId || '').trim();
+    if (clean === 'classes') return 'academics_classes';
+    if (clean === 'students') return 'academics_students';
+    if (clean === 'alumni') return 'academics_alumni';
+    if (clean === 'staff') return 'academics_staff';
+    if (clean === 'subjects') return 'academics_subjects';
+    if (clean === 'complaints') return 'communication_complaints';
+    if (clean === 'notices') return 'communication_notices';
+    return clean;
+  }
+
+  isServiceEnabled(serviceCode: string): boolean {
+    if (this.isSuperAdmin() || this.isSupportSession()) return true;
+    const disabled = this.currentUser()?.school?.disabledServices || [];
+    if (disabled.includes(serviceCode)) return false;
+
+    const serviceToSectionMap: Record<string, string> = {
+      TIMETABLE: 'timetable',
+      ATTENDANCE: 'attendance',
+      HOMEWORK: 'homework',
+      EXAMS: 'exams',
+      COMMUNICATION: 'communication',
+      COMPLAINTS: 'communication_complaints',
+      ACADEMICS: 'academics',
+      SUBSCRIPTION: 'subscription',
+    };
+
+    const sectionId = serviceToSectionMap[serviceCode.toUpperCase()];
+    if (sectionId) {
+      return this.isSectionAllowedForUser(sectionId);
+    }
+
+    return true;
+  }
+
+  /**
+   * Get all role permissions for a school
+   */
+  getSchoolRolePermissions(schoolId?: string): Record<string, string[]> {
+    const sId = schoolId || this.currentUser()?.school?.id || 'default';
+    try {
+      const stored = localStorage.getItem(`${this.ROLE_PERMS_KEY_PREFIX}${sId}`);
+      if (stored) {
+        return { ...DEFAULT_ROLE_PERMISSIONS, ...JSON.parse(stored) };
+      }
+    } catch (e) {
+      console.warn('Failed to parse stored role permissions', e);
+    }
+    return JSON.parse(JSON.stringify(DEFAULT_ROLE_PERMISSIONS));
+  }
+
+  /**
+   * Update role permissions for a role in a school
+   */
+  saveSchoolRolePermissions(schoolId: string, roleCode: string, sectionIds: string[]): void {
+    const current = this.getSchoolRolePermissions(schoolId);
+    current[roleCode] = [...sectionIds];
+
+    try {
+      localStorage.setItem(`${this.ROLE_PERMS_KEY_PREFIX}${schoolId}`, JSON.stringify(current));
+    } catch (e) {
+      console.warn('Failed to save role permissions', e);
+    }
+
+    this.rolePermissions.set(current);
+  }
+
+  /**
+   * Reset role permissions for a school/role to defaults
+   */
+  resetSchoolRolePermissions(schoolId: string, roleCode?: string): void {
+    const current = this.getSchoolRolePermissions(schoolId);
+    if (roleCode) {
+      current[roleCode] = [...(DEFAULT_ROLE_PERMISSIONS[roleCode] || [])];
+    } else {
+      Object.keys(DEFAULT_ROLE_PERMISSIONS).forEach((r) => {
+        current[r] = [...DEFAULT_ROLE_PERMISSIONS[r]];
+      });
+    }
+
+    try {
+      localStorage.setItem(`${this.ROLE_PERMS_KEY_PREFIX}${schoolId}`, JSON.stringify(current));
+    } catch (e) {
+      console.warn('Failed to reset role permissions', e);
+    }
+
+    this.rolePermissions.set(current);
+  }
+
+  private loadInitialRolePermissions(): Record<string, string[]> {
+    const user = this.getStoredUser();
+    const schoolId = user?.school?.id || 'default';
+    return this.getSchoolRolePermissions(schoolId);
+  }
+
+  constructor() {
+    const user = this.currentUser();
+    if (user?.school?.id && !user.school.name && !user.school.logoUrl) {
+      this.syncSchoolProfileFromDb(user.school.id);
+    }
+    this.validateStoredSession();
+  }
+
+  /**
+   * Confirms the locally stored token still exists server-side (sessions are
+   * stored and revocable in the database now). Silently clears stale sessions.
+   */
+  private async validateStoredSession(): Promise<void> {
+    const token = localStorage.getItem(this.TOKEN_KEY);
+    if (!token) return;
+    try {
+      const { data, error } = await this.supabase.rpc('whoami');
+      if (!error && data && (data as { valid?: boolean }).valid === false) {
+        localStorage.removeItem(this.TOKEN_KEY);
+        localStorage.removeItem(this.USER_KEY);
+        this.currentUser.set(null);
+        const publicPaths = ['/', '/features', '/pricing', '/about', '/contact', '/login'];
+        if (!publicPaths.some((p) => this.router.url === p || this.router.url.startsWith(p + '?'))) {
+          this.router.navigate(['/login']);
+        }
+      }
+    } catch {
+      // Network hiccup — keep the local session; subsequent calls decide.
+    }
+  }
+
+  private syncSchoolProfilePromise = new Map<string, Promise<void>>();
+
+  async syncSchoolProfileFromDb(schoolId?: string): Promise<void> {
+    const sId = schoolId || this.currentUser()?.school?.id;
+    if (!sId) return;
+
+    if (this.syncSchoolProfilePromise.has(sId)) {
+      return this.syncSchoolProfilePromise.get(sId)!;
+    }
+
+    const task = (async () => {
+      try {
+        // 1. Fetch latest record from Supabase
+        const { data: school } = await this.supabase
+          .from('schools')
+          .select('*')
+          .eq('id', sId)
+          .maybeSingle();
+
+        let metaObj: any = {};
+        if (school?.address_line2 && typeof school.address_line2 === 'string' && school.address_line2.startsWith('{')) {
+          try {
+            metaObj = JSON.parse(school.address_line2);
+          } catch {}
+        }
+
+        const merged = { ...(school || {}), ...metaObj };
+        let logo = merged?.logo_url || merged?.logoUrl;
+        let name = merged?.name;
+        let code = merged?.code;
+
+        // 2. Also check local profiles cache override
+        try {
+          const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
+          if (localProfiles[sId]) {
+            const lp = localProfiles[sId];
+            logo = lp.logoUrl || lp.logo_url || logo;
+            name = lp.name || name;
+            code = lp.code || code;
+          }
+        } catch (e) {}
+
+        if (logo || name || code) {
+          this.updateCurrentSchool({
+            ...merged,
+            name: name || this.currentUser()?.school?.name,
+            code: code || this.currentUser()?.school?.code,
+            logoUrl: logo,
+            logo_url: logo,
+          });
+        }
+      } catch (e) {
+        console.warn('syncSchoolProfileFromDb error:', e);
+      } finally {
+        setTimeout(() => {
+          this.syncSchoolProfilePromise.delete(sId);
+        }, 10000);
+      }
+    })();
+
+    this.syncSchoolProfilePromise.set(sId, task);
+    return task;
+  }
+
+  /** Looks up a school's public profile by its portal subdomain (e.g. "dha"). */
+  async getSchoolBySubdomain(subdomain: string): Promise<any> {
+    const clean = (subdomain || '').trim().toLowerCase();
+    if (!clean) return null;
+    try {
+      const { data } = await this.supabase
+        .from('school_public_profiles')
+        .select('id, name, code, city, state, logo_url, affiliation_board, affiliation, motto')
+        .eq('subdomain', clean)
+        .maybeSingle();
+      return data || null;
+    } catch {
+      return null;
+    }
+  }
+
+  async getSchoolProfileById(schoolIdOrCode: string): Promise<any> {
+    if (!schoolIdOrCode) return null;
+    const cleanId = (schoolIdOrCode || '').trim();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
+    let schoolData: any = null;
+
+    try {
+      // Public, view-safe columns only — this runs before login.
+      let query = this.supabase
+        .from('school_public_profiles')
+        .select('id, name, code, city, state, logo_url, affiliation_board, affiliation, motto');
+      if (isUuid) {
+        query = query.eq('id', cleanId);
+      } else {
+        query = query.ilike('code', cleanId);
+      }
+      const { data, error } = await query.maybeSingle();
+      if (!error && data) {
+        schoolData = { ...data };
+      } else if (error && !isUuid) {
+        const { data: fallbackData } = await this.supabase.from('school_public_profiles').select('id, name, code, city, state, logo_url, affiliation_board, affiliation, motto').ilike('name', `%${cleanId}%`).maybeSingle();
+        if (fallbackData) {
+          schoolData = { ...fallbackData };
+        }
+      }
+    } catch (e) {
+      console.warn('getSchoolProfileById DB error:', e);
+    }
+
+    try {
+      const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
+      const lp = localProfiles[cleanId] || (schoolData?.id && localProfiles[schoolData.id]) || (schoolData?.code && localProfiles[schoolData.code]);
+      if (lp) {
+        schoolData = { ...(schoolData || {}), ...lp };
+      }
+    } catch (e) {}
+
+    if (schoolData || cleanId) {
+      const sName = schoolData?.name || cleanId;
+      const sCode = schoolData?.code || cleanId;
+      const logo = schoolData?.logoUrl || schoolData?.logo_url || null;
+
+      return {
+        ...schoolData,
+        name: schoolData?.name || sName,
+        code: schoolData?.code || sCode,
+        logo_url: logo,
+        logoUrl: logo,
+        affiliation: schoolData?.affiliation || 'Affiliated to CBSE',
+        affiliation_board: schoolData?.affiliation_board || schoolData?.affiliationBoard || 'CBSE',
+        affiliationBoard: schoolData?.affiliationBoard || schoolData?.affiliation_board || 'CBSE',
+        affiliation_number: schoolData?.affiliation_number || schoolData?.affiliationNumber || '',
+        affiliationNumber: schoolData?.affiliationNumber || schoolData?.affiliation_number || '',
+        tagline: schoolData?.tagline || schoolData?.motto || '',
+        motto: schoolData?.motto || schoolData?.tagline || '',
+      };
+    }
+    return null;
+  }
 
   searchSchools(query: string): Observable<any[]> {
     const q = (query || '').trim();
     if (q.length < 3) {
       return of([]);
     }
-    return from(
-      this.supabase.rpc('search_schools', { p_query: q })
-    ).pipe(
-      map(({ data, error }) => {
-        if (error) {
-          // Fallback to query with limit 5 if RPC not run yet
-          return this.fallbackSearchSchools(q);
-        }
-        return data || [];
-      })
-    );
+    return from(this.fetchSchools(q));
   }
 
-  private async fallbackSearchSchools(query: string): Promise<any[]> {
-    const { data } = await this.supabase
-      .from('schools')
-      .select('id, name, code, city, state')
-      .eq('status', 'ACTIVE')
-      .neq('code', 'PLATFORM')
-      .or(`name.ilike.%${query}%,code.ilike.%${query}%,city.ilike.%${query}%`)
-      .limit(5);
-    return data || [];
+  private async fetchSchools(query: string): Promise<any[]> {
+    try {
+      let data: any[] | null = null;
+
+      // 1. Try search_schools RPC first
+      try {
+        const { data: rpcData, error: rpcError } = await this.supabase.rpc('search_schools', { p_query: query });
+        if (!rpcError && rpcData && rpcData.length > 0) {
+          data = rpcData;
+        }
+      } catch (e) {}
+
+      // 2. Fallback to full columns from schools table if RPC not present or returned nothing
+      if (!data || data.length === 0) {
+        const { data: dbData } = await this.supabase
+          .from('school_public_profiles')
+          .select('*')
+          .eq('status', 'ACTIVE')
+          .neq('code', 'PLATFORM')
+          .ilike('name', `%${query}%`)
+          .limit(10);
+        data = dbData || [];
+      }
+
+      const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
+
+      const results = (data || [])
+        .filter((s: any) => (s.name || '').toLowerCase().includes(query.toLowerCase()))
+        .map((s: any) => {
+          let metaObj = {};
+          const merged = { ...s };
+          const lp = localProfiles[s.id] || localProfiles[s.code] || {};
+          const resolvedLogo = lp.logoUrl || lp.logo_url || merged.logo_url || merged.logoUrl || null;
+
+          return {
+            ...merged,
+            ...lp,
+            id: s.id,
+            name: lp.name || merged.name,
+            code: s.code,
+            logo_url: resolvedLogo,
+            logoUrl: resolvedLogo,
+            address_line1: lp.address || lp.address_line1 || s.address_line1 || '',
+            city: lp.city || s.city || '',
+            state: lp.state || s.state || '',
+            phone: lp.phone || s.phone || '',
+            email: lp.email || s.email || '',
+            motto: lp.motto || s.motto || merged.motto || '',
+            affiliation: lp.affiliation || s.affiliation || merged.affiliation || '',
+            affiliation_board: lp.affiliation_board || lp.affiliationBoard || merged.affiliation_board || merged.affiliationBoard || 'CBSE',
+            affiliationBoard: lp.affiliationBoard || lp.affiliation_board || merged.affiliationBoard || merged.affiliation_board || 'CBSE',
+            affiliation_number: lp.affiliation_number || lp.affiliationNumber || merged.affiliation_number || merged.affiliationNumber || '',
+            affiliationNumber: lp.affiliationNumber || lp.affiliation_number || merged.affiliationNumber || merged.affiliation_number || '',
+            custom_board_name: lp.custom_board_name || lp.customBoardName || merged.custom_board_name || merged.customBoardName || '',
+            customBoardName: lp.customBoardName || lp.custom_board_name || merged.customBoardName || merged.custom_board_name || '',
+            tagline: lp.tagline || lp.motto || merged.tagline || merged.motto || '',
+          };
+        });
+
+      return results;
+    } catch (e) {
+      console.error('searchSchools error:', e);
+      return [];
+    }
   }
 
   getPublicSchools(): Observable<any[]> {
     return of([]);
+  }
+
+  async requestPasswordResetOtp(email: string, schoolId: string): Promise<{ success: boolean; message: string; maskedEmail?: string }> {
+    // Self-service reset is intentionally disabled: issuing OTPs without an SMS/email
+    // provider would mean trusting the client, which is not a security boundary.
+    // School admins reset passwords for their own users from the admin panel.
+    throw new Error('For your security, password resets are handled by your school. Please contact your school administrator to reset your password.');
+  }
+
+  async verifyPasswordResetOtp(email: string, otp: string): Promise<boolean> {
+    throw new Error('For your security, password resets are handled by your school administrator.');
+  }
+
+  async completePasswordReset(email: string, otp: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    throw new Error('For your security, password resets are handled by your school administrator.');
   }
 
   login(identifier: string, password: string, schoolCode?: string): Observable<AuthResponse> {
@@ -83,7 +584,11 @@ export class AuthService {
       tap((res) => {
         localStorage.setItem(this.TOKEN_KEY, res.accessToken);
         localStorage.setItem(this.USER_KEY, JSON.stringify(res.user));
+        this.supabase.setAuthToken(res.accessToken);
         this.currentUser.set(res.user);
+        if (res.user?.school?.id) {
+          this.syncSchoolProfileFromDb(res.user.school.id);
+        }
       })
     );
   }
@@ -92,202 +597,20 @@ export class AuthService {
     const cleanId = identifier.trim();
     const cleanCode = schoolCode?.trim();
 
-    // 1. Try Supabase RPC authenticate_user
-    try {
-      const { data, error } = await this.supabase.rpc('authenticate_user', {
-        p_identifier: cleanId,
-        p_password: password,
-        p_school_code: cleanCode || null,
-      });
-      if (!error && data && data.accessToken && data.user) {
-        return data as AuthResponse;
-      }
-    } catch (e) {
-      console.warn('RPC authenticate_user error, checking fallback', e);
+    // All authentication is server-verified via the database RPC.
+    const { data, error } = await this.supabase.rpc('authenticate_user', {
+      p_identifier: cleanId,
+      p_password: password,
+      p_school_code: cleanCode || null,
+    });
+
+    if (error) {
+      throw new Error(error.message || 'Invalid email/phone or password.');
     }
-
-    // 2. Direct Fallback: Check Users & Schools directly in database
-    try {
-      let targetSchool: any = null;
-      if (cleanCode && cleanCode.toUpperCase() !== 'PLATFORM') {
-        const { data: sData } = await this.supabase
-          .from('schools')
-          .select('id, name, code, status')
-          .ilike('code', cleanCode)
-          .maybeSingle();
-        targetSchool = sData;
-      }
-
-      // Check users table directly
-      const { data: user } = await this.supabase
-        .from('users')
-        .select('*')
-        .or(`email.ilike.${cleanId},phone.eq.${cleanId}`)
-        .eq('status', 'ACTIVE')
-        .maybeSingle();
-
-      if (user) {
-        const passwordMatches = password === 'password123' || password === 'admin123' || user.password_hash === password;
-        if (passwordMatches) {
-          let schoolRoleQuery = this.supabase
-            .from('user_school_roles')
-            .select('*, role:roles(code, name), school:schools(id, name, code, status)')
-            .eq('user_id', user.id)
-            .eq('status', 'ACTIVE');
-          if (targetSchool) {
-            schoolRoleQuery = schoolRoleQuery.eq('school_id', targetSchool.id);
-          }
-          const { data: usrList } = await schoolRoleQuery;
-          const usr = usrList?.[0];
-
-          if (usr) {
-            let children: any[] = [];
-            const roleCode = usr.role?.code || 'GUARDIAN';
-            if (roleCode === 'GUARDIAN' || roleCode === 'PARENT') {
-              const { data: sgData } = await this.supabase
-                .from('student_guardians')
-                .select('*, student:students(*, student_enrollments(*, class:classes(name), section:sections(name)))')
-                .eq('guardian.user_id', user.id);
-              if (sgData && sgData.length > 0) {
-                children = sgData.map((sg: any) => ({
-                  id: sg.student?.id,
-                  studentId: sg.student?.id,
-                  name: `${sg.student?.first_name || ''} ${sg.student?.last_name || ''}`.trim(),
-                  admissionNumber: sg.student?.admission_number,
-                  className: sg.student?.student_enrollments?.[0]?.class?.name || 'Class 1',
-                  sectionName: sg.student?.student_enrollments?.[0]?.section?.name || 'Section A',
-                }));
-              }
-            }
-
-            return {
-              accessToken: `session_${user.id}_${Date.now()}`,
-              refreshToken: `ref_${Date.now()}`,
-              user: {
-                id: user.id,
-                email: user.email,
-                phone: user.phone,
-                firstName: user.first_name,
-                lastName: user.last_name || '',
-                role: roleCode,
-                roleName: usr.role?.name || 'Guardian / Parent',
-                school: {
-                  id: usr.school?.id || targetSchool?.id,
-                  name: usr.school?.name || targetSchool?.name,
-                  code: usr.school?.code || targetSchool?.code,
-                  status: usr.school?.status || 'ACTIVE',
-                  disabledServices: [],
-                },
-                children,
-                permissions: [],
-              },
-            };
-          }
-        }
-      }
-
-      // 3. Parent Auto-Discovery / Auto-Provision Fallback
-      if (password === 'password123' && (targetSchool || cleanId)) {
-        let studentQuery = this.supabase
-          .from('students')
-          .select('*, student_enrollments(*, class:classes(name), section:sections(name))')
-          .eq('status', 'ACTIVE');
-        if (targetSchool) {
-          studentQuery = studentQuery.eq('school_id', targetSchool.id);
-        }
-        const { data: allStudents } = await studentQuery;
-
-        let localParentMap: Record<string, any> = {};
-        try {
-          localParentMap = JSON.parse(localStorage.getItem('schoolsense_parent_students') || '{}');
-        } catch {}
-
-        const matchedStudent = (allStudents || []).find((s: any) => {
-          const emPhone = (s.emergency_contact_phone || '').trim();
-          const emName = (s.emergency_contact_name || '').toLowerCase().trim();
-          const localInfo = localParentMap[s.id];
-          return (
-            (localInfo && (localInfo.guardianEmail?.toLowerCase() === cleanId.toLowerCase() || localInfo.guardianPhone === cleanId)) ||
-            (emPhone && emPhone === cleanId) ||
-            (emName && cleanId.toLowerCase().includes(emName))
-          );
-        }) || (allStudents && allStudents.length > 0 && cleanId.includes('@') ? allStudents[0] : null);
-
-        if (matchedStudent && targetSchool) {
-          const nameParts = (matchedStudent.emergency_contact_name || 'Parent').split(' ');
-          const fName = nameParts[0] || 'Parent';
-          const lName = nameParts.slice(1).join(' ') || '';
-
-          let parentUserId = user?.id;
-          if (!parentUserId) {
-            const { data: newPUser } = await this.supabase
-              .from('users')
-              .insert({
-                email: cleanId.includes('@') ? cleanId.toLowerCase() : `parent.${matchedStudent.admission_number || Date.now()}@schoolsense.in`,
-                phone: cleanId.includes('@') ? matchedStudent.emergency_contact_phone : cleanId,
-                first_name: fName,
-                last_name: lName || null,
-                password_hash: 'password123',
-                status: 'ACTIVE',
-              })
-              .select()
-              .single();
-            parentUserId = newPUser?.id;
-          }
-
-          if (parentUserId) {
-            const { data: gRoles } = await this.supabase.from('roles').select('id').eq('code', 'GUARDIAN').limit(1);
-            const gRoleId = gRoles?.[0]?.id;
-            if (gRoleId) {
-              await this.supabase.from('user_school_roles').insert({
-                user_id: parentUserId,
-                school_id: targetSchool.id,
-                role_id: gRoleId,
-                status: 'ACTIVE',
-              });
-            }
-
-            const enr = matchedStudent.student_enrollments?.[0];
-            const childObj = {
-              id: matchedStudent.id,
-              studentId: matchedStudent.id,
-              name: `${matchedStudent.first_name || ''} ${matchedStudent.last_name || ''}`.trim(),
-              admissionNumber: matchedStudent.admission_number,
-              rollNumber: enr?.roll_number || '1',
-              className: enr?.class?.name || 'Class 1',
-              sectionName: enr?.section?.name || 'Section A',
-            };
-
-            return {
-              accessToken: `session_${parentUserId}_${Date.now()}`,
-              refreshToken: `ref_${Date.now()}`,
-              user: {
-                id: parentUserId,
-                email: cleanId,
-                phone: matchedStudent.emergency_contact_phone || '',
-                firstName: fName,
-                lastName: lName,
-                role: 'GUARDIAN',
-                roleName: 'Guardian / Parent',
-                school: {
-                  id: targetSchool.id,
-                  name: targetSchool.name,
-                  code: targetSchool.code,
-                  status: targetSchool.status || 'ACTIVE',
-                  disabledServices: [],
-                },
-                children: [childObj],
-                permissions: [],
-              },
-            };
-          }
-        }
-      }
-    } catch (fallbackErr) {
-      console.warn('Fallback authentication error:', fallbackErr);
+    if (!data || !data.accessToken || !data.user) {
+      throw new Error('Invalid email/phone or password.');
     }
-
-    throw new Error('Invalid email/phone or password.');
+    return data as AuthResponse;
   }
 
   fetchProfile(): Observable<User> {
@@ -297,7 +620,7 @@ export class AuthService {
     return from(
       this.supabase
         .from('users')
-        .select('*')
+        .select('id, email, phone, first_name, last_name, status, last_login_at, created_at, updated_at')
         .eq('id', current.id)
         .single()
     ).pipe(
@@ -306,6 +629,25 @@ export class AuthService {
         return current;
       })
     );
+  }
+
+  updateCurrentSchool(schoolData: any): void {
+    const current = this.currentUser();
+    if (!current || !current.school) return;
+    const logo = schoolData.logoUrl || schoolData.logo_url || current.school.logoUrl || current.school.logo_url;
+    const updatedUser: User = {
+      ...current,
+      school: {
+        ...current.school,
+        ...schoolData,
+        logoUrl: logo,
+        logo_url: logo,
+      },
+    };
+    this.currentUser.set(updatedUser);
+    try {
+      localStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser));
+    } catch {}
   }
 
   updateSchoolStatus(schoolId: string, status: string): Observable<any> {
@@ -335,7 +677,7 @@ export class AuthService {
     const [schoolsRes, usrRes, usersRes, rolesRes, studentsRes, classesRes, subjectsRes] = await Promise.all([
       this.supabase.from('schools').select('*').neq('code', 'PLATFORM').order('created_at', { ascending: false }),
       this.supabase.from('user_school_roles').select('*'),
-      this.supabase.from('users').select('*'),
+      this.supabase.from('users').select('id, email, phone, first_name, last_name, status, created_at'),
       this.supabase.from('roles').select('*'),
       this.supabase.from('students').select('id, school_id, status').eq('status', 'ACTIVE'),
       this.supabase.from('classes').select('id, school_id'),
@@ -368,9 +710,11 @@ export class AuthService {
     // Read local cache overrides
     let localSubs: Record<string, any> = {};
     let localWallets: Record<string, any> = {};
+    let localProfiles: Record<string, any> = {};
     try {
       localSubs = JSON.parse(localStorage.getItem('schoolsense_saas_subscriptions') || '{}');
       localWallets = JSON.parse(localStorage.getItem('schoolsense_saas_wallets') || '{}');
+      localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
     } catch {}
 
     const schools = schoolsRes.data || [];
@@ -419,41 +763,12 @@ export class AuthService {
         }
       }
 
-      // Step C: Self-Healing Fallback: Match user by email, domain, or school code
-      if (!adminUser) {
-        const sEmail = (s.email || '').toLowerCase().trim();
-        const sNameClean = (s.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-        const sCodeClean = (s.code || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-
-        const candidateUser = users.find((u: any) => {
-          if (!u.email) return false;
-          const uEmail = u.email.toLowerCase().trim();
-          // 1. Direct school email match
-          if (sEmail && uEmail === sEmail) return true;
-          // 2. Email contains school code (e.g. admin@ts01.edu.in or ts01)
-          if (sCodeClean.length >= 2 && uEmail.includes(sCodeClean)) return true;
-          // 3. Email starts with admin@ and contains school domain or name slug
-          const domain = uEmail.split('@')[1] || '';
-          const domainClean = domain.replace(/[^a-z0-9]/g, '');
-          if (sNameClean.length >= 4 && domainClean.length >= 3 && (sNameClean.includes(domainClean) || domainClean.includes(sNameClean.slice(0, 6)))) {
-            return true;
-          }
-          return false;
-        });
-
+      // Step C: Match strictly by exact school email if configured
+      if (!adminUser && s.email) {
+        const sEmail = s.email.toLowerCase().trim();
+        const candidateUser = users.find((u: any) => u.email && u.email.toLowerCase().trim() === sEmail);
         if (candidateUser) {
           adminUser = candidateUser;
-          // Self-heal: link missing role in database asynchronously
-          if (schoolAdminRole && !schoolRoles.some((sr: any) => sr.user_id === candidateUser.id)) {
-            Promise.resolve(
-              this.supabase.from('user_school_roles').insert({
-                user_id: candidateUser.id,
-                school_id: s.id,
-                role_id: schoolAdminRole.id,
-                status: 'ACTIVE',
-              })
-            ).catch(() => {});
-          }
         }
       }
 
@@ -464,9 +779,13 @@ export class AuthService {
 
       const sub = subMap.get(s.id) || localSubs[s.id];
       const wallet = walletMap.get(s.id) || localWallets[s.id];
+      const localProfile = localProfiles[s.id] || {};
+      const resolvedLogo = localProfile.logoUrl || localProfile.logo_url || s.logo_url || s.logoUrl || '';
 
       return {
         ...s,
+        logo_url: resolvedLogo,
+        logoUrl: resolvedLogo,
         admin: adminUser
           ? {
               id: adminUser.id,
@@ -820,7 +1139,11 @@ export class AuthService {
         }
         localStorage.setItem(this.TOKEN_KEY, res.accessToken);
         localStorage.setItem(this.USER_KEY, JSON.stringify(res.user));
+        this.supabase.setAuthToken(res.accessToken);
         this.currentUser.set(res.user);
+        if (res.user?.school?.id) {
+          this.syncSchoolProfileFromDb(res.user.school.id);
+        }
       })
     );
   }
@@ -832,6 +1155,7 @@ export class AuthService {
         const backup = JSON.parse(backupRaw);
         localStorage.setItem(this.TOKEN_KEY, backup.token);
         localStorage.setItem(this.USER_KEY, JSON.stringify(backup.user));
+        this.supabase.setAuthToken(backup.token);
         localStorage.removeItem(this.ROOT_BACKUP_KEY);
         this.currentUser.set(backup.user);
         this.router.navigate(['/super-admin']);
@@ -853,6 +1177,9 @@ export class AuthService {
   }
 
   logout(): void {
+    // Best-effort server-side revocation, then clear the local session.
+    try { void this.supabase.rpc('logout_session'); } catch { /* ignore */ }
+    this.supabase.setAuthToken(null);
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
     localStorage.removeItem(this.ROOT_BACKUP_KEY);
@@ -880,7 +1207,29 @@ export class AuthService {
     const raw = localStorage.getItem(this.USER_KEY);
     if (!raw) return null;
     try {
-      return JSON.parse(raw);
+      const user = JSON.parse(raw) as User;
+      if (user && user.school) {
+        try {
+          const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
+          if (user.school.id && localProfiles[user.school.id]) {
+            const lp = localProfiles[user.school.id];
+            const logo = lp.logoUrl || lp.logo_url || user.school.logoUrl || user.school.logo_url;
+            if (logo) {
+              user.school.logoUrl = logo;
+              user.school.logo_url = logo;
+            }
+            if (lp.name) user.school.name = lp.name;
+            if (lp.code) user.school.code = lp.code;
+          }
+        } catch {}
+
+        if (user.school.logo_url && !user.school.logoUrl) {
+          user.school.logoUrl = user.school.logo_url;
+        } else if (user.school.logoUrl && !user.school.logo_url) {
+          user.school.logo_url = user.school.logoUrl;
+        }
+      }
+      return user;
     } catch {
       return null;
     }

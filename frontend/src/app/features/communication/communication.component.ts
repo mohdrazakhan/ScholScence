@@ -21,6 +21,13 @@ import { Notice, SchoolEventItem } from '../../core/models';
         </div>
 
         <div class="flex items-center flex-wrap gap-2.5">
+          <button *ngIf="canManageTemplates" (click)="openOnboardingTemplates()"
+                  class="px-3.5 py-2 bg-[#f8fafc] hover:bg-white text-slate-700 border border-slate-300 rounded-2xl text-xs font-bold shadow-[2px_2px_6px_#d9e2ec,-2px_-2px_6px_#ffffff] flex items-center gap-1.5 transition-all cursor-pointer">
+            <svg class="w-3.5 h-3.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            <span>Onboarding Email Templates</span>
+          </button>
           <button (click)="exportNoticesCsv()"
                   class="px-3.5 py-2 bg-[#f8fafc] hover:bg-white text-slate-700 border border-slate-300 rounded-2xl text-xs font-bold shadow-[2px_2px_6px_#d9e2ec,-2px_-2px_6px_#ffffff] flex items-center gap-1.5 transition-all cursor-pointer">
             <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -50,6 +57,32 @@ import { Notice, SchoolEventItem } from '../../core/models';
             <span>Broadcast Notice</span>
           </button>
         </div>
+      </div>
+
+      <!-- Onboarding Welcome Email Templates Quick Banner (Admin only) -->
+      <div *ngIf="canManageTemplates" class="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-5 text-white shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3.5">
+          <div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-white border border-white/10 shrink-0">
+            <svg class="w-6 h-6 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-sm font-black tracking-tight">Automated Onboarding Welcome Emails</h3>
+              <span class="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold uppercase tracking-wide border border-emerald-500/30">Active</span>
+            </div>
+            <p class="text-xs text-slate-300 mt-0.5">Welcome emails with login credentials and school details are automatically sent when adding students or teachers.</p>
+          </div>
+        </div>
+
+        <button (click)="openOnboardingTemplates()"
+                class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer self-start sm:self-auto shrink-0">
+          <span>Edit Email Templates</span>
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
       </div>
 
       <!-- Filter Audience Bar -->
@@ -407,6 +440,17 @@ export class CommunicationComponent implements OnInit {
         { header: 'Date', key: 'published_at', formatter: (d) => new Date(d).toLocaleDateString() },
       ],
     );
+  }
+
+  get canManageTemplates(): boolean {
+    const role = this.auth.currentUser()?.role;
+    return role === 'SCHOOL_ADMIN' || role === 'SUPER_ADMIN' || role === 'PRINCIPAL';
+  }
+
+  openOnboardingTemplates() {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('schoolsense:open-email-templates'));
+    }
   }
 }
 

@@ -4,12 +4,14 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { filter } from 'rxjs/operators';
-import { AuthService } from '../core/services/auth.service';
+import { AuthService, DEFAULT_ROLE_PERMISSIONS } from '../core/services/auth.service';
 import { ApiService } from '../core/services/api.service';
 import { ToastService } from '../core/services/toast.service';
+import { ImageUploadService } from '../core/services/image-upload.service';
 import { AcademicSession, Notice } from '../core/models';
 
 export interface SubMenuItem {
+  id?: string;
   label: string;
   route: string;
   queryParams?: Record<string, any>;
@@ -26,6 +28,16 @@ export interface NavGroup {
   route?: string; // If direct link without submenus
   queryParams?: Record<string, any>;
   children?: SubMenuItem[];
+}
+
+export interface RoleSectionItem {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  isParent?: boolean;
+  parentId?: string;
+  badge?: string;
 }
 
 @Component({
@@ -60,8 +72,9 @@ export interface NavGroup {
           <!-- Brand / Campus Header (Seamless on surface with hamburger after school name) -->
           <div class="h-16 flex items-center justify-between px-4 border-b border-slate-100 bg-white flex-shrink-0">
             <div class="flex items-center gap-3 min-w-0 flex-1">
-              <div class="w-9 h-9 rounded-xl bg-slate-900 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-xs">
-                {{ (auth.currentUser()?.school?.name || 'S').charAt(0).toUpperCase() }}
+              <div class="w-9 h-9 rounded-xl bg-slate-900 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-xs overflow-hidden border border-slate-200">
+                <img *ngIf="getSchoolLogoUrl()" [src]="getSchoolLogoUrl()" class="w-full h-full object-contain p-0.5 bg-white" alt="School Logo" />
+                <span *ngIf="!getSchoolLogoUrl()">{{ (auth.currentUser()?.school?.name || 'S').charAt(0).toUpperCase() }}</span>
               </div>
               <div class="min-w-0 flex-1">
                 <h1 class="text-xs font-black text-slate-900 tracking-tight leading-tight truncate"
@@ -247,99 +260,101 @@ export interface NavGroup {
         </div>
 
         <!-- Top Navigation Header -->
-        <header class="h-16 bg-[#ffffff] border-b border-slate-200/80 flex items-center justify-between px-4 sm:px-8 flex-shrink-0 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+        <header class="h-16 bg-[#ffffff] border-b border-slate-200/80 flex items-center justify-between px-3 sm:px-6 lg:px-8 flex-shrink-0 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
           <!-- Top Left for Root Super Admin (Full Width Console Branding) -->
-          <div *ngIf="isSuperAdminOnly()" class="flex items-center gap-3 min-w-0">
-            <div class="w-9 h-9 rounded-xl bg-slate-900 text-amber-400 font-black text-sm flex items-center justify-center shrink-0 shadow-xs border border-slate-800">
+          <div *ngIf="isSuperAdminOnly()" class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-900 text-amber-400 font-black text-sm flex items-center justify-center shrink-0 shadow-xs border border-slate-800">
               ⚡
             </div>
             <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <h2 class="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
+              <div class="flex items-center gap-1.5 sm:gap-2">
+                <h2 class="text-xs sm:text-sm font-black text-slate-900 tracking-tight truncate">
                   SchoolSense Platform Console
                 </h2>
-                <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200">
+                <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200 shrink-0">
                   Root Multi-Tenant Engine
                 </span>
               </div>
-              <p class="text-[10px] text-slate-400 font-semibold hidden sm:block">Campus Onboarding & Service Governance</p>
+              <p class="text-[10px] text-slate-400 font-semibold hidden sm:block truncate">Campus Onboarding & Service Governance</p>
             </div>
           </div>
 
           <!-- Top Left for School Users & Support Mode (Header Details) -->
-          <div *ngIf="!isSuperAdminOnly()" class="flex items-center gap-3 min-w-0">
+          <div *ngIf="!isSuperAdminOnly()" class="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1 mr-2">
             <!-- Sidebar Unhide Button (shown when collapsed or on mobile) -->
             <button *ngIf="isDesktopSidebarCollapsed" type="button" (click)="toggleSidebar()" title="Open Sidebar"
-                    class="p-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer hidden lg:flex items-center justify-center border border-slate-200 shadow-xs shrink-0">
+                    class="w-9 h-9 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer hidden lg:flex items-center justify-center border border-slate-200 shadow-2xs shrink-0">
               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
             <button type="button" (click)="toggleSidebar()" title="Open Sidebar"
-                    class="p-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer flex lg:hidden items-center justify-center border border-slate-200 shadow-xs shrink-0">
+                    class="w-9 h-9 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer flex lg:hidden items-center justify-center border border-slate-200 shadow-2xs shrink-0">
               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
 
-            <!-- Campus & Welcome Details in Header Bar -->
-            <div class="min-w-0">
-              <!-- Line 1: User Greeting with Sun/Moon Animated Icon, Date & 12-Hour Live Clock -->
-              <div class="flex items-center gap-2 flex-wrap">
-                <!-- Dynamic Sun / Moon Animated Icon based on Time of Day -->
-                <span *ngIf="timePeriod === 'morning'"
-                      class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-50 text-amber-500 border border-amber-200/80 shadow-2xs shrink-0"
-                      title="Good morning">
-                  <svg class="w-3.5 h-3.5 animate-spin-gentle" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                </span>
+            <!-- Dynamic Time of Day Icon (Clean transparent 2-line anchor) -->
+            <div class="shrink-0 flex items-center justify-center">
+              <span *ngIf="timePeriod === 'morning'"
+                    class="w-7 h-7 sm:w-8 sm:h-8 text-amber-500 flex items-center justify-center shrink-0"
+                    title="Good morning">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              </span>
 
-                <span *ngIf="timePeriod === 'afternoon'"
-                      class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-50 text-amber-500 border border-amber-200/80 shadow-2xs shrink-0"
-                      title="Good afternoon">
-                  <svg class="w-3.5 h-3.5 animate-spin-gentle" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd" />
-                  </svg>
-                </span>
+              <span *ngIf="timePeriod === 'afternoon'"
+                    class="w-7 h-7 sm:w-8 sm:h-8 text-amber-600 flex items-center justify-center shrink-0"
+                    title="Good afternoon">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              </span>
 
-                <span *ngIf="timePeriod === 'evening'"
-                      class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-50 text-orange-500 border border-orange-200/80 shadow-2xs shrink-0"
-                      title="Good evening">
-                  <svg class="w-3.5 h-3.5 animate-float-gentle" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                </span>
+              <span *ngIf="timePeriod === 'evening'"
+                    class="w-7 h-7 sm:w-8 sm:h-8 text-orange-500 flex items-center justify-center shrink-0"
+                    title="Good evening">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              </span>
 
-                <span *ngIf="timePeriod === 'night'"
-                      class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-indigo-500 border border-slate-200/80 shadow-2xs shrink-0"
-                      title="Good evening">
-                  <svg class="w-3.5 h-3.5 animate-float-gentle" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                  </svg>
-                </span>
+              <span *ngIf="timePeriod === 'night'"
+                    class="w-7 h-7 sm:w-8 sm:h-8 text-indigo-600 flex items-center justify-center shrink-0"
+                    title="Good evening">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              </span>
+            </div>
 
-                <h2 class="text-xs sm:text-sm font-black text-slate-900 tracking-tight leading-tight truncate">
+            <!-- Campus & Welcome Details in Header Bar (Positioned to the right of the badge) -->
+            <div class="min-w-0 flex-1 flex flex-col justify-center">
+              <!-- Line 1: User Greeting, Date & Live Clock -->
+              <div class="flex items-center gap-1.5 min-w-0">
+                <h2 class="text-sm sm:text-base md:text-lg font-black text-slate-900 tracking-tight leading-none truncate">
                   {{ timeGreeting }}, {{ auth.currentUser()?.firstName || 'User' }}
                 </h2>
 
-                <span class="w-1 h-1 rounded-full bg-slate-300 hidden sm:inline-block shrink-0"></span>
-                <span class="text-[11px] font-semibold text-slate-500 hidden sm:inline">{{ formattedToday }}</span>
+                <span class="w-1 h-1 rounded-full bg-slate-300 hidden md:inline-block shrink-0"></span>
+                <span class="text-[11px] font-semibold text-slate-500 hidden md:inline whitespace-nowrap">{{ formattedToday }}</span>
 
-                <span class="w-1 h-1 rounded-full bg-slate-300 hidden sm:inline-block shrink-0"></span>
+                <span class="w-1 h-1 rounded-full bg-slate-300 hidden md:inline-block shrink-0"></span>
                 <!-- Real-time 12-Hour Clock (Hour & Min only) -->
-                <div class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/80 shadow-2xs">
+                <div class="hidden md:inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700 shrink-0 whitespace-nowrap">
                   <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                   <span>{{ formattedClockTime }}</span>
                 </div>
               </div>
 
-              <!-- Line 2: Academic Session Dropdown + Subtitle (Aligned dot, clean UI) -->
-              <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+              <!-- Line 2: Academic Session Dropdown & Tagline (Desktop) -->
+              <div class="hidden lg:flex items-center gap-1.5 mt-0.5 min-w-0">
                 <!-- Interactive Session Switcher Dropdown -->
-                <div *ngIf="canManageSessions" class="relative inline-block">
+                <div *ngIf="canManageSessions" class="relative inline-block shrink-0">
                   <button type="button" (click)="toggleSessionDropdown($event)"
-                          class="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-0.5 rounded-lg bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95"
+                          class="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100/70 px-1.5 py-0.5 rounded-md transition-all cursor-pointer active:scale-95 whitespace-nowrap"
                           title="Click to switch academic session">
                     <span>Session: {{ auth.activeSessionName() }}</span>
                     <svg class="w-3 h-3 text-slate-500 transition-transform duration-200" [class.rotate-180]="isSessionDropdownOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -401,115 +416,347 @@ export interface NavGroup {
                   </div>
                 </div>
 
-                <span *ngIf="canManageSessions" class="w-1 h-1 rounded-full bg-slate-300 hidden sm:inline-block shrink-0"></span>
-                <p class="text-[11px] text-slate-500 truncate hidden sm:inline">
-                  Manage campus operations, attendance, and student directory.
+                <span *ngIf="canManageSessions" class="w-1 h-1 rounded-full bg-slate-300 shrink-0"></span>
+                <p class="text-[11px] font-medium text-slate-500 truncate flex items-center gap-1.5">
+                  <span class="font-semibold text-slate-700 truncate">{{ auth.currentUser()?.school?.name || 'SchoolSense Campus' }}</span>
+                  <span class="text-slate-400 shrink-0">• {{ displayRole }} Workspace</span>
+                </p>
+              </div>
+
+              <!-- Line 2: Tagline on Mobile View directly under User Greeting -->
+              <div class="flex lg:hidden items-center gap-1 mt-0.5 min-w-0">
+                <p class="text-[10px] font-medium text-slate-500 truncate flex items-center gap-1">
+                  <span class="font-semibold text-slate-700 truncate">{{ auth.currentUser()?.school?.name || 'SchoolSense' }}</span>
+                  <span class="text-slate-400 shrink-0">• {{ displayRole }}</span>
                 </p>
               </div>
             </div>
           </div>
 
-          <!-- Top Right User Profile & Sign Out (Always pinned to top right) -->
-          <div class="ml-auto flex items-center gap-3">
-            <div class="flex items-center gap-2.5 pl-2">
-              <!-- Circular Avatar Image -->
-              <div class="w-9 h-9 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-xs ring-2 ring-slate-100 overflow-hidden shrink-0">
-                <img [src]="userAvatarUrl" [alt]="userFullName" (error)="$any($event.target).style.display='none'" class="w-full h-full object-cover" />
-                <span class="sr-only">{{ userInitial }}</span>
-              </div>
+          <!-- Top Right Section: Mobile Profile Menu (Mobile Only) & Full Bar (Desktop Only) -->
+          <div class="ml-auto flex items-center gap-1.5 sm:gap-2 shrink-0">
 
-              <!-- User Name & Role -->
-              <div class="hidden sm:flex flex-col text-left">
-                <span class="text-xs font-bold text-slate-900 leading-tight truncate max-w-[140px] md:max-w-[180px]">
-                  {{ userFullName }}
-                </span>
-                <div class="flex items-center gap-1.5 mt-0.5">
-                  <span class="inline-block w-1.5 h-1.5 rounded-full"
-                        [ngClass]="auth.currentUser()?.role === 'SUPER_ADMIN' ? 'bg-amber-500' : 'bg-emerald-500'"></span>
-                  <span class="text-[10px] font-semibold text-slate-500 leading-none">
-                    {{ displayRole }}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <!-- ============================================================== -->
+            <!-- MOBILE VIEW ONLY: Notification Bell & Profile Pic               -->
+            <!-- ============================================================== -->
+            <div class="flex items-center gap-2 lg:hidden">
+              
+              <!-- Mobile Notification Bell Icon Button with Dropdown -->
+              <div class="relative shrink-0">
+                <button type="button"
+                        (click)="toggleNotificationDropdown($event)"
+                        title="Notifications & Circulars"
+                        class="relative w-8 h-8 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  <span *ngIf="activeNotifications.length > 0" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white"></span>
+                </button>
 
-            <!-- Vertical Separator -->
-            <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
+                <!-- Backdrop to close mobile notifications -->
+                <div *ngIf="isNotificationDropdownOpen" (click)="isNotificationDropdownOpen = false" class="fixed inset-0 z-40"></div>
 
-            <!-- Notification Bell Icon Button with Dropdown -->
-            <div class="relative">
-              <button type="button"
-                      (click)="toggleNotificationDropdown($event)"
-                      title="Notifications & Circulars"
-                      class="relative p-2 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-                <!-- Red unread notification indicator if any active notification -->
-                <span *ngIf="activeNotifications.length > 0" class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white"></span>
-              </button>
-
-              <!-- Backdrop to close notifications -->
-              <div *ngIf="isNotificationDropdownOpen" (click)="isNotificationDropdownOpen = false" class="fixed inset-0 z-40"></div>
-
-              <!-- Notifications Menu Dropdown -->
-              <div *ngIf="isNotificationDropdownOpen"
-                   class="absolute right-0 top-full mt-2 w-80 sm:w-88 bg-white rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-200/90 p-3.5 z-50 animate-fadeIn">
-                <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 mb-2.5">
-                  <div class="flex items-center gap-1.5">
-                    <span class="text-xs font-black text-slate-900">Notifications</span>
-                    <span *ngIf="activeNotifications.length > 0" class="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-rose-100 text-rose-700">
-                      {{ activeNotifications.length }} New
-                    </span>
+                <!-- Mobile Notifications Menu Dropdown -->
+                <div *ngIf="isNotificationDropdownOpen"
+                     class="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.15)] border border-slate-200/90 p-3.5 z-50 animate-fadeIn">
+                  <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 mb-2.5">
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-xs font-black text-slate-900">Notifications</span>
+                      <span *ngIf="activeNotifications.length > 0" class="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-rose-100 text-rose-700">
+                        {{ activeNotifications.length }} New
+                      </span>
+                    </div>
+                    <button *ngIf="activeNotifications.length > 0"
+                            type="button"
+                            (click)="clearAllNotifications($event)"
+                            class="text-[10px] font-bold text-rose-600 hover:text-rose-700 transition-colors cursor-pointer hover:underline">
+                      Clear All
+                    </button>
                   </div>
-                  <button *ngIf="activeNotifications.length > 0"
-                          type="button"
-                          (click)="clearAllNotifications($event)"
-                          class="text-[10px] font-bold text-rose-600 hover:text-rose-700 transition-colors cursor-pointer hover:underline">
-                    Clear All
-                  </button>
-                </div>
 
-                <!-- Active Notifications List -->
-                <div *ngIf="activeNotifications.length > 0" class="space-y-2 max-h-64 overflow-y-auto custom-clay-scroll pr-0.5">
-                  <div *ngFor="let n of activeNotifications"
-                       class="group relative p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-100 transition-colors">
-                    <div class="flex items-start justify-between gap-2 text-[10px]">
-                      <span class="font-bold text-slate-900 line-clamp-1 flex-1">{{ n.title }}</span>
-                      <div class="flex items-center gap-1.5 shrink-0">
-                        <span class="text-slate-400">{{ formatNoticeTime(n.published_at) }}</span>
-                        <button type="button" (click)="dismissNotification(n.id, $event)" title="Dismiss"
-                                class="text-slate-400 hover:text-rose-600 rounded-md p-0.5 transition-colors cursor-pointer text-xs font-bold leading-none">
-                          &times;
+                  <!-- Active Notifications List -->
+                  <div *ngIf="activeNotifications.length > 0" class="space-y-2 max-h-64 overflow-y-auto custom-clay-scroll pr-0.5">
+                    <div *ngFor="let n of activeNotifications"
+                         class="group relative p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-100 transition-colors">
+                      <div class="flex items-start justify-between gap-2 text-[10px]">
+                        <span class="font-bold text-slate-900 line-clamp-1 flex-1">{{ n.title }}</span>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                          <span class="text-slate-400">{{ formatNoticeTime(n.published_at) }}</span>
+                          <button type="button" (click)="dismissNotification(n.id, $event)" title="Dismiss"
+                                  class="text-slate-400 hover:text-rose-600 rounded-md p-0.5 transition-colors cursor-pointer text-xs font-bold leading-none">
+                            &times;
+                          </button>
+                        </div>
+                      </div>
+                      <p class="text-[11px] text-slate-600 mt-1 line-clamp-2 leading-relaxed">{{ n.content }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Empty State -->
+                  <div *ngIf="activeNotifications.length === 0" class="py-6 px-4 text-center">
+                    <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-2 shadow-2xs border border-slate-200/60">
+                      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
+                    </div>
+                    <p class="text-xs font-bold text-slate-700">No new notifications</p>
+                    <p class="text-[10px] text-slate-400 mt-0.5">You're all caught up!</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Profile Pic Capsule Button with Down Arrow (Transparent background) -->
+              <div class="relative">
+                <button type="button"
+                        (click)="toggleMobileUserMenu($event)"
+                        title="User Profile & Quick Menu"
+                        class="flex items-center gap-1 p-0.5 rounded-full transition-all cursor-pointer active:scale-95">
+                  
+                  <!-- Avatar Image -->
+                  <div class="relative w-8 h-8 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-xs ring-2 ring-slate-100 overflow-hidden shrink-0">
+                    <img [src]="userAvatarUrl" [alt]="userFullName" (error)="$any($event.target).style.display='none'" class="w-full h-full object-cover" />
+                    <span class="sr-only">{{ userInitial }}</span>
+                  </div>
+
+                  <!-- Dropdown Arrow Icon -->
+                  <svg class="w-3.5 h-3.5 text-slate-600 transition-transform duration-200"
+                       [class.rotate-180]="isMobileUserMenuOpen"
+                       fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                <!-- Mobile Backdrop Overlay -->
+                <div *ngIf="isMobileUserMenuOpen" (click)="isMobileUserMenuOpen = false; isMobileSessionsAccordionOpen = false" class="fixed inset-0 z-40"></div>
+
+                <!-- Mobile Dropdown Menu List -->
+                <div *ngIf="isMobileUserMenuOpen"
+                     class="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-lg border border-slate-200 p-1.5 z-50 animate-fadeIn">
+                  
+                  <!-- User Identity Header -->
+                  <div class="px-3 py-2.5 border-b border-slate-100 mb-1">
+                    <div class="text-sm font-semibold text-slate-900 truncate">{{ userFullName }}</div>
+                    <div class="text-xs text-slate-500 truncate mt-0.5">{{ displayRole }}</div>
+                  </div>
+
+                  <!-- Menu Items -->
+                  <div class="space-y-0.5">
+                    
+                    <!-- Academic Session Accordion -->
+                    <div *ngIf="canManageSessions">
+                      <button type="button"
+                              (click)="toggleMobileSessionsAccordion($event)"
+                              class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors text-left cursor-pointer">
+                        <span>Academic Session</span>
+                        <svg class="w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0"
+                             [class.rotate-180]="isMobileSessionsAccordionOpen"
+                             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+
+                      <!-- Expanded Sessions List -->
+                      <div *ngIf="isMobileSessionsAccordionOpen" class="my-1 pl-3 pr-1 py-1 space-y-0.5 border-l-2 border-slate-200 ml-3 animate-fadeIn">
+                        <button *ngFor="let ses of availableSessions"
+                                type="button"
+                                (click)="selectSession(ses, $event); isMobileUserMenuOpen = false"
+                                class="w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center justify-between transition-colors cursor-pointer"
+                                [ngClass]="isSessionActive(ses) ? 'text-slate-900 font-bold bg-slate-100' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'">
+                          <span class="truncate">{{ ses.name }}</span>
+                          <span *ngIf="isSessionActive(ses)" class="text-slate-900 font-bold text-xs">✓</span>
+                        </button>
+
+                        <button type="button"
+                                (click)="openMobileSessions($event)"
+                                class="w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer">
+                          Manage Sessions →
                         </button>
                       </div>
                     </div>
-                    <p class="text-[11px] text-slate-600 mt-1 line-clamp-2 leading-relaxed">{{ n.content }}</p>
-                  </div>
-                </div>
 
-                <!-- Empty State -->
-                <div *ngIf="activeNotifications.length === 0" class="py-6 px-4 text-center">
-                  <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-2 shadow-2xs border border-slate-200/60">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                    </svg>
+                    <!-- School Profile & Branding -->
+                    <button *ngIf="canAccessSettings" type="button"
+                            (click)="openMobileSchoolProfile($event)"
+                            class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors text-left cursor-pointer">
+                      <span>School Profile & Branding</span>
+                    </button>
                   </div>
-                  <p class="text-xs font-bold text-slate-700">No new notifications</p>
-                  <p class="text-[10px] text-slate-400 mt-0.5">You're all caught up!</p>
+
+                  <!-- Sign Out Section -->
+                  <div class="pt-1 border-t border-slate-100 mt-1">
+                    <button type="button"
+                            (click)="auth.logout()"
+                            class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors text-left cursor-pointer">
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+
                 </div>
               </div>
             </div>
 
-            <!-- Sign Out Button -->
-            <button (click)="auth.logout()"
-                    title="Sign Out"
-                    class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-all cursor-pointer shadow-xs">
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-              </svg>
-              <span class="hidden md:inline">Sign Out</span>
-            </button>
+            <!-- ============================================================== -->
+            <!-- DESKTOP VIEW ONLY (hidden on mobile, visible on lg:)           -->
+            <!-- ============================================================== -->
+            <div class="hidden lg:flex items-center gap-2.5">
+              <!-- User Avatar & Identity -->
+              <div class="flex items-center gap-2 pl-1">
+                <!-- Circular Avatar Image -->
+                <div class="w-9 h-9 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-xs ring-2 ring-slate-100 overflow-hidden shrink-0">
+                  <img [src]="userAvatarUrl" [alt]="userFullName" (error)="$any($event.target).style.display='none'" class="w-full h-full object-cover" />
+                  <span class="sr-only">{{ userInitial }}</span>
+                </div>
+
+                <!-- User Name & Role -->
+                <div class="flex flex-col text-left">
+                  <span class="text-xs font-bold text-slate-900 leading-tight truncate max-w-[140px] xl:max-w-[180px]">
+                    {{ userFullName }}
+                  </span>
+                  <div class="flex items-center gap-1.5 mt-0.5">
+                    <span class="inline-block w-1.5 h-1.5 rounded-full"
+                          [ngClass]="auth.currentUser()?.role === 'SUPER_ADMIN' ? 'bg-amber-500' : 'bg-emerald-500'"></span>
+                    <span class="text-[10px] font-semibold text-slate-500 leading-none">
+                      {{ displayRole }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Vertical Separator -->
+              <div class="h-5 w-px bg-slate-200"></div>
+
+              <!-- Notification Bell Icon Button with Dropdown -->
+              <div class="relative shrink-0">
+                <button type="button"
+                        (click)="toggleNotificationDropdown($event)"
+                        title="Notifications & Circulars"
+                        class="relative w-9 h-9 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  <span *ngIf="activeNotifications.length > 0" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white"></span>
+                </button>
+
+                <!-- Backdrop to close notifications -->
+                <div *ngIf="isNotificationDropdownOpen" (click)="isNotificationDropdownOpen = false" class="fixed inset-0 z-40"></div>
+
+                <!-- Notifications Menu Dropdown -->
+                <div *ngIf="isNotificationDropdownOpen"
+                     class="absolute right-0 top-full mt-2 w-72 sm:w-88 bg-white rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-200/90 p-3.5 z-50 animate-fadeIn">
+                  <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 mb-2.5">
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-xs font-black text-slate-900">Notifications</span>
+                      <span *ngIf="activeNotifications.length > 0" class="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-rose-100 text-rose-700">
+                        {{ activeNotifications.length }} New
+                      </span>
+                    </div>
+                    <button *ngIf="activeNotifications.length > 0"
+                            type="button"
+                            (click)="clearAllNotifications($event)"
+                            class="text-[10px] font-bold text-rose-600 hover:text-rose-700 transition-colors cursor-pointer hover:underline">
+                      Clear All
+                    </button>
+                  </div>
+
+                  <!-- Active Notifications List -->
+                  <div *ngIf="activeNotifications.length > 0" class="space-y-2 max-h-64 overflow-y-auto custom-clay-scroll pr-0.5">
+                    <div *ngFor="let n of activeNotifications"
+                         class="group relative p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-100 transition-colors">
+                      <div class="flex items-start justify-between gap-2 text-[10px]">
+                        <span class="font-bold text-slate-900 line-clamp-1 flex-1">{{ n.title }}</span>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                          <span class="text-slate-400">{{ formatNoticeTime(n.published_at) }}</span>
+                          <button type="button" (click)="dismissNotification(n.id, $event)" title="Dismiss"
+                                  class="text-slate-400 hover:text-rose-600 rounded-md p-0.5 transition-colors cursor-pointer text-xs font-bold leading-none">
+                            &times;
+                          </button>
+                        </div>
+                      </div>
+                      <p class="text-[11px] text-slate-600 mt-1 line-clamp-2 leading-relaxed">{{ n.content }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Empty State -->
+                  <div *ngIf="activeNotifications.length === 0" class="py-6 px-4 text-center">
+                    <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-2 shadow-2xs border border-slate-200/60">
+                      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
+                    </div>
+                    <p class="text-xs font-bold text-slate-700">No new notifications</p>
+                    <p class="text-[10px] text-slate-400 mt-0.5">You're all caught up!</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Settings Gear Icon Button with Dropdown (Restricted to Super Admin and School Admin) -->
+              <div *ngIf="canAccessSettings" class="relative shrink-0">
+                <button type="button"
+                        (click)="toggleSettingsDropdown($event)"
+                        title="Settings & Administration"
+                        class="relative w-9 h-9 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center">
+                  <svg class="w-4 h-4 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </button>
+
+                <!-- Backdrop to close settings dropdown -->
+                <div *ngIf="isSettingsDropdownOpen" (click)="isSettingsDropdownOpen = false" class="fixed inset-0 z-40"></div>
+
+                <!-- Settings Menu Dropdown -->
+                <div *ngIf="isSettingsDropdownOpen"
+                     class="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-200/90 p-2 z-50 animate-fadeIn">
+                  <div class="px-3 py-2 border-b border-slate-100 mb-1">
+                    <span class="text-xs font-black text-slate-900 tracking-tight block">Campus Administration</span>
+                    <span class="text-[10px] text-slate-400">Institutional settings & profile management</span>
+                  </div>
+
+                  <div class="space-y-1">
+                    <!-- Option 1: School Profile -->
+                    <button type="button"
+                            (click)="openSchoolProfileModal($event)"
+                            class="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors text-left cursor-pointer group">
+                      <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0 border border-slate-200 group-hover:bg-slate-900 group-hover:text-white transition-colors shadow-2xs">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <span class="text-xs font-bold text-slate-900 group-hover:text-slate-950 block">School Profile & Branding</span>
+                        <span class="text-[10px] text-slate-500 leading-tight block">Manage crest, contact, affiliation & official identity</span>
+                      </div>
+                    </button>
+
+                    <!-- Option 2: Manage Academic Sessions -->
+                    <button type="button"
+                            (click)="openManageSessionsFromHeader($event)"
+                            class="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors text-left cursor-pointer group">
+                      <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0 border border-slate-200 group-hover:bg-slate-900 group-hover:text-white transition-colors shadow-2xs">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <span class="text-xs font-bold text-slate-900 group-hover:text-slate-950 block">Academic Sessions & Rollover</span>
+                        <span class="text-[10px] text-slate-500 leading-tight block">Configure active session, dates & session promotion</span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sign Out Button -->
+              <button (click)="auth.logout()"
+                      title="Sign Out"
+                      class="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-all cursor-pointer shadow-2xs flex items-center justify-center shrink-0 gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                <span class="hidden xl:inline">Sign Out</span>
+              </button>
+            </div>
+
           </div>
         </header>
 
@@ -553,6 +800,827 @@ export interface NavGroup {
           <button (click)="toastService.dismiss(t.id)" class="text-slate-400 hover:text-slate-700 font-bold text-lg leading-none cursor-pointer p-1 rounded-lg hover:bg-slate-100 transition-colors">&times;</button>
         </div>
       </div>
+
+      <!-- ============================================================== -->
+      <!-- MODAL: SCHOOL PROFILE MANAGEMENT                               -->
+      <!-- ============================================================== -->
+      <!-- ============================================================== -->
+      <!-- MODAL: COMPREHENSIVE INSTITUTIONAL SCHOOL PROFILE              -->
+      <!-- ============================================================== -->
+      <div *ngIf="showSchoolProfileModal" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[90] animate-fadeIn">
+        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" (click)="closeSchoolProfileModal()"></div>
+        <div class="bg-white rounded-3xl max-w-3xl w-full flex flex-col max-h-[92vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp relative z-10">
+          <!-- Modal Header -->
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-800 border border-slate-200 flex items-center justify-center font-black text-lg shadow-xs">
+                <svg class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight">Institutional School Profile</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Comprehensive campus identity, board affiliation, leadership directory & coordinates.</p>
+              </div>
+            </div>
+            <button (click)="closeSchoolProfileModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+          </div>
+
+          <!-- Section Navigation Tabs -->
+          <div class="px-5 sm:px-6 py-2.5 bg-slate-50 border-b border-slate-200/80 flex items-center gap-1.5 shrink-0 overflow-x-auto">
+            <button type="button" (click)="schoolProfileActiveTab = 'BASIC'"
+                    [ngClass]="schoolProfileActiveTab === 'BASIC' ? 'bg-slate-900 text-white font-black shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-100 font-bold border border-slate-200'"
+                    class="px-3.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer flex items-center gap-1.5 shrink-0">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              <span>1. Identity & Affiliation</span>
+            </button>
+
+            <button type="button" (click)="schoolProfileActiveTab = 'LEADERSHIP'"
+                    [ngClass]="schoolProfileActiveTab === 'LEADERSHIP' ? 'bg-slate-900 text-white font-black shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-100 font-bold border border-slate-200'"
+                    class="px-3.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer flex items-center gap-1.5 shrink-0">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span>2. Leadership & In-Charges ({{ schoolProfileForm.directors.length }} Directors)</span>
+            </button>
+
+            <button type="button" (click)="schoolProfileActiveTab = 'CONTACT'"
+                    [ngClass]="schoolProfileActiveTab === 'CONTACT' ? 'bg-slate-900 text-white font-black shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-100 font-bold border border-slate-200'"
+                    class="px-3.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer flex items-center gap-1.5 shrink-0">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span>3. Contact & Campus Location</span>
+            </button>
+          </div>
+
+          <!-- Modal Body Form -->
+          <div class="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs">
+            <div *ngIf="loadingSchoolProfile" class="py-12 text-center text-slate-400">
+              <div class="w-8 h-8 rounded-full border-2 border-slate-200 border-t-slate-800 animate-spin mx-auto mb-2"></div>
+              <span>Loading comprehensive institutional profile...</span>
+            </div>
+
+            <div *ngIf="!loadingSchoolProfile" class="space-y-4">
+              <!-- Institutional Identity Card Banner -->
+              <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 rounded-2xl bg-slate-900 text-white font-black text-base flex items-center justify-center shadow-xs shrink-0 overflow-hidden border border-slate-200">
+                    <img *ngIf="schoolProfileForm.logoUrl" [src]="schoolProfileForm.logoUrl" class="w-full h-full object-contain p-0.5 bg-white" alt="School Logo" />
+                    <span *ngIf="!schoolProfileForm.logoUrl">{{ (schoolProfileForm.name || 'S').charAt(0).toUpperCase() }}</span>
+                  </div>
+                  <div>
+                    <h4 class="font-black text-slate-900 text-sm leading-tight">{{ schoolProfileForm.name || 'School Profile' }}</h4>
+                    <div class="flex items-center gap-2 mt-0.5 text-[10px] text-slate-500 font-mono flex-wrap">
+                      <span>Code: <strong>{{ schoolProfileForm.code || 'CAMPUS' }}</strong></span>
+                      <span *ngIf="schoolProfileForm.affiliationNumber">• Affil No: <strong>{{ schoolProfileForm.affiliationNumber }}</strong></span>
+                      <span *ngIf="schoolProfileForm.udiseCode">• U-DISE: <strong>{{ schoolProfileForm.udiseCode }}</strong></span>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="px-2.5 py-1 bg-white text-slate-800 font-bold text-[10px] rounded-xl border border-slate-200 shadow-2xs">
+                    {{ schoolProfileForm.affiliationBoard === 'Other' ? (schoolProfileForm.customBoardName || 'Custom Board') : schoolProfileForm.affiliationBoard }}
+                  </span>
+                  <span class="px-2.5 py-1 bg-slate-200 text-slate-800 font-bold text-[10px] rounded-xl">
+                    {{ schoolProfileForm.startingClass }} – {{ schoolProfileForm.lastClass }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- ========================================================================= -->
+              <!-- TAB 1: IDENTITY & BOARD AFFILIATION                                       -->
+              <!-- ========================================================================= -->
+              <div *ngIf="schoolProfileActiveTab === 'BASIC'" class="space-y-4 animate-fadeIn">
+                <!-- School Crest & Official Logo Uploader Card -->
+                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <span class="font-black text-slate-900 text-xs block">School Crest / Official Logo</span>
+                      <span class="text-[10px] text-slate-500">Official logo displayed across diplomas, certificates, navigation bar, and parent portal.</span>
+                    </div>
+                    <div *ngIf="schoolProfileForm.logoUrl && canManageSessions" class="flex items-center gap-2">
+                      <button type="button" (click)="removeSchoolLogo()"
+                              class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[10px] rounded-xl border border-rose-200 transition-colors cursor-pointer">
+                        Remove Logo
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="flex flex-col sm:flex-row items-center gap-4">
+                    <!-- Logo Preview Box -->
+                    <div class="w-20 h-20 rounded-2xl bg-white border-2 border-dashed border-slate-300 flex items-center justify-center shrink-0 overflow-hidden shadow-inner p-1 relative">
+                      <img *ngIf="schoolProfileForm.logoUrl" [src]="schoolProfileForm.logoUrl" class="w-full h-full object-contain" alt="School Logo Preview" />
+                      <div *ngIf="!schoolProfileForm.logoUrl" class="flex flex-col items-center text-center p-2 text-slate-400">
+                        <svg class="w-6 h-6 mb-0.5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span class="text-[9px] font-bold">No Logo</span>
+                      </div>
+                    </div>
+
+                    <!-- Upload Button & Guidelines -->
+                    <div class="flex-1 space-y-1.5 text-left w-full">
+                      <div class="flex items-center gap-2 flex-wrap">
+                        <label [class.opacity-50]="uploadingSchoolLogo || !canManageSessions"
+                               class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-2 active:scale-95">
+                          <svg *ngIf="!uploadingSchoolLogo" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                          </svg>
+                          <svg *ngIf="uploadingSchoolLogo" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                          </svg>
+                          <span>{{ uploadingSchoolLogo ? 'Optimizing & Uploading...' : (schoolProfileForm.logoUrl ? 'Replace School Logo' : 'Upload School Logo') }}</span>
+                          <input type="file" accept="image/*" (change)="onSchoolLogoSelected($event)" [disabled]="uploadingSchoolLogo || !canManageSessions" class="hidden" />
+                        </label>
+                      </div>
+                      <p class="text-[10px] text-slate-400 font-medium">
+                        Supported: PNG, SVG, WEBP, or JPG with transparent or light background (Max 5MB).
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div class="sm:col-span-2">
+                    <label class="block font-bold text-slate-700 mb-1">School Official Full Name *</label>
+                    <input type="text" [(ngModel)]="schoolProfileForm.name" placeholder="e.g. Delhi Heritage Academy"
+                           [disabled]="!canManageSessions"
+                           class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner disabled:opacity-70" />
+                  </div>
+
+                  <div>
+                    <label class="block font-bold text-slate-700 mb-1">School Code / Short Campus Code *</label>
+                    <input type="text" [(ngModel)]="schoolProfileForm.code" placeholder="e.g. DEL-01"
+                           [disabled]="!canManageSessions"
+                           class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner disabled:opacity-70" />
+                  </div>
+
+                  <div>
+                    <label class="block font-bold text-slate-700 mb-1">Board of Affiliation *</label>
+                    <select [(ngModel)]="schoolProfileForm.affiliationBoard"
+                            [disabled]="!canManageSessions"
+                            class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner cursor-pointer disabled:opacity-70">
+                      <option value="CBSE">CBSE (Central Board of Secondary Education)</option>
+                      <option value="ICSE">ICSE / CISCE (Council for the Indian School Certificate Examinations)</option>
+                      <option value="State Board">State Educational Board</option>
+                      <option value="IB">International Baccalaureate (IB)</option>
+                      <option value="Cambridge">Cambridge International (CIE / IGCSE)</option>
+                      <option value="NIOS">NIOS (National Institute of Open Schooling)</option>
+                      <option value="Other">Other (Custom Affiliation Board)</option>
+                    </select>
+                  </div>
+
+                  <!-- Custom Board Input (Appears when "Other" or "State Board" is selected) -->
+                  <div *ngIf="schoolProfileForm.affiliationBoard === 'Other' || schoolProfileForm.affiliationBoard === 'State Board'" class="sm:col-span-2">
+                    <label class="block font-bold text-slate-700 mb-1">
+                      Specify Affiliation Board / Authority Name *
+                    </label>
+                    <input type="text" [(ngModel)]="schoolProfileForm.customBoardName" placeholder="e.g. Maharashtra State Board of Secondary & Higher Secondary Education / Matriculation Board"
+                           [disabled]="!canManageSessions"
+                           class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner disabled:opacity-70" />
+                  </div>
+
+                  <div>
+                    <label class="block font-bold text-slate-700 mb-1">Affiliation / Registration Number</label>
+                    <input type="text" [(ngModel)]="schoolProfileForm.affiliationNumber" placeholder="e.g. 2130456 / REG-9942"
+                           [disabled]="!canManageSessions"
+                           class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner disabled:opacity-70" />
+                  </div>
+
+                  <div>
+                    <label class="block font-bold text-slate-700 mb-1">U-DISE+ / Govt School Code</label>
+                    <input type="text" [(ngModel)]="schoolProfileForm.udiseCode" placeholder="e.g. 07010100101 (11 digits)"
+                           [disabled]="!canManageSessions"
+                           class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner disabled:opacity-70" />
+                  </div>
+
+                  <!-- Grade Span: Starting Class & Last Class -->
+                  <div>
+                    <label class="block font-bold text-slate-700 mb-1">School Starting Class (Lowest Grade) *</label>
+                    <select [(ngModel)]="schoolProfileForm.startingClass"
+                            [disabled]="!canManageSessions"
+                            class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner cursor-pointer disabled:opacity-70">
+                      <option *ngFor="let g of availableSchoolGrades" [value]="g">{{ g }}</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block font-bold text-slate-700 mb-1">School Terminal Class (Highest Grade) *</label>
+                    <select [(ngModel)]="schoolProfileForm.lastClass"
+                            [disabled]="!canManageSessions"
+                            class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner cursor-pointer disabled:opacity-70">
+                      <option *ngFor="let g of availableSchoolGrades" [value]="g">{{ g }}</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block font-bold text-slate-700 mb-1">School Type / Gender Ratio</label>
+                    <select [(ngModel)]="schoolProfileForm.schoolType"
+                            [disabled]="!canManageSessions"
+                            class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner cursor-pointer disabled:opacity-70">
+                      <option value="Co-Educational">Co-Educational</option>
+                      <option value="Boys Only">Boys Only School</option>
+                      <option value="Girls Only">Girls Only School</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block font-bold text-slate-700 mb-1">Operational Shift / Model</label>
+                    <select [(ngModel)]="schoolProfileForm.schoolShift"
+                            [disabled]="!canManageSessions"
+                            class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner cursor-pointer disabled:opacity-70">
+                      <option value="Regular Day">Regular Day School</option>
+                      <option value="Morning Shift">Morning Shift</option>
+                      <option value="Day Boarding">Day Boarding</option>
+                      <option value="Residential">Residential / Boarding School</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block font-bold text-slate-700 mb-1">Established Year</label>
+                    <input type="text" [(ngModel)]="schoolProfileForm.establishedYear" placeholder="e.g. 2010"
+                           [disabled]="!canManageSessions"
+                           class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner disabled:opacity-70" />
+                  </div>
+
+                  <div>
+                    <label class="block font-bold text-slate-700 mb-1">Society / Trust Registration No.</label>
+                    <input type="text" [(ngModel)]="schoolProfileForm.schoolRegistrationNumber" placeholder="e.g. SOC/DEL/1029/2008"
+                           [disabled]="!canManageSessions"
+                           class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner disabled:opacity-70" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- ========================================================================= -->
+              <!-- TAB 2: LEADERSHIP & DEPARTMENT IN-CHARGES                                  -->
+              <!-- ========================================================================= -->
+              <div *ngIf="schoolProfileActiveTab === 'LEADERSHIP'" class="space-y-4 animate-fadeIn">
+                <!-- Section A: Board of Directors / Trustees -->
+                <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <span class="font-black text-slate-900 text-xs block">School Directors & Trustees</span>
+                      <span class="text-[10px] text-slate-500">Add one or multiple directors / governing body members with profile photo.</span>
+                    </div>
+                    <button *ngIf="canManageSessions" type="button" (click)="addDirectorRow()"
+                            class="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-800 font-bold text-[10px] rounded-xl border border-slate-300 shadow-2xs flex items-center gap-1 cursor-pointer">
+                      <span>+ Add Director</span>
+                    </button>
+                  </div>
+
+                  <div class="space-y-2">
+                    <div *ngFor="let d of schoolProfileForm.directors; let idx = index" class="p-2.5 bg-white rounded-xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-center gap-2.5">
+                      <!-- Director Photo Thumbnail & Upload Button -->
+                      <div class="flex items-center gap-2 shrink-0">
+                        <div class="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 relative group">
+                          <img *ngIf="d.photoUrl" [src]="d.photoUrl" class="w-full h-full object-cover" alt="Director" />
+                          <span *ngIf="!d.photoUrl" class="text-xs font-black text-slate-600">{{ (d.name || 'D').charAt(0).toUpperCase() }}</span>
+                          <label *ngIf="canManageSessions" class="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity text-[9px] font-bold">
+                            <span>Edit</span>
+                            <input type="file" accept="image/*" (change)="onDirectorPhotoSelected($event, idx)" class="hidden" />
+                          </label>
+                        </div>
+                        <button *ngIf="d.photoUrl && canManageSessions" type="button" (click)="removeDirectorPhoto(idx)"
+                                title="Remove photo" class="text-rose-500 hover:text-rose-700 text-xs cursor-pointer">
+                          &times;
+                        </button>
+                      </div>
+
+                      <div class="w-full sm:w-1/3">
+                        <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Director Full Name</label>
+                        <input type="text" [(ngModel)]="d.name" placeholder="e.g. Dr. Ramesh Gupta"
+                               [disabled]="!canManageSessions"
+                               class="w-full px-2.5 py-1.5 bg-[#f8fafc] border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800" />
+                      </div>
+                      <div class="w-full sm:w-1/3">
+                        <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Designation</label>
+                        <input type="text" [(ngModel)]="d.designation" placeholder="e.g. Managing Director / Trustee"
+                               [disabled]="!canManageSessions"
+                               class="w-full px-2.5 py-1.5 bg-[#f8fafc] border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800" />
+                      </div>
+                      <div class="w-full sm:w-1/3 flex items-center gap-2">
+                        <div class="flex-1">
+                          <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Contact Phone / Email</label>
+                          <input type="text" [(ngModel)]="d.phone" placeholder="+91 98111 22233"
+                                 [disabled]="!canManageSessions"
+                                 class="w-full px-2.5 py-1.5 bg-[#f8fafc] border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800" />
+                        </div>
+                        <button *ngIf="canManageSessions && schoolProfileForm.directors.length > 1"
+                                type="button" (click)="removeDirectorRow(idx)"
+                                title="Remove Director"
+                                class="mt-4 text-slate-400 hover:text-rose-600 font-bold text-base p-1 rounded-lg hover:bg-rose-50 cursor-pointer">
+                          &times;
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Section B: Principal & Vice Principal -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <!-- Principal Card -->
+                  <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
+                    <div class="flex items-center justify-between pb-1 border-b border-slate-200">
+                      <span class="font-black text-slate-900 text-xs block">Principal / Head of Institution</span>
+                      <span *ngIf="schoolProfileForm.principalPhotoUrl && canManageSessions"
+                            (click)="removePrincipalPhoto()" class="text-[10px] font-bold text-rose-600 hover:underline cursor-pointer">
+                        Remove Photo
+                      </span>
+                    </div>
+
+                    <!-- Principal Photo Uploader -->
+                    <div class="flex items-center gap-3">
+                      <div class="w-14 h-14 rounded-2xl bg-white border border-slate-300 flex items-center justify-center shrink-0 overflow-hidden shadow-inner relative group">
+                        <img *ngIf="schoolProfileForm.principalPhotoUrl" [src]="schoolProfileForm.principalPhotoUrl" class="w-full h-full object-cover" alt="Principal" />
+                        <span *ngIf="!schoolProfileForm.principalPhotoUrl" class="text-sm font-black text-slate-400">
+                          {{ (schoolProfileForm.principalName || 'P').charAt(0).toUpperCase() }}
+                        </span>
+                        <label *ngIf="canManageSessions" class="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity text-[10px] font-bold">
+                          <span>Change</span>
+                          <input type="file" accept="image/*" (change)="onPrincipalPhotoSelected($event)" class="hidden" />
+                        </label>
+                      </div>
+                      <div class="flex-1">
+                        <label [class.opacity-50]="uploadingPrincipalPhoto || !canManageSessions"
+                               class="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-xl text-[11px] font-bold transition-all cursor-pointer shadow-2xs inline-flex items-center gap-1.5">
+                          <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                          </svg>
+                          <span>{{ uploadingPrincipalPhoto ? 'Uploading...' : (schoolProfileForm.principalPhotoUrl ? 'Change Photo' : 'Upload Photo') }}</span>
+                          <input type="file" accept="image/*" (change)="onPrincipalPhotoSelected($event)" [disabled]="uploadingPrincipalPhoto || !canManageSessions" class="hidden" />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label class="block font-bold text-slate-600 text-[10px] mb-0.5">Principal Full Name *</label>
+                      <input type="text" [(ngModel)]="schoolProfileForm.principalName" placeholder="Dr. / Mrs. / Mr. Name"
+                             [disabled]="!canManageSessions"
+                             class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-slate-800 shadow-2xs" />
+                    </div>
+                    <div>
+                      <label class="block font-bold text-slate-600 text-[10px] mb-0.5">Principal Email</label>
+                      <input type="email" [(ngModel)]="schoolProfileForm.principalEmail" placeholder="principal@school.edu.in"
+                             [disabled]="!canManageSessions"
+                             class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-2xs" />
+                    </div>
+                    <div>
+                      <label class="block font-bold text-slate-600 text-[10px] mb-0.5">Principal Phone</label>
+                      <input type="text" [(ngModel)]="schoolProfileForm.principalPhone" placeholder="+91 98765 00001"
+                             [disabled]="!canManageSessions"
+                             class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-2xs" />
+                    </div>
+                  </div>
+
+                  <!-- Vice Principal Card -->
+                  <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
+                    <div class="flex items-center justify-between pb-1 border-b border-slate-200">
+                      <span class="font-black text-slate-900 text-xs block">Vice Principal / Academic Dean</span>
+                      <span *ngIf="schoolProfileForm.vicePrincipalPhotoUrl && canManageSessions"
+                            (click)="removeVicePrincipalPhoto()" class="text-[10px] font-bold text-rose-600 hover:underline cursor-pointer">
+                        Remove Photo
+                      </span>
+                    </div>
+
+                    <!-- Vice Principal Photo Uploader -->
+                    <div class="flex items-center gap-3">
+                      <div class="w-14 h-14 rounded-2xl bg-white border border-slate-300 flex items-center justify-center shrink-0 overflow-hidden shadow-inner relative group">
+                        <img *ngIf="schoolProfileForm.vicePrincipalPhotoUrl" [src]="schoolProfileForm.vicePrincipalPhotoUrl" class="w-full h-full object-cover" alt="Vice Principal" />
+                        <span *ngIf="!schoolProfileForm.vicePrincipalPhotoUrl" class="text-sm font-black text-slate-400">
+                          {{ (schoolProfileForm.vicePrincipalName || 'V').charAt(0).toUpperCase() }}
+                        </span>
+                        <label *ngIf="canManageSessions" class="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity text-[10px] font-bold">
+                          <span>Change</span>
+                          <input type="file" accept="image/*" (change)="onVicePrincipalPhotoSelected($event)" class="hidden" />
+                        </label>
+                      </div>
+                      <div class="flex-1">
+                        <label [class.opacity-50]="uploadingVicePrincipalPhoto || !canManageSessions"
+                               class="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-xl text-[11px] font-bold transition-all cursor-pointer shadow-2xs inline-flex items-center gap-1.5">
+                          <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                          </svg>
+                          <span>{{ uploadingVicePrincipalPhoto ? 'Uploading...' : (schoolProfileForm.vicePrincipalPhotoUrl ? 'Change Photo' : 'Upload Photo') }}</span>
+                          <input type="file" accept="image/*" (change)="onVicePrincipalPhotoSelected($event)" [disabled]="uploadingVicePrincipalPhoto || !canManageSessions" class="hidden" />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label class="block font-bold text-slate-600 text-[10px] mb-0.5">Vice Principal Name</label>
+                      <input type="text" [(ngModel)]="schoolProfileForm.vicePrincipalName" placeholder="Vice Principal Name"
+                             [disabled]="!canManageSessions"
+                             class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-slate-800 shadow-2xs" />
+                    </div>
+                    <div>
+                      <label class="block font-bold text-slate-600 text-[10px] mb-0.5">Vice Principal Email</label>
+                      <input type="email" [(ngModel)]="schoolProfileForm.vicePrincipalEmail" placeholder="vp@school.edu.in"
+                             [disabled]="!canManageSessions"
+                             class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-2xs" />
+                    </div>
+                    <div>
+                      <label class="block font-bold text-slate-600 text-[10px] mb-0.5">Vice Principal Phone</label>
+                      <input type="text" [(ngModel)]="schoolProfileForm.vicePrincipalPhone" placeholder="+91 98765 00002"
+                             [disabled]="!canManageSessions"
+                             class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-2xs" />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Section C: Department & Wing In-Charges -->
+                <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <span class="font-black text-slate-900 text-xs block">Department & Wing In-Charges</span>
+                      <span class="text-[10px] text-slate-500">Coordinators and heads for examinations, wings, sports, IT, and disciplines.</span>
+                    </div>
+                    <button *ngIf="canManageSessions" type="button" (click)="addInChargeRow()"
+                            class="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-800 font-bold text-[10px] rounded-xl border border-slate-300 shadow-2xs flex items-center gap-1 cursor-pointer">
+                      <span>+ Add Department In-Charge</span>
+                    </button>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div *ngFor="let inc of schoolProfileForm.inCharges; let idx = index" class="p-2.5 bg-white rounded-xl border border-slate-200 shadow-2xs flex items-center gap-2.5">
+                      <!-- In-Charge Avatar Thumbnail -->
+                      <div class="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 relative group">
+                        <img *ngIf="inc.photoUrl" [src]="inc.photoUrl" class="w-full h-full object-cover" alt="In-Charge" />
+                        <span *ngIf="!inc.photoUrl" class="text-xs font-black text-slate-600">{{ (inc.name || 'I').charAt(0).toUpperCase() }}</span>
+                        <label *ngIf="canManageSessions" class="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity text-[8px] font-bold">
+                          <span>Edit</span>
+                          <input type="file" accept="image/*" (change)="onInChargePhotoSelected($event, idx)" class="hidden" />
+                        </label>
+                      </div>
+
+                      <div class="flex-1 space-y-1">
+                        <input type="text" [(ngModel)]="inc.department" placeholder="Department / Wing Title"
+                               [disabled]="!canManageSessions"
+                               class="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 focus:bg-white focus:outline-none focus:border-slate-800" />
+                        <div class="flex items-center gap-1.5">
+                          <input type="text" [(ngModel)]="inc.name" placeholder="In-Charge Faculty Name"
+                                 [disabled]="!canManageSessions"
+                                 class="flex-1 px-2 py-1 bg-[#f8fafc] border border-slate-300 rounded-lg text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800" />
+                          <input type="text" [(ngModel)]="inc.phone" placeholder="Phone"
+                                 [disabled]="!canManageSessions"
+                                 class="w-24 px-2 py-1 bg-[#f8fafc] border border-slate-300 rounded-lg text-[11px] text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800" />
+                        </div>
+                      </div>
+                      <button *ngIf="canManageSessions" type="button" (click)="removeInChargeRow(idx)"
+                              title="Remove In-Charge"
+                              class="text-slate-400 hover:text-rose-600 font-bold text-base p-1 rounded-lg hover:bg-rose-50 cursor-pointer">
+                        &times;
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ========================================================================= -->
+              <!-- TAB 3: CONTACT COORDINATES & CAMPUS LOCATION                              -->
+              <!-- ========================================================================= -->
+              <div *ngIf="schoolProfileActiveTab === 'CONTACT'" class="space-y-4 animate-fadeIn">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label class="block font-bold text-slate-700 mb-1">Official Campus Email Address *</label>
+                    <input type="email" [(ngModel)]="schoolProfileForm.email" placeholder="contact@school.edu.in"
+                           [disabled]="!canManageSessions"
+                           class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner disabled:opacity-70" />
+                  </div>
+
+                  <div>
+                    <label class="block font-bold text-slate-700 mb-1">Helpline / Primary Contact Phone *</label>
+                    <input type="text" [(ngModel)]="schoolProfileForm.phone" placeholder="+91 98765 43210"
+                           [disabled]="!canManageSessions"
+                           class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner disabled:opacity-70" />
+                  </div>
+
+                  <div>
+                    <label class="block font-bold text-slate-700 mb-1">Alternate / Emergency Contact Phone</label>
+                    <input type="text" [(ngModel)]="schoolProfileForm.alternatePhone" placeholder="+91 98765 43211"
+                           [disabled]="!canManageSessions"
+                           class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner disabled:opacity-70" />
+                  </div>
+
+                  <div>
+                    <label class="block font-bold text-slate-700 mb-1">Official Website URL</label>
+                    <input type="text" [(ngModel)]="schoolProfileForm.websiteUrl" placeholder="https://www.school.edu.in"
+                           [disabled]="!canManageSessions"
+                           class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner disabled:opacity-70" />
+                  </div>
+
+                  <div class="sm:col-span-2">
+                    <label class="block font-bold text-slate-700 mb-1">School Motto / Institutional Tagline</label>
+                    <input type="text" [(ngModel)]="schoolProfileForm.motto" placeholder="e.g. Lead Us from Darkness into Light / Knowledge is Power"
+                           [disabled]="!canManageSessions"
+                           class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner disabled:opacity-70" />
+                  </div>
+
+                  <div class="sm:col-span-2">
+                    <label class="block font-bold text-slate-700 mb-1">Campus Street Address *</label>
+                    <input type="text" [(ngModel)]="schoolProfileForm.addressLine1" placeholder="Plot No., Institutional Area, Sector / Road, Landmark"
+                           [disabled]="!canManageSessions"
+                           class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner disabled:opacity-70" />
+                  </div>
+
+                  <div>
+                    <label class="block font-bold text-slate-700 mb-1">City / Town *</label>
+                    <input type="text" [(ngModel)]="schoolProfileForm.city" placeholder="e.g. New Delhi"
+                           [disabled]="!canManageSessions"
+                           class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner disabled:opacity-70" />
+                  </div>
+
+                  <div>
+                    <label class="block font-bold text-slate-700 mb-1">District / County</label>
+                    <input type="text" [(ngModel)]="schoolProfileForm.district" placeholder="e.g. North West Delhi"
+                           [disabled]="!canManageSessions"
+                           class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner disabled:opacity-70" />
+                  </div>
+
+                  <div>
+                    <label class="block font-bold text-slate-700 mb-1">State / Province *</label>
+                    <input type="text" [(ngModel)]="schoolProfileForm.state" placeholder="e.g. Delhi / Maharashtra / Uttar Pradesh"
+                           [disabled]="!canManageSessions"
+                           class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner disabled:opacity-70" />
+                  </div>
+
+                  <div>
+                    <label class="block font-bold text-slate-700 mb-1">Postal PIN Code *</label>
+                    <input type="text" [(ngModel)]="schoolProfileForm.postalCode" placeholder="110085"
+                           [disabled]="!canManageSessions"
+                           class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner disabled:opacity-70" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-between gap-2.5 shrink-0">
+            <span *ngIf="!canManageSessions" class="text-[10px] text-slate-400 font-medium italic">
+              View-only mode. Administrator privileges required to edit school profile.
+            </span>
+            <div class="flex items-center gap-2.5 ml-auto">
+              <button type="button" (click)="closeSchoolProfileModal()" [disabled]="savingSchoolProfile"
+                      class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
+                Cancel
+              </button>
+              <button *ngIf="canManageSessions" type="button" (click)="saveSchoolProfile()" [disabled]="savingSchoolProfile"
+                      class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50">
+                <svg *ngIf="savingSchoolProfile" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>{{ savingSchoolProfile ? 'Saving...' : 'Save Profile Changes' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- MODAL: ROLE & SERVICE SECTION VISIBILITY MANAGEMENT STUDIO     -->
+      <!-- ============================================================== -->
+      <div *ngIf="showRoleManagementModal" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[90] animate-fadeIn">
+        <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs" (click)="closeRoleManagementModal()"></div>
+        <div class="bg-white rounded-3xl max-w-5xl w-full flex flex-col max-h-[92vh] shadow-[0_30px_70px_rgba(0,0,0,0.35)] border border-slate-200 overflow-hidden animate-scaleUp relative z-10">
+          
+          <!-- Modal Header -->
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black text-lg shadow-xs">
+                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight">Role & Section Visibility Management</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Control which services, directories, and operational modules are visible and manageable by each role.</p>
+              </div>
+            </div>
+            <button (click)="closeRoleManagementModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+          </div>
+
+          <!-- Modal Body: 2-Column Master-Detail Layout -->
+          <div class="flex-1 grid grid-cols-1 md:grid-cols-12 min-h-0 overflow-hidden">
+            
+            <!-- Left Pane: Roles Selector List -->
+            <div class="md:col-span-4 border-r border-slate-200 bg-slate-50/70 p-3 sm:p-4 overflow-y-auto flex flex-col gap-2 custom-clay-scroll shrink-0">
+              <div class="px-2 py-1 flex items-center justify-between">
+                <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Campus Roles</span>
+                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600">
+                  {{ systemRolesList.length }} Configured
+                </span>
+              </div>
+
+              <div class="space-y-1.5">
+                <button *ngFor="let r of systemRolesList"
+                        type="button"
+                        (click)="selectRoleToConfigure(r.code)"
+                        class="w-full text-left p-3 rounded-2xl transition-all flex flex-col gap-1 cursor-pointer border"
+                        [ngClass]="selectedRoleCode === r.code
+                                    ? 'bg-slate-900 text-white border-slate-900 shadow-md'
+                                    : 'bg-white hover:bg-slate-100/90 text-slate-800 border-slate-200 shadow-2xs'">
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <div class="w-6 h-6 rounded-lg flex items-center justify-center font-black text-[10px] shrink-0"
+                           [ngClass]="selectedRoleCode === r.code ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700 border border-slate-200'">
+                        {{ r.icon || r.code.charAt(0) }}
+                      </div>
+                      <span class="font-bold text-xs truncate">{{ r.name }}</span>
+                    </div>
+
+                    <span class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded"
+                          [ngClass]="selectedRoleCode === r.code ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600 border border-slate-200'">
+                      {{ r.accessLevel }}
+                    </span>
+                  </div>
+
+                  <div class="flex items-center justify-between text-[10px] mt-0.5"
+                       [ngClass]="selectedRoleCode === r.code ? 'text-slate-300' : 'text-slate-500'">
+                    <span class="truncate">{{ r.description }}</span>
+                    <span class="font-mono shrink-0 font-bold ml-1">
+                      {{ getEnabledCountForRole(r.code) }}/{{ roleSectionsCatalog.length }}
+                    </span>
+                  </div>
+                </button>
+              </div>
+
+              <div class="mt-auto pt-3 border-t border-slate-200/80 text-[10px] text-slate-400 leading-relaxed px-1">
+                🔒 <strong>Administrator Rule:</strong> Selecting a role lets you grant or restrict module visibility in real time.
+              </div>
+            </div>
+
+            <!-- Right Pane: Active Role Section & Permission Configuration -->
+            <div class="md:col-span-8 flex flex-col min-w-0 bg-white overflow-hidden">
+              
+              <!-- Role Active Header Bar -->
+              <div class="p-4 sm:p-5 border-b border-slate-100 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h4 class="text-sm font-black text-slate-900 tracking-tight">
+                      {{ getSelectedRoleObject()?.name }}
+                    </h4>
+                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                      {{ selectedRoleCode }}
+                    </span>
+                  </div>
+                  <p class="text-xs text-slate-500 mt-0.5">
+                    {{ getSelectedRoleObject()?.description }}
+                  </p>
+                </div>
+
+                <!-- Quick Batch Toolbar -->
+                <div class="flex items-center gap-1.5 flex-wrap shrink-0">
+                  <button type="button" (click)="grantAllForRole()"
+                          class="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-[11px] font-bold rounded-xl border border-slate-200 transition-colors cursor-pointer flex items-center gap-1 shadow-2xs">
+                    <svg class="w-3 h-3 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Enable All</span>
+                  </button>
+
+                  <button type="button" (click)="revokeAllForRole()"
+                          class="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-[11px] font-bold rounded-xl border border-slate-200 transition-colors cursor-pointer flex items-center gap-1 shadow-2xs">
+                    <svg class="w-3 h-3 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <span>Disable All</span>
+                  </button>
+
+                  <button type="button" (click)="resetRoleToDefaults()"
+                          class="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-[11px] font-bold rounded-xl border border-slate-200 transition-colors cursor-pointer flex items-center gap-1 shadow-2xs">
+                    <svg class="w-3 h-3 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span>Reset Defaults</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Search & Category Filters -->
+              <div class="px-4 sm:px-5 py-2.5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shrink-0">
+                <!-- Search input -->
+                <div class="relative flex-1">
+                  <input type="text" [(ngModel)]="roleSearchQuery"
+                         placeholder="Filter services or modules..."
+                         class="w-full pl-8 pr-7 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium placeholder:text-slate-400 outline-none focus:border-slate-400" />
+                  <div class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <button *ngIf="roleSearchQuery" (click)="roleSearchQuery = ''"
+                          class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold p-0.5 cursor-pointer">&times;</button>
+                </div>
+
+                <!-- Category Pills -->
+                <div class="flex items-center gap-1 overflow-x-auto py-0.5 no-scrollbar shrink-0">
+                  <button *ngFor="let cat of roleCategoryList"
+                          type="button"
+                          (click)="activeRoleCategory = cat"
+                          class="px-2.5 py-1 rounded-lg text-[10px] font-bold transition-colors whitespace-nowrap cursor-pointer"
+                          [ngClass]="activeRoleCategory === cat
+                                      ? 'bg-slate-900 text-white'
+                                      : 'bg-white hover:bg-slate-200 text-slate-600 border border-slate-200'">
+                    {{ cat }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Scrollable Sections List with Smooth Switches -->
+              <div class="flex-1 p-4 sm:p-5 overflow-y-auto space-y-2.5 custom-clay-scroll">
+                <ng-container *ngFor="let sec of filteredRoleSections">
+                  
+                  <div class="p-3 sm:p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3"
+                       [ngClass]="[
+                         sec.parentId ? 'ml-6 border-l-4 border-l-slate-300 bg-slate-50/50' : 'bg-white',
+                         isParentDisabled(sec.parentId) ? 'opacity-40 bg-slate-100/50 border-slate-200' : 'border-slate-200 hover:border-slate-300 shadow-2xs'
+                       ]">
+                    
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-2 flex-wrap">
+                        <span class="font-bold text-xs text-slate-900">{{ sec.name }}</span>
+                        
+                        <span *ngIf="sec.isParent" class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                          Main Module
+                        </span>
+
+                        <span *ngIf="sec.parentId" class="text-[9px] font-medium px-1.5 py-0.2 rounded bg-slate-100 text-slate-500">
+                          Sub-Section
+                        </span>
+
+                        <span *ngIf="isParentDisabled(sec.parentId)" class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                          Parent Module Disabled
+                        </span>
+                      </div>
+                      
+                      <p class="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                        {{ sec.description }}
+                      </p>
+                    </div>
+
+                    <!-- Clean Monochrome iOS Toggle Switch -->
+                    <div class="flex items-center gap-2.5 shrink-0">
+                      <span class="text-[10px] font-bold hidden sm:inline-block"
+                            [ngClass]="isSectionEnabled(sec.id) && !isParentDisabled(sec.parentId) ? 'text-slate-900' : 'text-slate-400'">
+                        {{ isSectionEnabled(sec.id) && !isParentDisabled(sec.parentId) ? 'Visible' : 'Hidden' }}
+                      </span>
+
+                      <button type="button"
+                              [disabled]="isParentDisabled(sec.parentId)"
+                              (click)="toggleSectionPermission(sec)"
+                              class="w-11 h-6 rounded-full transition-colors relative cursor-pointer focus:outline-none disabled:cursor-not-allowed shadow-inner"
+                              [ngClass]="isSectionEnabled(sec.id) && !isParentDisabled(sec.parentId) ? 'bg-slate-900' : 'bg-slate-200'">
+                        <span class="w-4 h-4 bg-white rounded-full transition-transform transform absolute top-1 left-1 shadow-sm"
+                              [ngClass]="isSectionEnabled(sec.id) && !isParentDisabled(sec.parentId) ? 'translate-x-5' : 'translate-x-0'"></span>
+                      </button>
+                    </div>
+                  </div>
+
+                </ng-container>
+
+                <div *ngIf="filteredRoleSections.length === 0" class="p-8 text-center text-xs text-slate-400">
+                  No service sections matching "{{ roleSearchQuery }}"
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 rounded-b-3xl">
+            <div class="text-[11px] text-slate-500 text-center sm:text-left">
+              <span>⚡ Permission changes are saved per campus and update live navigation immediately.</span>
+            </div>
+
+            <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+              <button type="button" (click)="closeRoleManagementModal()"
+                      class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 shadow-2xs transition-colors cursor-pointer">
+                Cancel
+              </button>
+
+              <button type="button" (click)="saveRolePermissions()" [disabled]="savingRolePermissions"
+                      class="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all flex items-center gap-2 active:scale-98 cursor-pointer disabled:opacity-50">
+                <svg *ngIf="savingRolePermissions" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>{{ savingRolePermissions ? 'Saving Permissions...' : 'Save Role Permissions' }}</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+
 
       <!-- Global Full Viewport Modal Backdrop Dimmer (Dims entire viewport including header & sidebar) -->
       <div *ngIf="modalService.isOpen()"
@@ -605,6 +1673,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   router = inject(Router);
   toastService = inject(ToastService);
   modalService = inject(ModalService);
+  imageUploadService = inject(ImageUploadService);
   
   isMobileSidebarOpen = false;
   isDesktopSidebarCollapsed = false;
@@ -612,9 +1681,234 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
 
   isSessionDropdownOpen = false;
   isNotificationDropdownOpen = false;
+  isSettingsDropdownOpen = false;
   availableSessions: AcademicSession[] = [];
   notifications: Notice[] = [];
   dismissedNoticeIds = new Set<string>();
+
+  // School Profile & Role Management Modal State
+  showSchoolProfileModal = false;
+  loadingSchoolProfile = false;
+  savingSchoolProfile = false;
+  uploadingSchoolLogo = false;
+  uploadingPrincipalPhoto = false;
+  uploadingVicePrincipalPhoto = false;
+  uploadingDirectorPhotoIndex: number | null = null;
+  uploadingInChargePhotoIndex: number | null = null;
+  schoolProfileActiveTab: 'BASIC' | 'LEADERSHIP' | 'CONTACT' = 'BASIC';
+
+  availableSchoolGrades = [
+    'Pre-Nursery / Playgroup',
+    'Nursery',
+    'LKG / KG-1',
+    'UKG / KG-2',
+    'Class 1',
+    'Class 2',
+    'Class 3',
+    'Class 4',
+    'Class 5',
+    'Class 6',
+    'Class 7',
+    'Class 8',
+    'Class 9',
+    'Class 10',
+    'Class 11',
+    'Class 12',
+  ];
+
+  schoolProfileForm = {
+    id: '',
+    name: '',
+    code: '',
+    logoUrl: '',
+    affiliationBoard: 'CBSE',
+    customBoardName: '',
+    affiliationNumber: '',
+    udiseCode: '',
+    schoolRegistrationNumber: '',
+    startingClass: 'Pre-Nursery / Playgroup',
+    lastClass: 'Class 12',
+    schoolType: 'Co-Educational',
+    schoolShift: 'Regular Day',
+    establishedYear: '2010',
+    directors: [{ name: '', designation: 'Managing Director', phone: '', photoUrl: '' }],
+    principalName: '',
+    principalEmail: '',
+    principalPhone: '',
+    principalPhotoUrl: '',
+    vicePrincipalName: '',
+    vicePrincipalEmail: '',
+    vicePrincipalPhone: '',
+    vicePrincipalPhotoUrl: '',
+    inCharges: [
+      { department: 'Examination & Evaluation In-Charge', name: '', phone: '', photoUrl: '' },
+      { department: 'Senior Wing Head (IX - XII)', name: '', phone: '', photoUrl: '' },
+      { department: 'Middle Wing Head (VI - VIII)', name: '', phone: '', photoUrl: '' },
+      { department: 'Primary Wing Head (I - V)', name: '', phone: '', photoUrl: '' },
+      { department: 'Pre-Primary / Nursery In-Charge', name: '', phone: '', photoUrl: '' },
+      { department: 'Sports & Physical Education Head', name: '', phone: '', photoUrl: '' },
+      { department: 'IT & Digital Systems In-Charge', name: '', phone: '', photoUrl: '' },
+      { department: 'Discipline & Student Welfare Head', name: '', phone: '', photoUrl: '' },
+    ],
+    email: '',
+    phone: '',
+    alternatePhone: '',
+    websiteUrl: '',
+    motto: '',
+    addressLine1: '',
+    city: '',
+    district: '',
+    state: '',
+    postalCode: '',
+    country: 'India',
+  };
+
+  showRoleManagementModal = false;
+  selectedRoleCode = 'TEACHER';
+  rolePermissionsMap: Record<string, string[]> = {};
+  savingRolePermissions = false;
+  roleSearchQuery = '';
+  activeRoleCategory = 'All';
+  roleCategoryList: string[] = [
+    'All',
+    'Core Operations',
+    'Academics & Master Data',
+    'Schedule & Operations',
+    'Assessments & Learning',
+    'Campus Communications',
+    'Finance & Institutional',
+  ];
+
+  get canAccessSettings(): boolean {
+    return this.auth.isSuperAdmin() || this.auth.isSchoolAdmin() || this.auth.isSupportSession();
+  }
+
+  systemRolesList = [
+    { code: 'SCHOOL_ADMIN', name: 'School Administrator', description: 'Full administrative authority across all campus modules', accessLevel: 'Tenant Admin', icon: 'A' },
+    { code: 'PRINCIPAL', name: 'Principal / Head of School', description: 'Academic leadership, compliance, approvals & promotions', accessLevel: 'Leadership', icon: 'P' },
+    { code: 'CLASS_TEACHER', name: 'Class Teacher', description: 'Class roster management, marks entry, attendance & reports', accessLevel: 'Class Scope', icon: 'C' },
+    { code: 'TEACHER', name: 'Faculty / Subject Teacher', description: 'Assigned subject teaching, homework & marks submission', accessLevel: 'Subject Scope', icon: 'T' },
+    { code: 'FEE_MANAGER', name: 'Bursar / Fee Accountant', description: 'Fee collection, receipts, ledger management & wallet operations', accessLevel: 'Finance Scope', icon: 'F' },
+    { code: 'GUARDIAN', name: 'Parent / Guardian', description: 'Student attendance tracking, homework, fee payments & notices', accessLevel: 'Parent Portal', icon: 'G' },
+    { code: 'STUDENT', name: 'Enrolled Student', description: 'Homework submission, timetable, exam marks & circular notices', accessLevel: 'Student Portal', icon: 'E' },
+  ];
+
+  roleSectionsCatalog: RoleSectionItem[] = [
+    {
+      id: 'dashboard',
+      name: 'Dashboard Overview',
+      category: 'Core Operations',
+      description: 'Campus metrics, daily summaries, quick insights, and widgets',
+    },
+    {
+      id: 'academics',
+      name: 'Academics Hub (Main Module)',
+      category: 'Academics & Master Data',
+      description: 'Main academic module hub, student rosters, and curriculum records',
+      isParent: true,
+    },
+    {
+      id: 'academics_classes',
+      name: 'Manage Classes & Sections',
+      category: 'Academics & Master Data',
+      description: 'Configure grade hierarchy, divisions, sections and classroom capacities',
+      parentId: 'academics',
+    },
+    {
+      id: 'academics_students',
+      name: 'Student Admissions & Roster',
+      category: 'Academics & Master Data',
+      description: 'Enrollment registry, student profiles, parent details, promotions & demotions',
+      parentId: 'academics',
+    },
+    {
+      id: 'academics_alumni',
+      name: 'Alumni Directory & Certificates',
+      category: 'Academics & Master Data',
+      description: 'Permanent alumni register, Transfer Certificates (TC), Character Certificates & Alumni IDs',
+      parentId: 'academics',
+    },
+    {
+      id: 'academics_staff',
+      name: 'Faculty & Staff Directory',
+      category: 'Academics & Master Data',
+      description: 'Teaching faculty profiles, department assignments & employment records',
+      parentId: 'academics',
+    },
+    {
+      id: 'academics_subjects',
+      name: 'Curriculum Subjects Master',
+      category: 'Academics & Master Data',
+      description: 'Subject course codes, credit hours, and institutional curriculum mapping',
+      parentId: 'academics',
+    },
+    {
+      id: 'timetable',
+      name: 'Timetable & Schedule (Main Module)',
+      category: 'Schedule & Operations',
+      description: 'Campus daily schedule, bell timings, class routine tables and teacher allocations',
+      isParent: true,
+    },
+    {
+      id: 'timetable_student',
+      name: 'Student / Class Timetable',
+      category: 'Schedule & Operations',
+      description: 'View and manage student class period timetables by grade and section',
+      parentId: 'timetable',
+    },
+    {
+      id: 'timetable_faculty',
+      name: 'Faculty / Teacher Timetable',
+      category: 'Schedule & Operations',
+      description: 'View teacher assignments and faculty routine schedules',
+      parentId: 'timetable',
+    },
+    {
+      id: 'attendance',
+      name: 'Attendance Register',
+      category: 'Schedule & Operations',
+      description: 'Daily student attendance marking, registers & summary reports',
+    },
+    {
+      id: 'homework',
+      name: 'Homework Center',
+      category: 'Assessments & Learning',
+      description: 'Assign homework, track student submissions, attachments & grading',
+    },
+    {
+      id: 'exams',
+      name: 'Exams & Marksheets',
+      category: 'Assessments & Learning',
+      description: 'Exam scheduling, marks entry, grades and report card printing',
+    },
+    {
+      id: 'communication',
+      name: 'Communication & Notices (Main Module)',
+      category: 'Campus Communications',
+      description: 'Broadcast notices, school circulars and parent grievances',
+      isParent: true,
+    },
+    {
+      id: 'communication_notices',
+      name: 'Circulars & Notices',
+      category: 'Campus Communications',
+      description: 'Publish and view announcements, circulars and event alerts',
+      parentId: 'communication',
+    },
+    {
+      id: 'communication_complaints',
+      name: 'Grievance Desk',
+      category: 'Campus Communications',
+      description: 'Manage complaints, inquiries, student/parent grievances',
+      parentId: 'communication',
+    },
+    {
+      id: 'subscription',
+      name: 'Subscription & Wallet',
+      category: 'Finance & Institutional',
+      description: 'SaaS plan billing, SMS quota, payments and institution wallet',
+    },
+  ];
 
   get activeNotifications(): Notice[] {
     return this.notifications.filter((n) => !this.dismissedNoticeIds.has(n.id));
@@ -637,26 +1931,26 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       id: 'dashboard',
       label: 'Dashboard',
       route: '/dashboard',
-      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT', 'FEE_MANAGER'],
     },
     {
       id: 'academics',
       label: 'Academics & Directory',
-      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER'],
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'FEE_MANAGER'],
       expanded: true,
       children: [
-        { label: 'Manage Classes & Sections', route: '/academics', queryParams: { tab: 'classes' } },
-        { label: 'Student Admissions & Roster', route: '/academics', queryParams: { tab: 'students' } },
-        { label: 'Alumni Directory', route: '/academics', queryParams: { tab: 'alumni' } },
-        { label: 'Faculty & Staff Directory', route: '/academics', queryParams: { tab: 'staff' } },
-        { label: 'Curriculum Subjects Master', route: '/academics', queryParams: { tab: 'subjects' } },
+        { id: 'academics_classes', label: 'Manage Classes & Sections', route: '/academics', queryParams: { tab: 'classes' } },
+        { id: 'academics_students', label: 'Student Admissions & Roster', route: '/academics', queryParams: { tab: 'students' } },
+        { id: 'academics_alumni', label: 'Alumni Directory', route: '/academics', queryParams: { tab: 'alumni' } },
+        { id: 'academics_staff', label: 'Faculty & Staff Directory', route: '/academics', queryParams: { tab: 'staff' } },
+        { id: 'academics_subjects', label: 'Curriculum Subjects Master', route: '/academics', queryParams: { tab: 'subjects' } },
       ],
     },
     {
       id: 'subscription',
       label: 'Subscription & Wallet',
       route: '/subscription',
-      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN'],
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'FEE_MANAGER'],
     },
     {
       id: 'timetable',
@@ -665,8 +1959,9 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
       expanded: true,
       children: [
-        { label: 'Student / Class Timetable', route: '/timetable', queryParams: { type: 'student' } },
-        { label: 'Faculty / Teacher Timetable', route: '/timetable', queryParams: { type: 'faculty' } },
+        { id: 'timetable_student', label: 'Student / Class Timetable', route: '/timetable', queryParams: { type: 'student' } },
+        { id: 'timetable_faculty', label: 'Faculty / Teacher Timetable', route: '/timetable', queryParams: { type: 'faculty' } },
+        { id: 'timetable_academic', label: 'Academic Year Timetable & Calendar', route: '/timetable', queryParams: { type: 'academic' } },
       ],
     },
     {
@@ -694,11 +1989,11 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       id: 'communication',
       label: 'Communication & Notices',
       service: 'COMMUNICATION',
-      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT', 'FEE_MANAGER'],
       expanded: false,
       children: [
-        { label: 'Circulars & Notices', route: '/communication' },
-        { label: 'Grievance Desk', route: '/complaints', service: 'COMPLAINTS' },
+        { id: 'communication_notices', label: 'Circulars & Notices', route: '/communication' },
+        { id: 'communication_complaints', label: 'Grievance Desk', route: '/complaints', service: 'COMPLAINTS' },
       ],
     },
   ];
@@ -738,6 +2033,41 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     return `https://ui-avatars.com/api/?name=${name}&background=0f172a&color=ffffff&bold=true&size=128`;
   }
 
+  isMobileUserMenuOpen = false;
+  isMobileSessionsAccordionOpen = false;
+
+  toggleMobileUserMenu(event: Event) {
+    event.stopPropagation();
+    this.isMobileUserMenuOpen = !this.isMobileUserMenuOpen;
+    if (!this.isMobileUserMenuOpen) {
+      this.isMobileSessionsAccordionOpen = false;
+    }
+  }
+
+  toggleMobileSessionsAccordion(event: Event) {
+    event.stopPropagation();
+    this.isMobileSessionsAccordionOpen = !this.isMobileSessionsAccordionOpen;
+  }
+
+  openMobileNotifications(event: Event) {
+    event.stopPropagation();
+    this.isMobileUserMenuOpen = false;
+    this.isNotificationDropdownOpen = true;
+    this.loadNotifications();
+  }
+
+  openMobileSchoolProfile(event: Event) {
+    event.stopPropagation();
+    this.isMobileUserMenuOpen = false;
+    this.openSchoolProfileModal(event);
+  }
+
+  openMobileSessions(event: Event) {
+    event.stopPropagation();
+    this.isMobileUserMenuOpen = false;
+    this.openManageSessionsFromHeader(event);
+  }
+
   currentTime: Date = new Date();
   clockTimer: any = null;
 
@@ -775,8 +2105,12 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       this.auth.currentUser();
       this.filterMenu();
       this.expandActiveGroup();
-      this.loadNotifications();
     });
+  }
+
+  getSchoolLogoUrl(): string | null {
+    const school = this.auth.currentUser()?.school;
+    return school?.logoUrl || school?.logo_url || null;
   }
 
   ngOnInit() {
@@ -847,11 +2181,9 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     this.toastService.success(`Switched active session to "${ses.name}"`);
 
     const currentUrl = this.router.url;
-    if (currentUrl.includes('/academics') || currentUrl.includes('/dashboard')) {
-      this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
-        this.router.navigateByUrl(currentUrl);
-      });
-    }
+    this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
+      this.router.navigateByUrl(currentUrl);
+    });
   }
 
   deleteSession(ses: AcademicSession, event: Event) {
@@ -1047,6 +2379,11 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
           return false;
         }
 
+        // Role-based permissions check:
+        if (!this.auth.isSectionAllowedForUser(g.id)) {
+          return false;
+        }
+
         if (g.roles && !g.roles.includes(userRole)) {
           return false;
         }
@@ -1061,10 +2398,13 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
 
     const result: NavGroup[] = [];
     for (const g of allowedGroups) {
-      // Filter child submenus based on service restrictions (bypassed for Super Admin and Support Admin)
+      // Filter child submenus based on service and role restrictions (bypassed for Super Admin and Support Admin)
       let children = g.children;
       if (children && !isSuper && !isSupport) {
         children = children.filter((c) => {
+          if (c.id && !this.auth.isSectionAllowedForUser(c.id)) {
+            return false;
+          }
           if (c.service && !this.auth.isServiceEnabled(c.service)) {
             return false;
           }
@@ -1093,5 +2433,467 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   exitSupportMode() {
     this.auth.exitSupportSession();
     this.toastService.info('Exited Support Mode. Returned to Platform Console.');
+  }
+
+  // Settings & School Profile & Role Management Methods
+  toggleSettingsDropdown(event: Event) {
+    event.stopPropagation();
+    this.isSettingsDropdownOpen = !this.isSettingsDropdownOpen;
+    if (this.isSettingsDropdownOpen) {
+      this.isNotificationDropdownOpen = false;
+      this.isSessionDropdownOpen = false;
+    }
+  }
+
+  openSchoolProfileModal(event?: Event) {
+    if (event) event.stopPropagation();
+    this.isSettingsDropdownOpen = false;
+
+    if (!this.canAccessSettings) {
+      this.toastService.error('Unauthorized access. Only School Administrators can view or edit school settings.');
+      return;
+    }
+
+    this.schoolProfileActiveTab = 'BASIC';
+    this.showSchoolProfileModal = true;
+    this.loadingSchoolProfile = true;
+
+    const currentSchool = this.auth.currentUser()?.school;
+    this.schoolProfileForm = {
+      id: currentSchool?.id || '',
+      name: currentSchool?.name || 'SchoolSense Academy',
+      code: currentSchool?.code || 'CAMPUS',
+      logoUrl: currentSchool?.logoUrl || currentSchool?.logo_url || '',
+      affiliationBoard: 'CBSE',
+      customBoardName: '',
+      affiliationNumber: '',
+      udiseCode: '',
+      schoolRegistrationNumber: '',
+      startingClass: 'Pre-Nursery / Playgroup',
+      lastClass: 'Class 12',
+      schoolType: 'Co-Educational',
+      schoolShift: 'Regular Day',
+      establishedYear: '2010',
+      directors: [{ name: '', designation: 'Managing Director', phone: '', photoUrl: '' }],
+      principalName: '',
+      principalEmail: '',
+      principalPhone: '',
+      principalPhotoUrl: '',
+      vicePrincipalName: '',
+      vicePrincipalEmail: '',
+      vicePrincipalPhone: '',
+      vicePrincipalPhotoUrl: '',
+      inCharges: [
+        { department: 'Examination & Evaluation In-Charge', name: '', phone: '', photoUrl: '' },
+        { department: 'Senior Wing Head (IX - XII)', name: '', phone: '', photoUrl: '' },
+        { department: 'Middle Wing Head (VI - VIII)', name: '', phone: '', photoUrl: '' },
+        { department: 'Primary Wing Head (I - V)', name: '', phone: '', photoUrl: '' },
+        { department: 'Pre-Primary / Nursery In-Charge', name: '', phone: '', photoUrl: '' },
+        { department: 'Sports & Physical Education Head', name: '', phone: '', photoUrl: '' },
+        { department: 'IT & Digital Systems In-Charge', name: '', phone: '', photoUrl: '' },
+        { department: 'Discipline & Student Welfare Head', name: '', phone: '', photoUrl: '' },
+      ],
+      email: '',
+      phone: '',
+      alternatePhone: '',
+      websiteUrl: '',
+      motto: '',
+      addressLine1: '',
+      city: '',
+      district: '',
+      state: '',
+      postalCode: '',
+      country: 'India',
+    };
+
+    this.api.get<any>('school/profile').subscribe({
+      next: (res) => {
+        this.loadingSchoolProfile = false;
+        if (res) {
+          const rawDirectors = res.directors;
+          const directors = Array.isArray(rawDirectors) && rawDirectors.length > 0 
+            ? rawDirectors.map((d: any) => ({ ...d, photoUrl: d.photoUrl || d.photo_url || '' }))
+            : [{ name: res.director_name || res.directorName || '', designation: 'Managing Director', phone: '', photoUrl: '' }];
+
+          const rawInCharges = res.in_charges || res.inCharges;
+          const inCharges = Array.isArray(rawInCharges) && rawInCharges.length > 0
+            ? rawInCharges.map((inc: any) => ({ ...inc, photoUrl: inc.photoUrl || inc.photo_url || '' }))
+            : this.schoolProfileForm.inCharges;
+
+          this.schoolProfileForm = {
+            id: res.id || currentSchool?.id || '',
+            name: res.name || currentSchool?.name || '',
+            code: res.code || currentSchool?.code || '',
+            logoUrl: res.logo_url || res.logoUrl || currentSchool?.logoUrl || currentSchool?.logo_url || '',
+            affiliationBoard: res.affiliation_board || res.affiliationBoard || 'CBSE',
+            customBoardName: res.custom_board_name || res.customBoardName || '',
+            affiliationNumber: res.affiliation_number || res.affiliationNumber || '',
+            udiseCode: res.udise_code || res.udiseCode || '',
+            schoolRegistrationNumber: res.school_registration_number || res.schoolRegistrationNumber || '',
+            startingClass: res.starting_class || res.startingClass || 'Pre-Nursery / Playgroup',
+            lastClass: res.last_class || res.lastClass || 'Class 12',
+            schoolType: res.school_type || res.schoolType || 'Co-Educational',
+            schoolShift: res.school_shift || res.schoolShift || 'Regular Day',
+            establishedYear: res.established_year || res.establishedYear || '2010',
+            directors: directors,
+            principalName: res.principal_name || res.principalName || '',
+            principalEmail: res.principal_email || res.principalEmail || '',
+            principalPhone: res.principal_phone || res.principalPhone || '',
+            principalPhotoUrl: res.principal_photo_url || res.principalPhotoUrl || '',
+            vicePrincipalName: res.vice_principal_name || res.vicePrincipalName || '',
+            vicePrincipalEmail: res.vice_principal_email || res.vicePrincipalEmail || '',
+            vicePrincipalPhone: res.vice_principal_phone || res.vicePrincipalPhone || '',
+            vicePrincipalPhotoUrl: res.vice_principal_photo_url || res.vicePrincipalPhotoUrl || '',
+            inCharges: inCharges,
+            email: res.email || '',
+            phone: res.phone || '',
+            alternatePhone: res.alternate_phone || res.alternatePhone || '',
+            websiteUrl: res.website_url || res.websiteUrl || res.website || '',
+            motto: res.motto || '',
+            addressLine1: res.address_line1 || res.addressLine1 || '',
+            city: res.city || '',
+            district: res.district || '',
+            state: res.state || '',
+            postalCode: res.postal_code || res.postalCode || '',
+            country: res.country || 'India',
+          };
+        }
+      },
+      error: () => {
+        this.loadingSchoolProfile = false;
+      }
+    });
+  }
+
+  // --- Image Upload Handlers for School Profile ---
+  async onSchoolLogoSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    try {
+      this.uploadingSchoolLogo = true;
+      const url = await this.imageUploadService.processAndUploadImage(file, 'logos', 800, 800, 0.9);
+      this.schoolProfileForm.logoUrl = url;
+      this.toastService.success('School logo processed successfully.');
+    } catch (err: any) {
+      this.toastService.error(err.message || 'Failed to process logo.');
+    } finally {
+      this.uploadingSchoolLogo = false;
+      input.value = '';
+    }
+  }
+
+  removeSchoolLogo() {
+    this.schoolProfileForm.logoUrl = '';
+  }
+
+  async onPrincipalPhotoSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    try {
+      this.uploadingPrincipalPhoto = true;
+      const url = await this.imageUploadService.processAndUploadImage(file, 'staff', 600, 600, 0.85);
+      this.schoolProfileForm.principalPhotoUrl = url;
+      this.toastService.success('Principal photo uploaded.');
+    } catch (err: any) {
+      this.toastService.error(err.message || 'Failed to upload photo.');
+    } finally {
+      this.uploadingPrincipalPhoto = false;
+      input.value = '';
+    }
+  }
+
+  removePrincipalPhoto() {
+    this.schoolProfileForm.principalPhotoUrl = '';
+  }
+
+  async onVicePrincipalPhotoSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    try {
+      this.uploadingVicePrincipalPhoto = true;
+      const url = await this.imageUploadService.processAndUploadImage(file, 'staff', 600, 600, 0.85);
+      this.schoolProfileForm.vicePrincipalPhotoUrl = url;
+      this.toastService.success('Vice Principal photo uploaded.');
+    } catch (err: any) {
+      this.toastService.error(err.message || 'Failed to upload photo.');
+    } finally {
+      this.uploadingVicePrincipalPhoto = false;
+      input.value = '';
+    }
+  }
+
+  removeVicePrincipalPhoto() {
+    this.schoolProfileForm.vicePrincipalPhotoUrl = '';
+  }
+
+  async onDirectorPhotoSelected(event: Event, index: number) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    try {
+      this.uploadingDirectorPhotoIndex = index;
+      const url = await this.imageUploadService.processAndUploadImage(file, 'staff', 600, 600, 0.85);
+      if (this.schoolProfileForm.directors[index]) {
+        this.schoolProfileForm.directors[index].photoUrl = url;
+      }
+      this.toastService.success('Director photo uploaded.');
+    } catch (err: any) {
+      this.toastService.error(err.message || 'Failed to upload photo.');
+    } finally {
+      this.uploadingDirectorPhotoIndex = null;
+      input.value = '';
+    }
+  }
+
+  removeDirectorPhoto(index: number) {
+    if (this.schoolProfileForm.directors[index]) {
+      this.schoolProfileForm.directors[index].photoUrl = '';
+    }
+  }
+
+  async onInChargePhotoSelected(event: Event, index: number) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    try {
+      this.uploadingInChargePhotoIndex = index;
+      const url = await this.imageUploadService.processAndUploadImage(file, 'staff', 600, 600, 0.85);
+      if (this.schoolProfileForm.inCharges[index]) {
+        this.schoolProfileForm.inCharges[index].photoUrl = url;
+      }
+      this.toastService.success('Department In-Charge photo uploaded.');
+    } catch (err: any) {
+      this.toastService.error(err.message || 'Failed to upload photo.');
+    } finally {
+      this.uploadingInChargePhotoIndex = null;
+      input.value = '';
+    }
+  }
+
+  removeInChargePhoto(index: number) {
+    if (this.schoolProfileForm.inCharges[index]) {
+      this.schoolProfileForm.inCharges[index].photoUrl = '';
+    }
+  }
+
+  addDirectorRow() {
+    this.schoolProfileForm.directors.push({ name: '', designation: 'Director', phone: '', photoUrl: '' });
+  }
+
+  removeDirectorRow(index: number) {
+    if (this.schoolProfileForm.directors.length > 1) {
+      this.schoolProfileForm.directors.splice(index, 1);
+    } else {
+      this.schoolProfileForm.directors[0] = { name: '', designation: 'Director', phone: '', photoUrl: '' };
+    }
+  }
+
+  addInChargeRow() {
+    this.schoolProfileForm.inCharges.push({ department: '', name: '', phone: '', photoUrl: '' });
+  }
+
+  removeInChargeRow(index: number) {
+    this.schoolProfileForm.inCharges.splice(index, 1);
+  }
+
+  closeSchoolProfileModal() {
+    this.showSchoolProfileModal = false;
+  }
+
+  saveSchoolProfile() {
+    if (!this.schoolProfileForm.name?.trim() || !this.schoolProfileForm.code?.trim()) {
+      this.toastService.warning('School name and code are required.');
+      return;
+    }
+
+    if (
+      (this.schoolProfileForm.affiliationBoard === 'Other' || this.schoolProfileForm.affiliationBoard === 'State Board') &&
+      !this.schoolProfileForm.customBoardName?.trim()
+    ) {
+      this.toastService.warning('Please specify the custom affiliation board name.');
+      this.schoolProfileActiveTab = 'BASIC';
+      return;
+    }
+
+    this.savingSchoolProfile = true;
+    this.api.put('school/profile', {
+      ...this.schoolProfileForm,
+      logo_url: this.schoolProfileForm.logoUrl,
+      principal_photo_url: this.schoolProfileForm.principalPhotoUrl,
+      vice_principal_photo_url: this.schoolProfileForm.vicePrincipalPhotoUrl,
+    }).subscribe({
+      next: () => {
+        this.savingSchoolProfile = false;
+        this.toastService.success('School profile updated successfully.');
+
+        // Immediately sync the reactive auth signal so the top bar and sidebar update live
+        this.auth.updateCurrentSchool({
+          name: this.schoolProfileForm.name,
+          code: this.schoolProfileForm.code,
+          logoUrl: this.schoolProfileForm.logoUrl,
+          logo_url: this.schoolProfileForm.logoUrl,
+        });
+
+        this.closeSchoolProfileModal();
+      },
+      error: (err: any) => {
+        this.savingSchoolProfile = false;
+        this.toastService.error(err.message || 'Failed to update school profile.');
+      }
+    });
+  }
+
+  // =========================================================================
+  // ROLE & SERVICE PERMISSION MANAGEMENT STUDIO METHODS
+  // =========================================================================
+  openRoleManagementModal(event?: Event) {
+    if (event) event.stopPropagation();
+    this.isSettingsDropdownOpen = false;
+
+    if (!this.canAccessSettings) {
+      this.toastService.error('Unauthorized access. Only School Administrators can manage campus roles.');
+      return;
+    }
+
+    this.selectedRoleCode = 'SCHOOL_ADMIN';
+    this.roleSearchQuery = '';
+    this.activeRoleCategory = 'All';
+
+    // Load active school permissions
+    const schoolId = this.auth.currentUser()?.school?.id || 'default';
+    this.rolePermissionsMap = JSON.parse(JSON.stringify(this.auth.getSchoolRolePermissions(schoolId)));
+    this.showRoleManagementModal = true;
+  }
+
+  closeRoleManagementModal() {
+    this.showRoleManagementModal = false;
+  }
+
+  selectRoleToConfigure(roleCode: string) {
+    this.selectedRoleCode = roleCode;
+  }
+
+  getSelectedRoleObject() {
+    return this.systemRolesList.find((r) => r.code === this.selectedRoleCode) || this.systemRolesList[0];
+  }
+
+  get filteredRoleSections(): RoleSectionItem[] {
+    const q = (this.roleSearchQuery || '').trim().toLowerCase();
+    const cat = this.activeRoleCategory;
+
+    return this.roleSectionsCatalog.filter((sec) => {
+      if (cat !== 'All' && sec.category !== cat) {
+        return false;
+      }
+      if (q) {
+        const nameMatch = sec.name.toLowerCase().includes(q);
+        const descMatch = sec.description.toLowerCase().includes(q);
+        const catMatch = sec.category.toLowerCase().includes(q);
+        return nameMatch || descMatch || catMatch;
+      }
+      return true;
+    });
+  }
+
+  isSectionEnabled(sectionId: string): boolean {
+    const list = this.rolePermissionsMap[this.selectedRoleCode];
+    if (!list) return false;
+    return list.includes(sectionId);
+  }
+
+  isParentDisabled(parentId?: string): boolean {
+    if (!parentId) return false;
+    return !this.isSectionEnabled(parentId);
+  }
+
+  toggleSectionPermission(section: RoleSectionItem) {
+    if (!this.rolePermissionsMap[this.selectedRoleCode]) {
+      this.rolePermissionsMap[this.selectedRoleCode] = [...(DEFAULT_ROLE_PERMISSIONS[this.selectedRoleCode] || [])];
+    }
+
+    const currentList = new Set(this.rolePermissionsMap[this.selectedRoleCode]);
+    const isCurrentlyEnabled = currentList.has(section.id);
+
+    if (isCurrentlyEnabled) {
+      // Disabling section
+      currentList.delete(section.id);
+
+      // If it's a parent, also disable all children
+      if (section.isParent) {
+        this.roleSectionsCatalog
+          .filter((s) => s.parentId === section.id)
+          .forEach((child) => currentList.delete(child.id));
+      }
+    } else {
+      // Enabling section
+      currentList.add(section.id);
+
+      // If it has a parent, also ensure the parent is enabled
+      if (section.parentId) {
+        currentList.add(section.parentId);
+      }
+    }
+
+    this.rolePermissionsMap[this.selectedRoleCode] = Array.from(currentList);
+  }
+
+  grantAllForRole() {
+    this.rolePermissionsMap[this.selectedRoleCode] = this.roleSectionsCatalog.map((s) => s.id);
+    this.toastService.info(`Granted access to all modules for ${this.getSelectedRoleObject()?.name}.`);
+  }
+
+  revokeAllForRole() {
+    this.rolePermissionsMap[this.selectedRoleCode] = ['dashboard'];
+    this.toastService.info(`Restricted all optional modules for ${this.getSelectedRoleObject()?.name}.`);
+  }
+
+  resetRoleToDefaults() {
+    const defaults = DEFAULT_ROLE_PERMISSIONS[this.selectedRoleCode] || [];
+    this.rolePermissionsMap[this.selectedRoleCode] = [...defaults];
+    this.toastService.info(`Reset ${this.getSelectedRoleObject()?.name} to standard institutional defaults.`);
+  }
+
+  getEnabledCountForRole(roleCode: string): number {
+    const list = this.rolePermissionsMap[roleCode] || this.auth.getSchoolRolePermissions()[roleCode] || DEFAULT_ROLE_PERMISSIONS[roleCode] || [];
+    return this.roleSectionsCatalog.filter((s) => list.includes(s.id)).length;
+  }
+
+  saveRolePermissions() {
+    if (!this.canAccessSettings) {
+      this.toastService.error('Unauthorized: You do not have permission to modify role settings.');
+      return;
+    }
+
+    if (this.selectedRoleCode === 'SUPER_ADMIN' || this.selectedRoleCode === 'PLATFORM_ADMIN') {
+      this.toastService.error('Super Admin is the platform developer authority and cannot be modified.');
+      return;
+    }
+
+    const schoolId = this.auth.currentUser()?.school?.id || 'default';
+    this.savingRolePermissions = true;
+
+    // Persist to storage & api
+    this.auth.saveSchoolRolePermissions(schoolId, this.selectedRoleCode, this.rolePermissionsMap[this.selectedRoleCode]);
+
+    this.api.put('school/role-permissions', { schoolId, permissions: this.rolePermissionsMap }).subscribe({
+      next: () => {
+        this.savingRolePermissions = false;
+        this.auth.rolePermissions.set({ ...this.rolePermissionsMap });
+        this.filterMenu();
+        this.toastService.success(`Role permissions updated successfully for ${this.getSelectedRoleObject()?.name}.`);
+        this.closeRoleManagementModal();
+      },
+      error: () => {
+        // Even if remote endpoint fails, local signal has been set
+        this.savingRolePermissions = false;
+        this.auth.rolePermissions.set({ ...this.rolePermissionsMap });
+        this.filterMenu();
+        this.toastService.success(`Role permissions updated successfully.`);
+        this.closeRoleManagementModal();
+      },
+    });
   }
 }

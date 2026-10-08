@@ -6,11 +6,15 @@ export interface User {
   lastName?: string;
   role: 'SCHOOL_ADMIN' | 'PRINCIPAL' | 'TEACHER' | 'CLASS_TEACHER' | 'GUARDIAN' | 'FEE_MANAGER' | string;
   roleName: string;
+  avatarUrl?: string;
+  photoUrl?: string;
   school?: {
     id: string;
     name: string;
     code: string;
     status?: string;
+    logoUrl?: string;
+    logo_url?: string;
     disabledServices?: string[];
   };
   isSupportSession?: boolean;
@@ -53,17 +57,107 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface TeacherStudentGuardian {
+  name: string;
+  relationship: string;
+  phone: string;
+  isPrimary: boolean;
+}
+
+export interface TeacherStudentItem {
+  id: string;
+  admissionNumber: string;
+  rollNumber?: string | number;
+  firstName: string;
+  lastName?: string;
+  fullName: string;
+  gender?: string;
+  photoUrl?: string;
+  todayAttendance?: 'PRESENT' | 'ABSENT' | 'LATE' | 'HALF_DAY' | 'UNMARKED';
+  guardians: TeacherStudentGuardian[];
+}
+
+export interface TeacherTimetablePeriod {
+  id: string;
+  periodNumber: number;
+  startTime: string;
+  endTime: string;
+  classId: string;
+  className: string;
+  sectionId: string;
+  sectionName: string;
+  subjectId: string;
+  subjectName: string;
+  subjectCode?: string;
+  roomNumber?: string;
+}
+
+export interface TeacherSubjectAssignment {
+  classId: string;
+  className: string;
+  sectionId: string;
+  sectionName: string;
+  subjectId: string;
+  subjectName: string;
+  subjectCode?: string;
+}
+
+export interface TeacherDashboardData {
+  isClassTeacher: boolean;
+  classTeacherSection?: {
+    sectionId: string;
+    sectionName: string;
+    classId: string;
+    className: string;
+  } | null;
+  assignedClassStrength?: {
+    activeStudents: number;
+    inactiveStudents: number;
+    totalStudents: number;
+  };
+  todayClassAttendance?: {
+    isMarked: boolean;
+    percentage: string;
+    presentCount: number;
+    absentCount: number;
+    lateCount: number;
+    totalCount: number;
+  };
+  classStudents: TeacherStudentItem[];
+  todayTimetable: TeacherTimetablePeriod[];
+  subjectAssignments: TeacherSubjectAssignment[];
+}
+
 export interface DashboardStats {
   stats: {
     totalStudents: number;
+    activeStudents?: number;
+    inactiveStudents?: number;
     totalClasses: number;
     totalTeachers: number;
     attendanceTodayPercentage: string;
     attendanceMarkedCount: number;
     pendingComplaints: number;
+    roleCounts?: Record<string, number>;
+  };
+  campusInfo?: {
+    id: string;
+    name: string;
+    code: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    logoUrl?: string;
+    status?: string;
+    activeSession?: any;
+    activeSessionId?: string;
   };
   recentNotices: Notice[];
   upcomingExams: Exam[];
+  teacherData?: TeacherDashboardData;
+  parentData?: any;
 }
 
 export interface AcademicSession {
@@ -82,16 +176,31 @@ export interface AcademicSession {
 export interface AlumniStudent {
   student_id: string;
   admission_number: string;
+  alumni_number?: string;
   first_name: string;
   last_name?: string;
   full_name: string;
+  photoUrl?: string;
+  photo_url?: string;
   gender?: string;
   date_of_birth?: string;
+  dateOfBirth?: string;
+  blood_group?: string;
   status: string;
   last_class_name?: string;
   last_section_name?: string;
   graduation_session?: string;
   last_roll_number?: string | number;
+  admission_date?: string;
+  admission_class_name?: string;
+  leaving_date?: string;
+  leaving_reason?: string;
+  tc_number?: string;
+  tc_issue_date?: string;
+  character_cert_number?: string;
+  alumni_cert_number?: string;
+  conduct?: string;
+  remarks?: string;
   primary_contact?: {
     first_name?: string;
     last_name?: string;
@@ -101,12 +210,37 @@ export interface AlumniStudent {
   };
 }
 
+export interface StudentLifecycleLog {
+  id: string;
+  student_id: string;
+  event_type: 'ADMISSION' | 'PROMOTION' | 'SECTION_CHANGE' | 'DEMOTION' | 'STATUS_CHANGE' | 'ALUMNI_GRADUATION' | 'TC_ISSUED' | 'CERTIFICATE_GENERATED';
+  title: string;
+  description: string;
+  academic_session?: string;
+  class_name?: string;
+  section_name?: string;
+  roll_number?: string | number;
+  status?: string;
+  tc_number?: string;
+  alumni_number?: string;
+  performed_by_name?: string;
+  timestamp: string;
+  metadata?: Record<string, any>;
+}
+
 export interface ClassItem {
   id: string;
   name: string;
   code: string;
   display_order: number;
-  sections: SectionItem[];
+  displayOrder?: number;
+  status?: string;
+  sectionCount?: number;
+  totalCapacity?: number;
+  subjectCount?: number;
+  enrolledCount?: number;
+  sections?: SectionItem[];
+  subjects?: SubjectItem[];
 }
 
 export interface SectionItem {
@@ -116,9 +250,11 @@ export interface SectionItem {
   name: string;
   code: string;
   capacity: number;
+  enrolled_count?: number;
   display_order: number;
   class_teacher_id?: string | null;
   class?: ClassItem;
+  subjects?: SubjectItem[];
   _count?: {
     student_enrollments: number;
   };
@@ -130,6 +266,12 @@ export interface SubjectItem {
   code: string;
   subject_type: string;
   display_order: number;
+  description?: string;
+  class_id?: string;
+  class_name?: string;
+  section_ids?: string[];
+  section_names?: string[];
+  is_all_sections?: boolean;
 }
 
 export interface StudentItem {
@@ -140,12 +282,18 @@ export interface StudentItem {
   firstName: string;
   lastName?: string;
   fullName: string;
+  photoUrl?: string;
+  photo_url?: string;
+  guardianPhotoUrl?: string;
   rollNumber?: number | string;
   gender?: string;
   bloodGroup?: string;
   dob?: string;
+  dateOfBirth?: string;
   className: string;
   sectionName: string;
+  classId?: string;
+  sectionId?: string;
   primaryContact?: {
     first_name?: string;
     last_name?: string;
@@ -153,24 +301,41 @@ export interface StudentItem {
     email?: string;
     name?: string;
     relationship?: string;
+    photoUrl?: string;
   };
   status?: string;
+  activeHours?: number;
+  activeDays?: number;
+  activeTimeFormatted?: string;
+  isBillable?: boolean;
   guardians?: {
     name: string;
     relationship?: string;
     phone?: string;
     email?: string;
+    photoUrl?: string;
   }[];
 }
 
 export interface StudentDeactivationRequest {
   id: string;
   school_id: string;
+  request_type?: 'PROMOTION' | 'DEMOTION' | 'SECTION_CHANGE' | 'ALUMNI' | 'INACTIVE' | 'SUSPENDED' | 'LEFTOUT' | string;
   student_id: string;
   student_name: string;
   admission_number: string;
+  class_id?: string;
   class_name: string;
+  section_id?: string;
   section_name: string;
+  target_class_id?: string;
+  target_class_name?: string;
+  target_section_id?: string;
+  target_section_name?: string;
+  target_roll_number?: string;
+  target_status?: string;
+  passing_session?: string;
+  leaving_certificate_number?: string;
   requested_by_user_id: string;
   requested_by_name: string;
   requested_by_role?: string;
@@ -184,24 +349,41 @@ export interface StudentDeactivationRequest {
   created_at: string;
 }
 
+export interface AttendanceConfig {
+  frequency: 'ONCE_DAILY' | 'TWICE_DAILY';
+  isConfigured: boolean;
+  updatedAt?: string;
+}
+
 export interface AttendanceStudent {
   studentId: string;
   rollNumber: string | number;
   admissionNumber: string;
   name: string;
   status: 'PRESENT' | 'ABSENT' | 'LATE' | 'HALF_DAY' | 'EXCUSED' | 'NOT_MARKED';
+  session?: 'MORNING' | 'AFTERNOON';
   reason?: string | null;
   markedAt?: string | null;
+  markedByName?: string | null;
+  markedByRole?: string | null;
 }
 
 export interface AttendanceRegisterResponse {
   sectionId: string;
   date: string;
+  session?: 'MORNING' | 'AFTERNOON' | 'FULL_DAY';
+  frequency?: 'ONCE_DAILY' | 'TWICE_DAILY';
+  classTeacherName?: string;
+  isMarked?: boolean;
+  lastMarkedAt?: string | null;
+  lastMarkedByName?: string | null;
+  lastMarkedByRole?: string | null;
   summary: {
     totalStudents: number;
     presentCount: number;
     absentCount: number;
     lateCount: number;
+    halfDayCount?: number;
     attendancePercentage: string;
   };
   register: AttendanceStudent[];
@@ -374,6 +556,9 @@ export interface StudentBillingBreakdownItem {
   student_name: string;
   enrollment_date: string;
   status: string;
+  active_hours?: number;
+  active_time_formatted?: string;
+  is_billable?: boolean;
   class_name?: string;
   section_name?: string;
   student_fee: number;
@@ -381,6 +566,11 @@ export interface StudentBillingBreakdownItem {
 }
 
 export interface SubscriptionDetailsResponse {
+  school_id: string;
+  academic_year_id?: string;
+  current_session_name?: string;
+  active_students: number;
+  estimated_monthly_fee: number;
   subscription: SchoolSubscription;
   wallet: SchoolWallet;
   stats: {
@@ -392,6 +582,9 @@ export interface SubscriptionDetailsResponse {
 
 export interface MonthlyCalculationResponse {
   school_id: string;
+  academic_year_id?: string;
+  current_session_name?: string;
+  all_students_count?: number;
   per_student_rate: number;
   total_students: number;
   total_calculated_fee: number;
@@ -399,3 +592,36 @@ export interface MonthlyCalculationResponse {
   cycle_month: string;
   students_breakdown: StudentBillingBreakdownItem[];
 }
+
+export interface VisualEmailTemplateConfig {
+  subject: string;
+  headerTitle: string;
+  headerSubtitle: string;
+  greeting: string;
+  openingMessage: string;
+  showDetailsCard: boolean;
+  detailsCardTitle: string;
+  showCredentialsBox: boolean;
+  credentialsBoxTitle: string;
+  credentialsNote: string;
+  buttonText: string;
+  showKeyFeatures: boolean;
+  keyFeaturesTitle: string;
+  keyFeaturesList: string[];
+  closingMessage: string;
+  footerNote: string;
+}
+
+export interface OnboardingEmailTemplateItem {
+  subject: string;
+  bodyHtml: string;
+  visualConfig?: VisualEmailTemplateConfig;
+  config?: VisualEmailTemplateConfig;
+}
+
+export interface OnboardingEmailTemplates {
+  parentWelcome: OnboardingEmailTemplateItem;
+  teacherWelcome: OnboardingEmailTemplateItem;
+  updatedAt?: string;
+}
+

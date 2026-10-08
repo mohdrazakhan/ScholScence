@@ -10,13 +10,25 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const toast = inject(ToastService);
   const token = authService.getToken();
+  const currentUser = authService.currentUser();
+  const schoolId = currentUser?.school?.id || '';
 
-  const authReq = token
-    ? req.clone({
-        setHeaders: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  if (schoolId) {
+    headers['x-tenant-id'] = schoolId;
+  }
+  if (currentUser?.id) {
+    headers['x-user-id'] = currentUser.id;
+  }
+  if (currentUser?.role) {
+    headers['x-user-role'] = currentUser.role;
+  }
+
+  const authReq = Object.keys(headers).length > 0
+    ? req.clone({ setHeaders: headers })
     : req;
 
   console.log(`📡 [API Call OUT] ${authReq.method} ${authReq.urlWithParams}`);

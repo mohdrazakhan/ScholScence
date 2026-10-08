@@ -5,11 +5,25 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class DashboardService {
   constructor(private prisma: PrismaService) {}
 
-  async getAdminDashboard(schoolId: string) {
+  async getAdminDashboard(schoolId: string, academicYearId?: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    const studentCountPromise = academicYearId
+      ? this.prisma.studentEnrollment.count({
+          where: {
+            academic_year_id: academicYearId,
+            status: 'ACTIVE',
+            deleted_at: null,
+          },
+        })
+      : this.prisma.student.count({
+          where: { school_id: schoolId, status: 'ACTIVE', deleted_at: null },
+        });
+
     const [
+      schoolData,
+      academicSession,
       totalStudents,
       totalClasses,
       totalTeachers,
@@ -18,16 +32,32 @@ export class DashboardService {
       recentNotices,
       upcomingExams,
     ] = await Promise.all([
-      this.prisma.student.count({
-        where: { school_id: schoolId, status: 'ACTIVE', deleted_at: null },
+      this.prisma.school.findUnique({
+        where: { id: schoolId },
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          email: true,
+          phone: true,
+          address_line1: true,
+          address_line2: true,
+          city: true,
+          state: true,
+          status: true,
+        },
       }),
+      academicYearId
+        ? this.prisma.academicYear.findUnique({ where: { id: academicYearId } })
+        : this.prisma.academicYear.findFirst({ where: { school_id: schoolId, is_current: true } }),
+      studentCountPromise,
       this.prisma.class.count({
         where: { school_id: schoolId, status: 'ACTIVE', deleted_at: null },
       }),
       this.prisma.userSchoolRole.count({
         where: {
           school_id: schoolId,
-          role: { code: 'TEACHER' },
+          role: { code: { in: ['TEACHER', 'CLASS_TEACHER', 'SCHOOL_ADMIN', 'PRINCIPAL', 'STAFF', 'FEE_MANAGER'] } },
           status: 'ACTIVE',
           deleted_at: null,
         },
@@ -74,11 +104,36 @@ export class DashboardService {
     return {
       stats: {
         totalStudents,
+        activeStudents: totalStudents,
+        inactiveStudents: 0,
         totalClasses,
         totalTeachers: totalTeachers ?? 0,
         attendanceTodayPercentage: attendancePercentage,
         attendanceMarkedCount: totalMarked,
         pendingComplaints,
+      },
+      campusInfo: {
+        id: schoolData?.id || schoolId,
+        name: schoolData?.name || 'SchoolSense Academy',
+        code: schoolData?.code || 'CAMPUS-01',
+        email: schoolData?.email || '',
+        phone: schoolData?.phone || '',
+        address: schoolData?.address_line1 || '',
+        city: schoolData?.city || '',
+        state: schoolData?.state || '',
+        logoUrl: (() => {
+          if (schoolData?.address_line2 && schoolData.address_line2.startsWith('{')) {
+            try {
+              return JSON.parse(schoolData.address_line2)?.logo_url || '';
+            } catch {
+              return '';
+            }
+          }
+          return '';
+        })(),
+        status: schoolData?.status || 'ONLINE',
+        activeSession: academicSession?.name || '2026–2027',
+        activeSessionId: academicSession?.id || '',
       },
       recentNotices,
       upcomingExams,
@@ -207,16 +262,16 @@ export class DashboardService {
     };
   }
 
-  async getOverview(schoolId: string, user: any) {
+  async getOverview(schoolId: string, user: any, academicYearId?: string) {
     const role = user?.role || '';
     if (role === 'GUARDIAN' || role === 'PARENT') {
       const parentData = await this.getParentDashboard(schoolId, user.userId);
-      const adminData = await this.getAdminDashboard(schoolId);
+      const adminData = await this.getAdminDashboard(schoolId, academicYearId);
       return {
         ...adminData,
         parentData,
       };
     }
-    return this.getAdminDashboard(schoolId);
+    return this.getAdminDashboard(schoolId, academicYearId);
   }
 }
