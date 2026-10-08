@@ -207,6 +207,7 @@ export class FeaturesComponent {
     'Live daily attendance the moment roll call happens',
     'Exam marks, results and report cards as soon as they are published',
     'Fee invoices, receipts and fines always available on the phone',
+    'Emergency alerts — urgent school messages reach you in seconds',
     'Raise complaints, follow every reply and see the status until resolved',
     'Notices, school events and holiday updates instantly',
     "Today's timetable — no morning confusion about books",

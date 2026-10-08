@@ -5,6 +5,8 @@ import { FeaturesComponent } from './public/features.component';
 import { PricingComponent } from './public/pricing.component';
 import { AboutComponent } from './public/about.component';
 import { ContactComponent } from './public/contact.component';
+import { BlogListComponent } from './public/blog/blog-list.component';
+import { BlogPostComponent } from './public/blog/blog-post.component';
 import { MainLayoutComponent } from './layout/main-layout.component';
 import { LoginComponent } from './features/auth/login.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
@@ -40,6 +42,8 @@ export const routes: Routes = [
       { path: 'contact', component: ContactComponent },
       { path: 'contact-us', redirectTo: 'contact', pathMatch: 'full' },
       { path: 'book-demo', redirectTo: 'contact', pathMatch: 'full' },
+      { path: 'blog', component: BlogListComponent },
+      { path: 'blog/:slug', component: BlogPostComponent },
     ],
   },
 

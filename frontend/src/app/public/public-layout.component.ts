@@ -138,6 +138,7 @@ import { AuthService } from '../core/services/auth.service';
               <h3 class="text-sm font-bold uppercase tracking-wider text-white">Company</h3>
               <ul class="mt-4 space-y-2.5 text-sm">
                 <li><a routerLink="/about" class="transition-colors hover:text-white">About Us</a></li>
+                <li><a routerLink="/blog" class="transition-colors hover:text-white">Blog</a></li>
                 <li><a routerLink="/contact" class="transition-colors hover:text-white">Contact</a></li>
                 <li><a routerLink="/contact?type=feature" class="transition-colors hover:text-white">Request a Feature</a></li>
               </ul>
@@ -171,6 +172,7 @@ export class PublicLayoutComponent {
     { path: '/features', label: 'Features' },
     { path: '/pricing', label: 'Pricing' },
     { path: '/about', label: 'About Us' },
+    { path: '/blog', label: 'Blog' },
     { path: '/contact', label: 'Contact' },
   ];
 

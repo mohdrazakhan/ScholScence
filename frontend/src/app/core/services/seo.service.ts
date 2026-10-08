@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { Title, Meta } from '@angular/platform-browser';
 
 /**
@@ -23,13 +24,16 @@ export interface PageSeo {
 /**
  * Central per-page SEO: title, description, canonical, Open Graph,
  * Twitter cards and page-specific JSON-LD structured data.
- * During static prerendering these values are baked into each page's HTML,
- * which is what search engines crawl.
+ *
+ * Uses the injected DOCUMENT token (not the global `document`) so it works
+ * identically in the browser and during static prerendering — the values get
+ * baked into each page's HTML, which is what search engines crawl.
  */
 @Injectable({ providedIn: 'root' })
 export class SeoService {
   private titleService = inject(Title);
   private meta = inject(Meta);
+  private doc = inject(DOCUMENT);
 
   setPage(seo: PageSeo): void {
     const fullTitle = seo.title.includes(SITE_NAME) ? seo.title : `${seo.title} | ${SITE_NAME}`;
@@ -60,27 +64,24 @@ export class SeoService {
     this.setJsonLd(seo.jsonLd || []);
   }
 
+  /** Replaces any existing canonical links so exactly one correct URL is emitted. */
   private setCanonical(url: string): void {
-    if (typeof document === 'undefined') return;
-    let link = document.querySelector("link[rel='canonical']") as HTMLLinkElement | null;
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'canonical';
-      document.head.appendChild(link);
-    }
+    this.doc.querySelectorAll("link[rel='canonical']").forEach((el) => el.remove());
+    const link = this.doc.createElement('link');
+    link.setAttribute('rel', 'canonical');
     link.setAttribute('href', url);
+    this.doc.head.appendChild(link);
   }
 
   /** Removes page-specific JSON-LD from the previous page, then adds the new blocks. */
   private setJsonLd(blocks: object[]): void {
-    if (typeof document === 'undefined') return;
-    document.querySelectorAll('script[data-page-jsonld="true"]').forEach((el) => el.remove());
+    this.doc.querySelectorAll('script[data-page-jsonld="true"]').forEach((el) => el.remove());
     blocks.forEach((obj) => {
-      const script = document.createElement('script');
-      script.type = 'application/ld+json';
+      const script = this.doc.createElement('script');
+      script.setAttribute('type', 'application/ld+json');
       script.setAttribute('data-page-jsonld', 'true');
       script.textContent = JSON.stringify(obj);
-      document.head.appendChild(script);
+      this.doc.head.appendChild(script);
     });
   }
 }
