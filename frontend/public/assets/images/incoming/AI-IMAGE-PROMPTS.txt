@@ -1,0 +1,174 @@
+================================================================
+  SchoolSense — AI IMAGE GENERATION PROMPTS
+================================================================
+Generate each image, save it with the EXACT filename shown, and
+drop it into:  frontend/public/assets/images/incoming/
+
+WHICH TOOL
+  - Best quality:  Midjourney (add " --ar 16:9 --style raw" at the end)
+  - Free + easy:   Bing Image Creator / ChatGPT (DALL-E), Leonardo.ai,
+                   Ideogram, Adobe Firefly, Playground AI
+  - For vertical phone mockups: ask for "9:16 portrait"
+
+GLOBAL STYLE SUFFIX — paste this at the END of EVERY prompt below:
+  "photorealistic, natural daylight, bright and airy, warm and
+   welcoming, authentic candid moment, shallow depth of field,
+   professional education marketing photography, Indian school
+   setting, high resolution, no text, no logos, no watermarks"
+
+GLOBAL NEGATIVE PROMPT (paste into the "negative" box if the tool has one):
+  "text, words, letters, watermark, logo, brand names, western
+   classroom, blonde, caucasian, european architecture, american
+   school bus, dark moody lighting, blurry faces, extra fingers,
+   deformed hands, stock-photo cheesiness"
+
+----------------------------------------------------------------
+  1. HERO IMAGE  ->  1-hero-classroom.jpg     (landscape 16:9)
+----------------------------------------------------------------
+PROMPT:
+Photorealistic wide shot inside a bright Indian school classroom.
+Indian students aged 10-13 in neat navy-blue and white school
+uniforms sitting at wooden desks, smiling and working on tablets
+and notebooks. A friendly Indian female teacher in a saree or
+salwar kameez stands beside them, leaning in to help and pointing
+at a tablet screen. Colourful student artwork and a blackboard
+with chalk writing on the walls. Large windows with soft natural
+daylight. Warm, joyful, welcoming mood.
+
+----------------------------------------------------------------
+  2. SCHOOL LIBRARY  ->  2-school-library.jpg   (landscape 16:9)
+----------------------------------------------------------------
+PROMPT:
+Photorealistic interior of a school library in India. Indian
+students in school uniforms aged 12-16 reading books and studying
+at long wooden tables. Bookshelves filled with colourful books
+along the walls. An Indian librarian in a saree helping a student
+find a book. Warm wooden furniture, bright natural window light,
+calm and studious atmosphere.
+
+----------------------------------------------------------------
+  3. PRINCIPAL / SCHOOL OWNER  ->  3-principal-office.jpg  (16:9)
+----------------------------------------------------------------
+PROMPT:
+Photorealistic portrait of a confident Indian school principal, a
+woman in her late 40s wearing an elegant saree, sitting at a
+neat wooden desk in a well-lit school office. She is smiling while
+working on a silver laptop, one hand on the keyboard. Behind her a
+shelf with books and framed school certificates on the wall. Warm
+natural daylight from a window, professional and approachable mood.
+No readable text on the laptop screen.
+
+----------------------------------------------------------------
+  4. PARENT CONNECT  ->  4-parent-connect.jpg    (landscape 16:9)
+----------------------------------------------------------------
+PROMPT:
+Photorealistic candid photo of an Indian parent, a father in his
+30s wearing a simple shirt, standing in a modest Indian home
+holding a smartphone and smiling while looking at the screen.
+A child aged 8-10 in school uniform sits nearby at a table doing
+homework with books and notebooks. Warm natural daylight from a
+window, homely and warm atmosphere, authentic Indian household.
+No readable text on the phone screen.
+
+----------------------------------------------------------------
+  5. STUDENT STUDYING  ->  5-student-studying.jpg  (landscape 16:9)
+----------------------------------------------------------------
+PROMPT:
+Photorealistic close-up of an Indian schoolgirl aged 12 in a
+neat school uniform, sitting at a wooden desk writing carefully in
+an open notebook with a pencil. Notebooks, a geometry box and a
+water bottle on the desk. Soft natural window light falling on her
+face, focused and cheerful expression. Blurred bright classroom
+background.
+
+----------------------------------------------------------------
+  6. TEACHER IN CLASSROOM  ->  6-teacher-classroom.jpg  (16:9)
+----------------------------------------------------------------
+PROMPT:
+Photorealistic photo of an Indian female teacher in her 30s wearing
+a saree, standing at the front of a classroom teaching and smiling
+warmly. She points at a blackboard while Indian students in school
+uniforms watch attentively from their wooden desks, some raising
+their hands. Bright Indian classroom with colourful charts on the
+walls, natural daylight, lively and engaging atmosphere.
+
+----------------------------------------------------------------
+  7. SCHOOL BUILDING  ->  7-school-building.jpg   (landscape 16:9)
+----------------------------------------------------------------
+PROMPT:
+Photorealistic exterior of a modern Indian school building on a
+sunny day. Clean two-storey cream and terracotta coloured building
+with large windows, a wide entrance, small landscaped garden and
+trees, an Indian flag on a flagpole at the front. Blue sky with
+light clouds. Neat and welcoming campus, no people in the
+foreground, no signage or readable text on the building.
+
+================================================================
+  8. APP SCREEN IMAGES (for the mobile app mockups)
+     These replace the in-page mockups if you want real-looking
+     app screenshots. Save as shown below.
+================================================================
+
+  8a. PARENT APP SCREEN  ->  8a-parent-app-screen.jpg
+      (PORTRAIT 9:16 — phone screen aspect)
+
+PROMPT:
+Clean mobile app UI design for a school parent app, portrait phone
+screen. Top bar with the student's name "Aarav Sharma" and class
+"Class 5-A". Below it a vertical timeline of notification cards,
+each with a small coloured icon on the left: a green check icon
+"Aarav marked Present - 8:02 AM", a blue book icon "Maths homework
+due Friday", a purple document icon "Unit Test 2 marks published",
+an amber wallet icon "Fee receipt paid", a red megaphone icon
+"Notice: Annual Day on 18th". White cards on a soft light-grey
+background, rounded corners, subtle shadows, modern flat design,
+clean sans-serif font, blue accent colour.
+NOTE: this one is a UI illustration, so tool text is fine here.
+
+  8b. TEACHER APP SCREEN  ->  8b-teacher-app-screen.jpg
+      (PORTRAIT 9:16)
+
+PROMPT:
+Clean mobile app UI design for a school teacher app, portrait phone
+screen. Top bar reading "Class 5-A - Today" with a badge "42/45".
+Below, a 2x2 grid of rounded action tiles each with an icon and
+label: "Mark Attendance", "Post Homework", "Enter Marks", "Send
+Notice". Under the grid, a card showing a parent complaint titled
+"Fee concern - Riya, 5-A" with an amber "IN PROGRESS" status pill.
+White cards on a soft light-grey background, rounded corners,
+subtle shadows, modern flat design, clean sans-serif font, blue
+accent colour.
+
+================================================================
+  OPTIONAL EXTRAS (only if you want more imagery)
+================================================================
+
+  9. SCHOOL ASSEMBLY  ->  9-school-assembly.jpg   (16:9)
+PROMPT:
+Photorealistic wide shot of a morning assembly at an Indian school.
+Indian students in uniform standing in neat rows on the school
+ground, an Indian flag on a pole in the centre, teachers in sarees
+standing to one side. Bright morning sunlight, blue sky, energetic
+and orderly atmosphere, no readable text.
+
+  10. HAPPY INDIAN STUDENT PORTRAIT  ->  10-student-portrait.jpg
+PROMPT:
+Photorealistic warm portrait of a happy Indian schoolboy aged 11 in
+a school uniform with a backpack, smiling at the camera against a
+softly blurred bright school corridor background. Natural daylight,
+friendly and confident expression.
+
+================================================================
+  AFTER GENERATING
+================================================================
+1. Save each file with the exact name above in:
+     frontend/public/assets/images/incoming/
+2. Landscape images: aim for 1600x900 px or larger.
+   App screens: 1080x1920 px.
+   File size under ~800 KB each is ideal.
+3. Tell me "images are in" and I will:
+     - resize/compress them for fast loading
+     - wire them into every page
+     - write proper SEO alt text
+     - delete the old non-Indian photos
+================================================================

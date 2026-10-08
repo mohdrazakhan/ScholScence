@@ -2,9 +2,10 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, RouterLink } from '@angular/router';
 import { SeoService } from '../core/services/seo.service';
+import { VectorArtComponent } from './vector-art.component';
 
 interface Value {
-  emoji: string;
+  art: string;
   title: string;
   detail: string;
 }
@@ -12,7 +13,7 @@ interface Value {
 @Component({
   selector: 'app-about',
   standalone: true,
-  imports: [CommonModule, RouterModule, RouterLink],
+  imports: [CommonModule, RouterModule, RouterLink, VectorArtComponent],
   template: `
     <!-- Hero -->
     <section class="bg-gradient-to-b from-blue-50/70 to-white py-14 sm:py-20">
@@ -56,8 +57,8 @@ interface Value {
             </div>
           </div>
           <div class="rounded-3xl bg-slate-50 p-8 ring-1 ring-slate-200">
-            <img src="/assets/images/slider_leadership.jpg"
-                 alt="School leadership team working together"
+            <img src="/assets/images/academics_timetable.jpg"
+                 alt="School leadership planning the academic timetable"
                  class="w-full rounded-2xl object-cover shadow-md"
                  width="800" height="600" loading="lazy" />
           </div>
@@ -73,7 +74,7 @@ interface Value {
         </h2>
         <div class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <div *ngFor="let v of values" class="rounded-2xl border border-slate-200 bg-white p-6">
-            <span class="text-3xl" aria-hidden="true">{{ v.emoji }}</span>
+            <app-vector-art [name]="v.art" class="h-16 w-16" />
             <h3 class="mt-3 text-base font-bold text-slate-900">{{ v.title }}</h3>
             <p class="mt-2 text-sm leading-relaxed text-slate-600">{{ v.detail }}</p>
           </div>
@@ -86,8 +87,8 @@ interface Value {
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="grid items-center gap-10 lg:grid-cols-2">
           <div class="order-2 rounded-3xl bg-slate-50 p-8 ring-1 ring-slate-200 lg:order-1">
-            <img src="/assets/images/slider_classroom.jpg"
-                 alt="Teacher using SchoolSense in a classroom"
+            <img src="/assets/images/exams_gradebook.jpg"
+                 alt="Teacher recording marks and preparing report cards"
                  class="w-full rounded-2xl object-cover shadow-md"
                  width="800" height="600" loading="lazy" />
           </div>
@@ -150,22 +151,22 @@ export class AboutComponent {
 
   values: Value[] = [
     {
-      emoji: '🧩',
+      art: 'cloud',
       title: 'Simplicity first',
       detail: 'If a feature needs a manual, we redesign it. Software for schools should feel as easy as messaging.',
     },
     {
-      emoji: '👨‍👩‍👧',
+      art: 'parent-phone',
       title: 'Parents as partners',
       detail: 'When parents see school life live, trust grows — and students get the support they need at home.',
     },
     {
-      emoji: '🇮🇳',
+      art: 'school-bus',
       title: 'Made for India',
       detail: 'April–March sessions, ₹ pricing, Indian certificate formats, Hindi-English friendly language.',
     },
     {
-      emoji: '💬',
+      art: 'complaint',
       title: 'Honest pricing',
       detail: 'One published price for everything. No hidden modules, no surprise invoices, no annual traps.',
     },

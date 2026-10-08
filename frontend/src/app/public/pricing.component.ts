@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, RouterLink } from '@angular/router';
 import { SeoService } from '../core/services/seo.service';
+import { VectorArtComponent } from './vector-art.component';
 
 interface FaqItem {
   q: string;
@@ -11,7 +12,7 @@ interface FaqItem {
 @Component({
   selector: 'app-pricing',
   standalone: true,
-  imports: [CommonModule, RouterModule, RouterLink],
+  imports: [CommonModule, RouterModule, RouterLink, VectorArtComponent],
   template: `
     <!-- Hero -->
     <section class="bg-gradient-to-b from-blue-50/70 to-white py-14 sm:py-20">
@@ -34,8 +35,8 @@ interface FaqItem {
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="mx-auto max-w-4xl">
           <div class="relative rounded-3xl border-2 border-blue-600 bg-white shadow-2xl shadow-blue-600/10">
-            <span class="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-amber-400 px-5 py-1.5 text-xs font-extrabold text-amber-950 shadow-sm">
-              🎉 LAUNCH OFFER — 80% OFF FOR NEW SCHOOLS
+            <span class="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-blue-600 px-5 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm">
+              Launch offer — 80% off for new schools
             </span>
 
             <div class="grid gap-8 p-8 sm:p-10 lg:grid-cols-5">
@@ -44,17 +45,17 @@ interface FaqItem {
                 <h2 id="plan-heading" class="text-xl font-extrabold text-slate-900">SchoolSense — All Features</h2>
                 <p class="mt-1 text-sm text-slate-500">For schools of every size, boards and mediums.</p>
 
-                <div class="mt-6 flex items-end justify-center gap-3 lg:justify-start">
+                <div class="mt-6 flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1 lg:justify-start">
+                  <span class="text-3xl font-semibold text-slate-400 line-through sm:text-4xl">₹59</span>
                   <span class="text-6xl font-extrabold tracking-tight text-slate-900">₹10</span>
-                  <span class="pb-2 text-sm text-slate-500">/ student / month</span>
+                  <span class="text-sm text-slate-500">/ student / month</span>
                 </div>
-                <p class="mt-2 text-sm text-slate-500">
-                  <span class="font-medium line-through">₹49</span> regular price ·
-                  <span class="font-semibold text-emerald-600">you save 80%</span>
+                <p class="mt-3 text-sm font-medium text-slate-600">
+                  Billed monthly &middot; Only for active enrolled students &middot; No hidden charges
                 </p>
                 <p class="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-600 ring-1 ring-slate-200">
-                  Billed monthly, only for your enrolled students. No setup fee, no yearly
-                  lock-in, no per-feature charges.
+                  You save 80% with the launch offer. No setup fee, no yearly lock-in,
+                  no per-feature charges.
                 </p>
 
                 <a routerLink="/contact" [queryParams]="{ type: 'demo' }"
@@ -86,23 +87,17 @@ interface FaqItem {
         <!-- Billing explainers -->
         <div class="mx-auto mt-12 grid max-w-4xl gap-4 sm:grid-cols-3">
           <div class="rounded-2xl border border-slate-200 p-6 text-center">
-            <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            </span>
+            <app-vector-art name="timetable" class="mx-auto h-20 w-20" />
             <h3 class="mt-3 text-sm font-bold text-slate-900">Pay monthly</h3>
             <p class="mt-1.5 text-xs leading-relaxed text-slate-500">Small monthly payments instead of big yearly bills. Pause anytime.</p>
           </div>
           <div class="rounded-2xl border border-slate-200 p-6 text-center">
-            <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>
-            </span>
+            <app-vector-art name="classroom" class="mx-auto h-20 w-20" />
             <h3 class="mt-3 text-sm font-bold text-slate-900">Only for enrolled students</h3>
             <p class="mt-1.5 text-xs leading-relaxed text-slate-500">A 300-student school pays for 300 students. Teachers, admins and parents log in free.</p>
           </div>
           <div class="rounded-2xl border border-slate-200 p-6 text-center">
-            <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>
-            </span>
+            <app-vector-art name="security" class="mx-auto h-20 w-20" />
             <h3 class="mt-3 text-sm font-bold text-slate-900">No lock-in</h3>
             <p class="mt-1.5 text-xs leading-relaxed text-slate-500">Your data belongs to your school. No forced annual contracts.</p>
           </div>
@@ -115,17 +110,17 @@ interface FaqItem {
             <div class="rounded-xl bg-white p-5 ring-1 ring-slate-200">
               <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">School with 200 students</p>
               <p class="mt-2 text-2xl font-extrabold text-slate-900">₹2,000<span class="text-sm font-medium text-slate-500">/month</span></p>
-              <p class="mt-1 text-xs text-slate-500">at launch price (₹10,000/month at regular ₹49)</p>
+              <p class="mt-1 text-xs text-slate-500">at launch price (₹11,800/month at regular ₹59)</p>
             </div>
             <div class="rounded-xl bg-white p-5 ring-1 ring-slate-200">
               <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">School with 500 students</p>
               <p class="mt-2 text-2xl font-extrabold text-slate-900">₹5,000<span class="text-sm font-medium text-slate-500">/month</span></p>
-              <p class="mt-1 text-xs text-slate-500">at launch price (₹24,500/month at regular ₹49)</p>
+              <p class="mt-1 text-xs text-slate-500">at launch price (₹29,500/month at regular ₹59)</p>
             </div>
             <div class="rounded-xl bg-white p-5 ring-1 ring-slate-200">
               <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">School with 1,000 students</p>
               <p class="mt-2 text-2xl font-extrabold text-slate-900">₹10,000<span class="text-sm font-medium text-slate-500">/month</span></p>
-              <p class="mt-1 text-xs text-slate-500">at launch price (₹49,000/month at regular ₹49)</p>
+              <p class="mt-1 text-xs text-slate-500">at launch price (₹59,000/month at regular ₹59)</p>
             </div>
           </div>
         </div>
@@ -192,7 +187,7 @@ export class PricingComponent {
   faqs: FaqItem[] = [
     {
       q: 'Is ₹10 per student per month really the full price?',
-      a: 'Yes — for schools joining during our launch period. The regular price is ₹49 per student per month, and the launch offer reduces it to ₹10 for new schools. Both prices include every feature: there are no paid modules hiding behind the base plan.',
+      a: 'Yes — for schools joining during our launch period. The regular price is ₹59 per student per month, and the launch offer reduces it to ₹10 for new schools. Both prices include every feature: there are no paid modules hiding behind the base plan.',
     },
     {
       q: 'What counts as a "student" for billing?',
@@ -224,7 +219,7 @@ export class PricingComponent {
     this.seo.setPage({
       title: 'Pricing — ₹10 per Student/Month Launch Offer, All Features Included',
       description:
-        'SchoolSense school management system pricing: regular ₹49 per student per month, launch offer ₹10 per student per month. All features included — attendance, homework, exams, fees, timetable, notices, complaints, alumni, certificates and Parent Connect. No setup fee, no lock-in.',
+        'SchoolSense school management system pricing: regular ₹59 per student per month, launch offer ₹10 per student per month. All features included — attendance, homework, exams, fees, timetable, notices, complaints, alumni, certificates and Parent Connect. No setup fee, no lock-in.',
       path: '/pricing',
       jsonLd: [
         {
@@ -247,11 +242,11 @@ export class PricingComponent {
             {
               '@type': 'Offer',
               name: 'Regular Price',
-              price: '49.00',
+              price: '59.00',
               priceCurrency: 'INR',
               availability: 'https://schema.org/InStock',
               url: 'https://www.schoolsense.in/pricing',
-              description: 'Regular price: ₹49 per student per month, all features included.',
+              description: 'Regular price: ₹59 per student per month, all features included.',
             },
           ],
         },
