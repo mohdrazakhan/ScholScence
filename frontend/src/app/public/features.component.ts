@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, RouterLink } from '@angular/router';
 import { SeoService } from '../core/services/seo.service';
+import { VectorArtComponent } from './vector-art.component';
 
 interface Detail {
   text: string;
@@ -18,7 +19,7 @@ interface FeatureSection {
 @Component({
   selector: 'app-features',
   standalone: true,
-  imports: [CommonModule, RouterModule, RouterLink],
+  imports: [CommonModule, RouterModule, RouterLink, VectorArtComponent],
   template: `
     <!-- Hero -->
     <section class="bg-gradient-to-b from-blue-50/70 to-white py-14 sm:py-20">
@@ -28,7 +29,7 @@ interface FeatureSection {
           Every tool your school needs — explained in plain words
         </h1>
         <p class="mt-5 text-base leading-relaxed text-slate-600 sm:text-lg">
-          No confusing modules or hidden add-ons. SchoolSense gives you nine connected tools,
+          No confusing modules or hidden add-ons. SchoolSense gives you connected tools,
           plus live Parent Connect — and every one of them is included in your plan.
         </p>
       </div>
@@ -110,7 +111,8 @@ interface FeatureSection {
 
         <div class="mt-10 grid gap-6 lg:grid-cols-2">
           <div class="rounded-3xl border border-slate-200 bg-white p-7 sm:p-9">
-            <p class="text-xs font-bold uppercase tracking-[0.22em] text-blue-600">Parent app</p>
+            <app-vector-art name="parent-phone" class="h-24 w-24" />
+            <p class="mt-4 text-xs font-bold uppercase tracking-[0.22em] text-blue-600">Parent app</p>
             <h3 class="mt-2 text-xl font-extrabold text-slate-900">Your child's school day, live</h3>
             <ul class="mt-5 space-y-3">
               <li *ngFor="let f of parentAppFeatures" class="flex items-start gap-2.5">
@@ -121,7 +123,8 @@ interface FeatureSection {
           </div>
 
           <div class="rounded-3xl border border-slate-200 bg-white p-7 sm:p-9">
-            <p class="text-xs font-bold uppercase tracking-[0.22em] text-blue-600">Teacher app</p>
+            <app-vector-art name="teacher-app" class="h-24 w-24" />
+            <p class="mt-4 text-xs font-bold uppercase tracking-[0.22em] text-blue-600">Teacher app</p>
             <h3 class="mt-2 text-xl font-extrabold text-slate-900">Classroom work in minutes</h3>
             <ul class="mt-5 space-y-3">
               <li *ngFor="let f of teacherAppFeatures" class="flex items-start gap-2.5">

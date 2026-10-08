@@ -73,7 +73,7 @@ export const BLOG_POSTS: BlogPost[] = [
             [
               'Pricing',
               '"Request a quote". Price depends on negotiation, modules and student count.',
-              'Published openly: ₹49 per student/month, with a launch offer of ₹10. One plan, all features.',
+              'Published openly: ₹59 per student/month, with a launch offer of ₹10. One plan, all features.',
             ],
             [
               'Parent experience',
@@ -97,7 +97,7 @@ export const BLOG_POSTS: BlogPost[] = [
         heading: 'Why "more features" is not the same as "better system"',
         paragraphs: [
           'Traditional ERP vendors compete on feature counts — 100+ modules, dozens of report formats, configuration options for every possibility. In practice, most schools use less than a fifth of that, while paying for all of it and struggling through the rest.',
-          'SchoolSense takes the opposite approach: nine connected tools that cover what a school actually runs on every day — timetable, attendance, homework, exams, notices, complaints, fees, alumni and certificates — plus the two mobile apps. We would rather do those nine things better than ship a hundred half-used modules.',
+          'SchoolSense takes the opposite approach: connected tools that cover what a school actually runs on every day — timetable, attendance, homework, exams, notices, complaints, fees, alumni and certificates — plus the two mobile apps. We would rather do those core things better than ship a hundred half-used modules.',
           'The test is simple: open any screen and ask, "could our newest clerk use this without calling us?" If the answer is no, we redesign the screen.',
         ],
       },
@@ -145,7 +145,7 @@ export const BLOG_POSTS: BlogPost[] = [
       'Most Indian school ERP vendors do not publish pricing — you negotiate blind.',
       'Two schools with the same student count can pay very different amounts for identical software.',
       'Setup fees, parent app charges and training costs often appear after the quote.',
-      'SchoolSense publishes one price for everything: ₹49/student/month, launch offer ₹10.',
+      'SchoolSense publishes one price for everything: ₹59/student/month, launch offer ₹10.',
     ],
     sections: [
       {
@@ -176,7 +176,7 @@ export const BLOG_POSTS: BlogPost[] = [
         table: {
           headers: ['Item', 'Other vendors (typical)', 'SchoolSense'],
           rows: [
-            ['Base price', 'Quoted privately in slabs', '₹49 per student/month, published on our pricing page'],
+            ['Base price', 'Quoted privately in slabs', '₹59 per student/month, published on our pricing page'],
             ['Launch offer', 'Discounts only if you negotiate', '₹10 per student/month for new schools — shown to everyone'],
             ['Parent app', 'Often a paid add-on', 'Included free, unlimited parents'],
             ['Teacher app', 'Often absent or paid', 'Included free'],
@@ -231,7 +231,7 @@ export const BLOG_POSTS: BlogPost[] = [
         paragraphs: [
           'A vendor confident in its product shows its price. Ask what the full monthly cost is for your exact student count, including the parent app, setup, training and message notifications. If any of those are "extra", write down the real number.',
         ],
-        note: 'SchoolSense: ₹49/student/month (₹10 launch offer), everything included, published on our pricing page.',
+        note: 'SchoolSense: ₹59/student/month (₹10 launch offer), everything included, published on our pricing page.',
       },
       {
         heading: '2. How fast can attendance and homework actually go live?',
@@ -310,7 +310,7 @@ export const BLOG_POSTS: BlogPost[] = [
     dateDisplay: '21 September 2026',
     readMinutes: 6,
     category: 'Parent Engagement',
-    image: '/assets/images/slider_parents_1.jpg',
+    image: '/assets/images/academics_timetable.jpg',
     intro:
       'Ask parents what they want from their child\'s school and you will not hear about ERP modules — you will hear: "I want to know what is happening, as it happens." That single sentence is why Parent Connect is the heart of SchoolSense, and why we believe it is the feature that decides whether a school management system becomes loved or merely tolerated.',
     keyTakeaways: [

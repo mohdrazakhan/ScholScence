@@ -1,8 +1,10 @@
 # ============================================================
 # SchoolSense — Root .gitignore
 # ============================================================
+# Rule of thumb: NEVER commit dependencies, build output, caches,
+# local config or secrets. Only source code belongs in git.
 
-# Secrets — NEVER commit
+# ---------- Secrets ---------- NEVER commit
 .env
 .env.local
 .env.production
@@ -11,32 +13,97 @@
 # ZCode local config (contains Supabase MCP access token)
 .zcode/
 
-# Node
+# ---------- Dependencies ----------
 node_modules/
-npm-debug.log*
+**/node_modules/
+.npm/
+.pnpm-store/
 
-# Build outputs
+# ---------- Build outputs ----------
 dist/
 build/
+out/
+**/dist/
+**/build/
+*.tsbuildinfo
 
-# Angular cache
+# ---------- Angular ----------
 .angular/
+**/.angular/
+.angular-config.json
 
-# macOS
+# ---------- Next/Nuxt/Vercel (in case of future tooling) ----------
+.next/
+.nuxt/
+.vercel/
+.output/
+
+# ---------- Test + coverage ----------
+coverage/
+.nyc_output/
+*.lcov
+
+# ---------- Flutter / Dart (planned mobile apps) ----------
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+build/app/
+*.g.dart
+*.freezed.dart
+ios/Pods/
+ios/.symlinks/
+android/.gradle/
+android/local.properties
+android/key.properties
+**/*.keystore
+**/*.jks
+
+# ---------- macOS ----------
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
 
-# IDE
+# ---------- Windows ----------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ---------- IDE / editor ----------
 .vscode/
+!.vscode/extensions.json
 .idea/
+*.swp
+*.swo
+*~
+.vscode-test/
 
-# Logs & NPM
+# ---------- Logs ----------
 *.log
 logs/
-.npm/
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
 
-# PDF Reports
+# ---------- Generated reports ----------
 *.pdf
+*.csv.tmp
 
-# Prisma
+# ---------- Prisma (legacy Generation-1 stack) ----------
 backend/prisma/migrations/*.sql.bak
+
+# ---------- Supabase CLI local state ----------
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
+# ---------- Uploads / scratch ----------
+uploads/
+tmp/
+temp/
+.cache/

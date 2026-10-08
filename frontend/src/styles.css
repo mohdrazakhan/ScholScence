@@ -308,3 +308,89 @@
 .ss-kenburns {
   animation: ssKenBurns 8s ease-out forwards;
 }
+
+/* ============================================================
+   Animated "Book a Free Demo" CTA with 80% OFF ribbon
+   ============================================================ */
+.ss-demo-cta {
+  position: relative;
+  isolation: isolate;
+}
+
+/* slow breathing glow under the button */
+@keyframes ssCtaPulse {
+  0%, 100% { box-shadow: 0 10px 25px -8px rgba(37, 99, 235, 0.55); }
+  50%      { box-shadow: 0 16px 38px -6px rgba(37, 99, 235, 0.85); }
+}
+.ss-demo-cta {
+  animation: ssCtaPulse 2.6s ease-in-out infinite;
+}
+
+/* light sweep across the face */
+.ss-demo-cta .ss-shine {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.ss-demo-cta .ss-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 45%;
+  transform: translateX(-220%) skewX(-18deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  animation: ssShine 3.4s ease-in-out infinite;
+}
+@keyframes ssShine {
+  0%        { transform: translateX(-220%) skewX(-18deg); }
+  55%, 100% { transform: translateX(320%) skewX(-18deg); }
+}
+
+/* ribbon: "-80%"  */
+.ss-demo-cta .ss-ribbon {
+  position: absolute;
+  top: -0.85rem;
+  left: -0.5rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.375rem;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  box-shadow: 0 4px 12px -2px rgba(220, 38, 38, 0.5);
+  transform: rotate(-4deg);
+  animation: ssRibbonBob 2.6s ease-in-out infinite;
+}
+.ss-demo-cta .ss-ribbon::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -0.34rem;
+  width: 0;
+  height: 0;
+  border-top: 0.62rem solid #b91c1c;
+  border-bottom: 0.62rem solid transparent;
+  border-right: 0.34rem solid transparent;
+}
+@keyframes ssRibbonBob {
+  0%, 100% { transform: rotate(-4deg) translateY(0); }
+  50%      { transform: rotate(-4deg) translateY(-2px); }
+}
+
+/* respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .ss-demo-cta,
+  .ss-demo-cta .ss-shine::after,
+  .ss-demo-cta .ss-ribbon {
+    animation: none;
+  }
+}

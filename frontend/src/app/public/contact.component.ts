@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { SupabaseService } from '../core/services/supabase.service';
 import { ToastService } from '../core/services/toast.service';
 import { SeoService } from '../core/services/seo.service';
+import { VectorArtComponent } from './vector-art.component';
 
 interface LeadForm {
   fullName: string;
@@ -20,7 +21,7 @@ interface LeadForm {
 @Component({
   selector: 'app-contact',
   standalone: true,
-  imports: [CommonModule, RouterModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterModule, RouterLink, FormsModule, VectorArtComponent],
   template: `
     <!-- Hero -->
     <section class="bg-gradient-to-b from-blue-50/70 to-white py-14 sm:py-16">
@@ -48,7 +49,7 @@ interface LeadForm {
               <span class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                 <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               </span>
-              <h2 class="mt-5 text-xl font-extrabold text-slate-900 sm:text-2xl">Thank you, {{ leadForm.fullName || 'friend' }}! 🎉</h2>
+              <h2 class="mt-5 text-xl font-extrabold text-slate-900 sm:text-2xl">Thank you, {{ leadForm.fullName || 'friend' }}!</h2>
               <p class="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-600">
                 Your demo request has reached our team. We'll call you on
                 <strong class="font-semibold text-slate-900">{{ leadForm.phone }}</strong>
@@ -162,9 +163,7 @@ interface LeadForm {
         <aside class="lg:col-span-2">
           <div class="space-y-4">
             <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-6">
-              <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white">
-                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
-              </span>
+              <app-vector-art name="classroom" class="h-16 w-16" />
               <h3 class="mt-4 text-base font-bold text-slate-900">A free 30-minute demo</h3>
               <p class="mt-1.5 text-sm leading-relaxed text-slate-600">
                 We walk you through a full school running on SchoolSense — attendance, homework,
@@ -196,7 +195,7 @@ interface LeadForm {
 
             <div class="rounded-2xl bg-slate-900 p-6 text-center">
               <p class="text-sm font-semibold text-white">Launch offer — ₹10/student/month</p>
-              <p class="mt-1 text-xs text-slate-400">Regular ₹49 · every feature included · no setup fee</p>
+              <p class="mt-1 text-xs text-slate-400">Regular ₹59 · every feature included · no setup fee</p>
               <a routerLink="/pricing" class="mt-3 inline-block text-xs font-bold text-blue-400 hover:text-blue-300">See pricing details →</a>
             </div>
           </div>
