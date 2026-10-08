@@ -4,3 +4,9 @@
 /about
 /contact
 /login
+/blog
+/blog/schoolsense-vs-traditional-school-erp-software
+/blog/school-erp-pricing-india-hidden-costs
+/blog/how-to-choose-school-management-software-india
+/blog/why-parent-connect-matters-schools
+/blog/simplest-school-management-software

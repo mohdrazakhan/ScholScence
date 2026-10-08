@@ -43,7 +43,6 @@ interface FaqItem {
       <!-- Overlay content -->
       <div class="relative mx-auto flex min-h-[560px] max-w-7xl flex-col items-center justify-center px-4 py-28 text-center sm:min-h-[660px] sm:px-6 lg:min-h-[720px] lg:px-8">
         <span class="inline-flex items-center gap-2.5 text-xs font-bold uppercase tracking-[0.22em] text-blue-100 sm:text-sm">
-          <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
           Built for Indian schools — CBSE, ICSE &amp; State Boards
         </span>
 
@@ -129,6 +128,79 @@ interface FaqItem {
         <div class="text-center">
           <p class="text-2xl font-extrabold text-slate-900">₹10/month</p>
           <p class="mt-1 text-sm text-slate-500">Per student — launch offer</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== WHY SCHOOLSENSE — 7 SELLING POINTS ============================== -->
+    <section class="bg-slate-50 py-16 sm:py-24" aria-labelledby="why-heading">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-2xl text-center">
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Why SchoolSense</p>
+          <h2 id="why-heading" class="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+            The system every school needs — made simple enough for everyone
+          </h2>
+          <p class="mt-4 text-base leading-relaxed text-slate-600 sm:text-lg">
+            Seven reasons schools choose us and stay with us. The first one is our promise.
+          </p>
+        </div>
+
+        <!-- Pillar 1 — Simplest (full width) -->
+        <div class="mt-12 overflow-hidden rounded-3xl bg-slate-900">
+          <div class="grid gap-8 p-8 sm:p-10 lg:grid-cols-5 lg:items-center lg:p-12">
+            <div class="lg:col-span-3">
+              <div class="flex items-center gap-3">
+                <span class="text-sm font-extrabold tracking-widest text-blue-400">01</span>
+                <span class="h-5 w-px bg-slate-700"></span>
+                <svg class="h-7 w-7 text-blue-400" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+                </svg>
+                <span class="text-xs font-bold uppercase tracking-[0.22em] text-blue-400">Our #1 priority</span>
+              </div>
+              <h3 class="mt-4 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+                Simplest to use — built for non-IT people
+              </h3>
+              <p class="mt-3 max-w-xl text-sm leading-relaxed text-slate-300 sm:text-base">
+                Our first and most important promise. If your staff can use WhatsApp, they can run
+                SchoolSense from day one — big buttons, simple words, one obvious way to do every task.
+                No manuals, no jargon, no computer expert needed at your school.
+              </p>
+            </div>
+            <ul class="grid gap-3 sm:grid-cols-2 lg:col-span-2 lg:grid-cols-1">
+              <li class="flex items-center gap-2.5 text-sm font-medium text-slate-200">
+                <svg class="h-5 w-5 shrink-0 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                No manuals or week-long training
+              </li>
+              <li class="flex items-center gap-2.5 text-sm font-medium text-slate-200">
+                <svg class="h-5 w-5 shrink-0 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                No IT staff required at school
+              </li>
+              <li class="flex items-center gap-2.5 text-sm font-medium text-slate-200">
+                <svg class="h-5 w-5 shrink-0 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                Free setup &amp; staff training by us
+              </li>
+              <li class="flex items-center gap-2.5 text-sm font-medium text-slate-200">
+                <svg class="h-5 w-5 shrink-0 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                Simple language anyone understands
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Pillars 2–7 -->
+        <div class="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div *ngFor="let p of whyPillars"
+               class="rounded-3xl border border-slate-200 bg-white p-7 transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-900/5">
+            <div class="flex items-center gap-3">
+              <span class="text-sm font-extrabold tracking-widest text-blue-600">{{ p.n }}</span>
+              <span class="h-5 w-px bg-slate-200"></span>
+              <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="p.icon" />
+              </svg>
+            </div>
+            <h3 class="mt-4 text-lg font-bold text-slate-900">{{ p.name }}</h3>
+            <p class="mt-2 text-sm leading-relaxed text-slate-600">{{ p.detail }}</p>
+          </div>
         </div>
       </div>
     </section>
@@ -734,17 +806,19 @@ export class HomeComponent {
   ];
 
   parentBullets = [
-    { title: 'Instant push notifications', detail: 'every activity — attendance, homework, marks, fees, events — the moment it happens.' },
+    { title: 'Instant push notifications', detail: 'every activity — attendance, homework, marks, fees, fines and events — the moment it happens.' },
     { title: 'Live attendance', detail: 'the moment roll call happens, not at day-end.' },
     { title: 'Homework & marks instantly', detail: 'as soon as the teacher posts them.' },
     { title: 'Fee invoices, receipts & fines', detail: 'always available — no "I paid, where is the receipt?".' },
+    { title: 'Emergency alerts', detail: 'urgent school messages reach parents in seconds — not by evening.' },
     { title: 'Notices, events & holidays', detail: 'delivered instantly, nothing lost in the school bag.' },
     { title: 'Complaints with tracking', detail: 'raise an issue, follow every reply until it is closed.' },
     { title: "Today's timetable", detail: 'no morning confusion about which books to pack.' },
   ];
 
   parentAppFeatures = [
-    'Push notification for every activity — attendance, homework, marks, fees, events',
+    'Push notification for every activity — attendance, homework, marks, fees, fines, events',
+    'Emergency alerts — urgent school messages reach you in seconds',
     'Exam marks, results and report cards the moment they are published',
     'Fee invoices, receipts and fines — all in one place',
     'Raise complaints and follow every reply until they are resolved',
@@ -757,6 +831,45 @@ export class HomeComponent {
     'Enter marks once — results reach parents automatically',
     'Monitor parent complaints, reply and update status until closed',
     'Publish notices to one class or the whole school',
+  ];
+
+  whyPillars = [
+    {
+      n: '02',
+      icon: 'M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0',
+      name: 'Live Parent Connect',
+      detail: 'Every activity of the child, live — attendance, marks, complaints, fines and even emergency alerts reach parents the moment they happen.',
+    },
+    {
+      n: '03',
+      icon: 'M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3.75 0h.008v.008h-.008V1.5zm3.75 18h.008v.008H13.5v-.008z',
+      name: 'Free mobile apps',
+      detail: 'Dedicated apps for Parents and Teachers on Android & iPhone — included free in every plan. No per-user charges, ever.',
+    },
+    {
+      n: '04',
+      icon: 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z',
+      name: '100% secure & encrypted',
+      detail: 'Bank-grade encryption in transit and at rest, strictly isolated data per school and hashed passwords. One school can never see another school\u2019s data.',
+    },
+    {
+      n: '05',
+      icon: 'M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99',
+      name: 'No lock-in, ever',
+      detail: 'Monthly billing only — no yearly blockage, no forced contracts. Leave anytime and take your data with you. We earn your renewal every single month.',
+    },
+    {
+      n: '06',
+      icon: 'M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437',
+      name: 'Custom features on demand',
+      detail: 'Every school works differently. Tell us what your school needs and we build it for you — your base plan price never changes because of it.',
+    },
+    {
+      n: '07',
+      icon: 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z',
+      name: 'One-click documents',
+      detail: 'TC, Character Certificate, Bonafide and every document a school needs — auto-generated with correct formats in a single click.',
+    },
   ];
 
   certificates = [
@@ -835,11 +948,15 @@ export class HomeComponent {
     },
     {
       q: 'Is our school data safe?',
-      a: 'Your data is stored securely in the cloud with per-school isolation — no other school can see your data, and our own team cannot read student records. Regular backups and audit logs of important actions are part of the system.',
+      a: 'Yes. Your data is protected with bank-grade encryption — encrypted in transit and at rest — and strictly isolated per school: no other school can ever see your data, and one school\u2019s records are never mixed with another\u2019s. Passwords are hashed so even our team cannot read them, every important action is audit-logged, and regular backups protect your records.',
     },
     {
       q: 'How long does it take to start?',
       a: 'Most schools go live within a week. We set up your classes, sections, subjects and fee structure, train your teachers and admin staff, and stay available while you settle in. Setup and training are free.',
+    },
+    {
+      q: 'Can you build a feature our school specifically needs?',
+      a: 'Yes. Every school works a little differently, so we build custom features on request — special reports, formats or workflows. Tell us what you need and we will scope it honestly before building anything. Your base plan price never changes because of it.',
     },
   ];
 }
