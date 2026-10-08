@@ -20,7 +20,6 @@ import { Injectable } from '@angular/core';
  * pre-selects which school's portal is shown.
  */
 
-const DISMISS_KEY = 'schoolsense_subdomain_dismissed';
 const PARAM_KEY = 'school';
 
 /** Base domains whose subdomains map to schools. Checked right-to-left. */
@@ -30,12 +29,10 @@ const MANAGED_BASE_DOMAINS = ['schoolsense.in', 'localhost'];
 export class SchoolContextService {
   /**
    * Returns the subdomain that should force a specific school portal,
-   * or null when there is none (or the user dismissed it).
+   * or null when on the main platform domain.
    */
   detectForcedSubdomain(): string | null {
     try {
-      if (sessionStorage.getItem(DISMISS_KEY) === '1') return null;
-
       // 1. Explicit ?school= param — highest priority, works on every host.
       const param = new URLSearchParams(window.location.search).get(PARAM_KEY);
       if (param && this.isValidSubdomain(param)) return param.toLowerCase();
@@ -52,19 +49,9 @@ export class SchoolContextService {
         }
       }
 
-      // 3. dha.localhost style for local dev is covered above ('localhost' base).
       return null;
     } catch {
       return null;
-    }
-  }
-
-  /** Called when the user chooses "Change School" on a forced portal. */
-  dismiss(): void {
-    try {
-      sessionStorage.setItem(DISMISS_KEY, '1');
-    } catch {
-      /* private mode — dismissal simply won't persist */
     }
   }
 
@@ -72,3 +59,4 @@ export class SchoolContextService {
     return /^[a-z0-9][a-z0-9-]{1,39}$/.test(value.toLowerCase());
   }
 }
+
