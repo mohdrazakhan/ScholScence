@@ -10,6 +10,14 @@ interface HeroSlide {
   alt: string;
 }
 
+interface CampusSlide {
+  src: string;
+  alt: string;
+  badge: string;
+  title: string;
+  caption: string;
+}
+
 interface HowStep {
   /** Name of the vector illustration shown in the step. */
   art: string;
@@ -502,9 +510,53 @@ interface FaqItem {
 
         <!-- School types & boards -->
         <div class="mt-12 grid gap-8 lg:grid-cols-2 lg:items-center">
-          <div class="overflow-hidden rounded-3xl">
-            <img src="/assets/images/school_building.jpg" alt="Indian school campus building"
-                 class="h-full w-full object-cover" width="900" height="640" loading="lazy" />
+          <!-- Campus & School Gallery Slider (Slow, smooth auto-transition) -->
+          <div class="group relative aspect-[4/3] w-full overflow-hidden rounded-3xl bg-slate-950 shadow-xl border border-slate-200/80"
+               (mouseenter)="stopCampusSlideshow()" (mouseleave)="startCampusSlideshow()">
+            
+            <!-- Slides Container -->
+            <div class="relative h-full w-full">
+              <div *ngFor="let s of campusSlides; let i = index"
+                   class="absolute inset-0 h-full w-full transition-opacity duration-1000 ease-in-out"
+                   [ngClass]="currentCampusSlide() === i ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'">
+                <img [src]="s.src" [alt]="s.alt"
+                     class="h-full w-full object-cover transition-transform duration-[6500ms] ease-out"
+                     [ngClass]="currentCampusSlide() === i ? 'scale-105' : 'scale-100'"
+                     [attr.fetchpriority]="i === 0 ? 'high' : null"
+                     [attr.loading]="i === 0 ? null : 'lazy'" />
+                
+                <!-- Ambient contrast gradient for captions -->
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-transparent"></div>
+
+                <!-- Slide Title & Detail (Bottom-Left) -->
+                <div class="absolute bottom-4 left-4 right-16 z-20 text-white">
+                  <p class="text-sm sm:text-base font-bold drop-shadow-sm leading-tight">{{ s.title }}</p>
+                  <p class="text-xs text-slate-200/90 drop-shadow-sm line-clamp-1 mt-0.5">{{ s.caption }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Prev / Next arrows (Visible on hover & focus) -->
+            <button type="button" (click)="prevCampusSlide()" aria-label="Previous campus photo"
+                    class="absolute left-3 top-1/2 z-30 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur-md transition-all hover:bg-black/75 opacity-0 group-hover:opacity-100 focus:opacity-100 shadow-sm cursor-pointer">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+            <button type="button" (click)="nextCampusSlide()" aria-label="Next campus photo"
+                    class="absolute right-3 top-1/2 z-30 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur-md transition-all hover:bg-black/75 opacity-0 group-hover:opacity-100 focus:opacity-100 shadow-sm cursor-pointer">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </button>
+
+            <!-- Bottom Navigation Dots -->
+            <div class="absolute bottom-3 right-4 z-30 flex items-center gap-1.5">
+              <button *ngFor="let s of campusSlides; let i = index" type="button" (click)="goToCampusSlide(i)"
+                      [attr.aria-label]="'View ' + s.badge"
+                      class="h-1.5 rounded-full transition-all duration-500 cursor-pointer"
+                      [ngClass]="currentCampusSlide() === i ? 'w-6 bg-white shadow-sm' : 'w-1.5 bg-white/45 hover:bg-white/80'"></button>
+            </div>
           </div>
           <div>
             <h3 class="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
@@ -753,10 +805,64 @@ export class HomeComponent {
   currentSlide = signal(0);
   private slideTimer: ReturnType<typeof setInterval> | null = null;
 
+  // ---------- Built for Indian Schools — Campus Gallery Slideshow (Slow, smooth) ----------
+  campusSlides: CampusSlide[] = [
+    {
+      src: '/assets/images/school_building.jpg',
+      alt: 'Modern Indian School Campus Building',
+      badge: 'Main Campus',
+      title: 'Senior Secondary & High School Campuses',
+      caption: 'Multi-storey academic wings with modern architecture & grounds',
+    },
+    {
+      src: '/assets/images/school_campus_courtyard.jpg',
+      alt: 'Indian School Campus Courtyard & Assembly Grounds',
+      badge: 'Campus Courtyard',
+      title: 'Lush Assembly & Transport Grounds',
+      caption: 'Dedicated bus fleets, open green assembly zones & security',
+    },
+    {
+      src: '/assets/images/slider_classroom.jpg',
+      alt: 'Interactive Indian School Smart Classroom',
+      badge: 'Smart Classrooms',
+      title: 'Digital & Smart Classroom Infrastructure',
+      caption: 'Engaging, interactive lessons with happy, uniform-clad students',
+    },
+    {
+      src: '/assets/images/school_science_lab.jpg',
+      alt: 'Advanced STEM Science & Robotics Lab',
+      badge: 'Science & Robotics Lab',
+      title: 'Hands-on Practical Labs & Experiments',
+      caption: 'Physics, chemistry, biology and STEM robotics practical facilities',
+    },
+    {
+      src: '/assets/images/slider_learning.jpg',
+      alt: 'School Library & Knowledge Center',
+      badge: 'Library & Reading Room',
+      title: 'Rich Knowledge Centers & Study Halls',
+      caption: 'Quiet reading corners, reference books & digital research',
+    },
+    {
+      src: '/assets/images/slider_leadership.jpg',
+      alt: 'Principal & Faculty Conference Room',
+      badge: 'Leadership & Staff Desk',
+      title: 'Principal & Staff Conference Facilities',
+      caption: 'Collaborative curriculum planning & academic administration',
+    },
+  ];
+  currentCampusSlide = signal(0);
+  private campusSlideTimer: ReturnType<typeof setInterval> | null = null;
+
   constructor() {
     // afterNextRender only runs in the browser — keeps static prerendering stable.
-    afterNextRender(() => this.startSlideshow());
-    inject(DestroyRef).onDestroy(() => this.stopSlideshow());
+    afterNextRender(() => {
+      this.startSlideshow();
+      this.startCampusSlideshow();
+    });
+    inject(DestroyRef).onDestroy(() => {
+      this.stopSlideshow();
+      this.stopCampusSlideshow();
+    });
 
     this.seo.setPage({
       title: 'Simple School Management System with Live Parent Connect',
@@ -809,6 +915,34 @@ export class HomeComponent {
   goToSlide(index: number): void {
     this.currentSlide.set(index);
     this.startSlideshow();
+  }
+
+  // ---------- Campus Slideshow Handlers (Slow 5.5s interval) ----------
+  startCampusSlideshow(): void {
+    this.stopCampusSlideshow();
+    this.campusSlideTimer = this.zone.runOutsideAngular(() =>
+      setInterval(() => this.zone.run(() => this.nextCampusSlide()), 5500),
+    );
+  }
+
+  stopCampusSlideshow(): void {
+    if (this.campusSlideTimer !== null) {
+      clearInterval(this.campusSlideTimer);
+      this.campusSlideTimer = null;
+    }
+  }
+
+  nextCampusSlide(): void {
+    this.goToCampusSlide((this.currentCampusSlide() + 1) % this.campusSlides.length);
+  }
+
+  prevCampusSlide(): void {
+    this.goToCampusSlide((this.currentCampusSlide() - 1 + this.campusSlides.length) % this.campusSlides.length);
+  }
+
+  goToCampusSlide(index: number): void {
+    this.currentCampusSlide.set(index);
+    this.startCampusSlideshow();
   }
 
   features: FeatureCard[] = [
