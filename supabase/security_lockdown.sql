@@ -1361,3 +1361,23 @@ comment on view public.school_public_profiles is
 
 revoke all on public.school_public_profiles from public;
 grant select on public.school_public_profiles to anon, authenticated;
+
+
+-- ============================================================
+-- 12. SEARCH_PATH HARDENING (advisor lint 0011)
+-- ============================================================
+alter function public.search_schools(text) set search_path = public, extensions;
+alter function public.get_public_school_directory() set search_path = public, extensions;
+alter function public.get_user_school_ids() set search_path = public, extensions;
+alter function public.trg_hash_password_on_insert() set search_path = public, extensions;
+alter function public.rls_auto_enable() set search_path = public, extensions;
+alter function public._execute_monthly_subscription_billing_unsafe(uuid,uuid) set search_path = public, extensions;
+alter function public._top_up_school_wallet_unsafe(uuid,numeric,text,text,uuid) set search_path = public, extensions;
+alter function public._update_school_subscription_rate_unsafe(uuid,numeric,numeric,text,uuid) set search_path = public, extensions;
+alter function public._onboard_school_tenant_unsafe(text,text,text,text,text,text,text,text,text,text,text,text,text,text) set search_path = public, extensions;
+alter function public._get_dashboard_overview_unsafe(text,text,text,text) set search_path = public, extensions;
+alter function public._get_classes_overview_unsafe(text,text) set search_path = public, extensions;
+alter function public._get_class_details_unsafe(text,text) set search_path = public, extensions;
+alter function public._calculate_monthly_subscription_unsafe(uuid) set search_path = public, extensions;
+alter function public._get_school_subscription_details_unsafe(uuid) set search_path = public, extensions;
+revoke execute on function public.rls_auto_enable() from anon, authenticated;
