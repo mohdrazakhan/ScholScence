@@ -1482,7 +1482,7 @@ export class ApiService {
       const userIds = Array.from(new Set(usrList.map((usr: any) => usr.user_id).filter(Boolean)));
       let users: any[] = [];
       if (userIds.length > 0) {
-        const { data } = await this.supabase.from('users').select('*').in('id', userIds);
+        const { data } = await this.supabase.from('users').select('id, email, phone, first_name, last_name, status, last_login_at, created_at, updated_at, deleted_at').in('id', userIds);
         users = data || [];
       }
 
@@ -7067,7 +7067,7 @@ export class ApiService {
       if (guardianEmail) {
         const { data: existingUser } = await this.supabase
           .from('users')
-          .select('id, email, password_hash')
+          .select('id')
           .eq('email', guardianEmail)
           .maybeSingle();
         if (existingUser) {
@@ -7096,7 +7096,7 @@ export class ApiService {
             password_hash: 'password123',
             status: 'ACTIVE',
           })
-          .select()
+          .select('id')
           .single();
 
         if (!uErr && newUser) {

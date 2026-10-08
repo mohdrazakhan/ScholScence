@@ -320,6 +320,30 @@ export class AuthService {
     if (user?.school?.id && !user.school.name && !user.school.logoUrl) {
       this.syncSchoolProfileFromDb(user.school.id);
     }
+    this.validateStoredSession();
+  }
+
+  /**
+   * Confirms the locally stored token still exists server-side (sessions are
+   * stored and revocable in the database now). Silently clears stale sessions.
+   */
+  private async validateStoredSession(): Promise<void> {
+    const token = localStorage.getItem(this.TOKEN_KEY);
+    if (!token) return;
+    try {
+      const { data, error } = await this.supabase.rpc('whoami');
+      if (!error && data && (data as { valid?: boolean }).valid === false) {
+        localStorage.removeItem(this.TOKEN_KEY);
+        localStorage.removeItem(this.USER_KEY);
+        this.currentUser.set(null);
+        const publicPaths = ['/', '/features', '/pricing', '/about', '/contact', '/login'];
+        if (!publicPaths.some((p) => this.router.url === p || this.router.url.startsWith(p + '?'))) {
+          this.router.navigate(['/login']);
+        }
+      }
+    } catch {
+      // Network hiccup — keep the local session; subsequent calls decide.
+    }
   }
 
   private syncSchoolProfilePromise = new Map<string, Promise<void>>();
@@ -393,7 +417,10 @@ export class AuthService {
     let schoolData: any = null;
 
     try {
-      let query = this.supabase.from('schools').select('*');
+      // Public, view-safe columns only — this runs before login.
+      let query = this.supabase
+        .from('school_public_profiles')
+        .select('id, name, code, city, state, logo_url, affiliation_board, affiliation, motto');
       if (isUuid) {
         query = query.eq('id', cleanId);
       } else {
@@ -401,23 +428,11 @@ export class AuthService {
       }
       const { data, error } = await query.maybeSingle();
       if (!error && data) {
-        let metaObj = {};
-        if (data.address_line2 && typeof data.address_line2 === 'string' && data.address_line2.startsWith('{')) {
-          try {
-            metaObj = JSON.parse(data.address_line2);
-          } catch {}
-        }
-        schoolData = { ...data, ...metaObj };
+        schoolData = { ...data };
       } else if (error && !isUuid) {
-        const { data: fallbackData } = await this.supabase.from('schools').select('*').ilike('name', `%${cleanId}%`).maybeSingle();
+        const { data: fallbackData } = await this.supabase.from('school_public_profiles').select('id, name, code, city, state, logo_url, affiliation_board, affiliation, motto').ilike('name', `%${cleanId}%`).maybeSingle();
         if (fallbackData) {
-          let metaObj = {};
-          if (fallbackData.address_line2 && typeof fallbackData.address_line2 === 'string' && fallbackData.address_line2.startsWith('{')) {
-            try {
-              metaObj = JSON.parse(fallbackData.address_line2);
-            } catch {}
-          }
-          schoolData = { ...fallbackData, ...metaObj };
+          schoolData = { ...fallbackData };
         }
       }
     } catch (e) {
@@ -478,7 +493,7 @@ export class AuthService {
       // 2. Fallback to full columns from schools table if RPC not present or returned nothing
       if (!data || data.length === 0) {
         const { data: dbData } = await this.supabase
-          .from('schools')
+          .from('school_public_profiles')
           .select('*')
           .eq('status', 'ACTIVE')
           .neq('code', 'PLATFORM')
@@ -493,12 +508,7 @@ export class AuthService {
         .filter((s: any) => (s.name || '').toLowerCase().includes(query.toLowerCase()))
         .map((s: any) => {
           let metaObj = {};
-          if (s.address_line2 && typeof s.address_line2 === 'string' && s.address_line2.startsWith('{')) {
-            try {
-              metaObj = JSON.parse(s.address_line2);
-            } catch {}
-          }
-          const merged = { ...s, ...metaObj };
+          const merged = { ...s };
           const lp = localProfiles[s.id] || localProfiles[s.code] || {};
           const resolvedLogo = lp.logoUrl || lp.logo_url || merged.logo_url || merged.logoUrl || null;
 
@@ -539,182 +549,18 @@ export class AuthService {
   }
 
   async requestPasswordResetOtp(email: string, schoolId: string): Promise<{ success: boolean; message: string; maskedEmail?: string }> {
-    const cleanEmail = (email || '').trim().toLowerCase();
-    if (!cleanEmail || !cleanEmail.includes('@')) {
-      throw new Error('Please enter a valid email address.');
-    }
-
-    // 1. Verify user exists in users table with ACTIVE status
-    const { data: user, error: userErr } = await this.supabase
-      .from('users')
-      .select('id, email, phone, first_name, last_name, status')
-      .ilike('email', cleanEmail)
-      .eq('status', 'ACTIVE')
-      .maybeSingle();
-
-    if (userErr || !user) {
-      throw new Error('No active account found with this email address.');
-    }
-
-    // 2. Verify user is associated with the selected school
-    if (schoolId) {
-      const { data: roles } = await this.supabase
-        .from('user_school_roles')
-        .select('id, school_id, status')
-        .eq('user_id', user.id)
-        .eq('school_id', schoolId)
-        .eq('status', 'ACTIVE');
-
-      if (!roles || roles.length === 0) {
-        throw new Error('This email address is not associated with the selected school.');
-      }
-    }
-
-    // 3. Generate secure 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
-
-    const resetCache = JSON.parse(localStorage.getItem('schoolsense_pw_resets') || '{}');
-    resetCache[cleanEmail] = {
-      otp,
-      expiresAt,
-      userId: user.id,
-      schoolId: schoolId || '',
-      createdAt: Date.now(),
-    };
-    localStorage.setItem('schoolsense_pw_resets', JSON.stringify(resetCache));
-
-    // Trigger Supabase SMTP email dispatch using configured custom Gmail SMTP
-    try {
-      await this.supabase.auth.resetPasswordForEmail(cleanEmail);
-    } catch (e: any) {
-      console.warn('Supabase resetPasswordForEmail dispatch notice:', e?.message || e);
-    }
-
-    // Mask email for display: e.g. j***n@domain.com
-    const parts = cleanEmail.split('@');
-    const namePart = parts[0];
-    const masked = namePart.length > 2
-      ? `${namePart[0]}${'*'.repeat(Math.min(namePart.length - 2, 5))}${namePart[namePart.length - 1]}@${parts[1]}`
-      : `${namePart[0]}*@${parts[1]}`;
-
-    return {
-      success: true,
-      message: `Verification code sent to ${cleanEmail}`,
-      maskedEmail: masked,
-    };
+    // Self-service reset is intentionally disabled: issuing OTPs without an SMS/email
+    // provider would mean trusting the client, which is not a security boundary.
+    // School admins reset passwords for their own users from the admin panel.
+    throw new Error('For your security, password resets are handled by your school. Please contact your school administrator to reset your password.');
   }
 
   async verifyPasswordResetOtp(email: string, otp: string): Promise<boolean> {
-    const cleanEmail = (email || '').trim().toLowerCase();
-    const cleanOtp = (otp || '').trim();
-
-    const resetCache = JSON.parse(localStorage.getItem('schoolsense_pw_resets') || '{}');
-    const record = resetCache[cleanEmail];
-
-    // If already marked as verified during this active reset session
-    if (record && record.verified && Date.now() <= record.expiresAt) {
-      return true;
-    }
-
-    if (!cleanOtp || cleanOtp.length < 6 || cleanOtp.length > 8) {
-      throw new Error('Please enter a valid verification code (6 to 8 digits).');
-    }
-
-    // Check local OTP cache first
-    let verified = false;
-    if (record && Date.now() <= record.expiresAt && record.otp === cleanOtp) {
-      verified = true;
-    }
-
-    // If local OTP didn't match, verify against Supabase Auth OTP (single-use token)
-    if (!verified) {
-      try {
-        const { data, error } = await this.supabase.auth.verifyOtp({
-          email: cleanEmail,
-          token: cleanOtp,
-          type: 'email',
-        });
-        if (!error && data?.user) {
-          verified = true;
-        }
-      } catch (sbVerifyErr) {
-        console.warn('Supabase verifyOtp notice:', sbVerifyErr);
-      }
-    }
-
-    if (verified) {
-      if (record) {
-        record.verified = true;
-        record.verifiedOtp = cleanOtp;
-        resetCache[cleanEmail] = record;
-        localStorage.setItem('schoolsense_pw_resets', JSON.stringify(resetCache));
-      }
-      return true;
-    }
-
-    if (!record) {
-      throw new Error('No reset request found for this email. Please request a new code.');
-    }
-
-    if (Date.now() > record.expiresAt) {
-      throw new Error('Verification code has expired. Please request a new one.');
-    }
-
-    throw new Error('Invalid verification code. Please check and try again.');
+    throw new Error('For your security, password resets are handled by your school administrator.');
   }
 
   async completePasswordReset(email: string, otp: string, newPassword: string): Promise<{ success: boolean; message: string }> {
-    const cleanEmail = (email || '').trim().toLowerCase();
-
-    const resetCache = JSON.parse(localStorage.getItem('schoolsense_pw_resets') || '{}');
-    let record = resetCache[cleanEmail];
-
-    // If not already verified, verify it now
-    if (!record || !record.verified) {
-      await this.verifyPasswordResetOtp(cleanEmail, otp);
-      record = JSON.parse(localStorage.getItem('schoolsense_pw_resets') || '{}')[cleanEmail];
-    }
-
-    if (!newPassword || newPassword.length < 6) {
-      throw new Error('New password must be at least 6 characters long.');
-    }
-
-    if (!record || !record.userId) {
-      throw new Error('User record not found. Please restart the reset process.');
-    }
-
-    // 1. Update password in Supabase users table
-    try {
-      const { error: dbErr } = await this.supabase
-        .from('users')
-        .update({
-          password_hash: newPassword,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', record.userId);
-      if (dbErr) {
-        console.warn('Direct users table update warning:', dbErr);
-      }
-    } catch (e) {
-      console.warn('Could not update password in Supabase users table directly:', e);
-    }
-
-    // 2. Also update Supabase Auth user password if session is active
-    try {
-      await this.supabase.auth.updateUser({ password: newPassword });
-    } catch (e) {
-      console.warn('Supabase auth.updateUser notice:', e);
-    }
-
-    // Clear reset cache for this email
-    delete resetCache[cleanEmail];
-    localStorage.setItem('schoolsense_pw_resets', JSON.stringify(resetCache));
-
-    return {
-      success: true,
-      message: 'Password reset successfully! Please sign in with your new password.',
-    };
+    throw new Error('For your security, password resets are handled by your school administrator.');
   }
 
   login(identifier: string, password: string, schoolCode?: string): Observable<AuthResponse> {
@@ -722,6 +568,7 @@ export class AuthService {
       tap((res) => {
         localStorage.setItem(this.TOKEN_KEY, res.accessToken);
         localStorage.setItem(this.USER_KEY, JSON.stringify(res.user));
+        this.supabase.setAuthToken(res.accessToken);
         this.currentUser.set(res.user);
         if (res.user?.school?.id) {
           this.syncSchoolProfileFromDb(res.user.school.id);
@@ -734,231 +581,20 @@ export class AuthService {
     const cleanId = identifier.trim();
     const cleanCode = schoolCode?.trim();
 
-    // 1. Try Supabase RPC authenticate_user
-    try {
-      const { data, error } = await this.supabase.rpc('authenticate_user', {
-        p_identifier: cleanId,
-        p_password: password,
-        p_school_code: cleanCode || null,
-      });
-      if (!error && data && data.accessToken && data.user) {
-        return data as AuthResponse;
-      }
-    } catch (e) {
-      console.warn('RPC authenticate_user error, checking fallback', e);
+    // All authentication is server-verified via the database RPC.
+    const { data, error } = await this.supabase.rpc('authenticate_user', {
+      p_identifier: cleanId,
+      p_password: password,
+      p_school_code: cleanCode || null,
+    });
+
+    if (error) {
+      throw new Error(error.message || 'Invalid email/phone or password.');
     }
-
-    // 2. Direct Fallback: Check Users & Schools directly in database
-    try {
-      let targetSchool: any = null;
-      if (cleanCode && cleanCode.toUpperCase() !== 'PLATFORM') {
-        const { data: sData } = await this.supabase
-          .from('schools')
-          .select('id, name, code, status')
-          .ilike('code', cleanCode)
-          .maybeSingle();
-        targetSchool = sData;
-      }
-
-      // Check users table directly
-      const { data: user } = await this.supabase
-        .from('users')
-        .select('*')
-        .or(`email.ilike.${cleanId},phone.eq.${cleanId}`)
-        .eq('status', 'ACTIVE')
-        .maybeSingle();
-
-      if (user) {
-        // Strict password verification:
-        // If the user has a stored password_hash, they MUST match it exactly.
-        // Old passwords or universal defaults are strictly expired/disallowed.
-        const userStoredHash = user.password_hash?.trim();
-        const passwordMatches = userStoredHash
-          ? (userStoredHash === password)
-          : (password === 'password123');
-
-        if (!passwordMatches) {
-          throw new Error('Invalid email/phone or password.');
-        }
-
-        let schoolRoleQuery = this.supabase
-          .from('user_school_roles')
-          .select('*, role:roles(code, name), school:schools(id, name, code, status)')
-          .eq('user_id', user.id)
-          .eq('status', 'ACTIVE');
-        if (targetSchool) {
-          schoolRoleQuery = schoolRoleQuery.eq('school_id', targetSchool.id);
-        }
-        const { data: usrList } = await schoolRoleQuery;
-        const usr = usrList?.[0];
-
-        if (usr) {
-          let children: any[] = [];
-          const roleCode = usr.role?.code || 'GUARDIAN';
-          if (roleCode === 'GUARDIAN' || roleCode === 'PARENT') {
-            const { data: gList } = await this.supabase
-              .from('guardians')
-              .select('id')
-              .eq('user_id', user.id);
-            const gIds = (gList || []).map((g: any) => g.id);
-
-            if (gIds.length > 0) {
-              const { data: sgData } = await this.supabase
-                .from('student_guardians')
-                .select('*, student:students(*, student_enrollments(*, class:classes(id, name), section:sections(id, name)))')
-                .in('guardian_id', gIds);
-              if (sgData && sgData.length > 0) {
-                children = sgData.map((sg: any) => {
-                  const enr = sg.student?.student_enrollments?.[0];
-                  return {
-                    id: sg.student?.id,
-                    studentId: sg.student?.id,
-                    name: `${sg.student?.first_name || ''} ${sg.student?.last_name || ''}`.trim(),
-                    admissionNumber: sg.student?.admission_number,
-                    classId: enr?.class?.id || enr?.class_id || sg.student?.class_id || '',
-                    className: enr?.class?.name || 'Nursery',
-                    sectionId: enr?.section?.id || enr?.section_id || sg.student?.section_id || '',
-                    sectionName: enr?.section?.name || 'Section B',
-                  };
-                });
-              }
-            }
-          }
-
-          const schoolLogo = usr.school?.logo_url || targetSchool?.logo_url || null;
-          return {
-            accessToken: `session_${user.id}_${Date.now()}`,
-            refreshToken: `ref_${Date.now()}`,
-            user: {
-              id: user.id,
-              email: user.email,
-              phone: user.phone,
-              firstName: user.first_name,
-              lastName: user.last_name || '',
-              role: roleCode,
-              roleName: usr.role?.name || 'Guardian / Parent',
-              school: {
-                id: usr.school?.id || targetSchool?.id,
-                name: usr.school?.name || targetSchool?.name,
-                code: usr.school?.code || targetSchool?.code,
-                status: usr.school?.status || 'ACTIVE',
-                logoUrl: schoolLogo,
-                logo_url: schoolLogo,
-                disabledServices: [],
-              },
-              children,
-              permissions: [],
-            },
-          };
-        }
-
-        throw new Error('This account is not registered or active for the selected school.');
-      }
-
-      // 3. Parent Auto-Discovery / Auto-Provision Fallback (Only for new unprovisioned parent accounts)
-      if (!user && password === 'password123' && (targetSchool || cleanId)) {
-        let studentQuery = this.supabase
-          .from('students')
-          .select('*, student_enrollments(*, class:classes(name), section:sections(name))')
-          .eq('status', 'ACTIVE');
-        if (targetSchool) {
-          studentQuery = studentQuery.eq('school_id', targetSchool.id);
-        }
-        const { data: allStudents } = await studentQuery;
-
-        let localParentMap: Record<string, any> = {};
-        try {
-          localParentMap = JSON.parse(localStorage.getItem('schoolsense_parent_students') || '{}');
-        } catch {}
-
-        const matchedStudent = (allStudents || []).find((s: any) => {
-          const emPhone = (s.emergency_contact_phone || '').trim();
-          const emName = (s.emergency_contact_name || '').toLowerCase().trim();
-          const localInfo = localParentMap[s.id];
-          return (
-            (localInfo && (localInfo.guardianEmail?.toLowerCase() === cleanId.toLowerCase() || localInfo.guardianPhone === cleanId)) ||
-            (emPhone && emPhone === cleanId) ||
-            (emName && cleanId.toLowerCase().includes(emName))
-          );
-        }) || (allStudents && allStudents.length > 0 && cleanId.includes('@') ? allStudents[0] : null);
-
-        if (matchedStudent && targetSchool) {
-          const nameParts = (matchedStudent.emergency_contact_name || 'Parent').split(' ');
-          const fName = nameParts[0] || 'Parent';
-          const lName = nameParts.slice(1).join(' ') || '';
-
-          let parentUserId = user?.id;
-          if (!parentUserId) {
-            const { data: newPUser } = await this.supabase
-              .from('users')
-              .insert({
-                email: cleanId.includes('@') ? cleanId.toLowerCase() : `parent.${matchedStudent.admission_number || Date.now()}@schoolsense.in`,
-                phone: cleanId.includes('@') ? matchedStudent.emergency_contact_phone : cleanId,
-                first_name: fName,
-                last_name: lName || null,
-                password_hash: 'password123',
-                status: 'ACTIVE',
-              })
-              .select()
-              .single();
-            parentUserId = newPUser?.id;
-          }
-
-          if (parentUserId) {
-            const { data: gRoles } = await this.supabase.from('roles').select('id').eq('code', 'GUARDIAN').limit(1);
-            const gRoleId = gRoles?.[0]?.id;
-            if (gRoleId) {
-              await this.supabase.from('user_school_roles').insert({
-                user_id: parentUserId,
-                school_id: targetSchool.id,
-                role_id: gRoleId,
-                status: 'ACTIVE',
-              });
-            }
-
-            const enr = matchedStudent.student_enrollments?.[0];
-            const childObj = {
-              id: matchedStudent.id,
-              studentId: matchedStudent.id,
-              name: `${matchedStudent.first_name || ''} ${matchedStudent.last_name || ''}`.trim(),
-              admissionNumber: matchedStudent.admission_number,
-              rollNumber: enr?.roll_number || '1',
-              classId: enr?.class?.id || enr?.class_id || matchedStudent.class_id || '',
-              className: enr?.class?.name || 'Nursery',
-              sectionId: enr?.section?.id || enr?.section_id || matchedStudent.section_id || '',
-              sectionName: enr?.section?.name || 'Section B',
-            };
-
-            return {
-              accessToken: `session_${parentUserId}_${Date.now()}`,
-              refreshToken: `ref_${Date.now()}`,
-              user: {
-                id: parentUserId,
-                email: cleanId,
-                phone: matchedStudent.emergency_contact_phone || '',
-                firstName: fName,
-                lastName: lName,
-                role: 'GUARDIAN',
-                roleName: 'Guardian / Parent',
-                school: {
-                  id: targetSchool.id,
-                  name: targetSchool.name,
-                  code: targetSchool.code,
-                  status: targetSchool.status || 'ACTIVE',
-                  disabledServices: [],
-                },
-                children: [childObj],
-                permissions: [],
-              },
-            };
-          }
-        }
-      }
-    } catch (fallbackErr) {
-      console.warn('Fallback authentication error:', fallbackErr);
+    if (!data || !data.accessToken || !data.user) {
+      throw new Error('Invalid email/phone or password.');
     }
-
-    throw new Error('Invalid email/phone or password.');
+    return data as AuthResponse;
   }
 
   fetchProfile(): Observable<User> {
@@ -968,7 +604,7 @@ export class AuthService {
     return from(
       this.supabase
         .from('users')
-        .select('*')
+        .select('id, email, phone, first_name, last_name, status, last_login_at, created_at, updated_at')
         .eq('id', current.id)
         .single()
     ).pipe(
@@ -1025,7 +661,7 @@ export class AuthService {
     const [schoolsRes, usrRes, usersRes, rolesRes, studentsRes, classesRes, subjectsRes] = await Promise.all([
       this.supabase.from('schools').select('*').neq('code', 'PLATFORM').order('created_at', { ascending: false }),
       this.supabase.from('user_school_roles').select('*'),
-      this.supabase.from('users').select('*'),
+      this.supabase.from('users').select('id, email, phone, first_name, last_name, status, created_at'),
       this.supabase.from('roles').select('*'),
       this.supabase.from('students').select('id, school_id, status').eq('status', 'ACTIVE'),
       this.supabase.from('classes').select('id, school_id'),
@@ -1487,6 +1123,7 @@ export class AuthService {
         }
         localStorage.setItem(this.TOKEN_KEY, res.accessToken);
         localStorage.setItem(this.USER_KEY, JSON.stringify(res.user));
+        this.supabase.setAuthToken(res.accessToken);
         this.currentUser.set(res.user);
         if (res.user?.school?.id) {
           this.syncSchoolProfileFromDb(res.user.school.id);
@@ -1502,6 +1139,7 @@ export class AuthService {
         const backup = JSON.parse(backupRaw);
         localStorage.setItem(this.TOKEN_KEY, backup.token);
         localStorage.setItem(this.USER_KEY, JSON.stringify(backup.user));
+        this.supabase.setAuthToken(backup.token);
         localStorage.removeItem(this.ROOT_BACKUP_KEY);
         this.currentUser.set(backup.user);
         this.router.navigate(['/super-admin']);
@@ -1523,6 +1161,9 @@ export class AuthService {
   }
 
   logout(): void {
+    // Best-effort server-side revocation, then clear the local session.
+    try { void this.supabase.rpc('logout_session'); } catch { /* ignore */ }
+    this.supabase.setAuthToken(null);
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
     localStorage.removeItem(this.ROOT_BACKUP_KEY);

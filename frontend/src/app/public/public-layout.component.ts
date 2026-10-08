@@ -11,8 +11,8 @@ import { AuthService } from '../core/services/auth.service';
     <div class="flex min-h-screen flex-col bg-white font-sans text-slate-800 selection:bg-blue-600 selection:text-white">
 
       <!-- ============================ HEADER ============================ -->
-      <header class="fixed inset-x-0 top-0 z-50 border-b bg-white/90 backdrop-blur-md transition-all duration-300"
-              [ngClass]="scrolled() ? 'border-slate-200 shadow-sm' : 'border-transparent'">
+      <header class="fixed inset-x-0 top-0 z-50 border-b backdrop-blur-xl transition-all duration-300"
+              [ngClass]="scrolled() ? 'border-slate-200/70 bg-white/80 shadow-sm' : 'border-white/40 bg-white/65'">
         <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:h-[72px] sm:px-6 lg:px-8">
 
           <!-- Brand -->
