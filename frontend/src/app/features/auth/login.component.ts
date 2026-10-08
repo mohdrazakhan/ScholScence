@@ -110,7 +110,8 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
     <div class="min-h-screen w-full bg-gradient-to-br from-slate-100 via-[#eef2f8] to-[#e2e8f0] flex flex-col lg:flex-row items-stretch font-sans text-slate-800 selection:bg-blue-500 selection:text-white relative">
       
       <!-- Back to Public Website Floating Link -->
-      <a routerLink="/"
+      <a *ngIf="!subdomainForced"
+         routerLink="/"
          class="absolute top-4 left-4 z-50 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/90 hover:bg-white text-slate-700 hover:text-indigo-600 font-bold text-xs shadow-sm border border-slate-200 transition-all backdrop-blur-sm">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -457,7 +458,7 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
             
             <div class="space-y-3">
               <div class="flex items-center justify-end">
-                <button type="button" (click)="backToSchoolSelect()"
+                <button *ngIf="!subdomainForced" type="button" (click)="backToSchoolSelect()"
                         class="text-xs font-bold text-slate-500 hover:text-slate-900 hover:underline flex items-center gap-1 cursor-pointer">
                   <span>← {{ isRootLogin ? 'Back to School Directory' : 'Change School' }}</span>
                 </button>
@@ -771,6 +772,7 @@ export class LoginComponent implements OnInit {
   private logoClickTimer: any = null;
 
   onLogoClick() {
+    if (this.subdomainForced) return; // no platform-console entry on a school's dedicated portal
     this.logoClickCount++;
     if (this.logoClickTimer) {
       clearTimeout(this.logoClickTimer);
@@ -825,7 +827,47 @@ export class LoginComponent implements OnInit {
     this.schoolsLoading = false;
     this.schoolsError = false;
 
-    // Restore previously selected school code if any
+    // 1. Per-school portal addresses (dha.schoolsense.in, dha.localhost:4300, ?school=dha):
+    // Check for forced subdomain FIRST — this takes absolute precedence over localStorage.
+    const sub = this.schoolContext.detectForcedSubdomain();
+    if (sub) {
+      try {
+        const profile = await this.auth.getSchoolBySubdomain(sub);
+        if (profile) {
+          let fullProfile: any = null;
+          try {
+            fullProfile = await this.auth.getSchoolProfileById(profile.id);
+          } catch (e) {}
+
+          const mergedSchool = {
+            id: profile.id,
+            name: profile.name,
+            code: profile.code || '',
+            city: profile.city || '',
+            ...profile,
+            ...(fullProfile || {}),
+          };
+
+          this.selectedSchool = mergedSchool;
+          this.selectedSchoolId = profile.id;
+          this.searchQuery = profile.name;
+          this.subdomainForced = true;
+          this.step = 'LOGIN';
+          localStorage.setItem('schoolsense_selected_school_id', profile.id);
+          localStorage.setItem('schoolsense_selected_school_name', profile.name);
+          localStorage.setItem('schoolsense_selected_school_code', profile.code || '');
+          return;
+        } else {
+          this.subdomainNotFound = sub;
+          this.step = 'SELECT_SCHOOL';
+          return;
+        }
+      } catch (e) {
+        // lookup failed — fall back to the normal school search
+      }
+    }
+
+    // 2. Main platform domain: restore previously selected school code if any
     const storedSchoolId = localStorage.getItem('schoolsense_selected_school_id');
     const storedSchoolName = localStorage.getItem('schoolsense_selected_school_name');
     const storedSchoolCode = localStorage.getItem('schoolsense_selected_school_code');
@@ -845,38 +887,6 @@ export class LoginComponent implements OnInit {
           this.selectedSchool = { ...this.selectedSchool, ...fullProfile };
         }
       } catch (e) {}
-    }
-
-    // Per-school portal addresses (dha.schoolsense.in, ?school=dha): open
-    // straight to that school's sign-in step.
-    if (!this.selectedSchool) {
-      const sub = this.schoolContext.detectForcedSubdomain();
-      if (sub) {
-        try {
-          const profile = await this.auth.getSchoolBySubdomain(sub);
-          if (profile) {
-            this.selectedSchool = {
-              id: profile.id,
-              name: profile.name,
-              code: profile.code || '',
-              city: profile.city || '',
-              ...profile,
-            };
-            this.selectedSchoolId = profile.id;
-            this.searchQuery = profile.name;
-            this.subdomainForced = true;
-            this.step = 'LOGIN';
-            localStorage.setItem('schoolsense_selected_school_id', profile.id);
-            localStorage.setItem('schoolsense_selected_school_name', profile.name);
-            localStorage.setItem('schoolsense_selected_school_code', profile.code || '');
-          } else {
-            this.subdomainNotFound = sub;
-            this.step = 'SELECT_SCHOOL';
-          }
-        } catch (e) {
-          // lookup failed — fall back to the normal school search
-        }
-      }
     }
   }
 
@@ -997,13 +1007,10 @@ export class LoginComponent implements OnInit {
   }
 
   backToSchoolSelect() {
+    if (this.subdomainForced) return; // cannot switch school on dedicated portal
     this.isRootLogin = false;
     this.step = 'SELECT_SCHOOL';
     this.errorMessage = '';
-    // "Change School" opts out of the forced portal for the rest of this
-    // browser session; a fresh visit to the subdomain re-applies it.
-    this.schoolContext.dismiss();
-    this.subdomainForced = false;
   }
 
   openForgotPassword() {

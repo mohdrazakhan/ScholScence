@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { Router, CanActivateFn, CanActivateChildFn } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { SchoolContextService } from '../services/school-context.service';
 import { ToastService } from '../services/toast.service';
 
 export const authGuard: CanActivateFn = (route, state) => {
@@ -50,3 +51,27 @@ export const authGuard: CanActivateFn = (route, state) => {
 };
 
 export const authChildGuard: CanActivateChildFn = authGuard;
+
+/**
+ * Guards public marketing website routes.
+ * When on a school-specific subdomain (e.g. dha.schoolsense.in or dha.localhost:4300),
+ * visitors should go directly to the school portal (/login or /dashboard) instead of the marketing website.
+ */
+export const publicSubdomainGuard: CanActivateFn = () => {
+  const schoolContext = inject(SchoolContextService);
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  const forcedSubdomain = schoolContext.detectForcedSubdomain();
+  if (forcedSubdomain) {
+    if (authService.isAuthenticated()) {
+      router.navigate(['/dashboard']);
+    } else {
+      router.navigate(['/login']);
+    }
+    return false;
+  }
+
+  return true;
+};
+

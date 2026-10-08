@@ -22,7 +22,7 @@ import { TimetableComponent } from './features/timetable/timetable.component';
 import { SuperAdminComponent } from './features/super-admin/super-admin.component';
 import { SubscriptionComponent } from './features/subscription/subscription.component';
 import { StudentDetailComponent } from './features/academics/student-detail.component';
-import { authGuard, authChildGuard } from './core/guards/auth.guard';
+import { authGuard, authChildGuard, publicSubdomainGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   // Authentication route
@@ -32,6 +32,8 @@ export const routes: Routes = [
   {
     path: '',
     component: PublicLayoutComponent,
+    canActivate: [publicSubdomainGuard],
+    canActivateChild: [publicSubdomainGuard],
     children: [
       { path: '', component: HomeComponent, pathMatch: 'full' },
       { path: 'home', redirectTo: '', pathMatch: 'full' },
