@@ -141,6 +141,9 @@ import { AuthService } from '../core/services/auth.service';
                 <li><a routerLink="/blog" class="transition-colors hover:text-white">Blog</a></li>
                 <li><a routerLink="/contact" class="transition-colors hover:text-white">Contact</a></li>
                 <li><a routerLink="/contact?type=feature" class="transition-colors hover:text-white">Request a Feature</a></li>
+                <li><a routerLink="/legal/terms" class="transition-colors hover:text-white">Terms &amp; Conditions</a></li>
+                <li><a routerLink="/legal/privacy" class="transition-colors hover:text-white">Privacy Policy</a></li>
+                <li><a routerLink="/legal/acceptable-use" class="transition-colors hover:text-white">Acceptable Use</a></li>
               </ul>
               <a routerLink="/contact?type=demo"
                  class="mt-5 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500">

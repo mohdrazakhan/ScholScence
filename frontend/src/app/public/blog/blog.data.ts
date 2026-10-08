@@ -259,7 +259,7 @@ export const BLOG_POSTS: BlogPost[] = [
         paragraphs: [
           'Ask specifically: is our data isolated from other schools? Who can read it? What happens to it if we leave? "It\'s in the cloud" is not an answer.',
         ],
-        note: 'SchoolSense: encrypted in transit and at rest, strictly isolated per school, passwords hashed, sensitive actions audit-logged, and your data exported for you if you leave.',
+        note: 'SchoolSense: encrypted in transit and at rest, role-based access control, passwords stored as one-way hashes, sensitive actions audit-logged, and your data exported to you on request.',
       },
       {
         heading: '6. What is the exit path?',

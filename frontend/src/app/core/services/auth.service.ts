@@ -410,6 +410,22 @@ export class AuthService {
     return task;
   }
 
+  /** Looks up a school's public profile by its portal subdomain (e.g. "dha"). */
+  async getSchoolBySubdomain(subdomain: string): Promise<any> {
+    const clean = (subdomain || '').trim().toLowerCase();
+    if (!clean) return null;
+    try {
+      const { data } = await this.supabase
+        .from('school_public_profiles')
+        .select('id, name, code, city, state, logo_url, affiliation_board, affiliation, motto')
+        .eq('subdomain', clean)
+        .maybeSingle();
+      return data || null;
+    } catch {
+      return null;
+    }
+  }
+
   async getSchoolProfileById(schoolIdOrCode: string): Promise<any> {
     if (!schoolIdOrCode) return null;
     const cleanId = (schoolIdOrCode || '').trim();

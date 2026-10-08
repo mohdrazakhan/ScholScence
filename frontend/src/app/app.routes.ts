@@ -7,6 +7,7 @@ import { AboutComponent } from './public/about.component';
 import { ContactComponent } from './public/contact.component';
 import { BlogListComponent } from './public/blog/blog-list.component';
 import { BlogPostComponent } from './public/blog/blog-post.component';
+import { LegalPageComponent } from './public/legal/legal-page.component';
 import { MainLayoutComponent } from './layout/main-layout.component';
 import { LoginComponent } from './features/auth/login.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
@@ -44,6 +45,7 @@ export const routes: Routes = [
       { path: 'book-demo', redirectTo: 'contact', pathMatch: 'full' },
       { path: 'blog', component: BlogListComponent },
       { path: 'blog/:slug', component: BlogPostComponent },
+      { path: 'legal/:doc', component: LegalPageComponent },
     ],
   },
 

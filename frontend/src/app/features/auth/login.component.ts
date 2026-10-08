@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { SchoolContextService } from '../../core/services/school-context.service';
 
 export interface SchoolItem {
   id: string;
@@ -341,6 +342,9 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
         </div>
 
         <!-- STEP 1 RIGHT: School Selection Dropdown -->
+        <div *ngIf="step === 'SELECT_SCHOOL' && subdomainNotFound" class="w-full max-w-md rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-xs font-medium text-amber-800 animate-fadeIn">
+          We couldn't find a school at the address "{{ subdomainNotFound }}". Please select your school below, or check the address with your school office.
+        </div>
         <div *ngIf="step === 'SELECT_SCHOOL'" class="w-full max-w-md bg-white rounded-3xl border border-slate-200/90 shadow-[0_20px_50px_rgba(15,23,42,0.08),0_1px_3px_rgba(0,0,0,0.05)] p-7 sm:p-9 space-y-6">
             
             <div class="space-y-2 text-center flex flex-col items-center">
@@ -704,6 +708,10 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
 })
 export class LoginComponent implements OnInit {
   auth = inject(AuthService);
+  private schoolContext = inject(SchoolContextService);
+  /** True when the portal address itself picked the school (dha.schoolsense.in / ?school=). */
+  subdomainForced = false;
+  subdomainNotFound: string | null = null;
   router = inject(Router);
 
   step: 'SELECT_SCHOOL' | 'LOGIN' | 'FORGOT_PASSWORD' = 'SELECT_SCHOOL';
@@ -838,6 +846,38 @@ export class LoginComponent implements OnInit {
         }
       } catch (e) {}
     }
+
+    // Per-school portal addresses (dha.schoolsense.in, ?school=dha): open
+    // straight to that school's sign-in step.
+    if (!this.selectedSchool) {
+      const sub = this.schoolContext.detectForcedSubdomain();
+      if (sub) {
+        try {
+          const profile = await this.auth.getSchoolBySubdomain(sub);
+          if (profile) {
+            this.selectedSchool = {
+              id: profile.id,
+              name: profile.name,
+              code: profile.code || '',
+              city: profile.city || '',
+              ...profile,
+            };
+            this.selectedSchoolId = profile.id;
+            this.searchQuery = profile.name;
+            this.subdomainForced = true;
+            this.step = 'LOGIN';
+            localStorage.setItem('schoolsense_selected_school_id', profile.id);
+            localStorage.setItem('schoolsense_selected_school_name', profile.name);
+            localStorage.setItem('schoolsense_selected_school_code', profile.code || '');
+          } else {
+            this.subdomainNotFound = sub;
+            this.step = 'SELECT_SCHOOL';
+          }
+        } catch (e) {
+          // lookup failed — fall back to the normal school search
+        }
+      }
+    }
   }
 
   onInputFocus() {
@@ -960,6 +1000,10 @@ export class LoginComponent implements OnInit {
     this.isRootLogin = false;
     this.step = 'SELECT_SCHOOL';
     this.errorMessage = '';
+    // "Change School" opts out of the forced portal for the rest of this
+    // browser session; a fresh visit to the subdomain re-applies it.
+    this.schoolContext.dismiss();
+    this.subdomainForced = false;
   }
 
   openForgotPassword() {

@@ -10,3 +10,7 @@
 /blog/how-to-choose-school-management-software-india
 /blog/why-parent-connect-matters-schools
 /blog/simplest-school-management-software
+/legal/terms
+/legal/privacy
+/legal/data-processing
+/legal/acceptable-use
