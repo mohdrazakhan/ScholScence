@@ -1,19 +1,14 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, RouterLink } from '@angular/router';
 import { SeoService } from '../core/services/seo.service';
-import { VectorArtComponent } from './vector-art.component';
+import { VectorArtComponent, VectorName } from './vector-art.component';
 
-interface Detail {
-  text: string;
-}
-
-interface FeatureSection {
-  id: string;
-  eyebrow: string;
-  title: string;
-  intro: string;
-  items: { icon: string; name: string; tagline: string; points: Detail[] }[];
+interface OfficialDocument {
+  name: string;
+  badge: string;
+  hint: string;
+  art: VectorName;
 }
 
 @Component({
@@ -21,173 +16,421 @@ interface FeatureSection {
   standalone: true,
   imports: [CommonModule, RouterModule, RouterLink, VectorArtComponent],
   template: `
-    <!-- Hero -->
-    <section class="bg-gradient-to-b from-blue-50/70 to-white py-14 sm:py-20">
-      <div class="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
-        <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Features</p>
-        <h1 class="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
-          Every tool your school needs — explained in plain words
+    <!-- ============================== HERO & NAV ============================== -->
+    <section class="bg-gradient-to-b from-blue-50/70 via-indigo-50/30 to-white py-8 sm:py-14 border-b border-slate-100">
+      <div class="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-100/80 px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-700">
+          <span class="h-2 w-2 rounded-full bg-blue-600 animate-pulse"></span>
+          All 9 Modules Included Free
+        </span>
+        <h1 class="mt-3 text-2xl font-black tracking-tight text-slate-900 sm:text-5xl">
+          Visual, simple &amp; connected tools for modern schools
         </h1>
-        <p class="mt-5 text-base leading-relaxed text-slate-600 sm:text-lg">
-          No confusing modules or hidden add-ons. SchoolSense gives you connected tools,
-          plus live Parent Connect — and every one of them is included in your plan.
+        <p class="mt-2 text-xs leading-relaxed text-slate-600 sm:mt-4 sm:text-base max-w-2xl mx-auto">
+          No confusing modules or hidden add-ons. Get 9 connected core tools, downloadable board certificates, plus dedicated Parent and Teacher mobile apps — all in one flat plan.
         </p>
-      </div>
-    </section>
 
-    <!-- Parent Connect spotlight -->
-    <section class="bg-white pb-4" aria-labelledby="pc-heading">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="grid items-center gap-8 rounded-3xl border border-blue-100 bg-blue-50/50 p-8 sm:p-10 lg:grid-cols-2 lg:p-12">
-          <div>
-            <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Parent Connect</p>
-            <h2 id="pc-heading" class="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-              The feature that makes parents love your school
-            </h2>
-            <p class="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
-              Parents get a simple live view of their child — attendance, homework, marks,
-              fees, notices and complaints — the moment things happen. Happy parents means
-              fewer phone calls to your office and more admissions by word of mouth.
-            </p>
-          </div>
-          <ul class="grid gap-3 sm:grid-cols-2">
-            <li *ngFor="let p of parentPoints" class="flex items-center gap-2.5 rounded-xl bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-blue-100/70">
-              <svg class="h-5 w-5 shrink-0 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" [attr.d]="p.icon" /></svg>
-              <span>{{ p.label }}</span>
-            </li>
-          </ul>
+        <!-- Quick Category Filter Navigator -->
+        <div class="mt-6 flex items-center justify-start sm:justify-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+          <button *ngFor="let cat of categories"
+                  type="button"
+                  (click)="scrollToSection(cat.id)"
+                  class="shrink-0 inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all duration-200 active:scale-95 shadow-2xs"
+                  [ngClass]="activeTab() === cat.id ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30 scale-102' : 'bg-white text-slate-700 border border-slate-200/90 hover:bg-slate-50 hover:border-slate-300'">
+            <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="cat.iconPath" />
+            </svg>
+            <span>{{ cat.label }}</span>
+          </button>
         </div>
       </div>
     </section>
 
-    <!-- Feature groups -->
-    <section *ngFor="let group of groups" class="py-14 sm:py-16" [ngClass]="group.id === 'office' ? 'bg-slate-50' : 'bg-white'"
-             [attr.aria-labelledby]="group.id + '-heading'">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="max-w-2xl">
-          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">{{ group.eyebrow }}</p>
-          <h2 [id]="group.id + '-heading'" class="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">{{ group.title }}</h2>
-          <p class="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">{{ group.intro }}</p>
-        </div>
-
-        <div class="mt-10 grid gap-6 lg:grid-cols-2">
-          <article *ngFor="let item of group.items"
-                   class="rounded-2xl border border-slate-200 bg-white p-7 transition-shadow hover:shadow-lg hover:shadow-slate-900/5">
-            <div class="flex items-start gap-4">
-              <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="item.icon" />
-                </svg>
-              </span>
-              <div>
-                <h3 class="text-lg font-bold text-slate-900">{{ item.name }}</h3>
-                <p class="mt-1 text-sm font-medium text-blue-700">{{ item.tagline }}</p>
-              </div>
-            </div>
-            <ul class="mt-5 space-y-2.5">
-              <li *ngFor="let point of item.points" class="flex items-start gap-2.5 text-sm text-slate-600">
-                <svg class="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
-                {{ point.text }}
-              </li>
-            </ul>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- Mobile apps -->
-    <section id="mobile-apps" class="bg-slate-50 py-14 sm:py-16" aria-labelledby="apps-heading">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="mx-auto max-w-2xl text-center">
-          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Mobile apps</p>
-          <h2 id="apps-heading" class="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+    <!-- ============================== 1. TWO DEDICATED MOBILE APPS ============================== -->
+    <section id="mobile-apps" class="bg-white py-8 sm:py-16 scroll-mt-20 border-b border-slate-100" aria-labelledby="apps-heading">
+      <div class="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
+        
+        <div class="text-center max-w-2xl mx-auto mb-6 sm:mb-10">
+          <span class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Mobile Apps</span>
+          <h2 id="apps-heading" class="mt-1.5 text-xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
             Two dedicated mobile apps — included free
           </h2>
-          <p class="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
-            Alongside the web panel, every school gets two purpose-built apps: one for parents,
-            one for teachers. No extra charge, no per-user fee.
+          <p class="mt-1 text-xs sm:text-sm text-slate-600">
+            One purpose-built app for Parents, one for Teachers. Fast, lightweight, and works on any budget smartphone.
           </p>
         </div>
 
-        <div class="mt-10 grid gap-6 lg:grid-cols-2">
-          <div class="rounded-3xl border border-slate-200 bg-white p-7 sm:p-9">
-            <app-vector-art name="parent-phone" class="h-24 w-24" />
-            <p class="mt-4 text-xs font-bold uppercase tracking-[0.22em] text-blue-600">Parent app</p>
-            <h3 class="mt-2 text-xl font-extrabold text-slate-900">Your child's school day, live</h3>
-            <ul class="mt-5 space-y-3">
-              <li *ngFor="let f of parentAppFeatures" class="flex items-start gap-2.5">
-                <svg class="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <span class="text-sm leading-relaxed text-slate-700">{{ f }}</span>
-              </li>
-            </ul>
+        <!-- 2 Clean Side-by-Side App Cards -->
+        <div class="grid gap-4 sm:gap-6 lg:grid-cols-2">
+          
+          <!-- Parent App Card -->
+          <div class="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-8 shadow-xs flex flex-col justify-between">
+            <div>
+              <div class="flex items-center gap-3.5">
+                <div class="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50">
+                  <app-vector-art name="parent-phone" class="h-10 w-10 sm:h-12 sm:w-12" />
+                </div>
+                <div>
+                  <span class="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-100">
+                    Android &amp; iOS
+                  </span>
+                  <h3 class="text-base sm:text-xl font-extrabold text-slate-900 mt-0.5">Parent Mobile App</h3>
+                </div>
+              </div>
+
+              <p class="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                Parents stay connected with their child's daily school activities with real-time push notifications.
+              </p>
+
+              <ul class="mt-4 space-y-2.5 text-xs sm:text-sm text-slate-700">
+                <li *ngFor="let item of parentAppFeatures" class="flex items-start gap-2.5">
+                  <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 mt-0.5">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  </span>
+                  <span>{{ item }}</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
+              <span>Included in flat ₹10 plan</span>
+              <span class="font-bold text-blue-600">Zero extra user fees</span>
+            </div>
           </div>
 
-          <div class="rounded-3xl border border-slate-200 bg-white p-7 sm:p-9">
-            <app-vector-art name="teacher-app" class="h-24 w-24" />
-            <p class="mt-4 text-xs font-bold uppercase tracking-[0.22em] text-blue-600">Teacher app</p>
-            <h3 class="mt-2 text-xl font-extrabold text-slate-900">Classroom work in minutes</h3>
-            <ul class="mt-5 space-y-3">
-              <li *ngFor="let f of teacherAppFeatures" class="flex items-start gap-2.5">
-                <svg class="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <span class="text-sm leading-relaxed text-slate-700">{{ f }}</span>
-              </li>
-            </ul>
+          <!-- Teacher App Card -->
+          <div class="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-8 shadow-xs flex flex-col justify-between">
+            <div>
+              <div class="flex items-center gap-3.5">
+                <div class="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50">
+                  <app-vector-art name="teacher-app" class="h-10 w-10 sm:h-12 sm:w-12" />
+                </div>
+                <div>
+                  <span class="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-100">
+                    Android &amp; iOS
+                  </span>
+                  <h3 class="text-base sm:text-xl font-extrabold text-slate-900 mt-0.5">Teacher Mobile App</h3>
+                </div>
+              </div>
+
+              <p class="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                Empowers classroom teachers to complete daily administrative tasks in seconds without paperwork.
+              </p>
+
+              <ul class="mt-4 space-y-2.5 text-xs sm:text-sm text-slate-700">
+                <li *ngFor="let item of teacherAppFeatures" class="flex items-start gap-2.5">
+                  <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 mt-0.5">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  </span>
+                  <span>{{ item }}</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
+              <span>Included in flat ₹10 plan</span>
+              <span class="font-bold text-blue-600">Zero extra user fees</span>
+            </div>
           </div>
+
         </div>
+
       </div>
     </section>
 
-    <!-- Non-tech reassurance -->
-    <section class="bg-white py-14 sm:py-16" aria-labelledby="simple-heading">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="rounded-3xl bg-slate-900 px-6 py-12 sm:px-12">
-          <div class="mx-auto max-w-2xl text-center">
-            <h2 id="simple-heading" class="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-              Built for non-technical staff
-            </h2>
-            <p class="mt-3 text-sm leading-relaxed text-slate-300 sm:text-base">
-              Your teachers and office staff don't need training certificates. SchoolSense uses
-              big buttons, simple words and one obvious way to do each task — the same ease as
-              the apps they already use daily.
+    <!-- ============================== 2. ACADEMICS & TEACHING ============================== -->
+    <section id="academics" class="py-8 sm:py-16 scroll-mt-20 bg-white border-b border-slate-100">
+      <div class="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
+        
+        <div class="max-w-2xl">
+          <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.2em] text-blue-600">
+            For Teaching &amp; Classrooms
+          </span>
+          <h2 class="mt-1.5 text-xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+            Academics — run every class smoothly
+          </h2>
+          <p class="mt-1 text-xs sm:text-sm text-slate-600 leading-relaxed">
+            Timetable, attendance, homework and auto-calculating CBSE/ICSE marksheets in one visual dashboard.
+          </p>
+        </div>
+
+        <!-- 4 Clean Informational Cards Grid (Non-Clickable, Simple Text & Sub-heading) -->
+        <div class="mt-6 sm:mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+          
+          <!-- Card 1: Timetable -->
+          <div class="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs">
+            <div class="flex items-center justify-between">
+              <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50">
+                <app-vector-art name="timetable" class="h-8 w-8" />
+              </div>
+              <span class="rounded-md bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 border border-blue-100">
+                Weekly Grids
+              </span>
+            </div>
+            <h3 class="mt-4 text-base font-bold text-slate-900">Timetable &amp; Period Scheduling</h3>
+            <p class="mt-1.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Create conflict-free class and teacher schedules in minutes. Changes sync instantly to parent and teacher mobile apps.
             </p>
           </div>
-          <div class="mt-9 grid gap-4 sm:grid-cols-3">
-            <div class="rounded-2xl bg-slate-800/60 p-6 text-center ring-1 ring-slate-700">
-              <p class="text-3xl">👆</p>
-              <p class="mt-2 text-sm font-bold text-white">One obvious way</p>
-              <p class="mt-1 text-xs leading-relaxed text-slate-400">Each task has one clear flow — mark, save, done.</p>
+
+          <!-- Card 2: Attendance -->
+          <div class="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs">
+            <div class="flex items-center justify-between">
+              <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50">
+                <app-vector-art name="attendance" class="h-8 w-8" />
+              </div>
+              <span class="rounded-md bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 border border-blue-100">
+                Instant Alerts
+              </span>
             </div>
-            <div class="rounded-2xl bg-slate-800/60 p-6 text-center ring-1 ring-slate-700">
-              <p class="text-3xl">📱</p>
-              <p class="mt-2 text-sm font-bold text-white">Any device</p>
-              <p class="mt-1 text-xs leading-relaxed text-slate-400">Works on phones, tablets and computers — nothing to install.</p>
+            <h3 class="mt-4 text-base font-bold text-slate-900">Class Attendance Register</h3>
+            <p class="mt-1.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Mark the entire class in 10 seconds. Parents receive instant push notifications if their child is absent or late.
+            </p>
+          </div>
+
+          <!-- Card 3: Homework -->
+          <div class="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs">
+            <div class="flex items-center justify-between">
+              <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50">
+                <app-vector-art name="homework" class="h-8 w-8" />
+              </div>
+              <span class="rounded-md bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 border border-blue-100">
+                Daily Diary
+              </span>
             </div>
-            <div class="rounded-2xl bg-slate-800/60 p-6 text-center ring-1 ring-slate-700">
-              <p class="text-3xl">🤝</p>
-              <p class="mt-2 text-sm font-bold text-white">Free training</p>
-              <p class="mt-1 text-xs leading-relaxed text-slate-400">We train your staff step by step during onboarding.</p>
+            <h3 class="mt-4 text-base font-bold text-slate-900">Homework &amp; Assignments</h3>
+            <p class="mt-1.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Post daily homework with subject details and attachments. Parents view assignments the same evening on their phone.
+            </p>
+          </div>
+
+          <!-- Card 4: Exams & Marksheets -->
+          <div class="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs">
+            <div class="flex items-center justify-between">
+              <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50">
+                <app-vector-art name="exams" class="h-8 w-8" />
+              </div>
+              <span class="rounded-md bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 border border-blue-100">
+                CBSE &amp; State Boards
+              </span>
             </div>
+            <h3 class="mt-4 text-base font-bold text-slate-900">Exams &amp; Report Cards</h3>
+            <p class="mt-1.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Auto-calculates marks, totals, percentages and CBSE/ICSE grades. Generate and print official report cards with 1-click.
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================== 3. ADMINISTRATION & OFFICE OPERATIONS ============================== -->
+    <section id="office" class="py-8 sm:py-16 scroll-mt-20 bg-slate-50/70 border-b border-slate-200/80">
+      <div class="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
+        
+        <div class="max-w-2xl">
+          <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.2em] text-blue-600">
+            For School Office &amp; Management
+          </span>
+          <h2 class="mt-1.5 text-xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+            Administration — eliminate office chaos
+          </h2>
+          <p class="mt-1 text-xs sm:text-sm text-slate-600 leading-relaxed">
+            Fees, circulars, parent grievances, and academic promotions organized with strict audit trails.
+          </p>
+        </div>
+
+        <!-- 4 Clean Informational Cards Grid (Non-Clickable, Simple Text & Sub-heading) -->
+        <div class="mt-6 sm:mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+          
+          <!-- Admin Card 1: Fee Management -->
+          <div class="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs">
+            <div class="flex items-center justify-between">
+              <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50">
+                <app-vector-art name="fees" class="h-8 w-8" />
+              </div>
+              <span class="rounded-md bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 border border-blue-100">
+                Itemized Invoices
+              </span>
+            </div>
+            <h3 class="mt-4 text-base font-bold text-slate-900">Fee Management &amp; Receipts</h3>
+            <p class="mt-1.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Define fee structures, issue itemized digital invoices, track defaulters, and print instant transaction receipts.
+            </p>
+          </div>
+
+          <!-- Admin Card 2: Circulars -->
+          <div class="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs">
+            <div class="flex items-center justify-between">
+              <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50">
+                <app-vector-art name="notices" class="h-8 w-8" />
+              </div>
+              <span class="rounded-md bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 border border-blue-100">
+                Targeted Broadcast
+              </span>
+            </div>
+            <h3 class="mt-4 text-base font-bold text-slate-900">Broadcast Circulars &amp; Notices</h3>
+            <p class="mt-1.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Send notices to the whole school or specific classes only. Save paper costs and ensure zero missed announcements.
+            </p>
+          </div>
+
+          <!-- Admin Card 3: Grievance Desk -->
+          <div class="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs">
+            <div class="flex items-center justify-between">
+              <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50">
+                <app-vector-art name="security" class="h-8 w-8" />
+              </div>
+              <span class="rounded-md bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 border border-blue-100">
+                Ticket Pipeline
+              </span>
+            </div>
+            <h3 class="mt-4 text-base font-bold text-slate-900">Grievance Desk / Complaints</h3>
+            <p class="mt-1.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Track and resolve parent concerns with transparent status updates, assignments, and threaded communication.
+            </p>
+          </div>
+
+          <!-- Admin Card 4: Promotions & Alumni -->
+          <div class="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs">
+            <div class="flex items-center justify-between">
+              <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50">
+                <app-vector-art name="promotion" class="h-8 w-8" />
+              </div>
+              <span class="rounded-md bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 border border-blue-100">
+                Bulk Rollover
+              </span>
+            </div>
+            <h3 class="mt-4 text-base font-bold text-slate-900">Promotions &amp; Alumni Registry</h3>
+            <p class="mt-1.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
+              1-click session rollover promotes students in bulk while preserving permanent student lifecycle records.
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================== 4. OFFICIAL CERTIFICATES & REPORTS ============================== -->
+    <section id="documents" class="bg-white py-8 sm:py-20 border-b border-slate-200/80 scroll-mt-20" aria-labelledby="documents-heading">
+      <div class="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
+        
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 sm:pb-8">
+          <div class="max-w-2xl">
+            <span class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Official Certification Engine</span>
+            <h2 id="documents-heading" class="mt-1 text-xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+              1-Click official board certificates &amp; reports
+            </h2>
+            <p class="mt-1.5 text-xs sm:text-base text-slate-600 leading-relaxed">
+              Auto-fill student admission numbers, affiliation details, and seal watermarks for instant printing.
+            </p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <a routerLink="/contact" [queryParams]="{ type: 'demo' }"
+               class="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-colors">
+              Book a Free Demo
+              <span>→</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- 12 Supported Official Documents Grid (2-Col on Mobile, 4-Col on Desktop) -->
+        <div class="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+          <div *ngFor="let doc of officialDocuments"
+               class="rounded-xl sm:rounded-2xl border border-slate-200/90 bg-white p-3.5 sm:p-5 shadow-xs flex flex-col justify-between">
+            <div>
+              <div class="flex items-start justify-between gap-1.5">
+                <app-vector-art [name]="doc.art" class="h-9 w-9 sm:h-11 sm:w-11 shrink-0 drop-shadow-xs" />
+                <span class="rounded-md bg-blue-50 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-blue-700 uppercase tracking-wider border border-blue-100">
+                  {{ doc.badge }}
+                </span>
+              </div>
+              <h3 class="mt-2.5 sm:mt-4 text-xs sm:text-sm font-bold text-slate-900 line-clamp-2">
+                {{ doc.name }}
+              </h3>
+              <p class="mt-1 text-[10px] sm:text-xs leading-snug text-slate-500 line-clamp-2">
+                {{ doc.hint }}
+              </p>
+            </div>
+            <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px] sm:text-[11px] font-semibold text-slate-500">
+              <span>Auto-Generated</span>
+              <span class="text-blue-600 font-bold">1-Click</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================== 5. SIMPLICITY BY DESIGN ============================== -->
+    <section class="bg-gradient-to-b from-white via-slate-50/70 to-white py-8 sm:py-20" aria-labelledby="simple-heading">
+      <div class="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-2xl text-center">
+          <span class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Zero Technical Barrier</span>
+          <h2 id="simple-heading" class="mt-1.5 text-xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+            Built for non-technical teachers &amp; staff
+          </h2>
+          <p class="mt-1 text-xs sm:text-base text-slate-600 leading-relaxed">
+            If your staff can use WhatsApp, they can master SchoolSense in 5 minutes.
+          </p>
+        </div>
+
+        <div class="mt-6 sm:mt-12 grid gap-3.5 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <!-- Card 1 -->
+          <div class="rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white p-4 sm:p-8 text-center shadow-xs flex flex-col items-center">
+            <div class="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-blue-50/80 p-2">
+              <app-vector-art name="attendance" class="h-12 w-12 sm:h-16 sm:w-16 drop-shadow-xs" />
+            </div>
+            <h3 class="mt-3 sm:mt-5 text-sm sm:text-lg font-bold text-slate-900">One obvious way</h3>
+            <p class="mt-1 text-xs sm:text-sm text-slate-500">Each task has one clear flow — mark, save, done. Zero confusing sub-menus.</p>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white p-4 sm:p-8 text-center shadow-xs flex flex-col items-center">
+            <div class="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-blue-50/80 p-2">
+              <app-vector-art name="teacher-app" class="h-12 w-12 sm:h-16 sm:w-16 drop-shadow-xs" />
+            </div>
+            <h3 class="mt-3 sm:mt-5 text-sm sm:text-lg font-bold text-slate-900">Works on any phone</h3>
+            <p class="mt-1 text-xs sm:text-sm text-slate-500">Runs smoothly on basic budget smartphones, tablets and school office PCs.</p>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white p-4 sm:p-8 text-center shadow-xs flex flex-col items-center sm:col-span-2 lg:col-span-1">
+            <div class="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-blue-50/80 p-2">
+              <app-vector-art name="classroom" class="h-12 w-12 sm:h-16 sm:w-16 drop-shadow-xs" />
+            </div>
+            <h3 class="mt-3 sm:mt-5 text-sm sm:text-lg font-bold text-slate-900">Free live onboarding</h3>
+            <p class="mt-1 text-xs sm:text-sm text-slate-500">We guide your teachers step-by-step with WhatsApp and video support until 100% fluent.</p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- CTA -->
-    <section class="bg-white pb-16 sm:pb-24">
-      <div class="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-        <h2 class="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">See all of this working together</h2>
-        <p class="mx-auto mt-3 max-w-lg text-sm text-slate-600 sm:text-base">
-          Book a free demo and we'll show you a full school running on SchoolSense — attendance to certificates.
-        </p>
-        <div class="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <a routerLink="/contact" [queryParams]="{ type: 'demo' }"
-             class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-blue-600/25 transition-colors hover:bg-blue-700 sm:w-auto">
-            Book a Free Demo
-          </a>
-          <a routerLink="/pricing"
-             class="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-8 py-3.5 text-base font-semibold text-slate-800 transition-colors hover:bg-slate-50 sm:w-auto">
-            See Pricing
-          </a>
+    <!-- ============================== 6. FINAL CTA ============================== -->
+    <section class="bg-white pb-12 sm:pb-24">
+      <div class="mx-auto max-w-7xl px-3 text-center sm:px-6 lg:px-8">
+        <div class="rounded-3xl bg-gradient-to-r from-blue-600 to-indigo-700 px-4 py-8 sm:px-12 sm:py-14 text-white shadow-xl shadow-blue-600/20">
+          <h2 class="text-xl sm:text-4xl font-black tracking-tight">Ready to modernize your school?</h2>
+          <p class="mx-auto mt-2 max-w-xl text-xs sm:text-base text-blue-100 leading-relaxed">
+            See all 9 modules and mobile apps working live with your own school's curriculum in a 30-minute free demo.
+          </p>
+          <div class="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <a routerLink="/contact" [queryParams]="{ type: 'demo' }"
+               class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-7 py-3 text-sm font-extrabold text-blue-700 shadow-md transition-transform hover:scale-105 active:scale-95 sm:w-auto">
+              Book a Free Live Demo
+            </a>
+            <a routerLink="/pricing"
+               class="inline-flex w-full items-center justify-center rounded-xl border border-white/30 bg-white/10 px-7 py-3 text-sm font-bold text-white transition-colors hover:bg-white/20 sm:w-auto">
+              Explore Simple ₹10 Plan
+            </a>
+          </div>
         </div>
       </div>
     </section>
@@ -195,170 +438,77 @@ interface FeatureSection {
 })
 export class FeaturesComponent {
   private seo = inject(SeoService);
+  activeTab = signal<string>('mobile-apps');
 
-  parentPoints: { icon: string; label: string }[] = [
-    { icon: 'M15 10.5a3 3 0 11-6 0 3 3 0 016 0z', label: 'Live attendance updates' },
-    { icon: 'M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z', label: 'Homework & marks instantly' },
-    { icon: 'M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z', label: 'Fee invoices & receipts' },
-    { icon: 'M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46', label: 'Notices & event reminders' },
-    { icon: 'M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155', label: 'Complaint tracking end-to-end' },
-    { icon: 'M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5', label: "Today's timetable" },
-  ];
-
-  parentAppFeatures = [
-    'Push notification for every activity — attendance, homework, marks, fees, fines, events',
-    'Live daily attendance the moment roll call happens',
-    'Exam marks, results and report cards as soon as they are published',
-    'Fee invoices, receipts and fines always available on the phone',
-    'Emergency alerts — urgent school messages reach you in seconds',
-    'Raise complaints, follow every reply and see the status until resolved',
-    'Notices, school events and holiday updates instantly',
-    "Today's timetable — no morning confusion about books",
-  ];
-
-  teacherAppFeatures = [
-    'Mark the whole class\u2019s attendance in seconds',
-    'Post homework with due dates — parents notified instantly',
-    'Enter marks once — results and report cards calculate automatically',
-    'Receive parent complaints, reply and change status until resolved',
-    'Publish circulars and notices to one class or the whole school',
-    'Today\u2019s timetable and class strength at a glance',
-  ];
-
-  groups: FeatureSection[] = [
+  categories = [
+    {
+      id: 'mobile-apps',
+      label: 'Mobile Apps',
+      iconPath: 'M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3',
+    },
     {
       id: 'academics',
-      eyebrow: 'For teaching',
-      title: 'Academics — run every class smoothly',
-      intro:
-        'The daily work of teachers — timetable, roll call, homework and marks — becomes a few taps instead of paperwork.',
-      items: [
-        {
-          icon: 'M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5',
-          name: 'Timetable & Scheduling',
-          tagline: 'One timetable everyone can trust',
-          points: [
-            { text: 'Create class-wise and teacher-wise timetables in minutes.' },
-            { text: 'Changes reflect instantly for teachers and parents.' },
-            { text: 'Academic calendar with holidays and school events.' },
-            { text: 'India-style April–March academic sessions built in.' },
-          ],
-        },
-        {
-          icon: 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
-          name: 'Attendance Register',
-          tagline: 'The whole class in seconds',
-          points: [
-            { text: 'Mark present, absent, late or half-day with one tap each.' },
-            { text: 'Parents are informed the moment their child is marked absent.' },
-            { text: 'Monthly attendance view for every student.' },
-            { text: 'Class-teacher dashboard shows today\'s strength at a glance.' },
-          ],
-        },
-        {
-          icon: 'M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18.75c1.955 0 3.684.672 5 1.808V7.542a6.984 6.984 0 00-1-1.5zM12 6.042A8.967 8.967 0 0118 3.75c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18.75c-1.955 0-3.684.672-5 1.808V7.542a6.984 6.984 0 011-1.5z',
-          name: 'Homework & Assignments',
-          tagline: 'No more lost diaries',
-          points: [
-            { text: 'Teachers post homework with subject, details and due date.' },
-            { text: 'Parents see it the same evening on their phone.' },
-            { text: 'Submissions and feedback stay on record.' },
-            { text: 'Printable homework diary for classrooms without phones.' },
-          ],
-        },
-        {
-          icon: 'M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5',
-          name: 'Exams & Marksheets',
-          tagline: 'Report cards without the maths',
-          points: [
-            { text: 'Schedule exams with dates, max marks and passing marks.' },
-            { text: 'Enter marks once — totals, percentages and grades calculate automatically.' },
-            { text: 'Printable report cards in your school\'s format.' },
-            { text: 'Results appear on parents\' phones as soon as you publish.' },
-          ],
-        },
-      ],
+      label: 'Academics',
+      iconPath: 'M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25',
     },
     {
       id: 'office',
-      eyebrow: 'For the school office',
-      title: 'Administration — keep the office in order',
-      intro:
-        'Fees, notices, grievances, alumni and official documents — the work that keeps your office busy, made calm and organised.',
-      items: [
-        {
-          icon: 'M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z',
-          name: 'Fee Management & Invoicing',
-          tagline: 'Every rupee accounted for',
-          points: [
-            { text: 'Define fee categories and class-wise fee structures.' },
-            { text: 'Generate student fee invoices and share receipts.' },
-            { text: 'A clear payment record per student — no register needed.' },
-            { text: 'Parents keep their receipts on their phone, forever.' },
-          ],
-        },
-        {
-          icon: 'M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46',
-          name: 'Circulars & Notices',
-          tagline: 'Reach every parent instantly',
-          points: [
-            { text: 'Send notices to everyone or to selected classes only.' },
-            { text: 'School events and holidays on a shared calendar.' },
-            { text: 'No printing, no folding, no "my child never got the circular".' },
-            { text: 'Printable bulletin if you still want a notice board copy.' },
-          ],
-        },
-        {
-          icon: 'M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155',
-          name: 'Grievance Desk / Complaints',
-          tagline: 'Issues get resolved, not ignored',
-          points: [
-            { text: 'Parents raise concerns as tickets with full details.' },
-            { text: 'Assign to the right teacher or staff member.' },
-            { text: 'Threaded replies — the whole conversation stays on record.' },
-            { text: 'Status tracking from "open" to "resolved" for everyone to see.' },
-          ],
-        },
-        {
-          icon: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z',
-          name: 'Alumni Management',
-          tagline: 'Your school community, for life',
-          points: [
-            { text: 'Graduating students become alumni with one click at year end.' },
-            { text: 'Complete academic history stays with every alumnus.' },
-            { text: 'Keep your alumni network ready for events and outreach.' },
-          ],
-        },
-        {
-          icon: 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z',
-          name: 'Auto-Generated Certificates',
-          tagline: 'TC & CC in one click',
-          points: [
-            { text: 'Transfer Certificates with proper numbering and format.' },
-            { text: 'Character Certificates, Bonafide and other school documents.' },
-            { text: 'Uses the student\'s full academic record automatically.' },
-            { text: 'Ready to print, sign and hand over.' },
-          ],
-        },
-        {
-          icon: 'M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z',
-          name: 'Academic Sessions & Promotion',
-          tagline: 'Year-end in one click',
-          points: [
-            { text: 'Create the new academic session with all classes and sections.' },
-            { text: 'Promote students class-wise automatically by school rules.' },
-            { text: 'Graduating class moves to alumni — nothing lost.' },
-          ],
-        },
-      ],
+      label: 'Office & Admin',
+      iconPath: 'M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21',
+    },
+    {
+      id: 'documents',
+      label: 'Certificates & Reports',
+      iconPath: 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z',
     },
   ];
 
+  parentAppFeatures = [
+    'Live morning attendance notifications (Present, Absent, Late) with exact time',
+    'Daily homework diary with subject attachments, descriptions, and due dates',
+    'Exam results, marks breakdowns, and downloadable CBSE / State report cards',
+    'Itemized fee invoices, payment receipts, and complete transaction history',
+    'Direct two-way grievance desk to raise concerns and track resolution status',
+    'Instant school circular broadcasts, holiday notifications, and event calendar',
+  ];
+
+  teacherAppFeatures = [
+    '10-second whole-class roll-call with 1-tap Present / Absent / Late toggles',
+    'Instant homework diary composer with photo and document attachments',
+    'Subject-wise exam marks entry with automatic total & CBSE grade calculation',
+    'Direct access to parent inquiries and grievance ticket resolution replies',
+    'View today\'s class timetable, room assignments, and upcoming period schedule',
+    'Post announcements and homework updates directly to assigned sections',
+  ];
+
+  officialDocuments: OfficialDocument[] = [
+    { name: 'Transfer Certificate (TC / SLC)', badge: 'Board Format', hint: 'Auto-fills admission #, board affiliation, leaving reason & serial #', art: 'certificate' },
+    { name: 'Character Certificate (CC)', badge: 'Print & Sign', hint: 'Formal conduct reference ready for principal signature & school seal', art: 'security' },
+    { name: 'Bonafide & Study Certificate', badge: 'Instant Issue', hint: 'Official proof of student enrollment with class, session & affiliation', art: 'classroom' },
+    { name: 'Alumni Certificate & Lifetime ID', badge: 'Alumni Register', hint: 'Permanent alumni credential with unique Alumni Serial # & pass-out year', art: 'alumni' },
+    { name: 'Term Report Cards & Marksheets', badge: 'CBSE / ICSE / State', hint: 'Subject-wise scores, percentage, standard A1–F grading & remarks', art: 'exams' },
+    { name: 'Class Attendance Registers', badge: 'Daily & Monthly', hint: 'Roll-call attendance sheets, monthly summary & student shortage alerts', art: 'attendance' },
+    { name: 'Fee Invoices & Payment Receipts', badge: 'Itemized Receipt', hint: 'Tuition & transport breakdown with transaction ID & printable copy', art: 'fees' },
+    { name: 'Exam Broad Sheets / Tabulation', badge: 'Master Ledger', hint: 'Complete section-wise examination score matrix for faculty evaluation', art: 'promotion' },
+    { name: 'Student Roster & Directory', badge: 'Excel & Print', hint: 'Class list with roll numbers, blood group, emergency & guardian phone', art: 'parent-phone' },
+    { name: 'Weekly Class & Faculty Timetable', badge: 'Weekly Grid', hint: 'Conflict-free period grids for classrooms, sections & subject teachers', art: 'timetable' },
+    { name: 'Fee Defaulters & Balance Ledger', badge: 'Financial Audit', hint: 'Pending fee lists by class & section for quick administrative follow-up', art: 'fees' },
+    { name: 'Student Lifecycle Journey Log', badge: 'Audit Trail', hint: 'Immutable timeline tracking admissions, promotions, section moves & TC', art: 'cloud' },
+  ];
+
+  scrollToSection(id: string): void {
+    this.activeTab.set(id);
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
   constructor() {
     this.seo.setPage({
-      title: 'Features — Attendance, Homework, Exams, Fees, Certificates & Parent Connect',
+      title: 'Features — Attendance, Homework, Exams, Fees, Certificates & Mobile Apps',
       description:
-        'All SchoolSense features explained simply: timetable & scheduling, attendance register, homework & assignments, exams & marksheets, circulars & notices, grievance desk, fee management & invoicing, alumni management, auto-generated TC/CC certificates and live Parent Connect — all included in one plan.',
+        'All SchoolSense features: 1-tap attendance, conflict-free timetable, automated marksheets, fee invoices, auto-generated board certificates, and dedicated Parent & Teacher mobile apps.',
       path: '/features',
       jsonLd: [
         {

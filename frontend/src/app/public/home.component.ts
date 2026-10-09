@@ -1,7 +1,7 @@
 import { Component, inject, afterNextRender, DestroyRef, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, RouterLink } from '@angular/router';
-import { VectorArtComponent } from './vector-art.component';
+import { VectorArtComponent, VectorName } from './vector-art.component';
 import { NgZone } from '@angular/core';
 import { SeoService } from '../core/services/seo.service';
 
@@ -18,11 +18,26 @@ interface CampusSlide {
   caption: string;
 }
 
+interface ComparisonRow {
+  feature: string;
+  category: string;
+  traditional: string;
+  legacy: string;
+  schoolsense: string;
+}
+
 interface HowStep {
   /** Name of the vector illustration shown in the step. */
   art: string;
   title: string;
   detail: string;
+}
+
+interface OfficialDocument {
+  name: string;
+  badge: string;
+  hint: string;
+  art: VectorName;
 }
 
 interface FeatureCard {
@@ -87,7 +102,6 @@ interface FaqItem {
             <span class="ss-ribbon" aria-hidden="true">80% OFF</span>
           </a>
         </div>
-
       </div>
 
       <!-- Prev / Next arrows -->
@@ -114,128 +128,176 @@ interface FaqItem {
 
     <!-- ============================== TRUST STRIP ============================== -->
     <section class="border-y border-slate-100 bg-white" aria-label="Why schools choose SchoolSense">
-      <div class="mx-auto grid max-w-7xl grid-cols-2 gap-x-4 gap-y-8 px-4 py-10 sm:px-6 md:grid-cols-4 lg:px-8">
-        <div class="flex flex-col items-center text-center">
-          <app-vector-art name="classroom" class="h-20 w-20 sm:h-24 sm:w-24" />
-          <p class="mt-3 text-2xl font-extrabold text-slate-900">All-in-one</p>
-          <p class="mt-1 text-sm text-slate-500">One system for every school task</p>
+      <div class="mx-auto grid max-w-7xl grid-cols-4 gap-1.5 sm:gap-4 px-2 py-4 sm:px-6 sm:py-10 lg:px-8">
+        <div class="flex flex-col items-center text-center px-0.5">
+          <app-vector-art name="classroom" class="h-9 w-9 sm:h-20 sm:w-20 md:h-24 md:w-24" />
+          <p class="mt-1 sm:mt-3 text-xs sm:text-xl md:text-2xl font-extrabold text-slate-900 leading-tight">All-in-one</p>
+          <p class="mt-0.5 hidden text-xs sm:block md:text-sm text-slate-500">One system for every school task</p>
         </div>
-        <div class="flex flex-col items-center text-center">
-          <app-vector-art name="parent-phone" class="h-20 w-20 sm:h-24 sm:w-24" />
-          <p class="mt-3 text-2xl font-extrabold text-slate-900">Live</p>
-          <p class="mt-1 text-sm text-slate-500">Updates for every parent</p>
+        <div class="flex flex-col items-center text-center px-0.5">
+          <app-vector-art name="parent-phone" class="h-9 w-9 sm:h-20 sm:w-20 md:h-24 md:w-24" />
+          <p class="mt-1 sm:mt-3 text-xs sm:text-xl md:text-2xl font-extrabold text-slate-900 leading-tight">Live</p>
+          <p class="mt-0.5 hidden text-xs sm:block md:text-sm text-slate-500">Updates for every parent</p>
         </div>
-        <div class="flex flex-col items-center text-center">
-          <app-vector-art name="certificate" class="h-20 w-20 sm:h-24 sm:w-24" />
-          <p class="mt-3 text-2xl font-extrabold text-slate-900">1 click</p>
-          <p class="mt-1 text-sm text-slate-500">TC &amp; certificates generated</p>
+        <div class="flex flex-col items-center text-center px-0.5">
+          <app-vector-art name="certificate" class="h-9 w-9 sm:h-20 sm:w-20 md:h-24 md:w-24" />
+          <p class="mt-1 sm:mt-3 text-xs sm:text-xl md:text-2xl font-extrabold text-slate-900 leading-tight">1 click</p>
+          <p class="mt-0.5 hidden text-xs sm:block md:text-sm text-slate-500">White Label Document generated</p>
         </div>
-        <div class="flex flex-col items-center text-center">
-          <app-vector-art name="fees" class="h-20 w-20 sm:h-24 sm:w-24" />
-          <p class="mt-3 text-2xl font-extrabold text-slate-900">₹10/month</p>
-          <p class="mt-1 text-sm text-slate-500">Per student — launch offer</p>
+        <div class="flex flex-col items-center text-center px-0.5">
+          <app-vector-art name="fees" class="h-9 w-9 sm:h-20 sm:w-20 md:h-24 md:w-24" />
+          <p class="mt-1 sm:mt-3 flex items-baseline justify-center gap-0.5 sm:gap-1.5 text-xs sm:text-xl md:text-3xl font-extrabold text-slate-900 leading-tight">
+            <span class="text-[10px] font-semibold text-slate-400 line-through sm:text-lg">₹59</span>
+            <span>₹10/mo</span>
+          </p>
+          <p class="mt-0.5 hidden text-xs sm:block md:text-sm text-slate-500">Per student — launch offer</p>
         </div>
       </div>
     </section>
 
-    <!-- ============================== WHY SCHOOLSENSE — 7 SELLING POINTS ============================== -->
-    <section class="bg-slate-50 py-16 sm:py-24" aria-labelledby="why-heading">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="mx-auto max-w-2xl text-center">
-          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Why SchoolSense</p>
-          <h2 id="why-heading" class="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            The system every school needs — made simple enough for everyone
+    <!-- ============================== 1. WHAT WE DO — THE DIGITAL SHIFT ============================== -->
+    <section class="bg-slate-50/70 py-10 sm:py-20 border-b border-slate-200/80" aria-labelledby="what-we-do-heading">
+      <div class="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-3xl text-center">
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">What we do</p>
+          <h2 id="what-we-do-heading" class="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+            Turning daily school chaos into calm, connected digital sense
           </h2>
-          <p class="mt-4 text-base leading-relaxed text-slate-600 sm:text-lg">
-            Seven reasons schools choose us and stay with us. The first one is our promise.
+          <p class="mt-2 text-xs leading-relaxed text-slate-600 sm:mt-4 sm:text-base">
+            Running an Indian school shouldn't mean drowning in paper registers, fighting over lost circulars, or answering non-stop parent phone calls. SchoolSense connects management, teachers, students and parents in one easy platform.
           </p>
         </div>
 
-        <!-- Pillar 1 — Simplest (full width) -->
-        <div class="mt-12 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div class="grid gap-8 p-8 sm:p-10 lg:grid-cols-5 lg:items-center lg:p-12">
-            <div class="border-l-4 border-blue-600 pl-6 lg:col-span-3">
-              <span class="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">What matters most to us</span>
-              <h3 class="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-                So simple, anyone in your school can run it
-              </h3>
-              <p class="mt-3 max-w-xl text-sm leading-relaxed text-slate-600 sm:text-base">
-                If your staff can use WhatsApp, they can use SchoolSense from day one. Big buttons,
-                plain words, and one obvious way to do every task — no manuals, no jargon, and no
-                computer expert needed at your school.
-              </p>
+        <div class="mt-6 sm:mt-12 grid gap-3.5 sm:gap-6 md:grid-cols-3">
+          <!-- Card 1: The Old Reality -->
+          <div class="rounded-2xl sm:rounded-3xl border border-rose-200/90 bg-white p-4 sm:p-7 shadow-xs">
+            <div class="flex items-center gap-2.5">
+              <span class="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-600 font-bold text-xs sm:text-sm">
+                ✕
+              </span>
+              <h3 class="text-sm sm:text-base font-bold text-slate-900">The Old Paper Reality</h3>
             </div>
-            <ul class="grid gap-3 sm:grid-cols-2 lg:col-span-2 lg:grid-cols-1">
-              <li class="flex items-center gap-2.5 text-sm font-medium text-slate-700">
-                <svg class="h-5 w-5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                No manuals or week-long training
+            <ul class="mt-3 sm:mt-5 space-y-2 sm:space-y-3 text-xs sm:text-sm text-slate-600">
+              <li class="flex items-start gap-2">
+                <span class="text-rose-500 font-bold">•</span>
+                <span>Mountains of paper registers &amp; lost homework diaries</span>
               </li>
-              <li class="flex items-center gap-2.5 text-sm font-medium text-slate-700">
-                <svg class="h-5 w-5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                No IT staff required at school
+              <li class="flex items-start gap-2">
+                <span class="text-rose-500 font-bold">•</span>
+                <span>Manual exam marksheet calculation errors &amp; delays</span>
               </li>
-              <li class="flex items-center gap-2.5 text-sm font-medium text-slate-700">
-                <svg class="h-5 w-5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                Free setup &amp; staff training by us
+              <li class="flex items-start gap-2">
+                <span class="text-rose-500 font-bold">•</span>
+                <span>Fee counter queues &amp; lost payment receipts</span>
               </li>
-              <li class="flex items-center gap-2.5 text-sm font-medium text-slate-700">
-                <svg class="h-5 w-5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                Simple language anyone understands
+              <li class="flex items-start gap-2">
+                <span class="text-rose-500 font-bold">•</span>
+                <span>Parents calling reception constantly for basic updates</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Card 2: The SchoolSense Solution -->
+          <div class="rounded-2xl sm:rounded-3xl border border-blue-200 bg-blue-50/40 p-4 sm:p-7 shadow-sm ring-1 ring-blue-100">
+            <div class="flex items-center gap-2.5">
+              <span class="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-blue-600 text-white font-bold text-xs sm:text-sm">
+                ✓
+              </span>
+              <h3 class="text-sm sm:text-base font-bold text-slate-900">The SchoolSense Way</h3>
+            </div>
+            <ul class="mt-3 sm:mt-5 space-y-2 sm:space-y-3 text-xs sm:text-sm text-slate-700">
+              <li class="flex items-start gap-2">
+                <span class="text-blue-600 font-bold">•</span>
+                <span>1-Tap daily attendance with instant absence alerts</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-blue-600 font-bold">•</span>
+                <span>Automated CBSE / ICSE report cards in 1-click</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-blue-600 font-bold">•</span>
+                <span>Instant fee receipts &amp; defaulter ledger on phone</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-blue-600 font-bold">•</span>
+                <span>Live Parent Connect: Attendance, marks, fees &amp; notices</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Card 3: The Big Impact -->
+          <div class="rounded-2xl sm:rounded-3xl border border-emerald-200/90 bg-white p-4 sm:p-7 shadow-xs">
+            <div class="flex items-center gap-2.5">
+              <span class="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 font-bold text-xs sm:text-sm">
+                ★
+              </span>
+              <h3 class="text-sm sm:text-base font-bold text-slate-900">The Result for Your School</h3>
+            </div>
+            <ul class="mt-3 sm:mt-5 space-y-2 sm:space-y-3 text-xs sm:text-sm text-slate-600">
+              <li class="flex items-start gap-2">
+                <span class="text-emerald-500 font-bold">•</span>
+                <span><strong>80% staff time saved</strong> on repetitive paperwork</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-emerald-500 font-bold">•</span>
+                <span><strong>Zero fee disputes</strong> with digital transparent records</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-emerald-500 font-bold">•</span>
+                <span><strong>Happy, involved parents</strong> who trust your school</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-emerald-500 font-bold">•</span>
+                <span><strong>Word-of-mouth admissions</strong> growth every new session</span>
               </li>
             </ul>
           </div>
         </div>
-
-        <!-- Pillars 2–7 -->
-        <div class="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          <div *ngFor="let p of whyPillars"
-               class="rounded-3xl border border-slate-200 bg-white p-7 transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-900/5">
-            <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.9" stroke="currentColor" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="p.icon" />
-              </svg>
-            </span>
-            <h3 class="mt-4 text-lg font-bold text-slate-900">{{ p.name }}</h3>
-            <p class="mt-2 text-sm leading-relaxed text-slate-600">{{ p.detail }}</p>
-          </div>
-        </div>
       </div>
     </section>
 
-    <!-- ============================== FEATURES GRID ============================== -->
-    <section class="bg-white py-16 sm:py-24" aria-labelledby="features-heading">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <!-- ============================== 2. HOW WE SOLVE THE ISSUE — CORE PLATFORM ============================== -->
+    <section class="bg-white py-10 sm:py-20" aria-labelledby="features-heading">
+      <div class="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
         <div class="mx-auto max-w-2xl text-center">
-          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Everything included</p>
-          <h2 id="features-heading" class="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            Everything your school runs on — in one simple system
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">How we solve it</p>
+          <h2 id="features-heading" class="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+            Everything your school runs on — connected &amp; automated
           </h2>
-          <p class="mt-4 text-base leading-relaxed text-slate-600 sm:text-lg">
-            Connected tools that replace your registers, spreadsheets, notice board and school diary.
-            No technical skills needed — if your staff can use WhatsApp, they can use SchoolSense.
+          <p class="mt-2 text-xs leading-relaxed text-slate-600 sm:mt-4 sm:text-base">
+            Nine connected tools that replace your physical registers, spreadsheets, notice boards and school diaries with zero technical complexity.
           </p>
         </div>
 
-        <div class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <!-- 2-Column App Grid on Mobile, 3-Column on Desktop -->
+        <div class="mt-6 sm:mt-12 grid grid-cols-2 gap-2.5 sm:gap-5 lg:grid-cols-3">
           <div *ngFor="let f of features"
-               class="group rounded-2xl border border-slate-200 bg-white p-6 transition-all hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-600/5">
-            <app-vector-art [name]="f.art" class="h-16 w-16" />
-            <h3 class="mt-4 text-base font-bold text-slate-900">{{ f.name }}</h3>
-            <p class="mt-2 text-sm leading-relaxed text-slate-600">{{ f.tagline }}</p>
+               class="group rounded-xl sm:rounded-2xl border border-slate-200/90 bg-white p-3 sm:p-6 transition-all hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-600/5 flex flex-col justify-between shadow-xs">
+            <div>
+              <app-vector-art [name]="f.art" class="h-10 w-10 sm:h-16 sm:w-16" />
+              <h3 class="mt-2 sm:mt-4 text-xs sm:text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-1 sm:line-clamp-none">{{ f.name }}</h3>
+              <p class="mt-1 sm:mt-2 text-[10px] sm:text-sm leading-snug sm:leading-relaxed text-slate-600 line-clamp-2 sm:line-clamp-none">{{ f.tagline }}</p>
+            </div>
+            <div class="mt-2.5 sm:mt-4 pt-2 sm:pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] sm:text-xs font-semibold text-blue-600">
+              <span>Included</span>
+              <svg class="h-3 w-3 sm:h-3.5 sm:w-3.5 transform group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
+            </div>
           </div>
         </div>
 
-        <div class="mt-10 text-center">
-          <a routerLink="/features" class="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700">
-            Explore all features in detail
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+        <div class="mt-6 sm:mt-10 text-center">
+          <a routerLink="/features" class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-blue-600 hover:text-blue-700">
+            Explore all features &amp; downloadable documents
+            <svg class="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
           </a>
         </div>
       </div>
     </section>
 
-    <!-- ============================== PARENT CONNECT ============================== -->
-    <section class="bg-slate-50 py-16 sm:py-24" aria-labelledby="parent-heading">
+    <!-- ============================== PARENT CONNECT SPOTLIGHT ============================== -->
+    <section class="bg-slate-50 py-16 sm:py-24 border-y border-slate-200/70" aria-labelledby="parent-heading">
       <div class="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
         <!-- Phone mockup + photo -->
         <div class="relative mx-auto w-full max-w-md">
@@ -343,7 +405,7 @@ interface FaqItem {
       </div>
     </section>
 
-    <!-- ============================== MOBILE APPS ============================== -->
+    <!-- ============================== TWO DEDICATED MOBILE APPS ============================== -->
     <section class="bg-white py-16 sm:py-24" aria-labelledby="apps-heading">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="mx-auto max-w-2xl text-center">
@@ -442,7 +504,7 @@ interface FaqItem {
                   </div>
                   <div class="flex items-center gap-1.5 rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-100">
                     <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-blue-100 text-blue-600">
-                      <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18.75c1.955 0 3.684.672 5 1.808V7.542a6.984 6.984 0 00-1-1.5z" /></svg>
+                      <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18.75c1.955 0 3.684.672 5 1.808V7.542a6.984 6.984 0 00-1-1.5z" /></svg>
                     </span>
                     <p class="text-[9px] font-semibold text-slate-900">Post Homework</p>
                   </div>
@@ -490,6 +552,155 @@ interface FaqItem {
             See both apps live in a free demo
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
           </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== 3. WHY ONLY SCHOOLSENSE ============================== -->
+    <section class="bg-slate-50 py-16 sm:py-24 border-t border-slate-200/80" aria-labelledby="why-heading">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-2xl text-center">
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Why only SchoolSense</p>
+          <h2 id="why-heading" class="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+            The system every school needs — made simple enough for everyone
+          </h2>
+          <p class="mt-4 text-base leading-relaxed text-slate-600 sm:text-lg">
+            Seven reasons Indian school owners and principals choose us and stay with us.
+          </p>
+        </div>
+
+        <!-- Pillar 1 — Simplest (full width) -->
+        <div class="mt-12 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div class="grid gap-8 p-8 sm:p-10 lg:grid-cols-5 lg:items-center lg:p-12">
+            <div class="border-l-4 border-blue-600 pl-6 lg:col-span-3">
+              <span class="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">Our core promise</span>
+              <h3 class="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+                So simple, anyone in your school can run it
+              </h3>
+              <p class="mt-3 max-w-xl text-sm leading-relaxed text-slate-600 sm:text-base">
+                If your staff can use WhatsApp, they can use SchoolSense from day one. Big buttons,
+                plain words, and one obvious way to do every task — no manuals, no jargon, and no
+                computer expert needed at your school.
+              </p>
+            </div>
+            <ul class="grid gap-3 sm:grid-cols-2 lg:col-span-2 lg:grid-cols-1">
+              <li class="flex items-center gap-2.5 text-sm font-medium text-slate-700">
+                <svg class="h-5 w-5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                No manuals or week-long training
+              </li>
+              <li class="flex items-center gap-2.5 text-sm font-medium text-slate-700">
+                <svg class="h-5 w-5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                No IT staff required at school
+              </li>
+              <li class="flex items-center gap-2.5 text-sm font-medium text-slate-700">
+                <svg class="h-5 w-5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                Free setup &amp; staff training by us
+              </li>
+              <li class="flex items-center gap-2.5 text-sm font-medium text-slate-700">
+                <svg class="h-5 w-5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                Simple language anyone understands
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Pillars 2–7 -->
+        <div class="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div *ngFor="let p of whyPillars"
+               class="rounded-3xl border border-slate-200 bg-white p-7 transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-900/5">
+            <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.9" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="p.icon" />
+              </svg>
+            </span>
+            <h3 class="mt-4 text-lg font-bold text-slate-900">{{ p.name }}</h3>
+            <p class="mt-2 text-sm leading-relaxed text-slate-600">{{ p.detail }}</p>
+          </div>
+        </div>
+
+        <!-- ============================== COMPARISON TABLE ============================== -->
+        <div class="mt-16 sm:mt-20">
+          <div class="mx-auto max-w-2xl text-center">
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+              Clear Comparison
+            </span>
+            <h3 class="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+              How SchoolSense compares with traditional methods &amp; other software
+            </h3>
+            <p class="mt-2 text-sm text-slate-600 sm:text-base">
+              See why Indian school principals switch from paper registers and complex legacy ERPs to SchoolSense.
+            </p>
+          </div>
+
+          <!-- Comparison Table Card -->
+          <div class="mt-10 overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-sm">
+            <div class="overflow-x-auto">
+              <table class="w-full min-w-[760px] border-collapse text-left">
+                <thead>
+                  <tr class="border-b border-slate-200 bg-slate-50/70">
+                    <th scope="col" class="w-1/4 p-5 text-sm font-bold text-slate-900">
+                      Feature &amp; Capability
+                    </th>
+                    <th scope="col" class="w-1/4 p-5 text-center">
+                      <div class="flex flex-col items-center">
+                        <app-vector-art name="classroom" class="h-12 w-12 drop-shadow-xs" />
+                        <span class="mt-2 text-sm font-bold text-slate-800">Traditional / Paper</span>
+                        <span class="text-[11px] text-slate-500">Registers &amp; Diaries</span>
+                      </div>
+                    </th>
+                    <th scope="col" class="w-1/4 p-5 text-center">
+                      <div class="flex flex-col items-center">
+                        <app-vector-art name="cloud" class="h-12 w-12 drop-shadow-xs" />
+                        <span class="mt-2 text-sm font-bold text-slate-800">Other / Legacy ERPs</span>
+                        <span class="text-[11px] text-slate-500">Complex &amp; Expensive</span>
+                      </div>
+                    </th>
+                    <th scope="col" class="w-1/4 bg-blue-50/60 p-5 text-center border-l border-blue-200">
+                      <div class="flex flex-col items-center">
+                        <span class="rounded-full bg-blue-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-xs">
+                          Recommended
+                        </span>
+                        <app-vector-art name="parent-phone" class="mt-2 h-12 w-12 drop-shadow-xs" />
+                        <span class="mt-1 text-base font-extrabold text-blue-900">SchoolSense</span>
+                        <span class="text-[11px] font-medium text-blue-700">All-in-One Cloud + Apps</span>
+                      </div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-sm">
+                  <tr *ngFor="let row of comparisonRows" class="hover:bg-slate-50/50 transition-colors">
+                    <td class="p-5 font-semibold text-slate-900">
+                      <div>{{ row.feature }}</div>
+                      <span class="inline-block mt-1 text-[11px] font-normal text-slate-500 uppercase tracking-wide">{{ row.category }}</span>
+                    </td>
+                    <td class="p-5 text-center text-slate-600 bg-white">
+                      <div class="flex items-center justify-center gap-2">
+                        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600 font-bold text-xs">✕</span>
+                        <span class="text-xs text-left leading-relaxed">{{ row.traditional }}</span>
+                      </div>
+                    </td>
+                    <td class="p-5 text-center text-slate-600 bg-white">
+                      <div class="flex items-center justify-center gap-2">
+                        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600 font-bold text-xs">⚠</span>
+                        <span class="text-xs text-left leading-relaxed">{{ row.legacy }}</span>
+                      </div>
+                    </td>
+                    <td class="p-5 text-center bg-blue-50/30 border-l border-blue-200">
+                      <div class="flex items-center justify-center gap-2">
+                        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-bold text-xs">✓</span>
+                        <span class="text-xs text-left font-semibold text-slate-900 leading-relaxed">{{ row.schoolsense }}</span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="border-t border-slate-200 bg-slate-50/60 p-4 text-center">
+              <p class="text-xs text-slate-600">
+                Switching is effortless: our team migrates your student lists, classes and fee structures for free within 48 hours.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -631,49 +842,8 @@ interface FaqItem {
       </div>
     </section>
 
-    <!-- ============================== CERTIFICATES BAND ============================== -->
-    <section class="bg-white py-16 sm:py-20" aria-labelledby="certificates-heading">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 px-6 py-12 sm:px-12 lg:px-16">
-          <div class="grid items-center gap-8 lg:grid-cols-2">
-            <div>
-              <h2 id="certificates-heading" class="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-                Official documents, without the paperwork
-              </h2>
-              <p class="mt-3 max-w-lg text-sm leading-relaxed text-blue-100 sm:text-base">
-                Transfer Certificates, Character Certificates and other important documents are
-                auto-generated with proper formats and your school's details — no more filling
-                templates by hand.
-              </p>
-              <a routerLink="/contact" [queryParams]="{ type: 'demo' }"
-                 class="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-blue-700 shadow-sm transition-colors hover:bg-blue-50">
-                Watch it generate in the demo
-              </a>
-            </div>
-            <div class="flex items-center justify-center">
-              <app-vector-art name="certificate" class="h-40 w-40 sm:h-48 sm:w-48" />
-            </div>
-            <div class="flex flex-wrap justify-center gap-3 lg:justify-end">
-              <div *ngFor="let c of certificates"
-                   class="flex items-center gap-3 rounded-xl bg-white/10 px-4 py-3 ring-1 ring-white/20 backdrop-blur-sm">
-                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15 text-white">
-                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="c.icon" />
-                  </svg>
-                </span>
-                <div>
-                  <p class="text-sm font-bold text-white">{{ c.name }}</p>
-                  <p class="text-xs text-blue-100">{{ c.hint }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============================== HOW IT WORKS ============================== -->
-    <section class="bg-white pb-16 pt-4 sm:pb-24" aria-labelledby="how-heading">
+    <!-- ============================== HOW IT WORKS — ONBOARDING ============================== -->
+    <section class="bg-slate-50 py-16 sm:py-24 border-t border-slate-200/80" aria-labelledby="how-heading">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="mx-auto max-w-2xl text-center">
           <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Get started</p>
@@ -686,7 +856,7 @@ interface FaqItem {
         </div>
 
         <div class="mt-12 grid gap-6 md:grid-cols-3">
-          <div *ngFor="let s of steps; let i = index" class="relative rounded-2xl border border-slate-200 bg-slate-50/60 p-7">
+          <div *ngFor="let s of steps; let i = index" class="relative rounded-2xl border border-slate-200 bg-white p-7 shadow-xs">
             <span class="absolute -top-4 left-7 flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-base font-extrabold text-white shadow-lg shadow-blue-600/25">{{ i + 1 }}</span>
             <app-vector-art [name]="s.art" class="mt-5 h-20 w-20" />
             <h3 class="mt-4 text-lg font-bold text-slate-900">{{ s.title }}</h3>
@@ -696,8 +866,8 @@ interface FaqItem {
       </div>
     </section>
 
-    <!-- ============================== PRICING TEASER ============================== -->
-    <section class="bg-white py-16 sm:py-24" aria-labelledby="pricing-heading">
+    <!-- ============================== 4. TRANSPARENT PRICING ============================== -->
+    <section class="bg-white py-16 sm:py-24 border-t border-slate-200/80" aria-labelledby="pricing-heading">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="mx-auto max-w-3xl text-center">
           <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Transparent pricing</p>
@@ -740,8 +910,8 @@ interface FaqItem {
       </div>
     </section>
 
-    <!-- ============================== FAQ ============================== -->
-    <section class="bg-slate-50 py-16 sm:py-24" aria-labelledby="faq-heading">
+    <!-- ============================== 5. FAQ ============================== -->
+    <section class="bg-slate-50 py-16 sm:py-24 border-t border-slate-200/80" aria-labelledby="faq-heading">
       <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <div class="text-center">
           <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Questions</p>
@@ -764,8 +934,8 @@ interface FaqItem {
       </div>
     </section>
 
-    <!-- ============================== FINAL CTA ============================== -->
-    <section class="bg-white pb-16 sm:pb-24">
+    <!-- ============================== 6. FINAL CTA ============================== -->
+    <section class="bg-white pb-16 pt-8 sm:pb-24">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-white px-6 py-14 text-center sm:px-12">
           <h2 class="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
@@ -1102,10 +1272,124 @@ export class HomeComponent {
     },
   ];
 
-  certificates = [
-    { name: 'Transfer Certificate (TC)', hint: 'One click, proper format', icon: 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z' },
-    { name: 'Character Certificate', hint: 'Ready to print & sign', icon: 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z' },
-    { name: 'Bonafide & more', hint: 'Other school documents', icon: 'M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125c0 .621-.504 1.125-1.125 1.125H6.375c-.621 0-1.125-.504-1.125-1.125V6.375c0-.621.504-1.125 1.125-1.125h3c.621 0 1.125.504 1.125 1.125v3z' },
+  comparisonRows: ComparisonRow[] = [
+    {
+      feature: 'Staff Usability & Ease of Use',
+      category: 'Simplicity',
+      traditional: 'Manual handwriting in 10+ paper registers',
+      legacy: 'Complicated menus, requires dedicated IT staff',
+      schoolsense: 'WhatsApp-level ease — 1-tap flows, zero IT staff required',
+    },
+    {
+      feature: 'Live Parent Connection',
+      category: 'Parent Trust',
+      traditional: 'Lost circulars & non-stop phone calls',
+      legacy: 'Costly SMS packs with delayed delivery',
+      schoolsense: 'Instant live push alerts for attendance, marks & homework',
+    },
+    {
+      feature: 'Dedicated Mobile Apps',
+      category: 'Mobile Access',
+      traditional: 'No mobile access',
+      legacy: 'Extra per-user fees or buggy web wrappers',
+      schoolsense: 'Two native apps (Parent & Teacher) included free',
+    },
+    {
+      feature: 'Report Cards & Certificates',
+      category: 'Academic Ops',
+      traditional: 'Days of manual score totals & handwritten TC',
+      legacy: 'Rigid formats, extra charges for customization',
+      schoolsense: '1-Click CBSE/ICSE marksheets, TC & Bonafide certificates',
+    },
+    {
+      feature: 'Pricing & Contract Terms',
+      category: 'Affordability',
+      traditional: 'Hidden costs of paper & uncollected fee dues',
+      legacy: 'Yearly lock-in contracts & ₹50k+ setup fees',
+      schoolsense: '₹10/student/month launch offer, monthly billing, no lock-in',
+    },
+    {
+      feature: 'Onboarding & Data Setup',
+      category: 'Support',
+      traditional: '100% manual maintenance by school staff',
+      legacy: 'Self-serve migration or expensive training fees',
+      schoolsense: 'Free complete setup & live staff training by our team',
+    },
+  ];
+
+  officialDocuments: OfficialDocument[] = [
+    {
+      name: 'Transfer Certificate (TC / SLC)',
+      badge: 'Board Format',
+      hint: 'Auto-fills admission #, board affiliation, leaving reason & serial #',
+      art: 'certificate',
+    },
+    {
+      name: 'Character Certificate (CC)',
+      badge: 'Print & Sign',
+      hint: 'Formal conduct reference ready for principal signature & school seal',
+      art: 'security',
+    },
+    {
+      name: 'Bonafide & Study Certificate',
+      badge: 'Instant Issue',
+      hint: 'Official proof of student enrollment with class, session & affiliation',
+      art: 'classroom',
+    },
+    {
+      name: 'Alumni Certificate & Lifetime ID',
+      badge: 'Alumni Register',
+      hint: 'Permanent alumni credential with unique Alumni Serial # & pass-out year',
+      art: 'alumni',
+    },
+    {
+      name: 'Term Report Cards & Marksheets',
+      badge: 'CBSE / ICSE / State',
+      hint: 'Subject-wise scores, percentage, standard A1–F grading & remarks',
+      art: 'exams',
+    },
+    {
+      name: 'Class Attendance Registers',
+      badge: 'Daily & Monthly',
+      hint: 'Roll-call attendance sheets, monthly summary & student shortage alerts',
+      art: 'attendance',
+    },
+    {
+      name: 'Fee Invoices & Payment Receipts',
+      badge: 'Itemized Receipt',
+      hint: 'Tuition & transport breakdown with transaction ID & printable copy',
+      art: 'fees',
+    },
+    {
+      name: 'Exam Broad Sheets / Tabulation',
+      badge: 'Master Ledger',
+      hint: 'Complete section-wise examination score matrix for faculty evaluation',
+      art: 'promotion',
+    },
+    {
+      name: 'Student Roster & Directory',
+      badge: 'Excel & Print',
+      hint: 'Class list with roll numbers, blood group, emergency & guardian phone',
+      art: 'parent-phone',
+    },
+    {
+      name: 'Weekly Class & Faculty Timetable',
+      badge: 'Weekly Grid',
+      hint: 'Conflict-free period grids for classrooms, sections & subject teachers',
+      art: 'timetable',
+    },
+    {
+      name: 'Fee Defaulters & Balance Ledger',
+      badge: 'Financial Audit',
+      hint: 'Pending fee lists by class & section for quick administrative follow-up',
+      art: 'fees',
+    },
+    {
+      name: 'Student Lifecycle Journey Log',
+      badge: 'Audit Trail',
+      hint: 'Immutable timeline tracking admissions, promotions, section moves & TC',
+      art: 'cloud',
+    },
   ];
 
   steps: HowStep[] = [
