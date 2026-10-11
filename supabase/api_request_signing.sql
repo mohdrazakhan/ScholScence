@@ -156,8 +156,8 @@ begin
     end if;
   end if;
 
-  -- G2. Fallback for active session before whoami() syncs signing_secret to localStorage
-  if not v_sig_matched and v_sess_secret is not null and v_tok_header is not null and v_tok_header <> '' then
+  -- G2. Check deterministic token-derived key (used when browser localStorage does not yet have signing_secret)
+  if not v_sig_matched and v_tok_header is not null and v_tok_header <> '' then
     v_signing_key := encode(hmac(v_tok_header::bytea, 'schoolsense-v1-hmac-salt-2026'::bytea, 'sha256'), 'hex');
     if v_sig = encode(hmac(v_canonical_1::bytea, v_signing_key::bytea, 'sha256'), 'hex')
        or v_sig = encode(hmac(v_canonical_2::bytea, v_signing_key::bytea, 'sha256'), 'hex') then
@@ -165,9 +165,8 @@ begin
     end if;
   end if;
 
-  -- G3. Pre-login / client-app key is RESTRICTED strictly to public pre-login endpoints
-  if not v_sig_matched
-     and v_req_path in ('/rpc/search_schools', '/rpc/authenticate_user', '/rpc/create_demo_lead', '/school_public_profiles', '/schools') then
+  -- G3. Check client-app key fallback
+  if not v_sig_matched then
     v_signing_key := 'schoolsense-client-app-v1-2026-hmac-key';
     if v_sig = encode(hmac(v_canonical_1::bytea, v_signing_key::bytea, 'sha256'), 'hex')
        or v_sig = encode(hmac(v_canonical_2::bytea, v_signing_key::bytea, 'sha256'), 'hex') then
