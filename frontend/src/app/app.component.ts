@@ -26,7 +26,7 @@ export class AppComponent {
       if (school?.name && !isSuperPlatform) {
         this.titleService.setTitle(`${school.name}`);
       } else if (isSuperPlatform) {
-        this.titleService.setTitle('SchoolSense — Super Admin Platform Console');
+        this.titleService.setTitle('SchoolSense: Super Admin Platform Console');
       }
 
       // 2. Dynamic Favicon: Show logged-in school logo or custom generated monogram

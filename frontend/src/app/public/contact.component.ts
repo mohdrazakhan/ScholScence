@@ -31,8 +31,8 @@ interface LeadForm {
           Book your free demo
         </h1>
         <p class="mt-5 text-base leading-relaxed text-slate-600 sm:text-lg">
-          Tell us about your school and we'll call you back within 24 hours (Mon–Sat) to set up
-          your free 30-minute demo. No pressure, no technical words — promise.
+          Tell us about your school and we'll call you back within 24 hours (Mon-Sat) to set up
+          your free 30-minute demo. No pressure, no technical words: promise.
         </p>
       </div>
     </section>
@@ -53,7 +53,7 @@ interface LeadForm {
               <p class="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-600">
                 Your demo request has reached our team. We'll call you on
                 <strong class="font-semibold text-slate-900">{{ leadForm.phone }}</strong>
-                within 24 hours (Mon–Sat) to schedule your free demo.
+                within 24 hours (Mon-Sat) to schedule your free demo.
               </p>
               <button type="button" (click)="resetForm()"
                       class="mt-6 rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
@@ -109,9 +109,9 @@ interface LeadForm {
                           class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
                     <option value="">Select a range</option>
                     <option>Under 100</option>
-                    <option>100 – 300</option>
-                    <option>300 – 700</option>
-                    <option>700 – 1,500</option>
+                    <option>100: 300</option>
+                    <option>300: 700</option>
+                    <option>700: 1,500</option>
                     <option>1,500+</option>
                   </select>
                 </div>
@@ -166,7 +166,7 @@ interface LeadForm {
               <app-vector-art name="classroom" class="h-16 w-16" />
               <h3 class="mt-4 text-base font-bold text-slate-900">A free 30-minute demo</h3>
               <p class="mt-1.5 text-sm leading-relaxed text-slate-600">
-                We walk you through a full school running on SchoolSense — attendance, homework,
+                We walk you through a full school running on SchoolSense: attendance, homework,
                 marks, fees, certificates and the parent view.
               </p>
             </div>
@@ -177,7 +177,7 @@ interface LeadForm {
               </span>
               <h3 class="mt-4 text-base font-bold text-slate-900">Reply within 24 hours</h3>
               <p class="mt-1.5 text-sm leading-relaxed text-slate-600">
-                Our team calls you Monday to Saturday. No call centres — you'll talk to people
+                Our team calls you Monday to Saturday. No call centres: you'll talk to people
                 who actually run the product.
               </p>
             </div>
@@ -189,12 +189,12 @@ interface LeadForm {
               <h3 class="mt-4 text-base font-bold text-slate-900">Free setup &amp; training</h3>
               <p class="mt-1.5 text-sm leading-relaxed text-slate-600">
                 If you join, we enter your school's data, train your staff and stay with you
-                through go-live — at no extra cost.
+                through go-live: at no extra cost.
               </p>
             </div>
 
             <div class="rounded-2xl bg-slate-900 p-6 text-center">
-              <p class="text-sm font-semibold text-white">Launch offer — ₹10/student/month</p>
+              <p class="text-sm font-semibold text-white">Launch offer: ₹10/student/month</p>
               <p class="mt-1 text-xs text-slate-400">Regular ₹59 · every feature included · no setup fee</p>
               <a routerLink="/pricing" class="mt-3 inline-block text-xs font-bold text-blue-400 hover:text-blue-300">See pricing details →</a>
             </div>
@@ -242,7 +242,7 @@ export class ContactComponent implements OnInit {
     });
 
     this.seo.setPage({
-      title: 'Book a Free Demo — See SchoolSense Live',
+      title: 'Book a Free Demo: See SchoolSense Live',
       description:
         'Book a free 30-minute demo of SchoolSense, India\'s simple school management system with live Parent Connect. We call you back within 24 hours. Launch offer: ₹10 per student/month, all features included.',
       path: '/contact',
@@ -291,14 +291,14 @@ export class ContactComponent implements OnInit {
       if (error) {
         console.error('create_demo_lead error:', error);
         this.errorMessage = 'Something went wrong while sending your request. Please try again in a moment.';
-        this.toast.error('Could not send your request — please try again.');
+        this.toast.error('Could not send your request: please try again.');
         return;
       }
 
       const res = (data ?? {}) as { success?: boolean; error?: string; message?: string };
       if (res.success) {
         this.submitted = true;
-        this.toast.success(res.message || 'Demo request received — we will call you within 24 hours.');
+        this.toast.success(res.message || 'Demo request received: we will call you within 24 hours.');
       } else {
         this.errorMessage = res.error || 'Please check your details and try again.';
       }

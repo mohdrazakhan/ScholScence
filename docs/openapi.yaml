@@ -1,11 +1,8 @@
 openapi: 3.0.3
 info:
   title: SchoolSense Enterprise Campus OS - REST API Specification
-  description: >
-    Comprehensive OpenAPI 3.0 specification for the SchoolSense Multi-Tenant
-    Campus Management System. Includes authentication, academic matrices,
-    attendance diaries, homework feeds, marksheets, grievance ticketing, and
-    communication circulars with detailed payload and response examples.
+  description: |
+    Comprehensive OpenAPI 3.0 specification for the SchoolSense Multi-Tenant Campus Management System. Includes authentication, academic matrices, attendance diaries, homework feeds, marksheets, grievance ticketing, and communication circulars with detailed payload and response examples.
   version: 1.0.0
   contact:
     name: SchoolSense Developer Support
@@ -36,6 +33,10 @@ tags:
     description: Multi-tier grievance tickets, role-scoped inboxes, delegation, and real-time conversation threads
   - name: Communication
     description: Broadcast circulars, school notices, and academic events calendar
+  - name: Fees & Invoicing
+    description: Session-scoped fee structures, monthly billing batches, counter collections, invoice ledgers, and official receipts
+  - name: Transport & Fleet
+    description: Session-scoped bus routes, stops, student transport passes, fleet vehicles, and driver logistics
 components:
   securitySchemes:
     bearerAuth:
@@ -106,7 +107,7 @@ components:
                   example: admin@demo-school.com
                 phone:
                   type: string
-                  example: '+91 98765 43210'
+                  example: +91 98765 43210
                 role:
                   type: string
                   example: SCHOOL_ADMIN
@@ -390,10 +391,10 @@ components:
           example: contact@delhiheritage.edu
         phone:
           type: string
-          example: '+91 11 23456789'
+          example: +91 11 23456789
         addressLine1:
           type: string
-          example: 'Institutional Area, Phase 2'
+          example: Institutional Area, Phase 2
         city:
           type: string
           example: New Delhi
@@ -415,10 +416,607 @@ components:
           example: admin@delhiheritage.edu
         adminPhone:
           type: string
-          example: '+91 98765 43210'
+          example: +91 98765 43210
         adminPassword:
           type: string
           example: AdminPass123!
+    FeeCategory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: fc_01
+        schoolId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Tuition & Academic Fee
+        description:
+          type: string
+          example: Composite monthly academic instruction fee
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - INACTIVE
+          example: ACTIVE
+    CreateFeeCategoryRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: Laboratory & Computer Science Fee
+        description:
+          type: string
+          example: Science lab equipment and IT lab charges
+    FeeStructure:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: fs_01
+        schoolId:
+          type: string
+          format: uuid
+        academicYearId:
+          type: string
+          format: uuid
+          description: Academic session scope
+        classId:
+          type: string
+          format: uuid
+        className:
+          type: string
+          example: Class 10
+        feeCategoryId:
+          type: string
+          format: uuid
+        feeCategoryName:
+          type: string
+          example: Tuition & Academic Fee
+        amount:
+          type: number
+          example: 2800
+        frequency:
+          type: string
+          enum:
+            - MONTHLY
+            - QUARTERLY
+            - ANNUALLY
+            - ONE_TIME
+          example: MONTHLY
+        dueDay:
+          type: integer
+          example: 10
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - INACTIVE
+          example: ACTIVE
+    CreateFeeStructureRequest:
+      type: object
+      required:
+        - classId
+        - feeCategoryId
+        - amount
+      properties:
+        academicYearId:
+          type: string
+          format: uuid
+          description: Academic session ID (defaults to active session)
+        classId:
+          type: string
+          format: uuid
+          example: c10
+        feeCategoryId:
+          type: string
+          format: uuid
+          example: fc_01
+        amount:
+          type: number
+          example: 3200
+        frequency:
+          type: string
+          enum:
+            - MONTHLY
+            - QUARTERLY
+            - ANNUALLY
+            - ONE_TIME
+          default: MONTHLY
+        dueDay:
+          type: integer
+          default: 10
+    StudentFeeInvoice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: inv_01
+        schoolId:
+          type: string
+          format: uuid
+        academicYearId:
+          type: string
+          format: uuid
+          description: Academic session scope
+        studentId:
+          type: string
+          format: uuid
+        studentName:
+          type: string
+          example: Aarav Kumar Sharma
+        admissionNumber:
+          type: string
+          example: ADM-2024-001
+        className:
+          type: string
+          example: Class 10
+        sectionName:
+          type: string
+          example: Section A
+        invoiceNumber:
+          type: string
+          example: INV-2026-1049
+        monthName:
+          type: string
+          example: April 2026
+        totalAmount:
+          type: number
+          example: 3200
+        paidAmount:
+          type: number
+          example: 3200
+        discountAmount:
+          type: number
+          example: 0
+        fineAmount:
+          type: number
+          example: 0
+        dueDate:
+          type: string
+          format: date
+          example: '2026-04-15'
+        status:
+          type: string
+          enum:
+            - PAID
+            - PARTIAL
+            - UNPAID
+            - OVERDUE
+          example: PAID
+        items:
+          type: array
+          items:
+            type: object
+    GenerateBatchInvoicesRequest:
+      type: object
+      required:
+        - monthName
+        - dueDate
+      properties:
+        academicYearId:
+          type: string
+          format: uuid
+          description: Academic session scope
+        monthName:
+          type: string
+          example: May 2026
+        dueDate:
+          type: string
+          format: date
+          example: '2026-05-15'
+    CollectFeePaymentRequest:
+      type: object
+      required:
+        - invoiceId
+        - amountPaid
+        - paymentMode
+      properties:
+        invoiceId:
+          type: string
+          format: uuid
+          example: inv_01
+        amountPaid:
+          type: number
+          example: 3200
+        paymentMode:
+          type: string
+          enum:
+            - CASH
+            - UPI
+            - CARD
+            - NET_BANKING
+            - CHEQUE
+          example: UPI
+        transactionReference:
+          type: string
+          example: UPI/2026/89472190
+        remarks:
+          type: string
+          example: Cleared at institutional counter
+    FeeOverview:
+      type: object
+      properties:
+        totalBilled:
+          type: number
+          example: 845000
+        totalCollected:
+          type: number
+          example: 712000
+        totalOutstanding:
+          type: number
+          example: 133000
+        collectionRate:
+          type: number
+          example: 84.2
+        invoicesCount:
+          type: integer
+          example: 320
+        paidCount:
+          type: integer
+          example: 275
+        defaultersCount:
+          type: integer
+          example: 45
+    TransportVehicle:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: veh_01
+        schoolId:
+          type: string
+          format: uuid
+        vehicleNumber:
+          type: string
+          example: DL-01-AB-1001
+        busNumber:
+          type: string
+          example: 'Bus #01'
+        vehicleType:
+          type: string
+          enum:
+            - BUS
+            - VAN
+            - MINI_BUS
+          example: BUS
+        model:
+          type: string
+          example: Tata Starbus Ultra 40S
+        seatingCapacity:
+          type: integer
+          example: 42
+        driverName:
+          type: string
+          example: Rameshwar Yadav
+        driverPhone:
+          type: string
+          example: +91 98101 23456
+        conductorName:
+          type: string
+          example: Satish Kumar
+        gpsDeviceId:
+          type: string
+          example: GPS-BUS-01
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - MAINTENANCE
+            - INACTIVE
+          example: ACTIVE
+    CreateTransportVehicleRequest:
+      type: object
+      required:
+        - vehicleNumber
+        - driverName
+        - driverPhone
+      properties:
+        vehicleNumber:
+          type: string
+          example: DL-01-AB-1004
+        busNumber:
+          type: string
+          example: 'Bus #04'
+        vehicleType:
+          type: string
+          enum:
+            - BUS
+            - VAN
+            - MINI_BUS
+          default: BUS
+        model:
+          type: string
+          example: Ashok Leyland 40S
+        seatingCapacity:
+          type: integer
+          default: 40
+        driverName:
+          type: string
+          example: Sunil Kumar
+        driverPhone:
+          type: string
+          example: +91 98104 56789
+        conductorName:
+          type: string
+          example: Mahesh Rawat
+        gpsDeviceId:
+          type: string
+          example: GPS-BUS-04
+    TransportStop:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: st_01
+        stopName:
+          type: string
+          example: Central Metro Station (Gate 2)
+        pickupTime:
+          type: string
+          example: 07:00 AM
+        dropTime:
+          type: string
+          example: 03:15 PM
+        sequenceOrder:
+          type: integer
+          example: 1
+        monthlyFare:
+          type: number
+          example: 1400
+        landmark:
+          type: string
+          example: Near Footover bridge
+    TransportRoute:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: rt_01
+        schoolId:
+          type: string
+          format: uuid
+        academicYearId:
+          type: string
+          format: uuid
+          description: Academic session scope
+        name:
+          type: string
+          example: 'Route 1: City Plaza via Civil Lines'
+        code:
+          type: string
+          example: RT-01
+        vehicleId:
+          type: string
+          format: uuid
+        vehicleNumber:
+          type: string
+          example: DL-01-AB-1001
+        busNumber:
+          type: string
+          example: 'Bus #01'
+        driverName:
+          type: string
+          example: Rameshwar Yadav
+        driverPhone:
+          type: string
+          example: +91 98101 23456
+        morningStartTime:
+          type: string
+          example: 06:50 AM
+        eveningStartTime:
+          type: string
+          example: 02:30 PM
+        description:
+          type: string
+          example: Covers Metro, Civil Lines & Sector 14
+        stops:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransportStop'
+        stopsCount:
+          type: integer
+          example: 5
+        assignedStudentsCount:
+          type: integer
+          example: 24
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - INACTIVE
+          example: ACTIVE
+    CreateTransportRouteRequest:
+      type: object
+      required:
+        - name
+        - code
+        - vehicleId
+      properties:
+        academicYearId:
+          type: string
+          format: uuid
+          description: Academic session ID (defaults to active session)
+        name:
+          type: string
+          example: 'Route 3: Rohini Sector 15 Express'
+        code:
+          type: string
+          example: RT-03
+        vehicleId:
+          type: string
+          format: uuid
+        morningStartTime:
+          type: string
+          example: 06:45 AM
+        eveningStartTime:
+          type: string
+          example: 02:30 PM
+        description:
+          type: string
+          example: Serves Rohini Sectors 13, 14 and 15
+        stops:
+          type: array
+          items:
+            type: object
+            required:
+              - stop_name
+              - pickup_time
+              - drop_time
+              - monthly_fare
+            properties:
+              stop_name:
+                type: string
+                example: Sector 15 Community Center
+              pickup_time:
+                type: string
+                example: 07:05 AM
+              drop_time:
+                type: string
+                example: 03:10 PM
+              sequence_order:
+                type: integer
+                example: 1
+              monthly_fare:
+                type: number
+                example: 1350
+    StudentTransportAssignment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: pass_01
+        schoolId:
+          type: string
+          format: uuid
+        academicYearId:
+          type: string
+          format: uuid
+          description: Academic session scope
+        studentId:
+          type: string
+          format: uuid
+        studentName:
+          type: string
+          example: Aarav Kumar Sharma
+        admissionNumber:
+          type: string
+          example: ADM-2024-001
+        className:
+          type: string
+          example: Class 10
+        sectionName:
+          type: string
+          example: Section A
+        routeId:
+          type: string
+          format: uuid
+        routeName:
+          type: string
+          example: 'Route 1: City Plaza via Civil Lines'
+        routeCode:
+          type: string
+          example: RT-01
+        busNumber:
+          type: string
+          example: 'Bus #01'
+        stopId:
+          type: string
+          format: uuid
+        stopName:
+          type: string
+          example: Central Metro Station (Gate 2)
+        pickupTime:
+          type: string
+          example: 07:00 AM
+        dropTime:
+          type: string
+          example: 03:15 PM
+        monthlyFare:
+          type: number
+          example: 1400
+        passNumber:
+          type: string
+          example: PASS-2026-1001
+        seatNumber:
+          type: string
+          example: S-14
+        emergencyContact:
+          type: string
+          example: +91 98101 23456
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - SUSPENDED
+          example: ACTIVE
+    AssignTransportPassRequest:
+      type: object
+      required:
+        - studentId
+        - routeId
+        - stopId
+      properties:
+        academicYearId:
+          type: string
+          format: uuid
+          description: Academic session ID (defaults to active session)
+        studentId:
+          type: string
+          format: uuid
+        routeId:
+          type: string
+          format: uuid
+        stopId:
+          type: string
+          format: uuid
+        seatNumber:
+          type: string
+          example: S-18
+        emergencyContact:
+          type: string
+          example: +91 98765 43210
+    TransportOverview:
+      type: object
+      properties:
+        totalVehicles:
+          type: integer
+          example: 12
+        activeVehiclesCount:
+          type: integer
+          example: 11
+        maintenanceVehiclesCount:
+          type: integer
+          example: 1
+        totalRoutes:
+          type: integer
+          example: 8
+        totalStopsCount:
+          type: integer
+          example: 38
+        totalFleetCapacity:
+          type: integer
+          example: 440
+        subscribedStudentsCount:
+          type: integer
+          example: 342
+        estimatedMonthlyTransportRevenue:
+          type: number
+          example: 444600
+        fleetOccupancyRate:
+          type: number
+          example: 78
 paths:
   /auth/login:
     post:
@@ -445,7 +1043,6 @@ paths:
                 $ref: '#/components/schemas/LoginResponse'
         '401':
           description: Invalid credentials or inactive account
-
   /auth/me:
     get:
       tags:
@@ -471,7 +1068,6 @@ paths:
                     name: Delhi Heritage Academy
                     code: DHA01
                     affiliation: CBSE
-
   /dashboard/overview:
     get:
       tags:
@@ -507,13 +1103,13 @@ paths:
                     name: Delhi Heritage Academy
                     code: DHA-DEL-01
                     email: contact@dha.edu.in
-                    phone: '+91 98765 43210'
+                    phone: +91 98765 43210
                     address: Sector 14, Dwarka, New Delhi
                     city: New Delhi
                     state: Delhi
                     logoUrl: https://img.freepik.com/free-vector/school-crest-symbol_1017-7945.jpg
                     status: ONLINE
-                    activeSession: '2028–2029'
+                    activeSession: 2028–2029
                     activeSessionId: 9dfdbc1d-e491-46e5-b356-0be260841857
                   recentNotices:
                     - id: n1
@@ -528,7 +1124,6 @@ paths:
                       start_date: '2026-10-05T00:00:00Z'
                       end_date: '2026-10-15T00:00:00Z'
                       status: SCHEDULED
-
   /timetable/section/{sectionId}:
     get:
       tags:
@@ -590,7 +1185,6 @@ paths:
                       subjectCode: CS-NUR
                       teacherName: Teacher Faculty
                       roomNumber: Room 101
-
   /timetable/my-child:
     get:
       tags:
@@ -644,7 +1238,6 @@ paths:
                       subjectName: Computer Science
                       teacherName: Teacher Faculty
                       roomNumber: Room 101
-
   /timetable/periods:
     post:
       tags:
@@ -678,7 +1271,6 @@ paths:
                 success: true
                 id: 33333333-4444-5555-6666-777777777777
                 message: Period slot saved successfully
-
   /timetable/periods/{id}:
     delete:
       tags:
@@ -701,7 +1293,6 @@ paths:
               example:
                 success: true
                 message: Period slot removed successfully
-
   /attendance/bulk:
     post:
       tags:
@@ -736,7 +1327,6 @@ paths:
                   present: 1
                   absent: 1
                   total: 2
-
   /attendance/my-children:
     get:
       tags:
@@ -777,7 +1367,6 @@ paths:
                       status: PRESENT
                     - date: '2026-09-22'
                       status: PRESENT
-
   /homework:
     post:
       tags:
@@ -810,7 +1399,6 @@ paths:
                   id: h1h2h3h4-5555-6666-7777-888888888888
                   title: 'Chapter 4: Linear Equations Practice Set'
                   dueDate: '2026-09-26'
-
   /exams/marks/bulk:
     post:
       tags:
@@ -843,7 +1431,6 @@ paths:
               example:
                 success: true
                 message: Marks entered for 2 students
-
   /exams/student/{studentId}/report:
     get:
       tags:
@@ -898,7 +1485,6 @@ paths:
                       maxMarks: 100
                       marksObtained: 88
                       grade: A2
-
   /complaints:
     get:
       tags:
@@ -974,7 +1560,6 @@ paths:
                   id: t1t2t3t4-5555-6666-7777-888888888888
                   ticketNumber: GRV-2026-0042
                   status: OPEN
-
   /communication/notices:
     get:
       tags:
@@ -1022,7 +1607,6 @@ paths:
                 data:
                   id: n1
                   title: Annual Sports Day 2026 - Registration & Schedule
-
   /schools/onboard:
     post:
       tags:
@@ -1041,8 +1625,8 @@ paths:
               code: DHA01
               affiliation: CBSE
               email: contact@delhiheritage.edu
-              phone: '+91 11 23456789'
-              addressLine1: 'Institutional Area, Phase 2'
+              phone: +91 11 23456789
+              addressLine1: Institutional Area, Phase 2
               city: New Delhi
               state: Delhi
               postalCode: '110025'
@@ -1061,3 +1645,444 @@ paths:
                   schoolId: a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d
                   schoolName: Delhi Heritage Academy
                   adminEmail: admin@delhiheritage.edu
+  /fees/overview:
+    get:
+      tags:
+        - Fees & Invoicing
+      summary: Get Session-Scoped Fee Financial Overview & Metrics
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: academicYearId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Target academic session ID (defaults to active school session)
+      responses:
+        '200':
+          description: Fee metrics and collection rate returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeeOverview'
+  /fees/categories:
+    get:
+      tags:
+        - Fees & Invoicing
+      summary: List Institutional Fee Categories & Heads
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Active fee categories returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FeeCategory'
+    post:
+      tags:
+        - Fees & Invoicing
+      summary: Create Fee Category
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFeeCategoryRequest'
+      responses:
+        '201':
+          description: Category created successfully
+  /fees/structures:
+    get:
+      tags:
+        - Fees & Invoicing
+      summary: Get Session-Scoped Fee Structures per Class
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: academicYearId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Filter by academic session ID
+        - name: classId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Filter by class grade
+      responses:
+        '200':
+          description: Fee structures for the selected session returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FeeStructure'
+    post:
+      tags:
+        - Fees & Invoicing
+      summary: Create Session-Scoped Fee Structure
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFeeStructureRequest'
+      responses:
+        '201':
+          description: Fee structure configured
+  /fees/structures/{id}:
+    patch:
+      tags:
+        - Fees & Invoicing
+      summary: Update Fee Structure Amount or Rules
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Fee structure updated
+    delete:
+      tags:
+        - Fees & Invoicing
+      summary: Remove Fee Structure
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Fee structure removed
+  /fees/invoices:
+    get:
+      tags:
+        - Fees & Invoicing
+      summary: Get Student Fee Invoices & Ledger
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: academicYearId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Target academic session ID
+        - name: studentId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - PAID
+              - PARTIAL
+              - UNPAID
+              - OVERDUE
+      responses:
+        '200':
+          description: Student fee invoices returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentFeeInvoice'
+  /fees/invoices/generate-batch:
+    post:
+      tags:
+        - Fees & Invoicing
+      summary: Run Automated Monthly Billing Run for Session
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateBatchInvoicesRequest'
+      responses:
+        '201':
+          description: Student fee invoices generated for enrolled students in session
+  /fees/payments:
+    post:
+      tags:
+        - Fees & Invoicing
+      summary: Collect Fee Payment and Issue Official Receipt
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectFeePaymentRequest'
+      responses:
+        '201':
+          description: Payment credited and receipt issued
+  /transport/overview:
+    get:
+      tags:
+        - Transport & Fleet
+      summary: Get Transport Fleet Logistics & Route Overview
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: academicYearId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Academic session ID
+      responses:
+        '200':
+          description: Fleet capacity and transport occupancy metrics returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransportOverview'
+  /transport/vehicles:
+    get:
+      tags:
+        - Transport & Fleet
+      summary: List School Fleet Vehicles
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Registered fleet vehicles returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TransportVehicle'
+    post:
+      tags:
+        - Transport & Fleet
+      summary: Add Fleet Vehicle
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransportVehicleRequest'
+      responses:
+        '201':
+          description: Vehicle registered to campus fleet
+  /transport/vehicles/{id}:
+    patch:
+      tags:
+        - Transport & Fleet
+      summary: Update Vehicle Details & Driver Info
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Vehicle updated
+    delete:
+      tags:
+        - Transport & Fleet
+      summary: Decommission Fleet Vehicle
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Vehicle deleted
+  /transport/routes:
+    get:
+      tags:
+        - Transport & Fleet
+      summary: Get Session-Scoped Transport Bus Routes & Stops
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: academicYearId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Academic session ID
+      responses:
+        '200':
+          description: Session routes and itinerary stops returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TransportRoute'
+    post:
+      tags:
+        - Transport & Fleet
+      summary: Create Session-Scoped Transport Route & Stops
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransportRouteRequest'
+      responses:
+        '201':
+          description: Route and stops itinerary saved
+  /transport/routes/{id}:
+    patch:
+      tags:
+        - Transport & Fleet
+      summary: Update Transport Route Schedule
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Route updated
+    delete:
+      tags:
+        - Transport & Fleet
+      summary: Delete Transport Route
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Route deleted
+  /transport/assignments:
+    get:
+      tags:
+        - Transport & Fleet
+      summary: Get Student Transport Bus Subscriptions & Passes for Session
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: academicYearId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Academic session ID
+        - name: routeId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: studentId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Assigned bus passes for session returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentTransportAssignment'
+    post:
+      tags:
+        - Transport & Fleet
+      summary: Issue Student Bus Pass for Academic Session
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignTransportPassRequest'
+      responses:
+        '201':
+          description: Bus pass issued and seat assigned
+  /transport/assignments/{id}:
+    delete:
+      tags:
+        - Transport & Fleet
+      summary: Cancel Student Bus Pass Subscription
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Subscription removed

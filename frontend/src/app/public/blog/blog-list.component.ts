@@ -17,7 +17,7 @@ import { BLOG_POSTS } from './blog.data';
           Guides &amp; honest comparisons for school owners
         </h1>
         <p class="mt-5 text-base leading-relaxed text-slate-600 sm:text-lg">
-          Practical writing about school management software in India — how to evaluate it,
+          Practical writing about school management software in India: how to evaluate it,
           what it really costs, and why parent connection matters more than feature lists.
         </p>
       </div>
@@ -62,7 +62,7 @@ import { BLOG_POSTS } from './blog.data';
             Reading is good. Seeing is better.
           </h2>
           <p class="mx-auto mt-3 max-w-lg text-sm text-slate-300 sm:text-base">
-            Book a free demo and judge SchoolSense the way this blog suggests — by what it does
+            Book a free demo and judge SchoolSense the way this blog suggests: by what it does
             in your school, not by what a brochure says.
           </p>
           <a routerLink="/contact" [queryParams]="{ type: 'demo' }"
@@ -80,7 +80,7 @@ export class BlogListComponent {
 
   constructor() {
     this.seo.setPage({
-      title: 'Blog — School Management Software Guides & Comparisons (India)',
+      title: 'Blog: School Management Software Guides & Comparisons (India)',
       description:
         'Honest guides about school management software in India: ERP comparisons, pricing transparency, how to choose school software, why parent connect matters, and building the simplest school system for non-IT staff.',
       path: '/blog',

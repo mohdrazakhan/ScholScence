@@ -107,7 +107,7 @@ import { BLOG_POSTS, BlogPost, findPost } from './blog.data';
             See it working on a real school
           </h2>
           <p class="mx-auto mt-3 max-w-md text-sm text-slate-300">
-            A free 30-minute demo shows you everything this article talks about — live,
+            A free 30-minute demo shows you everything this article talks about: live,
             with a sample school just like yours.
           </p>
           <a routerLink="/contact" [queryParams]="{ type: 'demo' }"

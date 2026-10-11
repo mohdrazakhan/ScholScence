@@ -27,7 +27,7 @@ interface OfficialDocument {
           Visual, simple &amp; connected tools for modern schools
         </h1>
         <p class="mt-2 text-xs leading-relaxed text-slate-600 sm:mt-4 sm:text-base max-w-2xl mx-auto">
-          No confusing modules or hidden add-ons. Get 9 connected core tools, downloadable board certificates, plus dedicated Parent and Teacher mobile apps — all in one flat plan.
+          No confusing modules or hidden add-ons. Get 9 connected core tools, downloadable board certificates, plus dedicated Parent and Teacher mobile apps, all in one flat plan.
         </p>
 
         <!-- Quick Category Filter Navigator -->
@@ -53,7 +53,7 @@ interface OfficialDocument {
         <div class="text-center max-w-2xl mx-auto mb-6 sm:mb-10">
           <span class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Mobile Apps</span>
           <h2 id="apps-heading" class="mt-1.5 text-xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-            Two dedicated mobile apps — included free
+            Two dedicated mobile apps included free
           </h2>
           <p class="mt-1 text-xs sm:text-sm text-slate-600">
             One purpose-built app for Parents, one for Teachers. Fast, lightweight, and works on any budget smartphone.
@@ -151,7 +151,7 @@ interface OfficialDocument {
             For Teaching &amp; Classrooms
           </span>
           <h2 class="mt-1.5 text-xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-            Academics — run every class smoothly
+            Academics: Run every class smoothly
           </h2>
           <p class="mt-1 text-xs sm:text-sm text-slate-600 leading-relaxed">
             Timetable, attendance, homework and auto-calculating CBSE/ICSE marksheets in one visual dashboard.
@@ -239,7 +239,7 @@ interface OfficialDocument {
             For School Office &amp; Management
           </span>
           <h2 class="mt-1.5 text-xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-            Administration — eliminate office chaos
+            Administration: Eliminate office chaos
           </h2>
           <p class="mt-1 text-xs sm:text-sm text-slate-600 leading-relaxed">
             Fees, circulars, parent grievances, and academic promotions organized with strict audit trails.
@@ -389,7 +389,7 @@ interface OfficialDocument {
               <app-vector-art name="attendance" class="h-12 w-12 sm:h-16 sm:w-16 drop-shadow-xs" />
             </div>
             <h3 class="mt-3 sm:mt-5 text-sm sm:text-lg font-bold text-slate-900">One obvious way</h3>
-            <p class="mt-1 text-xs sm:text-sm text-slate-500">Each task has one clear flow — mark, save, done. Zero confusing sub-menus.</p>
+            <p class="mt-1 text-xs sm:text-sm text-slate-500">Each task has one clear flow: mark, save, done. Zero confusing sub-menus.</p>
           </div>
 
           <!-- Card 2 -->
@@ -486,7 +486,7 @@ export class FeaturesComponent {
     { name: 'Character Certificate (CC)', badge: 'Print & Sign', hint: 'Formal conduct reference ready for principal signature & school seal', art: 'security' },
     { name: 'Bonafide & Study Certificate', badge: 'Instant Issue', hint: 'Official proof of student enrollment with class, session & affiliation', art: 'classroom' },
     { name: 'Alumni Certificate & Lifetime ID', badge: 'Alumni Register', hint: 'Permanent alumni credential with unique Alumni Serial # & pass-out year', art: 'alumni' },
-    { name: 'Term Report Cards & Marksheets', badge: 'CBSE / ICSE / State', hint: 'Subject-wise scores, percentage, standard A1–F grading & remarks', art: 'exams' },
+    { name: 'Term Report Cards & Marksheets', badge: 'CBSE / ICSE / State', hint: 'Subject-wise scores, percentage, standard A1-F grading & remarks', art: 'exams' },
     { name: 'Class Attendance Registers', badge: 'Daily & Monthly', hint: 'Roll-call attendance sheets, monthly summary & student shortage alerts', art: 'attendance' },
     { name: 'Fee Invoices & Payment Receipts', badge: 'Itemized Receipt', hint: 'Tuition & transport breakdown with transaction ID & printable copy', art: 'fees' },
     { name: 'Exam Broad Sheets / Tabulation', badge: 'Master Ledger', hint: 'Complete section-wise examination score matrix for faculty evaluation', art: 'promotion' },
@@ -506,7 +506,7 @@ export class FeaturesComponent {
 
   constructor() {
     this.seo.setPage({
-      title: 'Features — Attendance, Homework, Exams, Fees, Certificates & Mobile Apps',
+      title: 'Features: Attendance, Homework, Exams, Fees, Certificates & Mobile Apps',
       description:
         'All SchoolSense features: 1-tap attendance, conflict-free timetable, automated marksheets, fee invoices, auto-generated board certificates, and dedicated Parent & Teacher mobile apps.',
       path: '/features',

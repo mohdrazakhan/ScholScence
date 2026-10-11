@@ -21,7 +21,6 @@ interface CampusSlide {
 interface ComparisonRow {
   feature: string;
   category: string;
-  traditional: string;
   legacy: string;
   schoolsense: string;
 }
@@ -58,7 +57,7 @@ interface FaqItem {
   standalone: true,
   imports: [CommonModule, RouterModule, RouterLink, VectorArtComponent],
   template: `
-    <!-- ============================== HERO — FULL-BLEED SLIDESHOW ============================== -->
+    <!-- ============================== HERO: FULL-BLEED SLIDESHOW ============================== -->
     <section class="relative overflow-hidden bg-slate-950" aria-label="SchoolSense introduction"
              (mouseenter)="stopSlideshow()" (mouseleave)="startSlideshow()">
       <!-- Background slideshow -->
@@ -75,20 +74,20 @@ interface FaqItem {
 
       <!-- Overlay content -->
       <div class="relative mx-auto flex min-h-[560px] max-w-7xl flex-col items-center justify-center px-4 py-28 text-center sm:min-h-[660px] sm:px-6 lg:min-h-[720px] lg:px-8">
-        <span class="inline-flex items-center gap-2.5 text-xs font-bold uppercase tracking-[0.22em] text-blue-100 sm:text-sm">
-          Built for Indian schools — CBSE, ICSE &amp; State Boards
+        <span class="inline-flex items-center gap-2.5 text-xs font-bold uppercase tracking-wider text-blue-100 sm:text-sm">
+          Built for CBSE, ICSE &amp; State Board Indian Schools
         </span>
 
-        <h1 class="mt-7 max-w-4xl text-4xl font-extrabold tracking-tight text-white drop-shadow-lg sm:text-5xl sm:leading-[1.08] lg:text-6xl">
+        <h1 class="mt-6 max-w-4xl text-3xl font-extrabold tracking-tight text-white sm:text-5xl sm:leading-tight lg:text-6xl">
           India's simplest
           <span class="text-blue-300">school management system</span>
-          — with live Parent&nbsp;Connect
+          with live Parent&nbsp;Connect
         </h1>
 
-        <p class="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-slate-200 drop-shadow sm:text-lg">
-          Attendance, homework, exams, fees, timetable and certificates — everything your school
+        <p class="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-slate-200 sm:text-lg">
+          Attendance, homework, exams, fees, timetable and certificates. Everything your school
           runs on, in one easy software. And parents see their child's whole day
-          <strong class="font-semibold text-white">live on their phone</strong>.
+          <span class="font-semibold text-white">live on their phone</span>.
         </p>
 
         <div class="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -150,12 +149,12 @@ interface FaqItem {
             <span class="text-[10px] font-semibold text-slate-400 line-through sm:text-lg">₹59</span>
             <span>₹10/mo</span>
           </p>
-          <p class="mt-0.5 hidden text-xs sm:block md:text-sm text-slate-500">Per student — launch offer</p>
+          <p class="mt-0.5 hidden text-xs sm:block md:text-sm text-slate-500">Per student (launch offer)</p>
         </div>
       </div>
     </section>
 
-    <!-- ============================== 1. WHAT WE DO — THE DIGITAL SHIFT ============================== -->
+    <!-- ============================== 1. WHAT WE DO: THE DIGITAL SHIFT ============================== -->
     <section class="bg-slate-50/70 py-10 sm:py-20 border-b border-slate-200/80" aria-labelledby="what-we-do-heading">
       <div class="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
         <div class="mx-auto max-w-3xl text-center">
@@ -256,13 +255,13 @@ interface FaqItem {
       </div>
     </section>
 
-    <!-- ============================== 2. HOW WE SOLVE THE ISSUE — CORE PLATFORM ============================== -->
+    <!-- ============================== 2. HOW WE SOLVE THE ISSUE: CORE PLATFORM ============================== -->
     <section class="bg-white py-10 sm:py-20" aria-labelledby="features-heading">
       <div class="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
         <div class="mx-auto max-w-2xl text-center">
           <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">How we solve it</p>
           <h2 id="features-heading" class="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            Everything your school runs on — connected &amp; automated
+            Everything your school runs on: connected &amp; automated
           </h2>
           <p class="mt-2 text-xs leading-relaxed text-slate-600 sm:mt-4 sm:text-base">
             Nine connected tools that replace your physical registers, spreadsheets, notice boards and school diaries with zero technical complexity.
@@ -355,7 +354,7 @@ interface FaqItem {
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                   </span>
                   <div>
-                    <p class="text-xs font-semibold text-slate-900">Fee receipt ₹2,500 — paid</p>
+                    <p class="text-xs font-semibold text-slate-900">Fee receipt ₹2,500: Paid</p>
                     <p class="text-[10px] text-slate-500">Term 2 · Receipt #2041</p>
                   </div>
                 </div>
@@ -376,9 +375,9 @@ interface FaqItem {
 
         <!-- Copy -->
         <div>
-          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Parent Connect — our #1 selling point</p>
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Parent Connect: Our #1 Benefit</p>
           <h2 id="parent-heading" class="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            Parents see their child's school life — live
+            Parents see their child's school life in real time
           </h2>
           <p class="mt-4 text-base leading-relaxed text-slate-600 sm:text-lg">
             Most software just stores records. SchoolSense keeps parents connected the moment
@@ -391,7 +390,7 @@ interface FaqItem {
                 <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
               </span>
               <p class="text-sm leading-relaxed text-slate-700 sm:text-base">
-                <strong class="font-semibold text-slate-900">{{ b.title }}</strong> — {{ b.detail }}
+                <strong class="font-semibold text-slate-900">{{ b.title }}</strong>: {{ b.detail }}
               </p>
             </li>
           </ul>
@@ -414,7 +413,7 @@ interface FaqItem {
             One platform. Two dedicated mobile apps.
           </h2>
           <p class="mt-4 text-base leading-relaxed text-slate-600 sm:text-lg">
-            The web panel runs your school. The apps keep parents and teachers connected to it —
+            The web panel runs your school. The apps keep parents and teachers connected to it:
             every day, in everyone's pocket.
           </p>
         </div>
@@ -457,7 +456,7 @@ interface FaqItem {
                       <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </span>
                     <div>
-                      <p class="text-[10px] font-semibold text-slate-900">Fee receipt ₹2,500 — paid</p>
+                      <p class="text-[10px] font-semibold text-slate-900">Fee receipt ₹2,500: Paid</p>
                       <p class="text-[9px] text-slate-500">Fees · Yesterday</p>
                     </div>
                   </div>
@@ -526,7 +525,7 @@ interface FaqItem {
                     <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" /></svg>
                   </span>
                   <div class="min-w-0 flex-1">
-                    <p class="text-[10px] font-semibold text-slate-900">Fee concern — Riya · 5-A</p>
+                    <p class="text-[10px] font-semibold text-slate-900">Fee concern: Riya · 5-A</p>
                     <p class="text-[9px] text-slate-500">Parent complaint · assigned to you</p>
                   </div>
                   <span class="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[8px] font-bold text-amber-700">IN PROGRESS</span>
@@ -544,7 +543,7 @@ interface FaqItem {
         </div>
 
         <p class="mt-10 text-center text-sm font-semibold text-slate-900">
-          Both apps are included free with every plan — Android &amp; iPhone.
+          Both apps are included free with every plan: Android &amp; iPhone.
         </p>
         <div class="mt-4 text-center">
           <a routerLink="/contact" [queryParams]="{ type: 'demo' }"
@@ -562,14 +561,14 @@ interface FaqItem {
         <div class="mx-auto max-w-2xl text-center">
           <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Why only SchoolSense</p>
           <h2 id="why-heading" class="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            The system every school needs — made simple enough for everyone
+            The system every school needs: made simple enough for everyone
           </h2>
           <p class="mt-4 text-base leading-relaxed text-slate-600 sm:text-lg">
             Seven reasons Indian school owners and principals choose us and stay with us.
           </p>
         </div>
 
-        <!-- Pillar 1 — Simplest (full width) -->
+        <!-- Pillar 1: Simplest (full width) -->
         <div class="mt-12 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
           <div class="grid gap-8 p-8 sm:p-10 lg:grid-cols-5 lg:items-center lg:p-12">
             <div class="border-l-4 border-blue-600 pl-6 lg:col-span-3">
@@ -579,7 +578,7 @@ interface FaqItem {
               </h3>
               <p class="mt-3 max-w-xl text-sm leading-relaxed text-slate-600 sm:text-base">
                 If your staff can use WhatsApp, they can use SchoolSense from day one. Big buttons,
-                plain words, and one obvious way to do every task — no manuals, no jargon, and no
+                plain words, and one obvious way to do every task: no manuals, no jargon, and no
                 computer expert needed at your school.
               </p>
             </div>
@@ -604,7 +603,7 @@ interface FaqItem {
           </div>
         </div>
 
-        <!-- Pillars 2–7 -->
+        <!-- Pillars 2: 7 -->
         <div class="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <div *ngFor="let p of whyPillars"
                class="rounded-3xl border border-slate-200 bg-white p-7 transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-900/5">
@@ -625,77 +624,64 @@ interface FaqItem {
               Clear Comparison
             </span>
             <h3 class="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-              How SchoolSense compares with traditional methods &amp; other software
+              How SchoolSense compares with other software
             </h3>
             <p class="mt-2 text-sm text-slate-600 sm:text-base">
-              See why Indian school principals switch from paper registers and complex legacy ERPs to SchoolSense.
+              See why Indian school principals switch from complex legacy ERPs to SchoolSense.
             </p>
           </div>
 
-          <!-- Comparison Table Card -->
-          <div class="mt-10 overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-sm">
-            <div class="overflow-x-auto">
-              <table class="w-full min-w-[760px] border-collapse text-left">
+          <!-- Unified Responsive Comparison Table Card (Fits mobile without side scroll) -->
+          <div class="mt-8 sm:mt-10 overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white shadow-sm">
+            <div class="w-full">
+              <table class="w-full table-fixed border-collapse text-left">
                 <thead>
                   <tr class="border-b border-slate-200 bg-slate-50/70">
-                    <th scope="col" class="w-1/4 p-5 text-sm font-bold text-slate-900">
+                    <th scope="col" class="w-[46%] sm:w-[36%] p-3 sm:p-5 text-xs sm:text-sm font-bold text-slate-900">
                       Feature &amp; Capability
                     </th>
-                    <th scope="col" class="w-1/4 p-5 text-center">
+                    <th scope="col" class="w-[27%] sm:w-[32%] p-2.5 sm:p-5 text-center">
                       <div class="flex flex-col items-center">
-                        <app-vector-art name="classroom" class="h-12 w-12 drop-shadow-xs" />
-                        <span class="mt-2 text-sm font-bold text-slate-800">Traditional / Paper</span>
-                        <span class="text-[11px] text-slate-500">Registers &amp; Diaries</span>
+                        <app-vector-art name="cloud" class="h-7 w-7 sm:h-12 sm:w-12 drop-shadow-xs" />
+                        <span class="mt-1 text-xs sm:text-sm font-bold text-slate-800 leading-tight">Other ERPs</span>
+                        <span class="hidden sm:block text-[11px] text-slate-500">Complex &amp; Expensive</span>
                       </div>
                     </th>
-                    <th scope="col" class="w-1/4 p-5 text-center">
+                    <th scope="col" class="w-[27%] sm:w-[32%] bg-blue-50/60 p-2.5 sm:p-5 text-center border-l border-blue-200">
                       <div class="flex flex-col items-center">
-                        <app-vector-art name="cloud" class="h-12 w-12 drop-shadow-xs" />
-                        <span class="mt-2 text-sm font-bold text-slate-800">Other / Legacy ERPs</span>
-                        <span class="text-[11px] text-slate-500">Complex &amp; Expensive</span>
-                      </div>
-                    </th>
-                    <th scope="col" class="w-1/4 bg-blue-50/60 p-5 text-center border-l border-blue-200">
-                      <div class="flex flex-col items-center">
-                        <span class="rounded-full bg-blue-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-xs">
+                        <span class="hidden sm:inline rounded-full bg-blue-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-xs">
                           Recommended
                         </span>
-                        <app-vector-art name="parent-phone" class="mt-2 h-12 w-12 drop-shadow-xs" />
-                        <span class="mt-1 text-base font-extrabold text-blue-900">SchoolSense</span>
-                        <span class="text-[11px] font-medium text-blue-700">All-in-One Cloud + Apps</span>
+                        <app-vector-art name="parent-phone" class="mt-0 sm:mt-2 h-7 w-7 sm:h-12 sm:w-12 drop-shadow-xs" />
+                        <span class="mt-1 text-xs sm:text-base font-extrabold text-blue-900 leading-tight">SchoolSense</span>
+                        <span class="hidden sm:block text-[11px] font-medium text-blue-700">All-in-One Cloud + Apps</span>
                       </div>
                     </th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 text-sm">
+                <tbody class="divide-y divide-slate-100 text-xs sm:text-sm">
                   <tr *ngFor="let row of comparisonRows" class="hover:bg-slate-50/50 transition-colors">
-                    <td class="p-5 font-semibold text-slate-900">
-                      <div>{{ row.feature }}</div>
-                      <span class="inline-block mt-1 text-[11px] font-normal text-slate-500 uppercase tracking-wide">{{ row.category }}</span>
+                    <td class="p-3 sm:p-5 font-semibold text-slate-900">
+                      <div class="text-xs sm:text-sm leading-snug">{{ row.feature }}</div>
+                      <span class="inline-block mt-0.5 text-[10px] sm:text-[11px] font-normal text-slate-500 uppercase tracking-wide">{{ row.category }}</span>
                     </td>
-                    <td class="p-5 text-center text-slate-600 bg-white">
-                      <div class="flex items-center justify-center gap-2">
-                        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600 font-bold text-xs">✕</span>
-                        <span class="text-xs text-left leading-relaxed">{{ row.traditional }}</span>
+                    <td class="p-2.5 sm:p-5 text-center text-slate-600 bg-white">
+                      <div class="flex items-center justify-center sm:justify-start gap-2">
+                        <span class="flex h-6 w-6 sm:h-6 sm:w-6 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600 font-bold text-xs">✕</span>
+                        <span class="hidden sm:inline text-xs text-left leading-relaxed">{{ row.legacy }}</span>
                       </div>
                     </td>
-                    <td class="p-5 text-center text-slate-600 bg-white">
-                      <div class="flex items-center justify-center gap-2">
-                        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600 font-bold text-xs">⚠</span>
-                        <span class="text-xs text-left leading-relaxed">{{ row.legacy }}</span>
-                      </div>
-                    </td>
-                    <td class="p-5 text-center bg-blue-50/30 border-l border-blue-200">
-                      <div class="flex items-center justify-center gap-2">
-                        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-bold text-xs">✓</span>
-                        <span class="text-xs text-left font-semibold text-slate-900 leading-relaxed">{{ row.schoolsense }}</span>
+                    <td class="p-2.5 sm:p-5 text-center bg-blue-50/30 border-l border-blue-200">
+                      <div class="flex items-center justify-center sm:justify-start gap-2">
+                        <span class="flex h-6 w-6 sm:h-6 sm:w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-bold text-xs">✓</span>
+                        <span class="hidden sm:inline text-xs text-left font-semibold text-slate-900 leading-relaxed">{{ row.schoolsense }}</span>
                       </div>
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
-            <div class="border-t border-slate-200 bg-slate-50/60 p-4 text-center">
+            <div class="border-t border-slate-200 bg-slate-50/60 p-3.5 sm:p-4 text-center">
               <p class="text-xs text-slate-600">
                 Switching is effortless: our team migrates your student lists, classes and fee structures for free within 48 hours.
               </p>
@@ -714,7 +700,7 @@ interface FaqItem {
             Built for how Indian schools actually run
           </h2>
           <p class="mt-4 text-base leading-relaxed text-slate-600 sm:text-lg">
-            Not a foreign system adapted for India — SchoolSense is designed around Indian school
+            Not a foreign system adapted for India. SchoolSense is designed around Indian school
             life from the first screen.
           </p>
         </div>
@@ -774,7 +760,7 @@ interface FaqItem {
               Every kind of school, every board
             </h3>
             <p class="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
-              From a 120-student primary school to a 3,000-student senior secondary campus — with
+              From a 120-student primary school to a 3,000-student senior secondary campus: with
               whatever board and medium your school follows.
             </p>
             <div class="mt-6 grid gap-3 sm:grid-cols-2">
@@ -794,7 +780,7 @@ interface FaqItem {
             One system, a clear view for everyone
           </h3>
           <p class="mx-auto mt-3 max-w-xl text-center text-sm text-slate-600 sm:text-base">
-            Each person opens SchoolSense and sees exactly what their role needs — nothing more, nothing confusing.
+            Each person opens SchoolSense and sees exactly what their role needs: nothing more, nothing confusing.
           </p>
           <div class="mt-9 grid gap-6 lg:grid-cols-3">
             <div *ngFor="let r of roleViews" class="rounded-3xl border border-slate-200 bg-white p-7">
@@ -822,7 +808,7 @@ interface FaqItem {
               Made for Indian school life
             </h3>
             <p class="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
-              The small details that other software misses — and that your staff notice on day one.
+              The small details that other software misses, and that your staff notice on day one.
             </p>
           </div>
           <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -842,7 +828,7 @@ interface FaqItem {
       </div>
     </section>
 
-    <!-- ============================== HOW IT WORKS — ONBOARDING ============================== -->
+    <!-- ============================== HOW IT WORKS: ONBOARDING ============================== -->
     <section class="bg-slate-50 py-16 sm:py-24 border-t border-slate-200/80" aria-labelledby="how-heading">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="mx-auto max-w-2xl text-center">
@@ -851,7 +837,7 @@ interface FaqItem {
             Up and running in days, not months
           </h2>
           <p class="mt-4 text-base text-slate-600 sm:text-lg">
-            You don't need a computer expert at your school. Our team does the heavy lifting for you — free.
+            You don't need a computer expert at your school. Our team does the heavy lifting for you, free.
           </p>
         </div>
 
@@ -875,7 +861,7 @@ interface FaqItem {
             One simple plan. Every feature included.
           </h2>
           <p class="mt-4 text-base text-slate-600 sm:text-lg">
-            No hidden modules, no per-feature charges, no annual lock-in. We publish our price —
+            No hidden modules, no per-feature charges, no annual lock-in. We publish our price:
             most others make you call for a quote.
           </p>
         </div>
@@ -883,7 +869,7 @@ interface FaqItem {
         <div class="mx-auto mt-10 max-w-xl">
           <div class="relative rounded-3xl border-2 border-blue-600 bg-white p-8 shadow-xl shadow-blue-600/10">
             <span class="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-blue-600 px-4 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-sm">
-              Launch offer — 80% off
+              Launch offer: 80% off
             </span>
             <div class="text-center">
               <div class="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
@@ -942,7 +928,7 @@ interface FaqItem {
             Ready to see SchoolSense on your school's data?
           </h2>
           <p class="mx-auto mt-3 max-w-xl text-sm text-slate-600 sm:text-base">
-            Book a free demo — we'll walk you through attendance to certificates in 30 minutes,
+            Book a free demo. We'll walk you through attendance to certificates in 30 minutes,
             using a sample school just like yours.
           </p>
           <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -967,7 +953,7 @@ export class HomeComponent {
 
   // ---------- Hero slideshow (browser-only; prerender renders slide 1 statically) ----------
   slides: HeroSlide[] = [
-    { src: '/assets/images/slider_classroom.jpg', alt: 'Indian school classroom — students in uniform learning with a teacher' },
+    { src: '/assets/images/slider_classroom.jpg', alt: 'Indian school classroom: students in uniform learning with a teacher' },
     { src: '/assets/images/slider_leadership.jpg', alt: 'Indian school principal managing the school with SchoolSense' },
     { src: '/assets/images/slider_learning.jpg', alt: 'Indian students studying together in the school library' },
     { src: '/assets/images/slider_parents_1.jpg', alt: 'Indian student studying at home while parents follow updates on their phone' },
@@ -975,7 +961,7 @@ export class HomeComponent {
   currentSlide = signal(0);
   private slideTimer: ReturnType<typeof setInterval> | null = null;
 
-  // ---------- Built for Indian Schools — Campus Gallery Slideshow (Slow, smooth) ----------
+  // ---------- Built for Indian Schools: Campus Gallery Slideshow (Slow, smooth) ----------
   campusSlides: CampusSlide[] = [
     {
       src: '/assets/images/school_building.jpg',
@@ -1024,7 +1010,7 @@ export class HomeComponent {
   private campusSlideTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
-    // afterNextRender only runs in the browser — keeps static prerendering stable.
+    // afterNextRender only runs in the browser: keeps static prerendering stable.
     afterNextRender(() => {
       this.startSlideshow();
       this.startCampusSlideshow();
@@ -1037,7 +1023,7 @@ export class HomeComponent {
     this.seo.setPage({
       title: 'Simple School Management System with Live Parent Connect',
       description:
-        'SchoolSense is India\'s easiest school management system: attendance, homework, exams, fees, timetable, notices, complaints, alumni and auto-generated TC/CC certificates — with live Parent Connect. Launch offer ₹10 per student/month, all features included.',
+        'SchoolSense is India\'s easiest school management system: attendance, homework, exams, fees, timetable, notices, complaints, alumni and auto-generated TC/CC certificates: with live Parent Connect. Launch offer ₹10 per student/month, all features included.',
       path: '/',
       jsonLd: [
         {
@@ -1120,7 +1106,7 @@ export class HomeComponent {
       icon: 'M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5',
       art: 'timetable',
       name: 'Timetable & Scheduling',
-      tagline: 'Create class-wise timetables in minutes. Teachers and parents always see the latest schedule — no confusion.',
+      tagline: 'Create class-wise timetables in minutes. Teachers and parents always see the latest schedule with no confusion.',
     },
     {
       icon: 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
@@ -1132,13 +1118,13 @@ export class HomeComponent {
       icon: 'M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18.75c1.955 0 3.684.672 5 1.808V7.542a6.984 6.984 0 00-1-1.5zM12 6.042A8.967 8.967 0 0118 3.75c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18.75c-1.955 0-3.684.672-5 1.808V7.542a6.984 6.984 0 011-1.5z',
       art: 'homework',
       name: 'Homework & Assignments',
-      tagline: 'Teachers post homework with due dates. Parents see it the same evening — no more lost diaries.',
+      tagline: 'Teachers post homework with due dates. Parents see it the same evening with no more lost diaries.',
     },
     {
       icon: 'M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5',
       art: 'exams',
       name: 'Exams & Marksheets',
-      tagline: 'Enter marks once — report cards calculate themselves. Parents get results on their phone.',
+      tagline: 'Enter marks once and report cards calculate themselves. Parents get results on their phone.',
     },
     {
       icon: 'M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46',
@@ -1156,46 +1142,46 @@ export class HomeComponent {
       icon: 'M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z',
       art: 'fees',
       name: 'Fee Management & Invoicing',
-      tagline: 'Fee structures, invoices and receipts — organised in one place with a clear record per student.',
+      tagline: 'Fee structures, invoices and receipts: organised in one place with a clear record per student.',
     },
     {
       icon: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z',
       art: 'alumni',
       name: 'Alumni Management',
-      tagline: 'Keep former students connected with a proper alumni record — your school community, for life.',
+      tagline: 'Keep former students connected with a proper alumni record: your school community, for life.',
     },
     {
       icon: 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z',
       art: 'certificate',
       name: 'Auto-Generated Certificates',
-      tagline: 'TC, Character Certificate and more — generated with proper formats in one click.',
+      tagline: 'TC, Character Certificate and more: generated with proper formats in one click.',
     },
   ];
 
   parentBullets = [
-    { title: 'Instant push notifications', detail: 'every activity — attendance, homework, marks, fees, fines and events — the moment it happens.' },
+    { title: 'Instant push notifications', detail: 'every activity: attendance, homework, marks, fees, fines and events, the moment it happens.' },
     { title: 'Live attendance', detail: 'the moment roll call happens, not at day-end.' },
     { title: 'Homework & marks instantly', detail: 'as soon as the teacher posts them.' },
-    { title: 'Fee invoices, receipts & fines', detail: 'always available — no "I paid, where is the receipt?".' },
-    { title: 'Emergency alerts', detail: 'urgent school messages reach parents in seconds — not by evening.' },
+    { title: 'Fee invoices, receipts & fines', detail: 'always available: no "I paid, where is the receipt?".' },
+    { title: 'Emergency alerts', detail: 'urgent school messages reach parents in seconds, not by evening.' },
     { title: 'Notices, events & holidays', detail: 'delivered instantly, nothing lost in the school bag.' },
     { title: 'Complaints with tracking', detail: 'raise an issue, follow every reply until it is closed.' },
     { title: "Today's timetable", detail: 'no morning confusion about which books to pack.' },
   ];
 
   parentAppFeatures = [
-    'Push notification for every activity — attendance, homework, marks, fees, fines, events',
-    'Emergency alerts — urgent school messages reach you in seconds',
+    'Push notification for every activity: attendance, homework, marks, fees, fines, events',
+    'Emergency alerts: urgent school messages reach you in seconds',
     'Exam marks, results and report cards the moment they are published',
-    'Fee invoices, receipts and fines — all in one place',
+    'Fee invoices, receipts and fines: all in one place',
     'Raise complaints and follow every reply until they are resolved',
     'Live daily attendance and today\u2019s timetable',
   ];
 
   teacherAppFeatures = [
     'Mark the whole class\u2019s attendance in seconds',
-    'Post homework with due dates — parents notified instantly',
-    'Enter marks once — results reach parents automatically',
+    'Post homework with due dates: parents notified instantly',
+    'Enter marks once: results reach parents automatically',
     'Monitor parent complaints, reply and update status until closed',
     'Publish notices to one class or the whole school',
   ];
@@ -1220,7 +1206,7 @@ export class HomeComponent {
       name: 'Class Teacher',
       tagline: 'Their class, ready in seconds',
       icon: 'M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z',
-      items: ['Mark the whole class in under a minute', 'Post homework with a due date', 'Enter marks — report cards calculate themselves', 'See today\u2019s timetable and class strength'],
+      items: ['Mark the whole class in under a minute', 'Post homework with a due date', 'Enter marks: report cards calculate themselves', 'See today\u2019s timetable and class strength'],
     },
     {
       name: 'Parent / Guardian',
@@ -1243,12 +1229,12 @@ export class HomeComponent {
     {
       icon: 'M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0',
       name: 'Live Parent Connect',
-      detail: 'Every activity of the child, live — attendance, marks, complaints, fines and even emergency alerts reach parents the moment they happen.',
+      detail: 'Every activity of the child, live: attendance, marks, complaints, fines and even emergency alerts reach parents the moment they happen.',
     },
     {
       icon: 'M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3.75 0h.008v.008h-.008V1.5zm3.75 18h.008v.008H13.5v-.008z',
       name: 'Free mobile apps',
-      detail: 'Dedicated apps for Parents and Teachers on Android & iPhone — included free in every plan. No per-user charges, ever.',
+      detail: 'Dedicated apps for Parents and Teachers on Android & iPhone: included free in every plan. No per-user charges, ever.',
     },
     {
       icon: 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z',
@@ -1258,17 +1244,17 @@ export class HomeComponent {
     {
       icon: 'M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99',
       name: 'No lock-in, ever',
-      detail: 'Monthly billing only — no yearly blockage, no forced contracts. Leave anytime and take your data with you. We earn your renewal every single month.',
+      detail: 'Monthly billing only: no yearly blockage, no forced contracts. Leave anytime and take your data with you. We earn your renewal every single month.',
     },
     {
       icon: 'M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437',
       name: 'Custom features on demand',
-      detail: 'Every school works differently. Tell us what your school needs and we build it for you — your base plan price never changes because of it.',
+      detail: 'Every school works differently. Tell us what your school needs and we build it for you: your base plan price never changes because of it.',
     },
     {
       icon: 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z',
       name: 'One-click documents',
-      detail: 'TC, Character Certificate, Bonafide and every document a school needs — auto-generated with correct formats in a single click.',
+      detail: 'TC, Character Certificate, Bonafide and every document a school needs: auto-generated with correct formats in a single click.',
     },
   ];
 
@@ -1276,42 +1262,36 @@ export class HomeComponent {
     {
       feature: 'Staff Usability & Ease of Use',
       category: 'Simplicity',
-      traditional: 'Manual handwriting in 10+ paper registers',
       legacy: 'Complicated menus, requires dedicated IT staff',
-      schoolsense: 'WhatsApp-level ease — 1-tap flows, zero IT staff required',
+      schoolsense: 'WhatsApp-level ease: 1-tap flows, zero IT staff required',
     },
     {
       feature: 'Live Parent Connection',
       category: 'Parent Trust',
-      traditional: 'Lost circulars & non-stop phone calls',
       legacy: 'Costly SMS packs with delayed delivery',
       schoolsense: 'Instant live push alerts for attendance, marks & homework',
     },
     {
       feature: 'Dedicated Mobile Apps',
       category: 'Mobile Access',
-      traditional: 'No mobile access',
       legacy: 'Extra per-user fees or buggy web wrappers',
       schoolsense: 'Two native apps (Parent & Teacher) included free',
     },
     {
       feature: 'Report Cards & Certificates',
       category: 'Academic Ops',
-      traditional: 'Days of manual score totals & handwritten TC',
       legacy: 'Rigid formats, extra charges for customization',
       schoolsense: '1-Click CBSE/ICSE marksheets, TC & Bonafide certificates',
     },
     {
       feature: 'Pricing & Contract Terms',
       category: 'Affordability',
-      traditional: 'Hidden costs of paper & uncollected fee dues',
       legacy: 'Yearly lock-in contracts & ₹50k+ setup fees',
       schoolsense: '₹10/student/month launch offer, monthly billing, no lock-in',
     },
     {
       feature: 'Onboarding & Data Setup',
       category: 'Support',
-      traditional: '100% manual maintenance by school staff',
       legacy: 'Self-serve migration or expensive training fees',
       schoolsense: 'Free complete setup & live staff training by our team',
     },
@@ -1345,7 +1325,7 @@ export class HomeComponent {
     {
       name: 'Term Report Cards & Marksheets',
       badge: 'CBSE / ICSE / State',
-      hint: 'Subject-wise scores, percentage, standard A1–F grading & remarks',
+      hint: 'Subject-wise scores, percentage, standard A1-F grading & remarks',
       art: 'exams',
     },
     {
@@ -1396,11 +1376,11 @@ export class HomeComponent {
     {
       art: 'parent-phone',
       title: 'Book a free demo',
-      detail: 'A 30-minute call where we show you the full system using a sample school — no pressure, no jargon.',
+      detail: 'A 30-minute call where we show you the full system using a sample school: no pressure, no jargon.',
     },
     {
       art: 'cloud',
-      title: 'We set your school up — free',
+      title: 'We set your school up: free',
       detail: 'We enter your classes, sections, subjects and fee structure, and train your staff step by step.',
     },
     {
@@ -1412,36 +1392,40 @@ export class HomeComponent {
 
 
   pricingIncludes = [
-    'Timetable & Scheduling',
-    'Attendance Register',
-    'Homework & Assignments',
-    'Exams & Marksheets',
-    'Circulars & Notices',
-    'Grievance Desk / Complaints',
-    'Fee Management & Invoicing',
-    'Alumni Management',
-    'Auto TC, CC & certificates',
-    'Live Parent Connect',
-    'Free setup & staff training',
-    'Works on any phone',
+    'Attendance Register & Live Sync',
+    'Timetable & Period Scheduling',
+    'Homework & Assignments Center',
+    'Exams & Automated Marksheets',
+    'Fee Management & GST Invoicing',
+    'Transport & Fleet Department',
+    'Departmental Staff & Admin Access',
+    'Student Admissions & Class Roster',
+    'Curriculum & Subjects Master',
+    'Alumni Registry & TC/CC Generation',
+    'Circulars, Notices & Event Alerts',
+    'Grievance Desk / Parent Complaints',
+    'Live Parent Connect Portal',
+    'Parent & Teacher Mobile Apps: Free',
+    'Push Notifications on Every Activity',
+    'Free Setup, Migration & Training',
   ];
 
   faqs: FaqItem[] = [
     {
       q: 'Do we need a computer expert at our school to use SchoolSense?',
-      a: 'No. SchoolSense is designed for everyday users — big buttons, simple screens and plain language. Our team does the initial setup and trains your staff for free. If your staff can use WhatsApp, they can use SchoolSense.',
+      a: 'No. SchoolSense is designed for everyday users with big buttons, simple screens and plain language. Our team does the initial setup and trains your staff for free. If your staff can use WhatsApp, they can use SchoolSense.',
     },
     {
       q: 'How much does it cost?',
-      a: 'The regular price is ₹59 per student per month, which covers every feature. As a launch offer, new schools pay just ₹10 per student per month. Billing is monthly and only for enrolled students — no yearly lock-in, no setup fee.',
+      a: 'The regular price is ₹59 per student per month, which covers every feature. As a launch offer, new schools pay just ₹10 per student per month. Billing is monthly and only for enrolled students with no yearly lock-in, no setup fee.',
     },
     {
       q: 'Are all features really included in this price?',
-      a: 'Yes. Timetable, attendance, homework, exams & marksheets, notices, complaints, fee management, alumni management and auto-generated certificates (TC, Character Certificate and more) are all included in the base price. Only special on-demand features you may request later are quoted separately.',
+      a: 'Yes. Timetable, attendance, homework, exams & marksheets, fee management, transport & fleet, departmental staff logins, notices, complaints, alumni management and auto-generated certificates (TC, Character Certificate and more) are all included in the base price. Only special on-demand features you may request later are quoted separately.',
     },
     {
       q: 'Can parents use it on a basic smartphone?',
-      a: 'Yes. Parents get updates in a simple mobile-friendly view that works in any phone browser — no expensive phone needed. Everything is shown in an easy timeline: attendance, homework, marks, fees and notices.',
+      a: 'Yes. Parents get updates in a simple mobile-friendly view that works in any phone browser: no expensive phone needed. Everything is shown in an easy timeline: attendance, homework, marks, fees and notices.',
     },
     {
       q: 'Is our school data safe?',
@@ -1453,7 +1437,7 @@ export class HomeComponent {
     },
     {
       q: 'Can you build a feature our school specifically needs?',
-      a: 'Yes. Every school works a little differently, so we build custom features on request — special reports, formats or workflows. Tell us what you need and we will scope it honestly before building anything. Your base plan price never changes because of it.',
+      a: 'Yes. Every school works a little differently, so we build custom features on request: special reports, formats or workflows. Tell us what you need and we will scope it honestly before building anything. Your base plan price never changes because of it.',
     },
   ];
 }

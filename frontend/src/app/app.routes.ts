@@ -22,6 +22,9 @@ import { TimetableComponent } from './features/timetable/timetable.component';
 import { SuperAdminComponent } from './features/super-admin/super-admin.component';
 import { SubscriptionComponent } from './features/subscription/subscription.component';
 import { StudentDetailComponent } from './features/academics/student-detail.component';
+import { TransportComponent } from './features/transport/transport.component';
+import { FeesComponent } from './features/fees/fees.component';
+import { StaffUsersComponent } from './features/staff-users/staff-users.component';
 import { authGuard, authChildGuard, publicSubdomainGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -61,6 +64,8 @@ export const routes: Routes = [
       { path: 'dashboard', component: DashboardComponent },
       { path: 'super-admin', component: SuperAdminComponent },
       { path: 'subscription', component: SubscriptionComponent },
+      { path: 'fees', component: FeesComponent },
+      { path: 'transport', component: TransportComponent },
       { path: 'my-class', component: MyClassComponent },
       { path: 'timetable', component: TimetableComponent },
       { path: 'attendance', component: AttendanceComponent },
@@ -71,6 +76,7 @@ export const routes: Routes = [
       { path: 'exams', component: ExamsComponent },
       { path: 'communication', component: CommunicationComponent },
       { path: 'complaints', component: ComplaintsComponent },
+      { path: 'staff-users', component: StaffUsersComponent },
     ],
   },
 

@@ -2,6 +2,7 @@ import { Component, OnInit, inject, HostListener, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { ApiService, getClassPedagogicalRank } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -158,6 +159,19 @@ interface StaffMember {
 
             </div>
           </div>
+
+          <!-- Quick Test Data Provisioning Button (Admin / Principal) -->
+          <button *ngIf="canManage && (activeTab === 'CLASSES' || activeTab === 'STUDENTS')" 
+                  (click)="autoSetupAllClasses()"
+                  [disabled]="isAutoProvisioning"
+                  title="Auto-provision sections, standard subjects & students across all classes for current session"
+                  class="px-3.5 py-2 sm:px-4 sm:py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer disabled:opacity-50">
+            <svg *ngIf="!isAutoProvisioning" class="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span *ngIf="isAutoProvisioning" class="w-3.5 h-3.5 border-2 border-indigo-400 border-t-indigo-700 rounded-full animate-spin"></span>
+            <span>{{ isAutoProvisioning ? (autoProvisionProgress || 'Setting up...') : '⚡ Quick Test Setup' }}</span>
+          </button>
 
           <!-- Buttons for CLASSES tab -->
           <button *ngIf="canManage && activeTab === 'CLASSES'" (click)="openAddClassModal()"
@@ -416,7 +430,7 @@ interface StaffMember {
                     </span>
                     <span>Sections ({{ c.sectionCount ?? (c.sections?.length || 0) }})</span>
                   </div>
-                  <span>Capacity: <strong class="text-slate-700">{{ (c.enrolledCount ?? getClassEnrolledCount(c)) }} / {{ (c.totalCapacity ?? getClassCapacity(c)) }}</strong></span>
+                  <span>Capacity: <strong class="text-slate-700">{{ (c.enrolledCount ?? getClassEnrolledCount(c)) }} / {{ getClassCapacity(c) }}</strong></span>
                 </div>
 
                 <!-- Sections list (Collapsible, hidden by default unless expanded) -->
@@ -1714,6 +1728,19 @@ interface StaffMember {
         <!-- Faculty Directory Minimal Claymorphic Card Container -->
         <div class="bg-white/95 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-[6px_6px_20px_rgba(203,213,225,0.45),-4px_-4px_16px_rgba(255,255,255,0.9)] overflow-hidden">
           
+          <!-- Link to Departmental Staff Management -->
+          <div *ngIf="auth.canManageStaffUsers()" class="p-3 sm:px-5 bg-slate-50 border-b border-slate-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+            <div class="flex items-center gap-2 text-slate-600 min-w-0">
+              <span class="text-slate-900 font-bold shrink-0">💡 Departmental & Administrative Logins:</span>
+              <span class="truncate">Need to create logins for Fee Accountants, Transport Supervisors, Librarians, Sports, or Sub-Admins?</span>
+            </div>
+            <a routerLink="/staff-users" 
+               class="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-[11px] shadow-2xs transition-all flex items-center gap-1 shrink-0 self-start sm:self-auto cursor-pointer">
+              <span>Manage Departmental Access</span>
+              <span>&rarr;</span>
+            </a>
+          </div>
+
           <!-- Top Section: Status Segmented Tabs & Search/Action Bar -->
           <div class="p-3.5 sm:p-5 border-b border-slate-100 bg-[#f8fafc]/90 space-y-3.5">
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
@@ -2352,76 +2379,200 @@ interface StaffMember {
       <!-- ============================================================== -->
       <!-- TAB 3: CURRICULUM SUBJECTS MASTER                              -->
       <!-- ============================================================== -->
-      <div *ngIf="activeTab === 'SUBJECTS'" class="space-y-6">
+      <div *ngIf="activeTab === 'SUBJECTS'" class="space-y-4 sm:space-y-6 animate-fadeIn">
         
-        <!-- Subjects Loading State: Modern Animated Circle Loader -->
-        <div *ngIf="loadingClasses" class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] p-16 flex flex-col items-center justify-center text-center space-y-4 animate-fadeIn">
-          <div class="relative w-16 h-16 flex items-center justify-center">
-            <div class="w-16 h-16 rounded-full border-4 border-slate-100 border-t-indigo-600 border-r-indigo-500 animate-spin"></div>
-            <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-50 to-indigo-100 text-indigo-600 flex items-center justify-center absolute shadow-inner">
-              <svg class="w-5 h-5 text-indigo-600" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M11.25 4.533A9.707 9.707 0 006 3a9.735 9.735 0 00-3.25.555.75.75 0 00-.5.707v14.25a.75.75 0 001 .707A8.237 8.237 0 016 18.75c1.995 0 3.823.707 5.25 1.886V4.533zM12.75 20.636A8.214 8.214 0 0118 18.75c.966 0 1.89.166 2.75.47a.75.75 0 001-.708V4.262a.75.75 0 00-.5-.707A9.735 9.735 0 0018 3a9.707 9.707 0 00-5.25 1.533v16.103z" />
-              </svg>
+        <!-- Top Tactile Neumorphic Class Selector Cards (Identical to Student Roster) -->
+        <div *ngIf="!loadingClasses && classes.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-3.5">
+          <!-- All Classes Card -->
+          <div (click)="selectSubjectClass(null)"
+               [ngClass]="selectedSubjectClass === null ? 'neu-pushed' : 'neu-elevated'"
+               class="p-3 sm:p-3.5 rounded-2xl cursor-pointer flex flex-col justify-between select-none">
+            <div class="flex items-center justify-between gap-1">
+              <span class="text-xs font-black truncate" [class.text-slate-900]="selectedSubjectClass === null" [class.text-slate-800]="selectedSubjectClass !== null">
+                All Classes
+              </span>
+              <span class="text-[10px] font-black px-1.5 py-0.5 rounded-md shrink-0"
+                    [ngClass]="selectedSubjectClass === null 
+                      ? 'bg-slate-900 text-white shadow-2xs' 
+                      : 'bg-indigo-50 text-indigo-700 border border-indigo-100/80'"
+                    title="Total Curriculum Subjects">
+                {{ subjects.length }} Sub
+              </span>
+            </div>
+            <div class="flex items-center justify-between mt-2.5 pt-2 border-t text-[10px]"
+                 [ngClass]="selectedSubjectClass === null ? 'border-slate-300/80 text-slate-600 font-bold' : 'border-slate-100 text-slate-400 font-medium'">
+              <span>{{ classes.length }} Classes</span>
+              <span class="font-mono font-bold">ALL</span>
             </div>
           </div>
-          <div class="space-y-1">
-            <h4 class="text-sm font-black text-slate-900 tracking-tight">Loading Curriculum Subjects</h4>
-            <p class="text-xs text-slate-400 font-medium">Please wait a moment while assigned subjects synchronize...</p>
+
+          <!-- Individual Class Cards -->
+          <div *ngFor="let c of classes"
+               (click)="selectSubjectClass(c)"
+               [ngClass]="selectedSubjectClass?.id === c.id ? 'neu-pushed' : 'neu-elevated'"
+               class="p-3 sm:p-3.5 rounded-2xl cursor-pointer flex flex-col justify-between select-none">
+            <div class="flex items-center justify-between gap-1">
+              <span class="text-xs font-black truncate" [class.text-slate-900]="selectedSubjectClass?.id === c.id" [class.text-slate-800]="selectedSubjectClass?.id !== c.id">
+                {{ c.name }}
+              </span>
+              <span class="text-[10px] font-black px-1.5 py-0.5 rounded-md shrink-0"
+                    [ngClass]="selectedSubjectClass?.id === c.id 
+                      ? 'bg-slate-900 text-white shadow-2xs' 
+                      : 'bg-indigo-50 text-indigo-700 border border-indigo-100/80'"
+                    title="Assigned Subjects">
+                {{ getClassSubjects(c).length }} Sub
+              </span>
+            </div>
+            <div class="flex items-center justify-between mt-2.5 pt-2 border-t text-[10px]"
+                 [ngClass]="selectedSubjectClass?.id === c.id ? 'border-slate-300/80 text-slate-600 font-bold' : 'border-slate-100 text-slate-400 font-medium'">
+              <span>{{ c.sections.length || 0 }} Sec</span>
+              <span class="font-mono font-bold">{{ c.code }}</span>
+            </div>
           </div>
         </div>
 
-        <!-- Subjects Grid (Loaded) -->
-        <div *ngIf="!loadingClasses" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          <div *ngFor="let s of subjects"
-               class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg bg-slate-900 text-white">
-                  {{ s.code }}
-                </span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
-                  {{ s.subject_type }}
-                </span>
-              </div>
-              <h3 class="text-sm font-black text-slate-900 mt-1">{{ s.name }}</h3>
+        <!-- Subjects Workspace Container with Claymorphic Container -->
+        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff]">
+          <!-- Header Bar: Title, Section Filter Pills, Search & Actions -->
+          <div class="p-3.5 sm:px-6 sm:py-4 border-b border-slate-100 bg-[#f8fafc]/90 rounded-t-3xl space-y-3.5">
+            <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
               
-              <!-- Assigned Class & Sections Tags -->
-              <div *ngIf="s.class_name || (s.section_names && s.section_names.length > 0)" class="mt-2.5 flex flex-wrap items-center gap-1.5">
-                <span *ngIf="s.class_name" class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200">
-                  {{ s.class_name }}
-                </span>
-                <span *ngIf="!s.is_all_sections && s.section_names?.length" class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-50 text-amber-900 border border-amber-200">
-                  Sections: {{ s.section_names.join(', ') }}
-                </span>
-                <span *ngIf="s.is_all_sections" class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">
-                  All Sections
-                </span>
+              <!-- Left: Title & Section switch pills -->
+              <div class="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+                <div class="flex items-center gap-2">
+                  <h3 class="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
+                    {{ selectedSubjectClass ? selectedSubjectClass.name + ' Curriculum Subjects' : 'All Curriculum Subjects Master' }}
+                  </h3>
+                  <span class="px-2 py-0.5 rounded-xl bg-slate-200/80 text-[10px] font-black text-slate-700">
+                    {{ filteredSubjects.length }}
+                  </span>
+                </div>
+
+                <!-- Section switch pills for selected class -->
+                <div *ngIf="selectedSubjectClass && selectedSubjectClass.sections && selectedSubjectClass.sections.length > 0"
+                     class="flex items-center gap-1 bg-white border border-slate-200/90 p-1 rounded-2xl shadow-2xs overflow-x-auto max-w-full">
+                  <button (click)="selectedSubjectSectionId = 'ALL'"
+                          [class.bg-slate-900]="selectedSubjectSectionId === 'ALL'"
+                          [class.text-white]="selectedSubjectSectionId === 'ALL'"
+                          [class.text-slate-600]="selectedSubjectSectionId !== 'ALL'"
+                          class="px-2.5 py-1 text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0">
+                    All Sections
+                  </button>
+                  <button *ngFor="let sec of selectedSubjectClass.sections"
+                          (click)="selectedSubjectSectionId = sec.id"
+                          [class.bg-slate-900]="selectedSubjectSectionId === sec.id"
+                          [class.text-white]="selectedSubjectSectionId === sec.id"
+                          [class.text-slate-600]="selectedSubjectSectionId !== sec.id"
+                          class="px-2.5 py-1 text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0">
+                    {{ formatSection(sec.name) }}
+                  </button>
+                </div>
               </div>
 
-              <p class="text-xs text-slate-500 mt-2 leading-relaxed">{{ s.description || 'Standard institutional curriculum subject.' }}</p>
+              <!-- Right: Search Input & Add Subject Button -->
+              <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-between sm:justify-end">
+                <div class="relative w-full sm:w-60">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <input type="text" [(ngModel)]="subjectSearchQuery" placeholder="Search subject name/code..."
+                         class="w-full pl-8 pr-8 py-2 bg-white border border-slate-300 rounded-2xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-[inset_1px_1px_3px_#e2e8f0,inset_-1px_-1px_3px_#ffffff]" />
+                  <button *ngIf="subjectSearchQuery" (click)="subjectSearchQuery = ''"
+                          class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs font-bold cursor-pointer">&times;</button>
+                </div>
+
+                <button *ngIf="canManage" (click)="openAddSubjectModal(selectedSubjectClass || undefined)"
+                        class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  <span>{{ selectedSubjectClass ? '+ Add to ' + selectedSubjectClass.name : '+ Add Subject' }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Loading Spinner -->
+          <div *ngIf="loadingSubjects" class="p-16 flex flex-col items-center justify-center text-center space-y-4 animate-fadeIn">
+            <div class="relative w-16 h-16 flex items-center justify-center">
+              <div class="w-16 h-16 rounded-full border-4 border-slate-100 border-t-indigo-600 border-r-indigo-500 animate-spin"></div>
+              <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-50 to-indigo-100 text-indigo-600 flex items-center justify-center absolute shadow-inner">
+                <svg class="w-5 h-5 text-indigo-600" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M11.25 4.533A9.707 9.707 0 006 3a9.735 9.735 0 00-3.25.555.75.75 0 00-.5.707v14.25a.75.75 0 001 .707A8.237 8.237 0 016 18.75c1.995 0 3.823.707 5.25 1.886V4.533zM12.75 20.636A8.214 8.214 0 0118 18.75c.966 0 1.89.166 2.75.47a.75.75 0 001-.708V4.262a.75.75 0 00-.5-.707A9.735 9.735 0 0018 3a9.707 9.707 0 00-5.25 1.533v16.103z" />
+                </svg>
+              </div>
+            </div>
+            <div class="space-y-1">
+              <h4 class="text-sm font-black text-slate-900 tracking-tight">Loading Curriculum Subjects</h4>
+              <p class="text-xs text-slate-400 font-medium">Please wait a moment while assigned subjects synchronize...</p>
+            </div>
+          </div>
+
+          <!-- Subjects Grid Content -->
+          <div *ngIf="!loadingSubjects" class="p-4 sm:p-6">
+            <div *ngIf="filteredSubjects.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+              <div *ngFor="let s of filteredSubjects"
+                   class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] hover:shadow-[6px_6px_16px_#cbd5e1,-6px_-6px_16px_#ffffff] transition-all flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg bg-slate-900 text-white">
+                      {{ s.code }}
+                    </span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
+                      {{ s.subject_type }}
+                    </span>
+                  </div>
+                  <h3 class="text-sm font-black text-slate-900 mt-1">{{ s.name }}</h3>
+                  
+                  <!-- Assigned Class & Sections Tags -->
+                  <div class="mt-2.5 flex flex-wrap items-center gap-1.5">
+                    <span *ngIf="s.class_name" class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200">
+                      {{ s.class_name }}
+                    </span>
+                    <span *ngIf="!s.is_all_sections && s.section_names?.length" class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-50 text-amber-900 border border-amber-200">
+                      Sections: {{ s.section_names.join(', ') }}
+                    </span>
+                    <span *ngIf="s.is_all_sections" class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      All Sections
+                    </span>
+                  </div>
+
+                  <p class="text-xs text-slate-500 mt-2 leading-relaxed">{{ s.description || 'Standard institutional curriculum subject.' }}</p>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <span class="text-[10px] font-semibold text-emerald-600 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+                    Active Curriculum
+                  </span>
+                  <button *ngIf="canManage" (click)="promptDeleteSubject(s, selectedSubjectClass || undefined, $event)"
+                          class="text-xs font-bold text-rose-500 hover:text-rose-700 p-1 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer">
+                    Delete
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-              <span class="text-[10px] font-semibold text-emerald-600 flex items-center gap-1">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
-                Active Curriculum
-              </span>
-              <button *ngIf="canManage" (click)="promptDeleteSubject(s, undefined, $event)"
-                      class="text-xs font-bold text-rose-500 hover:text-rose-700 p-1 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer">
-                Delete
+            <!-- Empty State for Selected Class / Filter -->
+            <div *ngIf="filteredSubjects.length === 0" class="p-12 text-center bg-[#f8fafc] rounded-3xl border border-dashed border-slate-200">
+              <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+              </svg>
+              <p class="text-sm font-black text-slate-700">
+                {{ selectedSubjectClass ? 'No Subjects Assigned to ' + selectedSubjectClass.name : 'No Curriculum Subjects Found' }}
+              </p>
+              <p class="text-xs text-slate-400 mt-1">
+                {{ selectedSubjectClass ? 'Configure the subjects taught in ' + selectedSubjectClass.name + '.' : 'Add subjects to your classes or configure campus curriculum.' }}
+              </p>
+              <button (click)="openAddSubjectModal(selectedSubjectClass || undefined)" class="mt-4 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-sm transition-all cursor-pointer">
+                {{ selectedSubjectClass ? '+ Add Subject to ' + selectedSubjectClass.name : '+ Add First Subject' }}
               </button>
             </div>
           </div>
-
-          <div *ngIf="subjects.length === 0" class="col-span-full p-12 text-center bg-white rounded-3xl border border-dashed border-slate-200">
-            <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-            <p class="text-sm font-black text-slate-700">No Curriculum Subjects Configured</p>
-            <p class="text-xs text-slate-400 mt-1">Add subjects to your classes or configure campus curriculum.</p>
-            <button (click)="openAddSubjectModal()" class="mt-4 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-sm transition-all cursor-pointer">
-              + Add First Subject
-            </button>
-          </div>
         </div>
+
       </div>
 
       <!-- ============================================================== -->
@@ -4291,6 +4442,9 @@ interface StaffMember {
               <label class="block font-bold text-slate-700 mb-1">Default Student Capacity per Section</label>
               <input type="number" [(ngModel)]="newClass.capacity" min="10" max="100"
                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+              <p class="mt-1.5 text-[11px] text-slate-500 font-medium">
+                Total Class Capacity: <strong class="text-slate-800 font-bold">{{ (newClass.capacity || 40) * (newClass.sectionsList.length || 1) }} students</strong> across {{ newClass.sectionsList.length || 1 }} section{{ (newClass.sectionsList.length || 1) > 1 ? 's' : '' }} ({{ newClass.capacity || 40 }} per section)
+              </p>
             </div>
 
             <div *ngIf="classModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
@@ -5991,6 +6145,9 @@ export class AcademicsComponent implements OnInit {
   
   selectedClass: ClassItem | null = null;
   selectedSection: SectionItem | null = null;
+  selectedSubjectClass: ClassItem | null = null;
+  subjectSearchQuery = '';
+  selectedSubjectSectionId = 'ALL';
   
   searchQuery = '';
   staffSearchQuery = '';
@@ -6075,6 +6232,7 @@ export class AcademicsComponent implements OnInit {
   loadingStudents = false;
   loadingStaff = false;
   loadingAlumni = false;
+  loadingSubjects = false;
 
   // 3-Dot Action Menus
   activeClassMenuId: string | null = null;
@@ -6549,7 +6707,14 @@ export class AcademicsComponent implements OnInit {
   }
 
   get totalCampusCapacity(): number {
-    if (this.classesOverviewSummary) return this.classesOverviewSummary.totalCapacity;
+    if (this.classesOverviewSummary) {
+      const sumCap = Number(this.classesOverviewSummary.totalCapacity) || 0;
+      const secCount = Number(this.classesOverviewSummary.totalSections) || 0;
+      if (secCount > 0 && sumCap > secCount * 60) {
+        return secCount * 40;
+      }
+      return sumCap;
+    }
     return this.classes.reduce((sum, c) => sum + this.getClassCapacity(c), 0);
   }
 
@@ -6559,15 +6724,27 @@ export class AcademicsComponent implements OnInit {
   }
 
   getClassCapacity(c: ClassItem): number {
-    if (c.totalCapacity !== undefined && c.totalCapacity !== null) return c.totalCapacity;
-    if (!c.sections || c.sections.length === 0) return 0;
-    return c.sections.reduce((sum, s) => sum + (s.capacity || 40), 0);
+    if (c.sections && c.sections.length > 0) {
+      return c.sections.reduce((sum, s) => sum + (Number(s.capacity) || 0), 0);
+    }
+    const secCount = Number(c.sectionCount ?? (c.sections ? c.sections.length : 0)) || 0;
+    if (secCount === 0) return 0;
+    if (c.totalCapacity !== undefined && c.totalCapacity !== null) {
+      const cap = Number(c.totalCapacity) || 0;
+      if (cap > secCount * 60 || cap <= 0) {
+        return secCount * 40;
+      }
+      return cap;
+    }
+    return secCount * 40;
   }
 
   getClassEnrolledCount(c: ClassItem): number {
+    if (c.sections && c.sections.length > 0) {
+      return c.sections.reduce((sum, s: any) => sum + (Number(s.enrolledCount ?? s.enrolled_count) || 0), 0);
+    }
     if (c.enrolledCount !== undefined && c.enrolledCount !== null) return c.enrolledCount;
-    if (!c.sections || c.sections.length === 0) return 0;
-    return c.sections.reduce((sum, s: any) => sum + (Number(s.enrolled_count) || 0), 0);
+    return 0;
   }
 
   get studentEnrollSections(): SectionItem[] {
@@ -6778,17 +6955,14 @@ export class AcademicsComponent implements OnInit {
         this.ensureClassDetailsLoaded(this.selectedClass.id);
       }
     } else if (tab === 'STAFF') {
-      if (this.staffList.length === 0 || forceRefresh) {
-        this.loadStaffList();
-      }
+      this.loadStaffList();
     } else if (tab === 'SUBJECTS') {
-      if (this.subjects.length === 0 || forceRefresh) {
-        this.loadSubjectsMaster();
+      this.loadSubjectsMaster();
+      if (this.classes.length === 0 || forceRefresh) {
+        this.loadClassesAndSubjects(true);
       }
     } else if (tab === 'ALUMNI') {
-      if (this.alumniList.length === 0 || forceRefresh) {
-        this.loadAlumniList();
-      }
+      this.loadAlumniList();
     }
   }
 
@@ -6805,15 +6979,18 @@ export class AcademicsComponent implements OnInit {
         this.activeTab = 'ALUMNI';
       } else if (tab === 'students') {
         this.activeTab = 'STUDENTS';
+      } else {
+        this.activeTab = 'CLASSES';
       }
 
       if (params['manageSessions'] || params['openSessionModal'] === 'true') {
         this.openSessionModal();
       }
+
+      this.loadTabData(this.activeTab);
     });
 
     this.loadAcademicSessions();
-    this.loadTabData(this.activeTab);
   }
 
   loadDeactivationRequests() {
@@ -8400,6 +8577,14 @@ export class AcademicsComponent implements OnInit {
           const stillSelected = this.selectedClass ? this.classes.find((c) => c.id === this.selectedClass?.id) : null;
           const targetToSelect = stillSelected || this.classes[0];
           this.selectedClass = targetToSelect;
+
+          if (!this.selectedSubjectClass) {
+            this.selectedSubjectClass = targetToSelect;
+          } else {
+            const stillSub = this.classes.find((c) => c.id === this.selectedSubjectClass?.id);
+            if (stillSub) this.selectedSubjectClass = stillSub;
+          }
+
           if (this.activeTab === 'STUDENTS') {
             this.ensureClassDetailsLoaded(targetToSelect.id).then(() => {
               if (targetToSelect.sections && targetToSelect.sections.length > 0) {
@@ -8411,6 +8596,7 @@ export class AcademicsComponent implements OnInit {
         } else {
           this.selectedClass = null;
           this.selectedSection = null;
+          this.selectedSubjectClass = null;
           this.students = [];
         }
         this.loadingClasses = false;
@@ -8424,12 +8610,15 @@ export class AcademicsComponent implements OnInit {
   }
 
   loadSubjectsMaster() {
+    this.loadingSubjects = true;
     this.api.get<SubjectItem[]>('academics/subjects').subscribe({
       next: (res) => {
         this.subjects = res || [];
+        this.loadingSubjects = false;
       },
       error: () => {
         this.subjects = [];
+        this.loadingSubjects = false;
       },
     });
   }
@@ -8441,6 +8630,9 @@ export class AcademicsComponent implements OnInit {
       if (targetClass) {
         targetClass.sections = cached.sections;
         targetClass.subjects = cached.subjects;
+        targetClass.sectionCount = cached.sections.length;
+        targetClass.totalCapacity = cached.sections.reduce((sum, s) => sum + (Number(s.capacity) || 0), 0);
+        targetClass.enrolledCount = cached.sections.reduce((sum, s: any) => sum + (Number(s.enrolledCount ?? s.enrolled_count) || 0), 0);
       }
       return cached;
     }
@@ -8464,6 +8656,9 @@ export class AcademicsComponent implements OnInit {
         if (targetClass) {
           targetClass.sections = details.sections;
           targetClass.subjects = details.subjects;
+          targetClass.sectionCount = details.sections.length;
+          targetClass.totalCapacity = details.sections.reduce((sum, s) => sum + (Number(s.capacity) || 0), 0);
+          targetClass.enrolledCount = details.sections.reduce((sum, s: any) => sum + (Number(s.enrolledCount ?? s.enrolled_count) || 0), 0);
         }
         return details;
       } catch (e) {
@@ -8808,13 +9003,54 @@ export class AcademicsComponent implements OnInit {
     this.showAddSubjectModal = true;
   }
 
-  openAddSubjectModal() {
-    this.subjectTargetClass = this.selectedClass || (this.classes.length > 0 ? this.classes[0] : null);
+  selectSubjectClass(c: ClassItem | null) {
+    this.selectedSubjectClass = c;
+    this.selectedSubjectSectionId = 'ALL';
+    this.subjectSearchQuery = '';
+    if (c) {
+      this.ensureClassDetailsLoaded(c.id);
+    }
+  }
+
+  get filteredSubjects(): SubjectItem[] {
+    let list: SubjectItem[] = [];
+    if (this.selectedSubjectClass) {
+      list = this.getClassSubjects(this.selectedSubjectClass);
+      if (this.selectedSubjectSectionId !== 'ALL') {
+        list = list.filter(
+          (s) =>
+            s.is_all_sections ||
+            (s.section_ids && s.section_ids.includes(this.selectedSubjectSectionId))
+        );
+      }
+    } else {
+      list = this.subjects || [];
+    }
+
+    if (this.subjectSearchQuery.trim()) {
+      const q = this.subjectSearchQuery.trim().toLowerCase();
+      list = list.filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) ||
+          s.code.toLowerCase().includes(q) ||
+          (s.subject_type || '').toLowerCase().includes(q) ||
+          (s.class_name || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }
+
+  openAddSubjectModal(classItem?: ClassItem) {
+    this.subjectTargetClass =
+      classItem ||
+      this.selectedSubjectClass ||
+      this.selectedClass ||
+      (this.classes.length > 0 ? this.classes[0] : null);
     this.selectedSubjectClassId = this.subjectTargetClass?.id || '';
     this.newSubject = {
       name: '',
       code: '',
-      subjectType: 'ACADEMIC',
+      subjectType: 'THEORY',
       description: '',
       isAllSections: true,
       selectedSectionIds: this.subjectTargetClass ? (this.subjectTargetClass.sections || []).map((s) => s.id) : [],
@@ -10389,4 +10625,240 @@ export class AcademicsComponent implements OnInit {
       },
     });
   }
+
+  // ==============================================================
+  // QUICK TEST DATA AUTO-PROVISIONING UTILITY
+  // ==============================================================
+  isAutoProvisioning = false;
+  autoProvisionProgress = '';
+
+  private readonly MALE_STUDENT_NAMES = [
+    'Aarav Sharma', 'Vihaan Gupta', 'Aditya Verma', 'Arjun Singh', 'Reyansh Patel',
+    'Ishaan Kumar', 'Atharv Joshi', 'Advik Shah', 'Pranav Mehta', 'Dhruv Nair',
+    'Kabir Iyer', 'Rohan Reddy', 'Karan Banerjee', 'Yash Chatterjee', 'Aryan Das',
+    'Samar Roy', 'Rudra Choudhury', 'Siddharth Mishra', 'Varun Pandey', 'Gautam Trivedi'
+  ];
+
+  private readonly FEMALE_STUDENT_NAMES = [
+    'Aanya Sharma', 'Diya Verma', 'Saanvi Gupta', 'Ananya Patel', 'Fatima Singh',
+    'Isha Kumar', 'Aadhya Joshi', 'Kavya Shah', 'Avani Mehta', 'Sara Nair',
+    'Myra Iyer', 'Anika Reddy', 'Navya Banerjee', 'Pari Chatterjee', 'Riya Das',
+    'Sneha Roy', 'Shreya Choudhury', 'Tanvi Mishra', 'Pooja Pandey', 'Neha Saxena'
+  ];
+
+  getStandardSubjectsForGrade(gradeName: string): { name: string; code: string; type: string }[] {
+    const gn = (gradeName || '').toLowerCase();
+    if (gn.includes('nur') || gn.includes('lkg') || gn.includes('ukg') || gn.includes('pre')) {
+      return [
+        { name: 'English', code: 'ENG', type: 'THEORY' },
+        { name: 'Hindi', code: 'HIN', type: 'THEORY' },
+        { name: 'Mathematics', code: 'MATH', type: 'THEORY' },
+        { name: 'Rhymes & Art', code: 'ART', type: 'PRACTICAL' },
+      ];
+    }
+    if (gn.includes('11') || gn.includes('12')) {
+      return [
+        { name: 'Physics', code: 'PHY', type: 'THEORY' },
+        { name: 'Chemistry', code: 'CHEM', type: 'THEORY' },
+        { name: 'Mathematics', code: 'MATH', type: 'THEORY' },
+        { name: 'English Core', code: 'ENG_COR', type: 'THEORY' },
+        { name: 'Computer Science', code: 'CS', type: 'PRACTICAL' },
+      ];
+    }
+    if (gn.includes('9') || gn.includes('10')) {
+      return [
+        { name: 'English Language', code: 'ENG', type: 'THEORY' },
+        { name: 'Mathematics', code: 'MATH', type: 'THEORY' },
+        { name: 'Science', code: 'SCI', type: 'THEORY' },
+        { name: 'Social Science', code: 'SST', type: 'THEORY' },
+        { name: 'Hindi', code: 'HIN', type: 'THEORY' },
+      ];
+    }
+    // Grades 1-8
+    return [
+      { name: 'English', code: 'ENG', type: 'THEORY' },
+      { name: 'Hindi', code: 'HIN', type: 'THEORY' },
+      { name: 'Mathematics', code: 'MATH', type: 'THEORY' },
+      { name: 'Science', code: 'SCI', type: 'THEORY' },
+      { name: 'Social Studies', code: 'SST', type: 'THEORY' },
+      { name: 'Computer Studies', code: 'COMP', type: 'PRACTICAL' },
+    ];
+  }
+
+  getStudentDOB(gradeName: string, index: number): string {
+    const gn = (gradeName || '').toLowerCase();
+    let birthYear = 2016;
+    if (gn.includes('pre-nur') || gn.includes('prenur')) birthYear = 2024;
+    else if (gn.includes('nursery') || gn.includes('nur')) birthYear = 2023;
+    else if (gn.includes('lkg')) birthYear = 2022;
+    else if (gn.includes('ukg')) birthYear = 2021;
+    else if (gn.includes('12')) birthYear = 2010;
+    else if (gn.includes('11')) birthYear = 2011;
+    else if (gn.includes('10')) birthYear = 2012;
+    else if (gn.includes('9')) birthYear = 2013;
+    else if (gn.includes('8')) birthYear = 2014;
+    else if (gn.includes('7')) birthYear = 2015;
+    else if (gn.includes('6')) birthYear = 2016;
+    else if (gn.includes('5')) birthYear = 2017;
+    else if (gn.includes('4')) birthYear = 2018;
+    else if (gn.includes('3')) birthYear = 2019;
+    else if (gn.includes('2')) birthYear = 2020;
+    else if (gn.includes('1')) birthYear = 2021;
+
+    const month = String((index % 12) + 1).padStart(2, '0');
+    const day = String(((index * 4) % 28) + 1).padStart(2, '0');
+    return `${birthYear}-${month}-${day}`;
+  }
+
+  async autoSetupAllClasses() {
+    if (this.isAutoProvisioning) return;
+    const session = this.auth.activeAcademicSession();
+    const sessionName = session?.name || 'Current Session';
+    const confirmed = confirm(
+      `Auto-provision sections, standard subjects, and test students across all classes for "${sessionName}"?`
+    );
+    if (!confirmed) return;
+
+    this.isAutoProvisioning = true;
+    this.autoProvisionProgress = 'Starting setup...';
+    const activeSessionId = session?.id;
+
+    try {
+      const classesList = [...this.classes];
+      let sectionsCreated = 0;
+      let subjectsAssigned = 0;
+      let studentsEnrolled = 0;
+
+      for (let i = 0; i < classesList.length; i++) {
+        const cls = classesList[i];
+        this.autoProvisionProgress = `Setting up ${cls.name} (${i + 1}/${classesList.length})...`;
+
+        // 1. Ensure Sections exist
+        let details = await this.ensureClassDetailsLoaded(cls.id);
+        let sections = [...(details.sections || [])];
+        if (sections.length === 0) {
+          try {
+            const secA: any = await firstValueFrom(
+              this.api.post('academics/sections', {
+                class_id: cls.id,
+                name: 'Section A',
+                code: 'A',
+                capacity: 40,
+                academic_year_id: activeSessionId,
+              })
+            );
+            if (secA) sections.push(secA);
+            sectionsCreated++;
+          } catch (e) {
+            console.warn(`Section A creation error for ${cls.name}:`, e);
+          }
+
+          try {
+            const secB: any = await firstValueFrom(
+              this.api.post('academics/sections', {
+                class_id: cls.id,
+                name: 'Section B',
+                code: 'B',
+                capacity: 40,
+                academic_year_id: activeSessionId,
+              })
+            );
+            if (secB) sections.push(secB);
+            sectionsCreated++;
+          } catch (e) {
+            console.warn(`Section B creation error for ${cls.name}:`, e);
+          }
+
+          this.classDetailsCache.delete(cls.id);
+          details = await this.ensureClassDetailsLoaded(cls.id);
+          sections = details.sections || sections;
+        }
+
+        // 2. Ensure Standard Subjects exist
+        let subjects = details.subjects || [];
+        if (subjects.length === 0) {
+          const standardSubjects = this.getStandardSubjectsForGrade(cls.name);
+          const secIds = sections.map((s) => s.id);
+          for (const sub of standardSubjects) {
+            try {
+              await firstValueFrom(
+                this.api.post('academics/subjects', {
+                  name: sub.name,
+                  code: `${sub.code}_${cls.code || cls.name.replace(/[^a-zA-Z0-9]/g, '')}`.toUpperCase().slice(0, 15),
+                  subject_type: sub.type || 'THEORY',
+                  type: sub.type || 'THEORY',
+                  class_id: cls.id,
+                  class_name: cls.name,
+                  academic_year_id: activeSessionId,
+                  is_all_sections: true,
+                  section_ids: secIds,
+                })
+              );
+              subjectsAssigned++;
+            } catch (e) {
+              console.warn(`Subject ${sub.name} assignment error:`, e);
+            }
+          }
+          this.classDetailsCache.delete(cls.id);
+        }
+
+        // 3. Ensure Students exist for each section (enroll up to 5 per section)
+        for (let sIdx = 0; sIdx < sections.length; sIdx++) {
+          const sec = sections[sIdx];
+          const currentEnrolled = Number((sec as any).enrolledCount ?? sec.enrolled_count ?? 0);
+          if (currentEnrolled < 5) {
+            const needed = 5 - currentEnrolled;
+            for (let k = 1; k <= needed; k++) {
+              const roll = String(currentEnrolled + k);
+              const isMale = k % 2 === 1;
+              const pool = isMale ? this.MALE_STUDENT_NAMES : this.FEMALE_STUDENT_NAMES;
+              const fullName = pool[(i * 7 + sIdx * 5 + k) % pool.length];
+              const parts = fullName.split(' ');
+              const firstName = parts[0];
+              const lastName = parts.slice(1).join(' ') || 'Kumar';
+              const guardianFirst = isMale ? 'Rajesh' : 'Sunita';
+              const dob = this.getStudentDOB(cls.name, k);
+
+              try {
+                await firstValueFrom(
+                  this.api.post('academics/students', {
+                    firstName,
+                    lastName,
+                    gender: isMale ? 'MALE' : 'FEMALE',
+                    dateOfBirth: dob,
+                    bloodGroup: ['A+', 'B+', 'O+', 'AB+'][k % 4],
+                    classId: cls.id,
+                    sectionId: sec.id,
+                    rollNumber: roll,
+                    guardianName: `${guardianFirst} ${lastName}`,
+                    guardianPhone: `+91 98765 ${String(20000 + i * 100 + sIdx * 10 + k).slice(-5)}`,
+                    guardianRelationship: 'Father',
+                    academicYearId: activeSessionId,
+                  })
+                );
+                studentsEnrolled++;
+              } catch (e) {
+                console.warn(`Student ${firstName} creation error:`, e);
+              }
+            }
+          }
+        }
+      }
+
+      this.classDetailsCache.clear();
+      this.toast.success(
+        `Setup complete! Added ${sectionsCreated} sections, ${subjectsAssigned} subjects, and ${studentsEnrolled} enrolled students for ${sessionName}.`
+      );
+      this.loadClassesAndSubjects();
+      this.loadSubjectsMaster();
+      this.loadStaffList();
+    } catch (err: any) {
+      console.error('Auto setup error:', err);
+      this.toast.error('Setup encountered an error: ' + (err?.message || 'Check browser console'));
+    } finally {
+      this.isAutoProvisioning = false;
+      this.autoProvisionProgress = '';
+    }
+  }
 }
+

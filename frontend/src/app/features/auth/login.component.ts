@@ -184,7 +184,7 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
                   </svg>
                 </div>
                 <h3 class="text-xs font-bold text-slate-900">Exams & Marksheets</h3>
-                <p class="text-[11px] text-slate-500 leading-snug">Automated grading (A1–F), term analytics & report cards.</p>
+                <p class="text-[11px] text-slate-500 leading-snug">Automated grading (A1-F), term analytics & report cards.</p>
               </div>
 
               <!-- Card 4: Governance (Indigo Accent) -->
@@ -625,7 +625,7 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
             <form *ngIf="forgotStep === 'OTP'" (ngSubmit)="submitVerifyOtp()" class="space-y-4">
               <div>
                 <div class="flex items-center justify-between mb-1.5">
-                  <label class="block text-xs font-bold text-slate-700">Security Verification Code (6–8 digits)</label>
+                  <label class="block text-xs font-bold text-slate-700">Security Verification Code (6-8 digits)</label>
                   <button type="button" (click)="forgotStep = 'EMAIL'"
                           class="text-[11px] font-bold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer">
                     Change Email

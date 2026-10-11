@@ -29,7 +29,7 @@ export interface LegalDoc {
 }
 
 // ---------------------------------------------------------------------------
-// Entity details — REPLACE before publishing.
+// Entity details: REPLACE before publishing.
 // ---------------------------------------------------------------------------
 export const LEGAL_ENTITY = 'SchoolSense';           // exact registered name
 export const LEGAL_ADDRESS = '[Registered office address, India]';
@@ -40,7 +40,7 @@ export const GRIEVANCE_OFFICER = '[Name of Grievance Officer]';
 export const GRIEVANCE_PHONE = '[Grievance officer phone]';
 export const JURISDICTION_CITY = '[City]';
 
-/** Shared clause used across documents — jurisdiction and governing law. */
+/** Shared clause used across documents: jurisdiction and governing law. */
 const GOVERNING_LAW: LegalSection = {
   heading: 'Governing law and jurisdiction',
   paragraphs: [
@@ -61,7 +61,7 @@ const DISPUTE_RESOLUTION: LegalSection = {
 export const TERMS: LegalDoc = {
   slug: 'terms',
   title: 'Terms and Conditions',
-  seoTitle: 'Terms and Conditions — SchoolSense School Management Platform',
+  seoTitle: 'Terms and Conditions: SchoolSense School Management Platform',
   description:
     'The terms governing use of the SchoolSense school management platform by schools, teachers, parents and students, including subscription, acceptable use, intellectual property, data protection, client references and liability.',
   lastUpdated: '8 October 2026',
@@ -216,11 +216,11 @@ export const TERMS: LegalDoc = {
 export const PRIVACY: LegalDoc = {
   slug: 'privacy',
   title: 'Privacy Policy',
-  seoTitle: 'Privacy Policy — SchoolSense School Management Platform',
+  seoTitle: 'Privacy Policy: SchoolSense School Management Platform',
   description:
     'How SchoolSense collects, uses, stores and protects personal data belonging to schools, teachers, parents and students, and the rights available to data principals under the Digital Personal Data Protection Act, 2023.',
   lastUpdated: '8 October 2026',
-  intro: `${LEGAL_ENTITY} provides school management software to educational institutions in India. This Privacy Policy explains what personal data we handle, why we handle it, how we protect it, and the choices available to you. It is written to be read by school administrators, teachers and parents — not only by lawyers.`,
+  intro: `${LEGAL_ENTITY} provides school management software to educational institutions in India. This Privacy Policy explains what personal data we handle, why we handle it, how we protect it, and the choices available to you. It is written to be read by school administrators, teachers and parents: not only by lawyers.`,
   sections: [
     {
       heading: '1. Our role: who decides what',
@@ -252,9 +252,9 @@ export const PRIVACY: LegalDoc = {
     {
       heading: '3. How we use personal data',
       bullets: [
-        'To provide the Services — displaying attendance, homework, marks, fees and notices to the people entitled to see them.',
+        'To provide the Services: displaying attendance, homework, marks, fees and notices to the people entitled to see them.',
         'To communicate with schools about their account, billing, support requests and service changes.',
-        'To keep the platform secure — detecting unauthorised access, preventing misuse and maintaining audit logs.',
+        'To keep the platform secure: detecting unauthorised access, preventing misuse and maintaining audit logs.',
         'To meet legal and accounting obligations, including tax and statutory record-keeping.',
         'To improve the Services, using aggregated or de-identified information that does not identify any individual.',
       ],
@@ -293,7 +293,7 @@ export const PRIVACY: LegalDoc = {
       bullets: [
         'Encryption of data while in transit and while stored.',
         'Role-based access control, so each user sees only what their role permits.',
-        'Passwords stored only as one-way cryptographic hashes — no one, including our team, can read them.',
+        'Passwords stored only as one-way cryptographic hashes: no one, including our team, can read them.',
         'Logging of sensitive actions in an audit trail.',
         'Regular backups and monitored infrastructure.',
         'Access limited to authorised personnel on a need-to-know basis.',
@@ -371,7 +371,7 @@ export const PRIVACY: LegalDoc = {
 export const DPA: LegalDoc = {
   slug: 'data-processing',
   title: 'Data Processing Agreement',
-  seoTitle: 'Data Processing Agreement — SchoolSense (for Schools)',
+  seoTitle: 'Data Processing Agreement: SchoolSense (for Schools)',
   description:
     'The data processing terms that apply between SchoolSense as data processor and each subscribing school as data fiduciary, covering instructions, confidentiality, security, sub-processors, breach notification and audit.',
   lastUpdated: '8 October 2026',
@@ -453,7 +453,7 @@ export const DPA: LegalDoc = {
 export const ACCEPTABLE_USE: LegalDoc = {
   slug: 'acceptable-use',
   title: 'Acceptable Use Policy',
-  seoTitle: 'Acceptable Use Policy — SchoolSense School Management Platform',
+  seoTitle: 'Acceptable Use Policy: SchoolSense School Management Platform',
   description:
     'The rules that apply to schools and their users when using the SchoolSense platform, with a clear explanation of what happens if an account is misused, so that every school and family on the platform stays protected.',
   lastUpdated: '8 October 2026',
@@ -496,7 +496,7 @@ export const ACCEPTABLE_USE: LegalDoc = {
     {
       heading: '4. Content standards',
       paragraphs: [
-        'Anything uploaded to the platform — notices, complaint messages, homework descriptions, remarks — must be respectful and lawful, and appropriate for an educational setting. This is particularly important because much of the content on the platform is read by children.',
+        'Anything uploaded to the platform: notices, complaint messages, homework descriptions, remarks: must be respectful and lawful, and appropriate for an educational setting. This is particularly important because much of the content on the platform is read by children.',
       ],
     },
     {

@@ -23,7 +23,7 @@ interface FaqItem {
           <span class="block text-blue-600">Every feature included.</span>
         </h1>
         <p class="mt-5 text-base leading-relaxed text-slate-600 sm:text-lg">
-          One plan, one price, no hidden charges. We publish our price openly — because we know
+          One plan, one price, no hidden charges. We publish our price openly: because we know
           it's fair. Most school software companies make you call for a quote; we think you
           deserve better.
         </p>
@@ -36,13 +36,13 @@ interface FaqItem {
         <div class="mx-auto max-w-4xl">
           <div class="relative rounded-3xl border-2 border-blue-600 bg-white shadow-2xl shadow-blue-600/10">
             <span class="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-blue-600 px-5 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm">
-              Launch offer — 80% off for new schools
+              Launch offer: 80% off for new schools
             </span>
 
             <div class="grid gap-8 p-8 sm:p-10 lg:grid-cols-5">
               <!-- Price -->
               <div class="text-center lg:col-span-2 lg:text-left">
-                <h2 id="plan-heading" class="text-xl font-extrabold text-slate-900">SchoolSense — All Features</h2>
+                <h2 id="plan-heading" class="text-xl font-extrabold text-slate-900">SchoolSense: All Features</h2>
                 <p class="mt-1 text-sm text-slate-500">For schools of every size, boards and mediums.</p>
 
                 <div class="mt-6 flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1 lg:justify-start">
@@ -62,7 +62,7 @@ interface FaqItem {
                    class="mt-6 block rounded-xl bg-blue-600 px-6 py-3.5 text-center text-base font-semibold text-white shadow-lg shadow-blue-600/25 transition-colors hover:bg-blue-700">
                   Book a Free Demo
                 </a>
-                <p class="mt-3 text-center text-xs text-slate-400 lg:text-left">No commitment — the demo is free.</p>
+                <p class="mt-3 text-center text-xs text-slate-400 lg:text-left">No commitment: the demo is free.</p>
               </div>
 
               <!-- Included -->
@@ -77,7 +77,7 @@ interface FaqItem {
                 <div class="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50/60 px-4 py-3 text-xs leading-relaxed text-slate-500">
                   <strong class="font-semibold text-slate-700">Need something special?</strong>
                   On-demand features (like custom reports or integrations) can be built for your
-                  school and are quoted separately — the base price always covers the full system above.
+                  school and are quoted separately: the base price always covers the full system above.
                 </div>
               </div>
             </div>
@@ -167,27 +167,30 @@ export class PricingComponent {
   private seo = inject(SeoService);
 
   included = [
-    'Timetable & Scheduling',
-    'Attendance Register',
-    'Homework & Assignments',
-    'Exams & Marksheets',
-    'Circulars & Notices',
-    'Grievance Desk / Complaints',
-    'Fee Management & Invoicing',
-    'Alumni Management',
-    'Auto TC, CC & certificates',
-    'Live Parent Connect',
-    'Parent & Teacher mobile apps — free',
-    'Push notifications on every activity',
-    'Unlimited teacher & staff logins',
-    'Free setup, migration & training',
-    'Data backup & security',
+    'Attendance Register & Live Sync',
+    'Timetable & Period Scheduling',
+    'Homework & Assignments Center',
+    'Exams & Automated Marksheets',
+    'Fee Management & GST Invoicing',
+    'Transport & Fleet Department',
+    'Departmental Staff & Admin Access',
+    'Student Admissions & Class Roster',
+    'Curriculum & Subjects Master',
+    'Alumni Registry & TC/CC Generation',
+    'Circulars, Notices & Event Alerts',
+    'Grievance Desk / Parent Complaints',
+    'Live Parent Connect Portal',
+    'Parent & Teacher Mobile Apps: Free',
+    'Push Notifications on Every Activity',
+    'Unlimited Teacher & Staff Logins',
+    'Free Setup, Migration & Training',
+    'Data Backup & Encrypted Security',
   ];
 
   faqs: FaqItem[] = [
     {
       q: 'Is ₹10 per student per month really the full price?',
-      a: 'Yes — for schools joining during our launch period. The regular price is ₹59 per student per month, and the launch offer reduces it to ₹10 for new schools. Both prices include every feature: there are no paid modules hiding behind the base plan.',
+      a: 'Yes: for schools joining during our launch period. The regular price is ₹59 per student per month, and the launch offer reduces it to ₹10 for new schools. Both prices include every feature: there are no paid modules hiding behind the base plan.',
     },
     {
       q: 'What counts as a "student" for billing?',
@@ -203,11 +206,11 @@ export class PricingComponent {
     },
     {
       q: 'Are there any setup or training charges?',
-      a: 'No. We set up your classes, sections, subjects and fee structure, migrate your existing student data, and train your staff — all free as part of onboarding.',
+      a: 'No. We set up your classes, sections, subjects and fee structure, migrate your existing student data, and train your staff: all free as part of onboarding.',
     },
     {
       q: 'What are "on-demand features"?',
-      a: 'Anything custom your school specifically wants beyond the standard system — for example, a special report format or an integration. We quote these separately before building anything, and the base plan price never changes because of them.',
+      a: 'Anything custom your school specifically wants beyond the standard system: for example, a special report format or an integration. We quote these separately before building anything, and the base plan price never changes because of them.',
     },
     {
       q: 'Can we cancel?',
@@ -217,17 +220,17 @@ export class PricingComponent {
 
   constructor() {
     this.seo.setPage({
-      title: 'Pricing — ₹10 per Student/Month Launch Offer, All Features Included',
+      title: 'Pricing: ₹10 per Student/Month Launch Offer, All Features Included',
       description:
-        'SchoolSense school management system pricing: regular ₹59 per student per month, launch offer ₹10 per student per month. All features included — attendance, homework, exams, fees, timetable, notices, complaints, alumni, certificates and Parent Connect. No setup fee, no lock-in.',
+        'SchoolSense school management system pricing: regular ₹59 per student per month, launch offer ₹10 per student per month. All features included: attendance, timetable, homework, exams, fee management, transport fleet, departmental staff logins, notices, complaints, alumni, auto TC/CC certificates and Parent Connect. No setup fee, no lock-in.',
       path: '/pricing',
       jsonLd: [
         {
           '@context': 'https://schema.org',
           '@type': 'Product',
-          name: 'SchoolSense — School Management System',
+          name: 'SchoolSense: School Management System',
           description:
-            'Cloud school management system for Indian schools with attendance, homework, exams, fees, timetable, notices, complaints, alumni management, auto-generated certificates and live Parent Connect.',
+            'Cloud school management system for Indian schools with attendance, timetable, homework, exams, fees, transport department, staff logins, notices, complaints, alumni management, auto-generated certificates and live Parent Connect.',
           brand: { '@type': 'Brand', name: 'SchoolSense' },
           offers: [
             {

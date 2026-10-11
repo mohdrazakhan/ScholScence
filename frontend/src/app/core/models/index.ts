@@ -19,6 +19,9 @@ export interface User {
   };
   isSupportSession?: boolean;
   permissions: string[];
+  customPermissions?: string[];
+  department?: string;
+  designation?: string;
   children?: {
     id: string;
     studentId?: string;
@@ -54,6 +57,7 @@ export interface User {
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
+  signingSecret?: string;
   user: User;
 }
 
@@ -624,4 +628,174 @@ export interface OnboardingEmailTemplates {
   teacherWelcome: OnboardingEmailTemplateItem;
   updatedAt?: string;
 }
+
+// ==============================================================
+// FEE MANAGEMENT & INVOICING MODELS
+// ==============================================================
+export interface FeeCategory {
+  id: string;
+  school_id?: string;
+  name: string;
+  code?: string;
+  description?: string;
+  status: string;
+  created_at?: string;
+}
+
+export interface FeeStructure {
+  id: string;
+  school_id?: string;
+  academic_year_id?: string;
+  class_id: string;
+  class_name?: string;
+  fee_category_id: string;
+  fee_category_name?: string;
+  amount: number;
+  frequency: 'MONTHLY' | 'QUARTERLY' | 'ANNUAL' | 'ONE_TIME';
+  due_day?: number;
+  status: string;
+  created_at?: string;
+}
+
+export interface FeePaymentRecord {
+  id: string;
+  invoice_id: string;
+  student_id: string;
+  receipt_number: string;
+  amount_paid: number;
+  payment_mode: 'CASH' | 'UPI' | 'NET_BANKING' | 'CHEQUE' | 'CARD';
+  payment_date: string;
+  transaction_reference?: string;
+  collected_by_name?: string;
+  remarks?: string;
+  created_at?: string;
+}
+
+export interface StudentFeeInvoice {
+  id: string;
+  school_id?: string;
+  student_id: string;
+  student_name?: string;
+  admission_number?: string;
+  class_name?: string;
+  section_name?: string;
+  academic_year_id?: string;
+  invoice_number: string;
+  month_name?: string;
+  total_amount: number;
+  paid_amount: number;
+  discount_amount?: number;
+  fine_amount?: number;
+  due_date: string;
+  status: 'PAID' | 'PARTIAL' | 'UNPAID' | 'OVERDUE';
+  items?: { description: string; amount: number }[];
+  payments?: FeePaymentRecord[];
+  created_at?: string;
+}
+
+// ==============================================================
+// TRANSPORT DEPARTMENT & FLEET MODELS
+// ==============================================================
+export interface TransportVehicle {
+  id: string;
+  school_id?: string;
+  vehicle_number: string;
+  bus_number?: string;
+  vehicle_type: 'BUS' | 'MINI_BUS' | 'VAN' | 'CAB';
+  model?: string;
+  seating_capacity: number;
+  driver_name: string;
+  driver_phone: string;
+  driver_license?: string;
+  driver_photo_url?: string;
+  conductor_name?: string;
+  conductor_phone?: string;
+  gps_device_id?: string;
+  insurance_expiry?: string;
+  fitness_expiry?: string;
+  pollution_expiry?: string;
+  status: 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE';
+  created_at?: string;
+}
+
+export interface TransportStop {
+  id: string;
+  route_id?: string;
+  stop_name: string;
+  pickup_time: string;
+  drop_time: string;
+  sequence_order: number;
+  monthly_fare: number;
+  landmark?: string;
+  status?: string;
+}
+
+export interface TransportRoute {
+  id: string;
+  school_id?: string;
+  academic_year_id?: string;
+  name: string;
+  code: string;
+  vehicle_id?: string;
+  vehicle_number?: string;
+  bus_number?: string;
+  driver_name?: string;
+  driver_phone?: string;
+  morning_start_time?: string;
+  evening_start_time?: string;
+  description?: string;
+  stops: TransportStop[];
+  stops_count?: number;
+  assigned_students_count?: number;
+  status: 'ACTIVE' | 'INACTIVE';
+  created_at?: string;
+}
+
+export interface StudentTransportAssignment {
+  id: string;
+  school_id?: string;
+  academic_year_id?: string;
+  student_id: string;
+  student_name: string;
+  admission_number: string;
+  class_name: string;
+  section_name: string;
+  photo_url?: string;
+  guardian_name?: string;
+  guardian_phone?: string;
+  route_id: string;
+  route_name?: string;
+  route_code?: string;
+  stop_id: string;
+  stop_name?: string;
+  pickup_time?: string;
+  drop_time?: string;
+  monthly_fare?: number;
+  bus_number?: string;
+  seat_number?: string;
+  pass_number: string;
+  emergency_contact?: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  created_at?: string;
+}
+
+export interface DepartmentalStaffUser {
+  id: string;
+  school_id?: string;
+  first_name: string;
+  last_name?: string;
+  name?: string;
+  email: string;
+  phone?: string;
+  role: string;
+  role_name?: string;
+  department: string;
+  designation?: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  custom_permissions: string[];
+  last_login_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 

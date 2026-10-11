@@ -16,8 +16,8 @@ import { AuthService } from '../core/services/auth.service';
         <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:h-[72px] sm:px-6 lg:px-8">
 
           <!-- Brand -->
-          <a routerLink="/" class="flex shrink-0 items-center gap-2.5" aria-label="SchoolSense — Home">
-            <img src="/brand/left_icon_logo.png" alt="SchoolSense — school management system logo"
+          <a routerLink="/" class="flex shrink-0 items-center gap-2.5" aria-label="SchoolSense: Home">
+            <img src="/brand/left_icon_logo.png" alt="SchoolSense: school management system logo"
                  class="h-9 w-auto object-contain sm:h-10" width="160" height="40" />
           </a>
 
@@ -141,7 +141,7 @@ import { AuthService } from '../core/services/auth.service';
             <!-- Brand + description (col-span-2 on mobile, lg:col-span-5 on desktop) -->
             <div class="col-span-2 lg:col-span-5">
               <div class="flex items-center justify-between sm:justify-start sm:gap-3">
-                <img src="/brand/name_with_tagline.png" alt="SchoolSense — school management system"
+                <img src="/brand/name_with_tagline.png" alt="SchoolSense: school management system"
                      class="h-9 sm:h-10 w-auto rounded-lg bg-white p-1.5" width="200" height="40" />
                 <span class="rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-300 sm:hidden">Made in India 🇮🇳</span>
               </div>
@@ -151,7 +151,7 @@ import { AuthService } from '../core/services/auth.service';
               </p>
               <div class="mt-4 hidden sm:flex flex-wrap gap-2">
                 <span class="rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-300">Made in India 🇮🇳</span>
-                <span class="rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-300">April–March academic sessions</span>
+                <span class="rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-300">April-March academic sessions</span>
               </div>
             </div>
 

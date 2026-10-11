@@ -24,6 +24,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'communication_notices',
     'communication_complaints',
     'subscription',
+    'fees',
+    'transport',
+    'staff_users',
   ],
   SCHOOL_ADMIN: [
     'dashboard',
@@ -44,6 +47,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'communication_notices',
     'communication_complaints',
     'subscription',
+    'fees',
+    'transport',
+    'staff_users',
   ],
   PRINCIPAL: [
     'dashboard',
@@ -64,6 +70,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'communication_notices',
     'communication_complaints',
     'subscription',
+    'fees',
+    'transport',
+    'staff_users',
   ],
   CLASS_TEACHER: [
     'dashboard',
@@ -106,6 +115,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'communication',
     'communication_notices',
     'subscription',
+    'fees',
   ],
   GUARDIAN: [
     'dashboard',
@@ -149,6 +159,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
 })
 export class AuthService {
   private readonly TOKEN_KEY = 'schoolsense_token';
+  private readonly SIGNING_SECRET_KEY = 'schoolsense_signing_secret';
   private readonly USER_KEY = 'schoolsense_user';
   private readonly SESSION_KEY = 'schoolsense_active_session';
   private readonly ROLE_PERMS_KEY_PREFIX = 'schoolsense_role_perms_';
@@ -180,19 +191,171 @@ export class AuthService {
   isParent = computed(() => ['GUARDIAN', 'PARENT'].includes(this.userRole()));
 
   /**
+   * Set simulated role for Support Session view
+   */
+  setSupportRole(role: string): void {
+    const user = this.currentUser();
+    if (!user || !user.isSupportSession) return;
+    const cleanRole = role.toUpperCase();
+    const updatedUser: User = {
+      ...user,
+      role: cleanRole,
+      roleName: this.getRoleDisplayName(cleanRole),
+    };
+    this.currentUser.set(updatedUser);
+    localStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser));
+  }
+
+  /**
+   * Set specific Teacher Impersonation in Support Session
+   */
+  setSupportTeacher(teacher: any): void {
+    const user = this.currentUser();
+    if (!user || !user.isSupportSession) return;
+
+    const teacherName = teacher.name || `${teacher.first_name || ''} ${teacher.last_name || ''}`.trim() || 'Teacher';
+    const roleCode = (teacher.role || (teacher.isClassTeacher ? 'CLASS_TEACHER' : 'TEACHER')).toUpperCase();
+
+    const updatedUser: User = {
+      ...user,
+      id: teacher.id || teacher.user_id || user.id,
+      firstName: teacher.first_name || teacherName.split(' ')[0] || 'Teacher',
+      lastName: teacher.last_name || teacherName.split(' ').slice(1).join(' ') || '',
+      email: teacher.email || user.email,
+      phone: teacher.phone || user.phone,
+      role: roleCode,
+      roleName: teacher.designation || (roleCode === 'CLASS_TEACHER' ? 'Class Teacher' : 'Teacher'),
+      teachingScope: {
+        classTeacherSections: teacher.classTeacherSections || [],
+        subjectAssignments: teacher.subjectAssignments || teacher.subjects || [],
+      },
+      customPermissions: teacher.custom_permissions || undefined,
+    };
+
+    this.currentUser.set(updatedUser);
+    localStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser));
+  }
+
+  /**
+   * Set specific Parent & Student Impersonation in Support Session
+   */
+  setSupportParent(student: any, guardian?: any): void {
+    const user = this.currentUser();
+    if (!user || !user.isSupportSession) return;
+
+    const gName = guardian?.name || student.guardianName || student.primaryContact?.name || 'Parent / Guardian';
+    const firstGName = guardian?.first_name || gName.split(' ')[0] || 'Parent';
+    const lastGName = guardian?.last_name || gName.split(' ').slice(1).join(' ') || '';
+
+    const childRecord = {
+      id: student.id || student.studentId,
+      studentId: student.id || student.studentId,
+      admissionNumber: student.admissionNumber || student.admission_number || '',
+      name: student.fullName || student.name || 'Student',
+      className: student.className || student.class_name || 'Class',
+      sectionName: student.sectionName || student.section_name || 'A',
+      sectionId: student.sectionId || student.section_id,
+      rollNumber: student.rollNumber || student.roll_number,
+      relationship: student.guardianRelationship || 'Parent',
+      isPrimaryContact: true,
+    };
+
+    const updatedUser: User = {
+      ...user,
+      id: guardian?.id || guardian?.user_id || student.guardian_user_id || 'parent-support-sim',
+      firstName: firstGName,
+      lastName: lastGName,
+      email: guardian?.email || student.primaryContact?.email || 'parent@schoolscence.in',
+      phone: guardian?.phone || student.primaryContact?.phone || '',
+      role: 'PARENT',
+      roleName: 'Parent / Guardian',
+      children: [childRecord],
+    };
+
+    try {
+      localStorage.setItem('schoolsense_parent_students', JSON.stringify([childRecord]));
+    } catch {}
+
+    this.currentUser.set(updatedUser);
+    localStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser));
+  }
+
+  /**
+   * Set specific Departmental User Impersonation in Support Session
+   */
+  setSupportDepartmentalUser(deptUser: any): void {
+    const user = this.currentUser();
+    if (!user || !user.isSupportSession) return;
+
+    const roleCode = (deptUser.role || 'STAFF').toUpperCase();
+    const updatedUser: User = {
+      ...user,
+      id: deptUser.id || user.id,
+      firstName: deptUser.first_name || deptUser.name?.split(' ')[0] || 'Staff',
+      lastName: deptUser.last_name || deptUser.name?.split(' ').slice(1).join(' ') || '',
+      email: deptUser.email || user.email,
+      phone: deptUser.phone || user.phone,
+      role: roleCode,
+      roleName: deptUser.designation || deptUser.role_name || deptUser.role,
+      department: deptUser.department,
+      designation: deptUser.designation,
+      customPermissions: deptUser.custom_permissions || undefined,
+    };
+
+    this.currentUser.set(updatedUser);
+    localStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser));
+  }
+
+  private getRoleDisplayName(role: string): string {
+    switch (role) {
+      case 'SUPER_ADMIN': return 'Binary (Delegated Admin)';
+      case 'SCHOOL_ADMIN': return 'School Admin';
+      case 'PRINCIPAL': return 'Principal';
+      case 'CLASS_TEACHER': return 'Class Teacher';
+      case 'TEACHER': return 'Teacher';
+      case 'FEE_MANAGER': return 'Fee Department';
+      case 'TRANSPORT_MANAGER': return 'Transport Department';
+      case 'PARENT':
+      case 'GUARDIAN': return 'Parent / Guardian';
+      case 'STUDENT': return 'Student';
+      default: return role;
+    }
+  }
+
+  /**
    * Check if a specific section / service is allowed for the active user based on role permissions
    */
   isSectionAllowedForUser(sectionId: string): boolean {
-    if (this.isSuperAdmin() || this.isSupportSession()) return true;
-
+    const user = this.currentUser();
     const role = this.userRole();
     if (!role) return false;
 
-    // Super Admin & Platform Admin have universal access
-    if (role === 'SUPER_ADMIN' || role === 'PLATFORM_ADMIN') return true;
+    // Super Admin / Platform Admin / Binary Delegated Admin have universal access
+    if (role === 'SUPER_ADMIN' || role === 'PLATFORM_ADMIN' || role === 'BINARY') return true;
 
     // Map any aliases
     const normalizedId = this.normalizeSectionId(sectionId);
+
+    // If user has custom explicit permissions granted by admin, check against them
+    if (user?.customPermissions && Array.isArray(user.customPermissions) && user.customPermissions.length > 0) {
+      const parentMap: Record<string, string> = {
+        academics_classes: 'academics',
+        academics_students: 'academics',
+        academics_alumni: 'academics',
+        academics_staff: 'academics',
+        academics_subjects: 'academics',
+        timetable_student: 'timetable',
+        timetable_faculty: 'timetable',
+        timetable_academic: 'timetable',
+        communication_notices: 'communication',
+        communication_complaints: 'communication',
+      };
+      const parentId = parentMap[normalizedId];
+      if (parentId && !user.customPermissions.includes(parentId)) {
+        return false;
+      }
+      return user.customPermissions.includes(normalizedId);
+    }
 
     const perms = this.rolePermissions();
     const roleList = perms[role] || DEFAULT_ROLE_PERMISSIONS[role] || [];
@@ -219,6 +382,11 @@ export class AuthService {
     return roleList.includes(normalizedId);
   }
 
+  canManageStaffUsers(): boolean {
+    const role = this.userRole();
+    return role === 'SUPER_ADMIN' || role === 'PLATFORM_ADMIN' || role === 'BINARY' || role === 'SCHOOL_ADMIN' || role === 'PRINCIPAL';
+  }
+
   private normalizeSectionId(sectionId: string): string {
     const clean = (sectionId || '').trim();
     if (clean === 'classes') return 'academics_classes';
@@ -232,7 +400,9 @@ export class AuthService {
   }
 
   isServiceEnabled(serviceCode: string): boolean {
-    if (this.isSuperAdmin() || this.isSupportSession()) return true;
+    const role = this.userRole();
+    if (role === 'SUPER_ADMIN' || role === 'PLATFORM_ADMIN' || role === 'BINARY') return true;
+
     const disabled = this.currentUser()?.school?.disabledServices || [];
     if (disabled.includes(serviceCode)) return false;
 
@@ -245,6 +415,8 @@ export class AuthService {
       COMPLAINTS: 'communication_complaints',
       ACADEMICS: 'academics',
       SUBSCRIPTION: 'subscription',
+      FEES: 'fees',
+      TRANSPORT: 'transport',
     };
 
     const sectionId = serviceToSectionMap[serviceCode.toUpperCase()];
@@ -332,13 +504,21 @@ export class AuthService {
     if (!token) return;
     try {
       const { data, error } = await this.supabase.rpc('whoami');
-      if (!error && data && (data as { valid?: boolean }).valid === false) {
-        localStorage.removeItem(this.TOKEN_KEY);
-        localStorage.removeItem(this.USER_KEY);
-        this.currentUser.set(null);
-        const publicPaths = ['/', '/features', '/pricing', '/about', '/contact', '/login'];
-        if (!publicPaths.some((p) => this.router.url === p || this.router.url.startsWith(p + '?'))) {
-          this.router.navigate(['/login']);
+      if (!error && data) {
+        const payload = data as { valid?: boolean; signingSecret?: string };
+        if (payload.valid === false) {
+          localStorage.removeItem(this.TOKEN_KEY);
+          localStorage.removeItem(this.SIGNING_SECRET_KEY);
+          localStorage.removeItem(this.USER_KEY);
+          this.supabase.setAuthToken(null, null);
+          this.currentUser.set(null);
+          const publicPaths = ['/', '/features', '/pricing', '/about', '/contact', '/login'];
+          if (!publicPaths.some((p) => this.router.url === p || this.router.url.startsWith(p + '?'))) {
+            this.router.navigate(['/login']);
+          }
+        } else if (payload.valid === true && payload.signingSecret) {
+          localStorage.setItem(this.SIGNING_SECRET_KEY, payload.signingSecret);
+          this.supabase.setAuthToken(token, payload.signingSecret);
         }
       }
     } catch {
@@ -583,8 +763,13 @@ export class AuthService {
     return from(this.executeLogin(identifier, password, schoolCode)).pipe(
       tap((res) => {
         localStorage.setItem(this.TOKEN_KEY, res.accessToken);
+        if (res.signingSecret) {
+          localStorage.setItem(this.SIGNING_SECRET_KEY, res.signingSecret);
+        } else {
+          localStorage.removeItem(this.SIGNING_SECRET_KEY);
+        }
         localStorage.setItem(this.USER_KEY, JSON.stringify(res.user));
-        this.supabase.setAuthToken(res.accessToken);
+        this.supabase.setAuthToken(res.accessToken, res.signingSecret || null);
         this.currentUser.set(res.user);
         if (res.user?.school?.id) {
           this.syncSchoolProfileFromDb(res.user.school.id);
@@ -1133,13 +1318,19 @@ export class AuthService {
             this.ROOT_BACKUP_KEY,
             JSON.stringify({
               token: localStorage.getItem(this.TOKEN_KEY),
+              signingSecret: localStorage.getItem(this.SIGNING_SECRET_KEY),
               user: currentSuper,
             })
           );
         }
         localStorage.setItem(this.TOKEN_KEY, res.accessToken);
+        if (res.signingSecret) {
+          localStorage.setItem(this.SIGNING_SECRET_KEY, res.signingSecret);
+        } else {
+          localStorage.removeItem(this.SIGNING_SECRET_KEY);
+        }
         localStorage.setItem(this.USER_KEY, JSON.stringify(res.user));
-        this.supabase.setAuthToken(res.accessToken);
+        this.supabase.setAuthToken(res.accessToken, res.signingSecret || null);
         this.currentUser.set(res.user);
         if (res.user?.school?.id) {
           this.syncSchoolProfileFromDb(res.user.school.id);
@@ -1154,8 +1345,13 @@ export class AuthService {
       try {
         const backup = JSON.parse(backupRaw);
         localStorage.setItem(this.TOKEN_KEY, backup.token);
+        if (backup.signingSecret) {
+          localStorage.setItem(this.SIGNING_SECRET_KEY, backup.signingSecret);
+        } else {
+          localStorage.removeItem(this.SIGNING_SECRET_KEY);
+        }
         localStorage.setItem(this.USER_KEY, JSON.stringify(backup.user));
-        this.supabase.setAuthToken(backup.token);
+        this.supabase.setAuthToken(backup.token, backup.signingSecret || null);
         localStorage.removeItem(this.ROOT_BACKUP_KEY);
         this.currentUser.set(backup.user);
         this.router.navigate(['/super-admin']);
@@ -1179,8 +1375,9 @@ export class AuthService {
   logout(): void {
     // Best-effort server-side revocation, then clear the local session.
     try { void this.supabase.rpc('logout_session'); } catch { /* ignore */ }
-    this.supabase.setAuthToken(null);
+    this.supabase.setAuthToken(null, null);
     localStorage.removeItem(this.TOKEN_KEY);
+    localStorage.removeItem(this.SIGNING_SECRET_KEY);
     localStorage.removeItem(this.USER_KEY);
     localStorage.removeItem(this.ROOT_BACKUP_KEY);
     localStorage.removeItem(this.SESSION_KEY);
