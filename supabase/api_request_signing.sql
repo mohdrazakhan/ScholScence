@@ -338,6 +338,7 @@ declare
   v_sess jsonb;
   v_user RECORD;
   v_school RECORD;
+  v_out jsonb;
 begin
   if not public.verify_request_signature(null, null, null) then
     return public.unauthorized_api_response();
@@ -354,7 +355,7 @@ begin
   select id, name, code
     into v_school from public.schools where id = nullif(v_sess ->> 'school_id', '')::uuid;
 
-  return jsonb_build_object(
+  v_out := jsonb_build_object(
     'valid', true,
     'signingSecret', v_sess ->> 'signing_secret',
     'user', jsonb_build_object(
@@ -364,9 +365,14 @@ begin
     ),
     'school', case when v_school.id is null then null else
       jsonb_build_object('id', v_school.id, 'name', v_school.name, 'code', v_school.code) end,
-    'role', v_sess ->> 'role',
-    'isSupportSession', coalesce((v_sess ->> 'is_support')::boolean, false)
+    'role', v_sess ->> 'role'
   );
+
+  if coalesce((v_sess ->> 'is_support')::boolean, false) then
+    v_out := v_out || jsonb_build_object('isSupportSession', true);
+  end if;
+
+  return v_out;
 end;
 $$;
 grant execute on function public.whoami() to anon, authenticated;
@@ -652,10 +658,10 @@ begin
     raise exception 'School not found or inactive.';
   end if;
 
-  -- 3. Audit
+  -- 3. Audit (logged with school_id = NULL so it is only visible to Platform Admins, never in school audit logs)
   insert into public.audit_logs (school_id, user_id, action, entity, new_values)
   values (
-    v_school.id,
+    null,
     public.current_user_id(),
     'SUPPORT_BINARY_LOGIN',
     'auth',
@@ -671,7 +677,7 @@ begin
   v_full_token     := 'sec_' || v_session_token;
   v_signing_secret := 'sig_' || encode(gen_random_bytes(32), 'hex');
 
-  -- 4. Prefer the school's real admin persona; else synthetic support persona
+  -- 4. Prefer the school's real admin persona; else synthetic school admin persona
   select u.*, usr.school_id, r.code AS role_code, r.name AS role_name
   into v_school_admin
   from public.user_school_roles usr
@@ -698,7 +704,7 @@ begin
         'firstName', v_school_admin.first_name,
         'lastName', coalesce(v_school_admin.last_name, ''),
         'role', 'SCHOOL_ADMIN',
-        'roleName', 'Support Admin (Binary Session)',
+        'roleName', 'School Admin',
         'school', jsonb_build_object(
           'id', v_school.id,
           'name', v_school.name,
@@ -721,11 +727,11 @@ begin
       'refreshToken', 'ref_' || encode(gen_random_bytes(32), 'hex'),
       'user', jsonb_build_object(
         'id', public.current_user_id(),
-        'email', 'support+' || lower(v_school.code) || '@schoolscence.in',
-        'firstName', 'Support',
-        'lastName', 'Administrator',
+        'email', coalesce(v_school.email, 'admin@' || lower(v_school.code) || '.edu.in'),
+        'firstName', 'School',
+        'lastName', 'Admin',
         'role', 'SCHOOL_ADMIN',
-        'roleName', 'Support Admin (Binary Session)',
+        'roleName', 'School Admin',
         'school', jsonb_build_object(
           'id', v_school.id,
           'name', v_school.name,
@@ -1965,6 +1971,42 @@ $$;
 
 grant execute on function public.check_api_request_security() to anon, authenticated, service_role;
 
+-- Upgrade is_staff_role() to include all school staff & departmental roles
+create or replace function public.is_staff_role()
+returns boolean
+language sql stable security definer set search_path = public, extensions
+as $$
+  select coalesce(
+    public.current_app_role() in (
+      'SUPER_ADMIN','PLATFORM_ADMIN','SCHOOL_ADMIN','PRINCIPAL',
+      'CLASS_TEACHER','TEACHER','FEE_MANAGER','TRANSPORT_MANAGER',
+      'LIBRARIAN','SPORTS_DIRECTOR','RECEPTIONIST','SECURITY_STAFF','STAFF'
+    ),
+    false
+  )
+$$;
+
+-- Upgrade shares_school_with() so school staff can view/manage both ACTIVE and INACTIVE users in their school
+create or replace function public.shares_school_with(p_user_id uuid)
+returns boolean
+language sql stable security definer set search_path = public, extensions
+as $$
+  select exists (
+    select 1
+      from public.user_school_roles b
+     where b.user_id = p_user_id
+       and (
+         b.school_id = public.current_school_id()
+         or exists (
+           select 1 from public.user_school_roles a
+            where a.user_id = public.current_user_id()
+              and a.school_id = b.school_id
+              and a.status = 'ACTIVE'
+         )
+       )
+  )
+$$;
+
 -- Tighten user_school_roles SELECT policy by role (Parents/Students only see their own row + active school staff)
 drop policy if exists usr_select on public.user_school_roles;
 create policy usr_select on public.user_school_roles
@@ -1983,12 +2025,109 @@ create policy usr_select on public.user_school_roles
     )
   );
 
--- Refresh column-level SELECT grant on public.users (so newly added columns like department,
--- designation, custom_permissions are readable while password_hash stays 100% hidden)
+drop policy if exists usr_insert on public.user_school_roles;
+create policy usr_insert on public.user_school_roles
+  for insert with check (
+    public.is_platform_admin()
+    or (school_id = public.current_school_id() and public.is_staff_role())
+  );
+
+drop policy if exists usr_update on public.user_school_roles;
+create policy usr_update on public.user_school_roles
+  for update using (
+    public.is_platform_admin()
+    or (school_id = public.current_school_id() and public.is_staff_role())
+  )
+  with check (
+    public.is_platform_admin()
+    or (school_id = public.current_school_id() and public.is_staff_role())
+  );
+
+-- Allow school admins/staff to insert and read newly created user rows before user_school_roles is linked
+drop policy if exists users_select on public.users;
+create policy users_select on public.users
+  for select using (
+    public.is_platform_admin()
+    or id = public.current_user_id()
+    or (
+      public.is_staff_role()
+      and (
+        public.shares_school_with(id)
+        or not exists (select 1 from public.user_school_roles usr where usr.user_id = users.id)
+      )
+    )
+    or (
+      public.current_school_id() is not null
+      and exists (
+        select 1 from public.user_school_roles b
+        join public.roles r on r.id = b.role_id
+        where b.user_id = users.id
+          and b.school_id = public.current_school_id()
+          and b.status = 'ACTIVE'
+          and r.code in ('TEACHER', 'CLASS_TEACHER', 'PRINCIPAL', 'SCHOOL_ADMIN')
+      )
+    )
+  );
+
+drop policy if exists users_insert on public.users;
+create policy users_insert on public.users
+  for insert with check (
+    public.is_platform_admin() or public.is_staff_role()
+  );
+
+drop policy if exists users_update on public.users;
+create policy users_update on public.users
+  for update using (
+    public.is_platform_admin()
+    or id = public.current_user_id()
+    or (
+      public.is_staff_role()
+      and (
+        public.shares_school_with(id)
+        or not exists (select 1 from public.user_school_roles usr where usr.user_id = users.id)
+      )
+    )
+  )
+  with check (
+    public.is_platform_admin()
+    or id = public.current_user_id()
+    or (
+      public.is_staff_role()
+      and (
+        public.shares_school_with(id)
+        or not exists (select 1 from public.user_school_roles usr where usr.user_id = users.id)
+      )
+    )
+  );
+
+-- Refresh column-level SELECT grant on public.users & ensure departmental/fee/transport columns exist
 alter table public.users
   add column if not exists department text,
   add column if not exists designation text,
-  add column if not exists custom_permissions jsonb default '[]'::jsonb;
+  add column if not exists custom_permissions jsonb default '[]'::jsonb,
+  add column if not exists deleted_at timestamptz;
+
+alter table public.user_school_roles
+  add column if not exists department text,
+  add column if not exists designation text,
+  add column if not exists custom_permissions jsonb default '[]'::jsonb,
+  add column if not exists deleted_at timestamptz;
+
+alter table public.student_fee_invoices
+  add column if not exists month_name varchar(50),
+  add column if not exists discount_amount numeric(10, 2) not null default 0.00,
+  add column if not exists fine_amount numeric(10, 2) not null default 0.00,
+  add column if not exists items jsonb default '[]'::jsonb;
+
+alter table public.students
+  add column if not exists photo_url text,
+  add column if not exists guardian_photo_url text;
+
+alter table public.guardians
+  add column if not exists first_name varchar(100),
+  add column if not exists last_name varchar(100),
+  add column if not exists phone varchar(50),
+  add column if not exists email varchar(150);
 
 do $$
 declare
@@ -2004,12 +2143,221 @@ begin
   execute format('grant select (%s) on public.users to anon, authenticated', cols);
 end $$;
 
+-- ============================================================
+-- 14. DEDUPLICATE ROLES & HIDE BINARY / PLATFORM ADMIN FROM SCHOOL PORTALS
+-- ============================================================
+
+-- 14a. Re-point any foreign keys referencing duplicate system roles to the canonical role ID per code, then delete duplicates
+do $$
+declare
+  r record;
+begin
+  for r in
+    select upper(code) as norm_code,
+           (array_agg(id order by created_at asc, id asc))[1] as canonical_id,
+           array_agg(id order by created_at asc, id asc) as all_ids
+      from public.roles
+     where school_id is null
+     group by upper(code)
+    having count(*) > 1
+  loop
+    -- Remove duplicate user_school_roles rows where user already has canonical_id in the same school
+    delete from public.user_school_roles usr
+     where usr.role_id = any(r.all_ids[2:array_length(r.all_ids, 1)])
+       and exists (
+         select 1 from public.user_school_roles existing
+          where existing.user_id = usr.user_id
+            and existing.school_id = usr.school_id
+            and existing.role_id = r.canonical_id
+       );
+
+    update public.user_school_roles
+       set role_id = r.canonical_id
+     where role_id = any(r.all_ids[2:array_length(r.all_ids, 1)]);
+
+    if to_regclass('public.role_permissions') is not null then
+      delete from public.role_permissions
+       where role_id = any(r.all_ids[2:array_length(r.all_ids, 1)]);
+    end if;
+
+    if to_regclass('public.notice_recipients') is not null then
+      update public.notice_recipients
+         set role_id = r.canonical_id
+       where role_id = any(r.all_ids[2:array_length(r.all_ids, 1)]);
+    end if;
+
+    delete from public.roles
+     where id = any(r.all_ids[2:array_length(r.all_ids, 1)]);
+  end loop;
+end $$;
+
+create unique index if not exists uq_roles_system_code
+  on public.roles (upper(code))
+  where school_id is null;
+
+-- 14b. Hide SUPER_ADMIN / PLATFORM_ADMIN / BINARY from public.roles for all non-platform-admins
+drop policy if exists roles_read on public.roles;
+create policy roles_read on public.roles
+  for select using (
+    public.current_session() is not null
+    and (
+      public.is_platform_admin()
+      or upper(code) not in ('SUPER_ADMIN', 'PLATFORM_ADMIN', 'BINARY')
+    )
+  );
+
+-- 14c. Hide SUPPORT_BINARY_LOGIN & ROOT_CONSOLE_LOGIN from school audit logs
+update public.audit_logs
+   set school_id = null
+ where action in ('SUPPORT_BINARY_LOGIN', 'ROOT_CONSOLE_LOGIN')
+   and school_id is not null;
+
+drop policy if exists audit_logs_select on public.audit_logs;
+create policy audit_logs_select on public.audit_logs
+  for select using (
+    public.is_platform_admin()
+    or (
+      school_id = public.current_school_id()
+      and public.is_staff_role()
+      and action not in ('SUPPORT_BINARY_LOGIN', 'ROOT_CONSOLE_LOGIN')
+    )
+  );
+
+-- 14d. Update _get_departmental_users_overview_unsafe to deduplicate users/roles and never return SUPER_ADMIN/PLATFORM_ADMIN/BINARY
+create or replace function public._get_departmental_users_overview_unsafe(
+  p_school_id text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_school_id uuid := null;
+  v_users_list jsonb := '[]'::jsonb;
+  v_roles_list jsonb := '[]'::jsonb;
+  v_total_users int := 0;
+  v_active_users int := 0;
+  v_fee_users int := 0;
+  v_transport_users int := 0;
+  v_admin_users int := 0;
+  v_specialized_users int := 0;
+begin
+  if p_school_id is not null and trim(p_school_id) <> '' then
+    begin
+      v_school_id := p_school_id::uuid;
+    exception when others then
+      v_school_id := null;
+    end;
+  end if;
+
+  if v_school_id is null then
+    v_school_id := public.current_school_id();
+  end if;
+
+  if v_school_id is null then
+    return public.unauthorized_api_response();
+  end if;
+
+  -- Fetch Departmental Users (deduplicated by user ID, strictly excluding platform/binary admins, teachers, parents, students)
+  select coalesce(jsonb_agg(user_row), '[]'::jsonb)
+  into v_users_list
+  from (
+    select *
+    from (
+      select distinct on (u.id)
+        u.id,
+        v_school_id as school_id,
+        u.first_name,
+        coalesce(u.last_name, '') as last_name,
+        trim(concat(u.first_name, ' ', coalesce(u.last_name, ''))) as name,
+        u.email,
+        coalesce(u.phone, '') as phone,
+        coalesce(usr.department, u.department,
+          case
+            when r.code = 'FEE_MANAGER' then 'Fee & Accounts'
+            when r.code = 'TRANSPORT_MANAGER' then 'Transport & Fleet'
+            when r.code = 'SCHOOL_ADMIN' then 'Administration'
+            when r.code = 'LIBRARIAN' then 'Library & Resources'
+            when r.code = 'SPORTS_DIRECTOR' then 'Sports & Physical Education'
+            when r.code = 'RECEPTIONIST' then 'Front Desk & Reception'
+            when r.code = 'SECURITY_STAFF' then 'Security & Safety'
+            else 'Administration'
+          end
+        ) as department,
+        coalesce(usr.designation, u.designation, r.name, r.code, 'Staff Member') as designation,
+        coalesce(r.code, 'STAFF') as role,
+        coalesce(r.name, r.code, 'Staff') as role_name,
+        coalesce(usr.custom_permissions, u.custom_permissions, '[]'::jsonb) as custom_permissions,
+        coalesce(usr.status, u.status, 'ACTIVE') as status,
+        u.last_login_at as last_login,
+        u.created_at,
+        u.updated_at
+      from public.user_school_roles usr
+      join public.users u on u.id = usr.user_id
+      left join public.roles r on r.id = usr.role_id
+      where usr.school_id = v_school_id
+        and usr.deleted_at is null
+        and u.deleted_at is null
+        and coalesce(upper(r.code), '') not in ('SUPER_ADMIN', 'PLATFORM_ADMIN', 'BINARY', 'STUDENT', 'PARENT', 'GUARDIAN', 'TEACHER', 'CLASS_TEACHER')
+        and lower(u.email) <> 'admin@schoolscence.in'
+        and lower(u.email) not like 'support+%@schoolscence.in'
+        and not exists (
+          select 1 from public.guardians g where g.user_id = u.id and g.school_id = v_school_id
+        )
+      order by u.id, usr.updated_at desc nulls last, u.created_at desc
+    ) deduped
+    order by created_at desc
+  ) user_row;
+
+  select
+    coalesce(jsonb_array_length(v_users_list), 0),
+    coalesce((select count(*) from jsonb_array_elements(v_users_list) elm where elm->>'status' = 'ACTIVE'), 0),
+    coalesce((select count(*) from jsonb_array_elements(v_users_list) elm where (elm->>'department' ilike '%Fee%' or elm->>'department' ilike '%Account%' or elm->>'role' = 'FEE_MANAGER')), 0),
+    coalesce((select count(*) from jsonb_array_elements(v_users_list) elm where (elm->>'department' ilike '%Transport%' or elm->>'role' = 'TRANSPORT_MANAGER')), 0),
+    coalesce((select count(*) from jsonb_array_elements(v_users_list) elm where (elm->>'department' ilike '%Admin%' or elm->>'role' = 'SCHOOL_ADMIN')), 0),
+    coalesce((select count(*) from jsonb_array_elements(v_users_list) elm where (elm->>'department' ilike '%Library%' or elm->>'department' ilike '%Sport%' or elm->>'department' ilike '%Reception%' or elm->>'department' ilike '%Security%')), 0)
+  into v_total_users, v_active_users, v_fee_users, v_transport_users, v_admin_users, v_specialized_users;
+
+  -- Available roles list (deduplicated by code, strictly excluding SUPER_ADMIN / PLATFORM_ADMIN / BINARY)
+  select coalesce(jsonb_agg(role_row), '[]'::jsonb)
+  into v_roles_list
+  from (
+    select *
+    from (
+      select distinct on (upper(code)) id, code, name, description
+      from public.roles
+      where upper(code) not in ('SUPER_ADMIN', 'PLATFORM_ADMIN', 'BINARY', 'STUDENT', 'PARENT', 'GUARDIAN', 'TEACHER', 'CLASS_TEACHER')
+      order by upper(code), created_at asc
+    ) deduped_roles
+    order by name asc
+  ) role_row;
+
+  return jsonb_build_object(
+    'success', true,
+    'stats', jsonb_build_object(
+      'totalUsers', v_total_users,
+      'activeUsers', v_active_users,
+      'feeUsers', v_fee_users,
+      'transportUsers', v_transport_users,
+      'adminUsers', v_admin_users,
+      'specializedUsers', v_specialized_users
+    ),
+    'users', v_users_list,
+    'availableRoles', v_roles_list
+  );
+end;
+$$;
+
+revoke execute on function public._get_departmental_users_overview_unsafe(text) from public, anon, authenticated;
+
 -- Enforce 8-second statement timeout to block time-based blind SQLi (pg_sleep) & DoS queries
 alter role anon set statement_timeout = '8s';
 alter role authenticated set statement_timeout = '8s';
 alter role authenticator set pgrst.db_pre_request = 'public.check_api_request_security';
 notify pgrst, 'reload config';
 notify pgrst, 'reload schema';
+
 
 
 

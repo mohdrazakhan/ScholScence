@@ -764,13 +764,17 @@ export class StaffUsersComponent implements OnInit {
     this.loading = true;
     this.api.get<any>('departmental-users/overview').subscribe({
       next: (res) => {
-        if (res && res.users) {
-          this.usersList = res.users;
-        } else if (Array.isArray(res)) {
-          this.usersList = res;
-        } else {
-          this.usersList = [];
-        }
+        const rawList: DepartmentalStaffUser[] =
+          res && Array.isArray(res.users) ? res.users : Array.isArray(res) ? res : [];
+        const seen = new Set<string>();
+        this.usersList = rawList.filter((u) => {
+          if (!u || !u.id || seen.has(u.id)) return false;
+          const r = (u.role || '').toUpperCase();
+          if (r === 'SUPER_ADMIN' || r === 'PLATFORM_ADMIN' || r === 'BINARY') return false;
+          if ((u.email || '').toLowerCase() === 'admin@schoolscence.in') return false;
+          seen.add(u.id);
+          return true;
+        });
         this.loading = false;
       },
       error: () => {

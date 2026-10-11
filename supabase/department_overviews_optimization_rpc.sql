@@ -18,12 +18,30 @@ SET search_path = public, extensions;
 ALTER TABLE public.users 
   ADD COLUMN IF NOT EXISTS department text,
   ADD COLUMN IF NOT EXISTS designation text,
-  ADD COLUMN IF NOT EXISTS custom_permissions jsonb DEFAULT '[]'::jsonb;
+  ADD COLUMN IF NOT EXISTS custom_permissions jsonb DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
 
 ALTER TABLE public.user_school_roles 
   ADD COLUMN IF NOT EXISTS department text,
   ADD COLUMN IF NOT EXISTS designation text,
-  ADD COLUMN IF NOT EXISTS custom_permissions jsonb DEFAULT '[]'::jsonb;
+  ADD COLUMN IF NOT EXISTS custom_permissions jsonb DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+
+ALTER TABLE public.student_fee_invoices
+  ADD COLUMN IF NOT EXISTS month_name varchar(50),
+  ADD COLUMN IF NOT EXISTS discount_amount numeric(10, 2) NOT NULL DEFAULT 0.00,
+  ADD COLUMN IF NOT EXISTS fine_amount numeric(10, 2) NOT NULL DEFAULT 0.00,
+  ADD COLUMN IF NOT EXISTS items jsonb DEFAULT '[]'::jsonb;
+
+ALTER TABLE public.students
+  ADD COLUMN IF NOT EXISTS photo_url text,
+  ADD COLUMN IF NOT EXISTS guardian_photo_url text;
+
+ALTER TABLE public.guardians
+  ADD COLUMN IF NOT EXISTS first_name varchar(100),
+  ADD COLUMN IF NOT EXISTS last_name varchar(100),
+  ADD COLUMN IF NOT EXISTS phone varchar(50),
+  ADD COLUMN IF NOT EXISTS email varchar(150);
 
 GRANT SELECT ON public.users TO authenticated, anon, service_role;
 GRANT SELECT ON public.user_school_roles TO authenticated, anon, service_role;
@@ -80,50 +98,55 @@ BEGIN
     RETURN public.unauthorized_api_response();
   END IF;
 
-  -- 2. Fetch Departmental Users for this school (excluding students, parents, teachers)
+  -- 2. Fetch Departmental Users for this school (excluding students, parents, teachers, and platform/binary admins)
   SELECT COALESCE(jsonb_agg(user_row), '[]'::JSONB)
   INTO v_users_list
   FROM (
-    SELECT
-      u.id,
-      v_school_id AS school_id,
-      u.first_name,
-      COALESCE(u.last_name, '') AS last_name,
-      TRIM(CONCAT(u.first_name, ' ', COALESCE(u.last_name, ''))) AS name,
-      u.email,
-      COALESCE(u.phone, '') AS phone,
-      COALESCE(usr.department, u.department, 
-        CASE 
-          WHEN r.code = 'FEE_MANAGER' THEN 'Fee & Accounts'
-          WHEN r.code = 'TRANSPORT_MANAGER' THEN 'Transport & Fleet'
-          WHEN r.code = 'SCHOOL_ADMIN' THEN 'Administration'
-          WHEN r.code = 'LIBRARIAN' THEN 'Library & Resources'
-          WHEN r.code = 'SPORTS_DIRECTOR' THEN 'Sports & Physical Education'
-          WHEN r.code = 'RECEPTIONIST' THEN 'Front Desk & Reception'
-          WHEN r.code = 'SECURITY_STAFF' THEN 'Security & Safety'
-          ELSE 'Administration'
-        END
-      ) AS department,
-      COALESCE(usr.designation, u.designation, r.name, r.code, 'Staff Member') AS designation,
-      COALESCE(r.code, 'STAFF') AS role,
-      COALESCE(r.name, r.code, 'Staff') AS role_name,
-      COALESCE(usr.custom_permissions, u.custom_permissions, '[]'::JSONB) AS custom_permissions,
-      COALESCE(usr.status, u.status, 'ACTIVE') AS status,
-      u.last_login_at AS last_login,
-      u.created_at,
-      u.updated_at
-    FROM public.user_school_roles usr
-    JOIN public.users u ON u.id = usr.user_id
-    LEFT JOIN public.roles r ON r.id = usr.role_id
-    WHERE usr.school_id = v_school_id
-      AND usr.deleted_at IS NULL
-      AND u.deleted_at IS NULL
-      AND COALESCE(r.code, '') NOT IN ('STUDENT', 'PARENT', 'GUARDIAN', 'TEACHER', 'CLASS_TEACHER')
-      AND LOWER(u.email) != 'admin@schoolscence.in'
-      AND NOT EXISTS (
-        SELECT 1 FROM public.guardians g WHERE g.user_id = u.id AND g.school_id = v_school_id
-      )
-    ORDER BY u.created_at DESC
+    SELECT *
+    FROM (
+      SELECT DISTINCT ON (u.id)
+        u.id,
+        v_school_id AS school_id,
+        u.first_name,
+        COALESCE(u.last_name, '') AS last_name,
+        TRIM(CONCAT(u.first_name, ' ', COALESCE(u.last_name, ''))) AS name,
+        u.email,
+        COALESCE(u.phone, '') AS phone,
+        COALESCE(usr.department, u.department, 
+          CASE 
+            WHEN r.code = 'FEE_MANAGER' THEN 'Fee & Accounts'
+            WHEN r.code = 'TRANSPORT_MANAGER' THEN 'Transport & Fleet'
+            WHEN r.code = 'SCHOOL_ADMIN' THEN 'Administration'
+            WHEN r.code = 'LIBRARIAN' THEN 'Library & Resources'
+            WHEN r.code = 'SPORTS_DIRECTOR' THEN 'Sports & Physical Education'
+            WHEN r.code = 'RECEPTIONIST' THEN 'Front Desk & Reception'
+            WHEN r.code = 'SECURITY_STAFF' THEN 'Security & Safety'
+            ELSE 'Administration'
+          END
+        ) AS department,
+        COALESCE(usr.designation, u.designation, r.name, r.code, 'Staff Member') AS designation,
+        COALESCE(r.code, 'STAFF') AS role,
+        COALESCE(r.name, r.code, 'Staff') AS role_name,
+        COALESCE(usr.custom_permissions, u.custom_permissions, '[]'::JSONB) AS custom_permissions,
+        COALESCE(usr.status, u.status, 'ACTIVE') AS status,
+        u.last_login_at AS last_login,
+        u.created_at,
+        u.updated_at
+      FROM public.user_school_roles usr
+      JOIN public.users u ON u.id = usr.user_id
+      LEFT JOIN public.roles r ON r.id = usr.role_id
+      WHERE usr.school_id = v_school_id
+        AND usr.deleted_at IS NULL
+        AND u.deleted_at IS NULL
+        AND COALESCE(UPPER(r.code), '') NOT IN ('SUPER_ADMIN', 'PLATFORM_ADMIN', 'BINARY', 'STUDENT', 'PARENT', 'GUARDIAN', 'TEACHER', 'CLASS_TEACHER')
+        AND LOWER(u.email) != 'admin@schoolscence.in'
+        AND LOWER(u.email) NOT LIKE 'support+%@schoolscence.in'
+        AND NOT EXISTS (
+          SELECT 1 FROM public.guardians g WHERE g.user_id = u.id AND g.school_id = v_school_id
+        )
+      ORDER BY u.id, usr.updated_at DESC NULLS LAST, u.created_at DESC
+    ) deduped
+    ORDER BY created_at DESC
   ) user_row;
 
   -- 3. Calculate Counts
@@ -136,13 +159,17 @@ BEGIN
     COALESCE((SELECT COUNT(*) FROM jsonb_array_elements(v_users_list) elm WHERE (elm->>'department' ILIKE '%Library%' OR elm->>'department' ILIKE '%Sport%' OR elm->>'department' ILIKE '%Reception%' OR elm->>'department' ILIKE '%Security%')), 0)
   INTO v_total_users, v_active_users, v_fee_users, v_transport_users, v_admin_users, v_specialized_users;
 
-  -- 4. Available roles list
+  -- 4. Available roles list (deduplicated by code, strictly excluding platform/binary roles)
   SELECT COALESCE(jsonb_agg(role_row), '[]'::JSONB)
   INTO v_roles_list
   FROM (
-    SELECT id, code, name, description
-    FROM public.roles
-    WHERE code NOT IN ('STUDENT', 'PARENT', 'GUARDIAN', 'TEACHER', 'CLASS_TEACHER')
+    SELECT *
+    FROM (
+      SELECT DISTINCT ON (UPPER(code)) id, code, name, description
+      FROM public.roles
+      WHERE UPPER(code) NOT IN ('SUPER_ADMIN', 'PLATFORM_ADMIN', 'BINARY', 'STUDENT', 'PARENT', 'GUARDIAN', 'TEACHER', 'CLASS_TEACHER')
+      ORDER BY UPPER(code), created_at ASC
+    ) deduped_roles
     ORDER BY name ASC
   ) role_row;
 

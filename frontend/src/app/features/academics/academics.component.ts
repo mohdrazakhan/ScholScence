@@ -6956,6 +6956,9 @@ export class AcademicsComponent implements OnInit {
       }
     } else if (tab === 'STAFF') {
       this.loadStaffList();
+      if (!this.subjects || this.subjects.length === 0 || forceRefresh) {
+        this.loadSubjectsMaster();
+      }
     } else if (tab === 'SUBJECTS') {
       this.loadSubjectsMaster();
       if (this.classes.length === 0 || forceRefresh) {
@@ -9782,6 +9785,9 @@ export class AcademicsComponent implements OnInit {
 
   // --- Add Staff ---
   openAddStaffModal() {
+    if (!this.subjects || this.subjects.length === 0) {
+      this.loadSubjectsMaster();
+    }
     this.newStaff = {
       firstName: '',
       lastName: '',
@@ -9881,6 +9887,9 @@ export class AcademicsComponent implements OnInit {
 
   openEditStaffModal(staff: StaffMember, event?: Event) {
     if (event) event.stopPropagation();
+    if (!this.subjects || this.subjects.length === 0) {
+      this.loadSubjectsMaster();
+    }
     this.activeStaffMenuId = null;
     this.editingStaffId = staff.id;
     this.editStaffForm = {

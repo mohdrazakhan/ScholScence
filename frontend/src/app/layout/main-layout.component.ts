@@ -2176,11 +2176,16 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   get displayRole(): string {
     const user = this.auth.currentUser();
     if (!user) return '';
-    if (user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN') return 'Super Admin';
+    if (user.isSupportSession && (user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN' || user.role === 'SCHOOL_ADMIN')) {
+      return 'School Admin';
+    }
+    if (user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN') return 'School Admin';
     if (this.auth.isTeacher()) {
       return this.auth.isClassTeacher() ? 'Class Teacher' : 'Teacher';
     }
-    return user.roleName || user.role;
+    const rName = user.roleName || user.role;
+    if (rName && rName.toLowerCase().includes('binary')) return 'School Admin';
+    return rName;
   }
 
   get userFullName(): string {

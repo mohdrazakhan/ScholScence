@@ -1896,24 +1896,32 @@ export class ApiService {
           })
           .eq('id', userId);
       } else {
-        const { data: newUser, error: uErr } = await this.supabase
+        const generatedUserId =
+          typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+                const r = (Math.random() * 16) | 0;
+                const v = c === 'x' ? r : (r & 0x3) | 0x8;
+                return v.toString(16);
+              });
+
+        const { error: uErr } = await this.supabase
           .from('users')
           .insert({
+            id: generatedUserId,
             email: cleanEmail,
             first_name: cleanFirstName,
             last_name: cleanLastName,
             phone: cleanPhone,
             password_hash: password,
             status: 'ACTIVE',
-          })
-          .select('id')
-          .single();
+          });
 
         if (uErr) {
           console.error('User insert error:', uErr);
           throw uErr;
         }
-        userId = newUser?.id || null;
+        userId = generatedUserId;
       }
 
       // Sync with Supabase Auth so staff appears in Supabase Auth Users dashboard & receives SMTP email
@@ -7348,21 +7356,29 @@ export class ApiService {
 
       // 2. If user doesn't exist, insert into users table with default password 'password123'
       if (!parentUserId && (guardianEmail || guardianPhone)) {
-        const { data: newUser, error: uErr } = await this.supabase
+        const generatedParentUserId =
+          typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+                const r = (Math.random() * 16) | 0;
+                const v = c === 'x' ? r : (r & 0x3) | 0x8;
+                return v.toString(16);
+              });
+
+        const { error: uErr } = await this.supabase
           .from('users')
           .insert({
+            id: generatedParentUserId,
             email: guardianEmail || `parent.${Date.now()}@schoolsense.in`,
             phone: guardianPhone || null,
             first_name: firstName,
             last_name: lastName || null,
             password_hash: 'password123',
             status: 'ACTIVE',
-          })
-          .select('id')
-          .single();
+          });
 
-        if (!uErr && newUser) {
-          parentUserId = newUser.id;
+        if (!uErr) {
+          parentUserId = generatedParentUserId;
         }
       }
 
@@ -9894,8 +9910,11 @@ export class ApiService {
         const r = roleMap.get(usr.role_id);
         const roleCode = (r?.code || usr.role || 'STAFF').toUpperCase();
 
-        // Strictly exclude TEACHER, CLASS_TEACHER, GUARDIAN, PARENT, STUDENT
+        // Strictly exclude SUPER_ADMIN, PLATFORM_ADMIN, BINARY, TEACHER, CLASS_TEACHER, GUARDIAN, PARENT, STUDENT
         if (
+          roleCode === 'SUPER_ADMIN' ||
+          roleCode === 'PLATFORM_ADMIN' ||
+          roleCode === 'BINARY' ||
           roleCode === 'TEACHER' ||
           roleCode === 'CLASS_TEACHER' ||
           roleCode === 'GUARDIAN' ||

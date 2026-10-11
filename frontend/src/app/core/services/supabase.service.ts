@@ -80,6 +80,85 @@ function containsSqlInjectionPayload(value: unknown): boolean {
   return false;
 }
 
+/**
+ * Strict LocalStorage Security Firewall:
+ * Only the 3 essential session keys are permitted in browser localStorage.
+ * All other keys (signing_secret, student/staff/guardian caches, photos, attendance,
+ * wallets, old OTP resets, and sb-*-auth-token) are purged from disk and held only
+ * in volatile RAM (inMemoryVolatileStore) for the duration of the active tab.
+ */
+const ALLOWED_PERSISTENT_KEYS = new Set<string>([
+  SESSION_TOKEN_KEY,
+  'schoolsense_user',
+  'schoolsense_active_session',
+  'schoolsense_root_session',
+]);
+
+const inMemoryVolatileStore = new Map<string, string>();
+let firewallInstalled = false;
+
+function installLocalStorageFirewall(): void {
+  if (firewallInstalled || typeof window === 'undefined' || !window.localStorage) {
+    return;
+  }
+  firewallInstalled = true;
+
+  try {
+    const rawStorage = window.localStorage;
+    const nativeGetItem = Storage.prototype.getItem.bind(rawStorage);
+    const nativeSetItem = Storage.prototype.setItem.bind(rawStorage);
+    const nativeRemoveItem = Storage.prototype.removeItem.bind(rawStorage);
+
+    // 1. Rescue signing_secret into volatile RAM if present, then purge all non-whitelisted keys from disk
+    const existingSecret = nativeGetItem(SIGNING_SECRET_KEY);
+    if (existingSecret) {
+      inMemoryVolatileStore.set(SIGNING_SECRET_KEY, existingSecret);
+    }
+
+    const keysToPurge: string[] = [];
+    for (let i = 0; i < rawStorage.length; i++) {
+      const key = rawStorage.key(i);
+      if (key && !ALLOWED_PERSISTENT_KEYS.has(key)) {
+        keysToPurge.push(key);
+      }
+    }
+    for (const key of keysToPurge) {
+      nativeRemoveItem(key);
+    }
+
+    // 2. Intercept getItem / setItem / removeItem so non-whitelisted keys never touch disk localStorage
+    Storage.prototype.getItem = function (key: string): string | null {
+      if (this === rawStorage && !ALLOWED_PERSISTENT_KEYS.has(key)) {
+        return inMemoryVolatileStore.has(key) ? inMemoryVolatileStore.get(key)! : null;
+      }
+      return nativeGetItem(key);
+    };
+
+    Storage.prototype.setItem = function (key: string, value: string): void {
+      if (this === rawStorage && !ALLOWED_PERSISTENT_KEYS.has(key)) {
+        inMemoryVolatileStore.set(key, String(value));
+        nativeRemoveItem(key);
+        return;
+      }
+      nativeSetItem(key, value);
+    };
+
+    Storage.prototype.removeItem = function (key: string): void {
+      if (this === rawStorage) {
+        inMemoryVolatileStore.delete(key);
+        if (key === SESSION_TOKEN_KEY) {
+          inMemoryVolatileStore.clear();
+        }
+      }
+      nativeRemoveItem(key);
+    };
+  } catch {
+    // Ignore if browser restricts Storage prototype patching
+  }
+}
+
+installLocalStorageFirewall();
+
 @Injectable({
   providedIn: 'root',
 })
@@ -89,16 +168,8 @@ export class SupabaseService {
   public currentUser$ = this.currentUserSubject.asObservable();
 
   constructor() {
+    installLocalStorageFirewall();
     this.supabase = this.buildClient(this.readStoredToken(), this.readStoredSigningSecret());
-
-    // Initialize session listener
-    this.supabase.auth.getSession().then(({ data: { session } }) => {
-      this.currentUserSubject.next(session?.user ?? null);
-    });
-
-    this.supabase.auth.onAuthStateChange((_event, session) => {
-      this.currentUserSubject.next(session?.user ?? null);
-    });
   }
 
   /**
@@ -107,6 +178,11 @@ export class SupabaseService {
    * so intercepted DevTools requests cannot be replayed or modified in Postman.
    */
   setAuthToken(token: string | null, signingSecret?: string | null): void {
+    if (token === null) {
+      inMemoryVolatileStore.clear();
+    } else if (signingSecret) {
+      inMemoryVolatileStore.set(SIGNING_SECRET_KEY, signingSecret);
+    }
     const resolvedSecret =
       token === null
         ? null
@@ -117,10 +193,6 @@ export class SupabaseService {
   }
 
   private buildClient(token: string | null, signingSecret?: string | null): SupabaseClient {
-    // On the server (prerendering/SSR) there is no browser session to persist,
-    // and the auth auto-refresh ticker would keep the render zone unstable forever.
-    const isServer = typeof window === 'undefined';
-
     let cachedDerivedSecretPromise: Promise<string> | null = null;
     const resolveSigningKey = async (activeToken: string | null, activeSecret: string | null): Promise<string> => {
       if (activeSecret && activeSecret.trim().length > 0) {
@@ -193,9 +265,9 @@ export class SupabaseService {
 
     return createClient(environment.supabaseUrl, environment.supabaseKey, {
       auth: {
-        autoRefreshToken: !isServer,
-        persistSession: !isServer,
-        detectSessionInUrl: !isServer,
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
       },
       global: {
         headers: token
@@ -215,11 +287,7 @@ export class SupabaseService {
   }
 
   private readStoredSigningSecret(): string | null {
-    try {
-      return typeof localStorage !== 'undefined' ? localStorage.getItem(SIGNING_SECRET_KEY) : null;
-    } catch {
-      return null;
-    }
+    return inMemoryVolatileStore.get(SIGNING_SECRET_KEY) || null;
   }
 
   get client(): SupabaseClient {
