@@ -220,11 +220,18 @@ export class SupabaseService {
         init?.headers || (input instanceof Request ? input.headers : undefined)
       );
 
-      const activeToken = token || this.readStoredToken();
-      const activeSecret = signingSecret || this.readStoredSigningSecret();
+      const isPreLoginEndpoint =
+        urlStr.includes('/rpc/authenticate_user') ||
+        urlStr.includes('/rpc/search_schools') ||
+        urlStr.includes('/rpc/create_demo_lead');
+
+      const activeToken = isPreLoginEndpoint ? null : (token || this.readStoredToken());
+      const activeSecret = isPreLoginEndpoint ? null : (signingSecret || this.readStoredSigningSecret());
 
       if (activeToken) {
         headers.set(SESSION_HEADER, activeToken);
+      } else {
+        headers.delete(SESSION_HEADER);
       }
       headers.set(CLIENT_HEADER, CLIENT_APP_ID);
 
@@ -246,7 +253,9 @@ export class SupabaseService {
 
         const timestamp = Math.floor(Date.now() / 1000).toString();
         const nonce = generateCryptographicNonce();
-        const keyToUse = await resolveSigningKey(activeToken, activeSecret);
+        const keyToUse = isPreLoginEndpoint
+          ? PRE_LOGIN_SIGNING_KEY
+          : await resolveSigningKey(activeToken, activeSecret);
         const canonical = `${timestamp}.${nonce}.${method}.${normalizedPath}`;
         const signature = await computeHmacSha256Hex(keyToUse, canonical);
 

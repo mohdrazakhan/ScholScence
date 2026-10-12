@@ -130,6 +130,177 @@ export interface TeacherDashboardData {
   classStudents: TeacherStudentItem[];
   todayTimetable: TeacherTimetablePeriod[];
   subjectAssignments: TeacherSubjectAssignment[];
+  teacherHomeworkCount?: number;
+  recentHomework?: any[];
+  upcomingExamsCount?: number;
+  openComplaintsCount?: number;
+}
+
+export interface DashboardModulesOverview {
+  academics: {
+    totalStudents: number;
+    activeStudents: number;
+    inactiveStudents: number;
+    totalClasses: number;
+    totalSections: number;
+    totalSubjects: number;
+    totalTeachers: number;
+    totalAlumni: number;
+  };
+  departmental: {
+    totalUsers: number;
+    activeUsers: number;
+    feeUsers: number;
+    transportUsers: number;
+    adminUsers: number;
+    specializedUsers: number;
+  };
+  fees: {
+    totalBilled: number;
+    totalCollected: number;
+    totalOutstanding: number;
+    collectionRate: number;
+    totalInvoicesCount: number;
+    paidCount: number;
+    unpaidCount: number;
+    partialCount: number;
+    overdueCount: number;
+    recentInvoices?: any[];
+  };
+  transport: {
+    totalVehicles: number;
+    activeVehiclesCount: number;
+    maintenanceVehiclesCount: number;
+    totalRoutes: number;
+    totalStopsCount: number;
+    totalFleetCapacity: number;
+    subscribedStudentsCount: number;
+    estimatedMonthlyTransportRevenue: number;
+    fleetOccupancyRate: number;
+    routesSummary?: any[];
+  };
+  timetable: {
+    totalPeriods: number;
+    configuredSectionsCount: number;
+    activeTeachersInRoutine: number;
+  };
+  attendance: {
+    todayPercentage: string;
+    presentCount: number;
+    absentCount: number;
+    lateCount: number;
+    markedCount: number;
+    totalStudents: number;
+    isMarkedToday: boolean;
+  };
+  homework: {
+    totalHomework: number;
+    activeHomework: number;
+    dueTodayCount: number;
+    recentHomework: any[];
+  };
+  exams: {
+    totalExams: number;
+    upcomingCount: number;
+    completedCount: number;
+    upcomingExams: any[];
+  };
+  communication: {
+    totalNotices: number;
+    openComplaints: number;
+    resolvedComplaints: number;
+    totalComplaints: number;
+    recentComplaints: any[];
+  };
+}
+
+export interface ParentChildDashboardItem {
+  id: string;
+  studentId: string;
+  name: string;
+  firstName?: string;
+  lastName?: string;
+  admissionNumber: string;
+  rollNumber?: string | number;
+  classId?: string;
+  className: string;
+  sectionId?: string;
+  sectionName: string;
+  photoUrl?: string;
+  relationship?: string;
+  status?: string;
+  attendance?: {
+    todayStatus: 'PRESENT' | 'ABSENT' | 'LATE' | 'HALF_DAY' | 'UNMARKED' | string;
+    percentage: string;
+    presentDays: number;
+    absentDays: number;
+    lateDays: number;
+    totalDays: number;
+  };
+  todayTimetable?: {
+    periodNumber: number;
+    subjectName: string;
+    startTime: string;
+    endTime: string;
+    teacherName?: string;
+    roomNumber?: string;
+  }[];
+  homework?: {
+    totalCount: number;
+    pendingCount: number;
+    recentItems: {
+      id: string;
+      title: string;
+      subjectName: string;
+      dueDate?: string;
+      status?: string;
+    }[];
+  };
+  exams?: {
+    upcomingCount: number;
+    upcomingItems: any[];
+    recentMarks?: {
+      examName: string;
+      subjectName: string;
+      marksObtained: number;
+      maxMarks: number;
+      grade?: string;
+    }[];
+  };
+  fees?: {
+    totalBilled: number;
+    totalPaid: number;
+    pendingAmount: number;
+    status: 'PAID' | 'PARTIAL' | 'PENDING' | 'NO_DUES';
+    invoicesCount: number;
+    recentInvoices?: any[];
+  };
+  transport?: {
+    isSubscribed: boolean;
+    routeName?: string;
+    routeCode?: string;
+    busNumber?: string;
+    stopName?: string;
+    pickupTime?: string;
+    dropTime?: string;
+    monthlyFare?: number;
+    driverName?: string;
+    driverPhone?: string;
+  } | null;
+}
+
+export interface ParentDashboardData {
+  children: ParentChildDashboardItem[];
+  activeChild?: ParentChildDashboardItem | null;
+  familySummary?: {
+    totalChildren: number;
+    presentTodayCount: number;
+    totalPendingHomework: number;
+    totalPendingFees: number;
+    transportSubscribedCount: number;
+    openComplaintsCount: number;
+  };
+  complaints?: any[];
 }
 
 export interface DashboardStats {
@@ -138,9 +309,15 @@ export interface DashboardStats {
     activeStudents?: number;
     inactiveStudents?: number;
     totalClasses: number;
+    totalSections?: number;
+    totalSubjects?: number;
     totalTeachers: number;
+    totalDepartmentalStaff?: number;
     attendanceTodayPercentage: string;
     attendanceMarkedCount: number;
+    attendancePresentCount?: number;
+    attendanceAbsentCount?: number;
+    attendanceLateCount?: number;
     pendingComplaints: number;
     roleCounts?: Record<string, number>;
   };
@@ -157,11 +334,13 @@ export interface DashboardStats {
     status?: string;
     activeSession?: any;
     activeSessionId?: string;
+    disabledServices?: string[];
   };
+  modulesOverview?: DashboardModulesOverview;
   recentNotices: Notice[];
   upcomingExams: Exam[];
   teacherData?: TeacherDashboardData;
-  parentData?: any;
+  parentData?: ParentDashboardData;
 }
 
 export interface AcademicSession {

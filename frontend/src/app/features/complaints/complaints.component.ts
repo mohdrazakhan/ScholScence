@@ -91,7 +91,11 @@ import { ComplaintItem } from '../../core/models';
                 [class.bg-white]="teacherScope !== 'CLASS_TEACHER'"
                 [class.text-slate-700]="teacherScope !== 'CLASS_TEACHER'"
                 class="px-4 py-2 rounded-2xl text-xs font-bold border border-slate-200 shadow-xs flex items-center gap-2 transition-all cursor-pointer">
-          <span>🎓 My Class Inquiries</span>
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+            <path d="M12 4L3 8.5 12 13l9-4.5L12 4z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+            <path d="M6 10.5v5c0 2 2.7 3.5 6 3.5s6-1.5 6-3.5v-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span>My Class Inquiries</span>
           <span [class.bg-slate-700]="teacherScope === 'CLASS_TEACHER'"
                 [class.text-slate-200]="teacherScope === 'CLASS_TEACHER'"
                 [class.bg-slate-100]="teacherScope !== 'CLASS_TEACHER'"
@@ -107,7 +111,11 @@ import { ComplaintItem } from '../../core/models';
                 [class.bg-white]="teacherScope !== 'ASSIGNED'"
                 [class.text-slate-700]="teacherScope !== 'ASSIGNED'"
                 class="px-4 py-2 rounded-2xl text-xs font-bold border border-slate-200 shadow-xs flex items-center gap-2 transition-all cursor-pointer">
-          <span>👤 Assigned Inquiries (Subject Desk)</span>
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="8" r="3.5" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+            <path d="M5 19c0-3 3.1-5.5 7-5.5s7 2.5 7 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+          <span>Assigned Inquiries (Subject Desk)</span>
           <span [class.bg-slate-700]="teacherScope === 'ASSIGNED'"
                 [class.text-slate-200]="teacherScope === 'ASSIGNED'"
                 [class.bg-slate-100]="teacherScope !== 'ASSIGNED'"
@@ -144,7 +152,7 @@ import { ComplaintItem } from '../../core/models';
           <div *ngIf="isAdmin()" class="flex items-center gap-1.5">
             <select [(ngModel)]="selectedSectionId" (change)="loadComplaints()"
                     class="px-3.5 py-2 bg-white border border-slate-300 rounded-2xl text-xs font-bold text-slate-800 shadow-xs focus:outline-none cursor-pointer">
-              <option value="ALL">🏫 All Classes & Sections</option>
+              <option value="ALL">All Classes & Sections</option>
               <option *ngFor="let s of sectionsList" [value]="s.id">
                 {{ s.class?.name || 'Class' }} - {{ s.name }}
               </option>
@@ -230,7 +238,11 @@ import { ComplaintItem } from '../../core/models';
                   Parent: <strong class="text-slate-700">{{ t.guardian.first_name }} {{ t.guardian.last_name || '' }}</strong>
                 </div>
                 <div *ngIf="t.users" class="text-[10px] text-indigo-600 font-medium pt-0.5 flex items-center gap-1">
-                  <span>👨‍🏫 Assigned: {{ t.users.first_name }} {{ t.users.last_name || '' }}</span>
+                  <svg class="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="8" r="3.5" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                    <path d="M5 19c0-3 3.1-5.5 7-5.5s7 2.5 7 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  </svg>
+                  <span>Assigned: {{ t.users.first_name }} {{ t.users.last_name || '' }}</span>
                 </div>
               </div>
 
@@ -267,8 +279,12 @@ import { ComplaintItem } from '../../core/models';
                     Parent: <strong class="text-slate-800">{{ selectedTicket.guardian.first_name }} {{ selectedTicket.guardian.last_name || '' }}</strong>
                   </span>
                 </div>
-                <div *ngIf="selectedTicket.users" class="text-[11px] text-indigo-700 font-medium mt-1">
-                  👨‍🏫 Assigned Staff: <strong>{{ selectedTicket.users.first_name }} {{ selectedTicket.users.last_name || '' }}</strong> ({{ selectedTicket.users.email }})
+                <div *ngIf="selectedTicket.users" class="text-[11px] text-indigo-700 font-medium mt-1 flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="8" r="3.5" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                    <path d="M5 19c0-3 3.1-5.5 7-5.5s7 2.5 7 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  </svg>
+                  <span>Assigned Staff: <strong>{{ selectedTicket.users.first_name }} {{ selectedTicket.users.last_name || '' }}</strong> ({{ selectedTicket.users.email }})</span>
                 </div>
               </div>
 

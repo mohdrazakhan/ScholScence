@@ -9,6 +9,7 @@ import { ApiService } from '../core/services/api.service';
 import { ToastService } from '../core/services/toast.service';
 import { ImageUploadService } from '../core/services/image-upload.service';
 import { AcademicSession, Notice } from '../core/models';
+import { AiSystemGuideComponent } from '../shared/components/ai-system-guide.component';
 
 export interface SubMenuItem {
   id?: string;
@@ -43,7 +44,7 @@ export interface RoleSectionItem {
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, AiSystemGuideComponent],
   template: `
     <div class="flex h-screen bg-[#edf2f7] overflow-hidden font-sans text-slate-800">
       
@@ -129,33 +130,47 @@ export interface RoleSectionItem {
                    [class.active-nav-item]="isDirectActive(group)">
                   
                   <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all"
+                    <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all border"
                          [ngClass]="isDirectActive(group) 
-                                     ? 'bg-slate-200 text-slate-900' 
-                                     : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200/80 group-hover:text-slate-800'">
-                      <svg *ngIf="group.id === 'dashboard'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                                     ? 'bg-slate-200/80 border-white/80 text-slate-900 shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(15,23,42,0.06)]' 
+                                     : 'bg-slate-100/90 border-white/60 text-slate-600 shadow-[inset_1px_1px_2px_#ffffff,0_1px_3px_rgba(15,23,42,0.03)] group-hover:bg-slate-200/70 group-hover:text-slate-900'">
+                      <svg *ngIf="group.id === 'dashboard'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <rect x="3.5" y="3.5" width="7" height="7" rx="2" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                        <rect x="13.5" y="3.5" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.8" />
+                        <rect x="3.5" y="13.5" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.8" />
+                        <rect x="13.5" y="13.5" width="7" height="7" rx="2" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
                       </svg>
-                      <svg *ngIf="group.id === 'attendance'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg *ngIf="group.id === 'attendance'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <rect x="4" y="4" width="16" height="17" rx="3" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" />
+                        <path d="M9 12.5l2 2 4.5-4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                       </svg>
-                      <svg *ngIf="group.id === 'homework'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      <svg *ngIf="group.id === 'homework'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <rect x="4" y="4" width="14" height="16" rx="2.5" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" />
+                        <path d="M14.5 6.5l3 3M11 13l6.5-6.5a1.5 1.5 0 012.12 2.12L13.12 15.12 10 16l.88-3.12z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
                       </svg>
-                      <svg *ngIf="group.id === 'exams'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      <svg *ngIf="group.id === 'exams'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <rect x="4" y="12" width="4" height="8" rx="1.2" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.8" />
+                        <rect x="10" y="8" width="4" height="12" rx="1.2" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.8" />
+                        <rect x="16" y="4" width="4" height="16" rx="1.2" fill="currentColor" fill-opacity="0.28" stroke="currentColor" stroke-width="1.8" />
                       </svg>
-                      <svg *ngIf="group.id === 'subscription'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                      <svg *ngIf="group.id === 'subscription'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="5" width="18" height="14" rx="3" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" />
+                        <path d="M3 10h18M7 15h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                       </svg>
-                      <svg *ngIf="group.id === 'fees'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg *ngIf="group.id === 'fees'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" />
+                        <path d="M9.5 8.5h5M9.5 11.5h5M9.5 8.5c1.5 0 2.5 1 2.5 2.5s-1 2.5-2.5 2.5l4 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
                       </svg>
-                      <svg *ngIf="group.id === 'transport'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 17a2 2 0 100-4 2 2 0 000 4zm8 0a2 2 0 100-4 2 2 0 000 4m-8-2h8m-9-6h10l1 3H4l1-3zm-1 8h12a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      <svg *ngIf="group.id === 'transport'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <rect x="4" y="4" width="16" height="13" rx="3" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" />
+                        <path d="M4 11h16M7.5 17v2.5M16.5 17v2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                        <circle cx="8" cy="14" r="1" fill="currentColor" />
+                        <circle cx="16" cy="14" r="1" fill="currentColor" />
                       </svg>
-                      <svg *ngIf="group.id === 'staff_users'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      <svg *ngIf="group.id === 'staff_users'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <circle cx="9.5" cy="8" r="3.2" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                        <path d="M3.5 19c0-2.8 2.7-5 6-5s6 2.2 6 5" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                        <path d="M16 7a2.8 2.8 0 010 5.4M17.5 14.5c2 .5 3.5 2 3.5 4.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
                       </svg>
                     </div>
                     <span class="truncate">{{ group.label }}</span>
@@ -173,25 +188,28 @@ export interface RoleSectionItem {
                      [class.text-slate-900]="group.expanded">
                   
                   <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all"
+                    <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all border"
                          [ngClass]="isGroupActive(group)
-                                     ? 'bg-slate-200 text-slate-900'
-                                     : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200/80 group-hover:text-slate-800'">
+                                     ? 'bg-slate-200/80 border-white/80 text-slate-900 shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(15,23,42,0.06)]'
+                                     : 'bg-slate-100/90 border-white/60 text-slate-600 shadow-[inset_1px_1px_2px_#ffffff,0_1px_3px_rgba(15,23,42,0.03)] group-hover:bg-slate-200/70 group-hover:text-slate-900'">
                       <!-- Icon for Super Admin Onboarding -->
-                      <svg *ngIf="group.id === 'super-admin'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      <svg *ngIf="group.id === 'super-admin'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <rect x="5" y="4" width="14" height="16" rx="2.5" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" />
+                        <path d="M9 8h2m2 0h2M9 12h2m2 0h2M10 20v-4h4v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
                       </svg>
                       <!-- Icon for Academics -->
-                      <svg *ngIf="group.id === 'academics'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      <svg *ngIf="group.id === 'academics'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
                       </svg>
                       <!-- Icon for Timetable -->
-                      <svg *ngIf="group.id === 'timetable'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      <svg *ngIf="group.id === 'timetable'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <rect x="3.5" y="5" width="17" height="15.5" rx="3" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" />
+                        <path d="M3.5 9.5h17M8 3.5v3M16 3.5v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                       </svg>
                       <!-- Icon for Communication -->
-                      <svg *ngIf="group.id === 'communication'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                      <svg *ngIf="group.id === 'communication'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <path d="M17 5.5L8.5 9H5.5A2 2 0 003.5 11v2a2 2 0 002 2h3l8.5 3.5V5.5z" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                        <path d="M20 9.5a3 3 0 010 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                       </svg>
                     </div>
                     <span class="truncate">{{ group.label }}</span>
@@ -391,11 +409,15 @@ export interface RoleSectionItem {
         </div>
 
         <!-- Top Navigation Header -->
-        <header class="h-16 bg-[#ffffff] border-b border-slate-200/80 flex items-center justify-between px-3 sm:px-6 lg:px-8 flex-shrink-0 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+        <header class="h-16 border-b flex items-center justify-between px-3 sm:px-6 lg:px-8 flex-shrink-0 shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-all duration-700"
+                [ngClass]="headerWeatherClass"
+                [ngStyle]="headerWeatherStyle">
           <!-- Top Left for Root Super Admin (Full Width Console Branding) -->
           <div *ngIf="isSuperAdminOnly()" class="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-900 text-amber-400 font-black text-sm flex items-center justify-center shrink-0 shadow-xs border border-slate-800">
-              ⚡
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-900 text-amber-400 font-black text-sm flex items-center justify-center shrink-0 shadow-[inset_1px_1px_2px_rgba(255,255,255,0.15),0_4px_10px_rgba(15,23,42,0.18)] border border-slate-800">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <path d="M13 2L4.5 13.5h6L9.5 22 19.5 10.5h-6L13 2z" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
             </div>
             <div class="min-w-0">
               <div class="flex items-center gap-1.5 sm:gap-2">
@@ -426,44 +448,139 @@ export interface RoleSectionItem {
               </svg>
             </button>
 
-            <!-- Dynamic Time of Day Icon (Clean transparent 2-line anchor) -->
+            <!-- Dynamic Real-Time Weather & Sun/Moon Intensity Claymorphic Vector Art Badge -->
             <div class="shrink-0 flex items-center justify-center">
-              <span *ngIf="timePeriod === 'morning'"
-                    class="w-7 h-7 sm:w-8 sm:h-8 text-amber-500 flex items-center justify-center shrink-0"
-                    title="Good morning">
-                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              </span>
+              <span class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl border flex items-center justify-center shrink-0 transition-all duration-700 relative overflow-hidden"
+                    [ngClass]="headerWeatherIconBoxClass"
+                    [ngStyle]="headerWeatherIconStyle"
+                    [title]="headerWeatherTooltip">
 
-              <span *ngIf="timePeriod === 'afternoon'"
-                    class="w-7 h-7 sm:w-8 sm:h-8 text-amber-600 flex items-center justify-center shrink-0"
-                    title="Good afternoon">
-                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                <!-- 1A. MORNING_SUN (Dawn & Early Morning 05:30–10:45): Gentle Rising Sun + Soft Horizon & Mild Rays -->
+                <svg *ngIf="activeWeatherVisual === 'MORNING_SUN'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                  <!-- Soft morning halo scaled by solar intensity -->
+                  <circle cx="14" cy="14.5" r="7.8" fill="currentColor" [attr.fill-opacity]="0.05 + celestialIntensity * 0.1" />
+                  <!-- Upper arc rays (gentle morning rays) -->
+                  <path d="M14 4.5v2M6.8 7.8l1.4 1.4M21.2 7.8l-1.4 1.4M4 14.5h2M22 14.5h2"
+                        stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+                        [attr.stroke-opacity]="0.45 + celestialIntensity * 0.45" />
+                  <!-- Rising sun disc above horizon -->
+                  <path d="M8.8 16.5a5.2 5.2 0 1110.4 0" fill="currentColor" [attr.fill-opacity]="0.16 + celestialIntensity * 0.18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  <!-- Morning horizon line & soft dew wave -->
+                  <path d="M4.5 18.5h19" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-opacity="0.7" />
+                  <path d="M8 21.5h12" stroke="#38bdf8" stroke-width="1.6" stroke-linecap="round" stroke-opacity="0.55" />
                 </svg>
-              </span>
 
-              <span *ngIf="timePeriod === 'evening'"
-                    class="w-7 h-7 sm:w-8 sm:h-8 text-orange-500 flex items-center justify-center shrink-0"
-                    title="Good evening">
-                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                <!-- 1B. CLEAR_DAY (Midday & Peak Afternoon 10:45–17:15): Radiant Sun Scaled by Solar Intensity -->
+                <svg *ngIf="activeWeatherVisual === 'CLEAR_DAY'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                  <circle cx="14" cy="14" [attr.r]="7.5 + celestialIntensity * 2.5" fill="currentColor" [attr.fill-opacity]="0.06 + celestialIntensity * 0.1" />
+                  <circle cx="14" cy="14" r="5.4" fill="currentColor" [attr.fill-opacity]="0.18 + celestialIntensity * 0.2" stroke="currentColor" stroke-width="1.9" />
+                  <path d="M14 2.5v2.5M14 23v2.5M25.5 14H23M5 14H2.5M22.13 5.87l-1.77 1.77M7.64 20.36l-1.77 1.77M22.13 22.13l-1.77-1.77M7.64 7.64L5.87 5.87"
+                        stroke="currentColor" stroke-width="1.9" stroke-linecap="round"
+                        [attr.stroke-opacity]="0.5 + celestialIntensity * 0.5" />
+                  <circle cx="12.2" cy="12.2" r="1.2" fill="#ffffff" [attr.fill-opacity]="0.6 + celestialIntensity * 0.3" />
                 </svg>
-              </span>
 
-              <span *ngIf="timePeriod === 'night'"
-                    class="w-7 h-7 sm:w-8 sm:h-8 text-indigo-600 flex items-center justify-center shrink-0"
-                    title="Welcome back">
-                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                <!-- 1C. SUNSET_DAY (Golden Dusk 17:15–18:45): Warm Setting Sun on Twilight Horizon -->
+                <svg *ngIf="activeWeatherVisual === 'SUNSET_DAY'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                  <circle cx="14" cy="15.5" r="7.5" fill="#fb923c" fill-opacity="0.12" />
+                  <path d="M8.5 17a5.5 5.5 0 0111 0" fill="#f97316" fill-opacity="0.28" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  <path d="M14 6.5v2M7.2 9.5l1.3 1.3M20.8 9.5l-1.3 1.3" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-opacity="0.65" />
+                  <path d="M4 18.5h20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  <path d="M7.5 21.5h13" stroke="#818cf8" stroke-width="1.65" stroke-linecap="round" stroke-opacity="0.65" />
+                </svg>
+
+                <!-- 2A. RISING_MOON (Early Evening & Pre-Dawn): Soft Crescent Moon & Gentle Twilight Glow -->
+                <svg *ngIf="activeWeatherVisual === 'RISING_MOON'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                  <circle cx="14" cy="13.5" r="7.5" fill="currentColor" [attr.fill-opacity]="0.06 + celestialIntensity * 0.08" />
+                  <path d="M19.8 15.8A6.8 6.8 0 0110.8 6.8a6.8 6.8 0 109 9z"
+                        fill="currentColor" [attr.fill-opacity]="0.18 + celestialIntensity * 0.16"
+                        stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                  <circle cx="20.5" cy="7.5" r="1" fill="#fbbf24" [attr.fill-opacity]="0.45 + celestialIntensity * 0.45" />
+                  <path d="M6.5 21.5h15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-opacity="0.45" />
+                </svg>
+
+                <!-- 2B. CLEAR_NIGHT (Peak Night 21:30–02:30): Luminous Crescent Moon + Full Starfield -->
+                <svg *ngIf="activeWeatherVisual === 'CLEAR_NIGHT'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                  <circle cx="14" cy="14" [attr.r]="8 + celestialIntensity * 2" fill="currentColor" [attr.fill-opacity]="0.08 + celestialIntensity * 0.1" />
+                  <path d="M20.8 16.6A7.8 7.8 0 0110.4 6.2a7.8 7.8 0 1010.4 10.4z"
+                        fill="currentColor" [attr.fill-opacity]="0.22 + celestialIntensity * 0.2"
+                        stroke="currentColor" stroke-width="1.85" stroke-linejoin="round" />
+                  <!-- Stars scaled by lunar intensity -->
+                  <path d="M20.5 6l.5 1.3 1.3.5-1.3.5-.5 1.3-.5-1.3-1.3-.5 1.3-.5.5-1.3z" fill="#f59e0b" [attr.fill-opacity]="0.5 + celestialIntensity * 0.5" />
+                  <circle cx="7.5" cy="8.5" r="1" fill="#fbbf24" [attr.fill-opacity]="0.45 + celestialIntensity * 0.55" />
+                  <circle cx="22" cy="12" r="0.9" fill="#fbbf24" [attr.fill-opacity]="0.4 + celestialIntensity * 0.6" />
+                </svg>
+
+                <!-- 3. PARTLY_CLOUDY_DAY: Golden Sun Behind Soft Claymorphic Cloud -->
+                <svg *ngIf="activeWeatherVisual === 'PARTLY_CLOUDY_DAY'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                  <!-- Sun in top-left with intensity-scaled opacity -->
+                  <circle cx="10.5" cy="10.5" r="4.2" fill="#f59e0b" [attr.fill-opacity]="0.16 + celestialIntensity * 0.24" stroke="#f59e0b" stroke-width="1.75" />
+                  <path d="M10.5 3.5v1.8M3.5 10.5h1.8M5.55 5.55l1.27 1.27M15.45 5.55l-1.27 1.27"
+                        stroke="#f59e0b" stroke-width="1.75" stroke-linecap="round"
+                        [attr.stroke-opacity]="0.45 + celestialIntensity * 0.5" />
+                  <!-- Cloud in foreground -->
+                  <path d="M20.5 21.5H10.2a3.8 3.8 0 01-.4-7.58A5 5 0 0119.5 13a3.5 3.5 0 011 8.5z" fill="#ffffff" fill-opacity="0.92" />
+                  <path d="M20.5 21.5H10.2a3.8 3.8 0 01-.4-7.58A5 5 0 0119.5 13a3.5 3.5 0 011 8.5z" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                </svg>
+
+                <!-- 4. PARTLY_CLOUDY_NIGHT: Crescent Moon + Star Behind Soft Night Cloud -->
+                <svg *ngIf="activeWeatherVisual === 'PARTLY_CLOUDY_NIGHT'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                  <!-- Crescent Moon in top-right -->
+                  <path d="M22.2 12.2a4.8 4.8 0 01-6.4-6.4 4.8 4.8 0 106.4 6.4z" fill="#818cf8" [attr.fill-opacity]="0.2 + celestialIntensity * 0.25" stroke="#6366f1" stroke-width="1.7" stroke-linejoin="round" />
+                  <circle cx="8" cy="7.5" r="1" fill="#fbbf24" [attr.fill-opacity]="0.4 + celestialIntensity * 0.55" />
+                  <!-- Cloud in foreground -->
+                  <path d="M19.8 22H9.5a3.8 3.8 0 01-.4-7.58A5 5 0 0118.8 13.5a3.5 3.5 0 011 8.5z" fill="#ffffff" fill-opacity="0.92" />
+                  <path d="M19.8 22H9.5a3.8 3.8 0 01-.4-7.58A5 5 0 0118.8 13.5a3.5 3.5 0 011 8.5z" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                </svg>
+
+                <!-- 5. CLOUDY: Dual Layered Overcast Claymorphic Clouds -->
+                <svg *ngIf="activeWeatherVisual === 'CLOUDY'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                  <!-- Back cloud -->
+                  <path d="M22 15.5a3.2 3.2 0 00-2.6-3.14 4.2 4.2 0 00-7.9-1.1" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.7" stroke-linecap="round" />
+                  <!-- Main front cloud -->
+                  <path d="M20.2 21H8.8a4.2 4.2 0 01-.45-8.37A5.5 5.5 0 0119 11.5a3.8 3.8 0 011.2 9.5z" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.85" stroke-linejoin="round" />
+                </svg>
+
+                <!-- 6. RAIN_DAY: Sun Peek + Rain Cloud + Falling Raindrops -->
+                <svg *ngIf="activeWeatherVisual === 'RAIN_DAY'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                  <circle cx="9.5" cy="8.5" r="3.2" fill="#f59e0b" fill-opacity="0.35" stroke="#f59e0b" stroke-width="1.6" />
+                  <path d="M20.2 18.2H9.2a3.6 3.6 0 01-.4-7.18A4.8 4.8 0 0118.4 10a3.3 3.3 0 011.8 8.2z" fill="#ffffff" fill-opacity="0.92" />
+                  <path d="M20.2 18.2H9.2a3.6 3.6 0 01-.4-7.18A4.8 4.8 0 0118.4 10a3.3 3.3 0 011.8 8.2z" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                  <path d="M10.5 21l-1.2 2.6M14.5 21l-1.2 2.6M18.5 21l-1.2 2.6" stroke="#0284c7" stroke-width="1.85" stroke-linecap="round" />
+                </svg>
+
+                <!-- 7. RAIN_NIGHT: Crescent Moon Peek + Night Rain Cloud + Raindrops -->
+                <svg *ngIf="activeWeatherVisual === 'RAIN_NIGHT'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                  <path d="M22.2 10.2a3.8 3.8 0 01-5-5 3.8 3.8 0 105 5z" fill="#818cf8" fill-opacity="0.35" stroke="#6366f1" stroke-width="1.5" />
+                  <path d="M19.8 18.2H8.8a3.6 3.6 0 01-.4-7.18A4.8 4.8 0 0118 10a3.3 3.3 0 011.8 8.2z" fill="#ffffff" fill-opacity="0.9" />
+                  <path d="M19.8 18.2H8.8a3.6 3.6 0 01-.4-7.18A4.8 4.8 0 0118 10a3.3 3.3 0 011.8 8.2z" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                  <path d="M10.2 21l-1.2 2.6M14.2 21l-1.2 2.6M18.2 21l-1.2 2.6" stroke="#0284c7" stroke-width="1.85" stroke-linecap="round" />
+                </svg>
+
+                <!-- 8. STORM: Thundercloud + Golden Lightning Bolt + Rain -->
+                <svg *ngIf="activeWeatherVisual === 'STORM'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                  <path d="M20.2 17.5H8.8a3.8 3.8 0 01-.4-7.56A5.1 5.1 0 0118.6 9a3.5 3.5 0 011.6 8.5z" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                  <path d="M15 14.5l-2.6 4.2h3.1l-1.6 4.5" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M9.5 20.2l-1 2M19.5 20.2l-1 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg>
+
+                <!-- 9. MIST: Soft Cloud + Atmospheric Mist Waves -->
+                <svg *ngIf="activeWeatherVisual === 'MIST'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                  <path d="M19.5 16H9.5a3.5 3.5 0 01-.35-6.98A4.6 4.6 0 0118 8a3.2 3.2 0 011.5 8z" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                  <path d="M6.5 19.5h15M8.5 22.5h11" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" />
+                </svg>
+
+                <!-- 10. COOL: Crisp Winter/Cool Breeze Cloud + Snowflake Crystal -->
+                <svg *ngIf="activeWeatherVisual === 'COOL'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                  <path d="M20 17.5H9a3.7 3.7 0 01-.4-7.38A4.9 4.9 0 0118.4 9a3.4 3.4 0 011.6 8.5z" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                  <path d="M11 21.5v3M9.5 23h3M17 21.5v3M15.5 23h3" stroke="#0891b2" stroke-width="1.8" stroke-linecap="round" />
                 </svg>
               </span>
             </div>
 
             <!-- Campus & Welcome Details in Header Bar (Positioned to the right of the badge) -->
             <div class="min-w-0 flex-1 flex flex-col justify-center">
-              <!-- Line 1: User Greeting, Date & Live Clock -->
+              <!-- Line 1: User Greeting, Date, Live Clock & Compact Weather Pill -->
               <div class="flex items-center gap-1.5 min-w-0">
                 <h2 class="text-sm sm:text-base md:text-lg font-black text-slate-900 tracking-tight leading-none truncate">
                   {{ timeGreeting }}, {{ auth.currentUser()?.firstName || 'User' }}
@@ -478,6 +595,19 @@ export interface RoleSectionItem {
                   <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                   <span>{{ formattedClockTime }}</span>
                 </div>
+
+                <!-- Compact Automatic Live Weather Pill in Header -->
+                <ng-container *ngIf="headerWeather">
+                  <span class="w-1 h-1 rounded-full bg-slate-300 hidden sm:inline-block shrink-0"></span>
+                  <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-extrabold border shrink-0 transition-all duration-700"
+                       [ngClass]="headerWeatherPillClass"
+                       [title]="headerWeatherTooltip">
+                    <span>{{ headerWeather.temperature }}°C</span>
+                    <span class="font-semibold opacity-90">{{ dynamicConditionLabel }}</span>
+                    <span class="hidden md:inline text-[9px] font-bold opacity-75">• {{ celestialIntensityPercent }}% {{ isEffectiveDaytime ? 'Sun' : 'Moon' }}</span>
+                    <span *ngIf="headerWeather.city" class="hidden xl:inline opacity-70 font-medium">• {{ headerWeather.city }}</span>
+                  </div>
+                </ng-container>
               </div>
 
               <!-- Line 2: Academic Session Dropdown & Tagline (Desktop) -->
@@ -520,13 +650,19 @@ export interface RoleSectionItem {
                               CURRENT
                             </span>
                           </div>
-                          <div class="text-[10px] text-slate-400 font-normal mt-0.5">
-                            {{ ses.start_date }} ➔ {{ ses.end_date }}
+                          <div class="text-[10px] text-slate-400 font-normal mt-0.5 flex items-center gap-1">
+                            <span>{{ ses.start_date }}</span>
+                            <svg class="w-2.5 h-2.5 text-slate-400" viewBox="0 0 24 24" fill="none">
+                              <path d="M5 12h14m-4-4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <span>{{ ses.end_date }}</span>
                           </div>
                         </div>
 
-                        <div *ngIf="isSessionActive(ses)" class="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-black shadow-xs">
-                          ✓
+                        <div *ngIf="isSessionActive(ses)" class="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-xs">
+                          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none">
+                            <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
                         </div>
                       </button>
 
@@ -540,7 +676,10 @@ export interface RoleSectionItem {
                       <button type="button"
                               (click)="openManageSessionsFromHeader($event)"
                               class="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer">
-                        <span>⚡ Manage Sessions & Rollover</span>
+                        <svg class="w-3.5 h-3.5 text-slate-700" viewBox="0 0 24 24" fill="none">
+                          <path d="M13 2L4.5 13.5h6L9.5 22 19.5 10.5h-6L13 2z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <span>Manage Sessions & Rollover</span>
                       </button>
                     </div>
 
@@ -694,13 +833,18 @@ export interface RoleSectionItem {
                                 class="w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center justify-between transition-colors cursor-pointer"
                                 [ngClass]="isSessionActive(ses) ? 'text-slate-900 font-bold bg-slate-100' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'">
                           <span class="truncate">{{ ses.name }}</span>
-                          <span *ngIf="isSessionActive(ses)" class="text-slate-900 font-bold text-xs">✓</span>
+                          <svg *ngIf="isSessionActive(ses)" class="w-3.5 h-3.5 text-slate-900 shrink-0" viewBox="0 0 24 24" fill="none">
+                            <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
                         </button>
 
                         <button type="button"
                                 (click)="openMobileSessions($event)"
-                                class="w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer">
-                          Manage Sessions →
+                                class="w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer flex items-center gap-1">
+                          <span>Manage Sessions</span>
+                          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none">
+                            <path d="M5 12h14m-4-4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
                         </button>
                       </div>
                     </div>
@@ -892,7 +1036,9 @@ export interface RoleSectionItem {
         </header>
 
         <!-- Main View Outlet -->
-        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-[#edf2f7]">
+        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 transition-all duration-700"
+              [ngClass]="mainCanvasWeatherClass"
+              [ngStyle]="mainCanvasWeatherStyle">
           <div class="max-w-7xl mx-auto">
             <router-outlet></router-outlet>
           </div>
@@ -1582,8 +1728,12 @@ export interface RoleSectionItem {
                 </button>
               </div>
 
-              <div class="mt-auto pt-3 border-t border-slate-200/80 text-[10px] text-slate-400 leading-relaxed px-1">
-                🔒 <strong>Administrator Rule:</strong> Selecting a role lets you grant or restrict module visibility in real time.
+              <div class="mt-auto pt-3 border-t border-slate-200/80 text-[10px] text-slate-400 leading-relaxed px-1 flex items-start gap-1.5">
+                <svg class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none">
+                  <rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                  <path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+                <span><strong>Administrator Rule:</strong> Selecting a role lets you grant or restrict module visibility in real time.</span>
               </div>
             </div>
 
@@ -1727,8 +1877,11 @@ export interface RoleSectionItem {
 
           <!-- Modal Footer -->
           <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 rounded-b-3xl">
-            <div class="text-[11px] text-slate-500 text-center sm:text-left">
-              <span>⚡ Permission changes are saved per campus and update live navigation immediately.</span>
+            <div class="text-[11px] text-slate-500 text-center sm:text-left flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-slate-500 shrink-0" viewBox="0 0 24 24" fill="none">
+                <path d="M13 2L4.5 13.5h6L9.5 22 19.5 10.5h-6L13 2z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span>Permission changes are saved per campus and update live navigation immediately.</span>
             </div>
 
             <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
@@ -1756,6 +1909,9 @@ export interface RoleSectionItem {
       <!-- Global Full Viewport Modal Backdrop Dimmer (Dims entire viewport including header & sidebar) -->
       <div *ngIf="modalService.isOpen()"
            class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-[60] animate-fadeIn"></div>
+
+      <!-- Floating Bottom-Right AI System Navigation Guide (Strictly Internal & Role-Guarded) -->
+      <app-ai-system-guide *ngIf="!isSuperAdminOnly()"></app-ai-system-guide>
     </div>
   `,
   styles: [`
@@ -2274,6 +2430,572 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     return 'Welcome back';
   }
 
+  // =========================================================================
+  // AUTOMATIC HEADER WEATHER & SUBTLE DASHBOARD AMBIENT THEME (Open-Meteo Free)
+  // =========================================================================
+  headerWeather: {
+    temperature: number;
+    conditionLabel: string;
+    city: string;
+    weatherCode: number;
+    isDay: boolean;
+    theme: 'SUNNY' | 'CLOUDY' | 'RAINY' | 'STORM' | 'COOL' | 'NIGHT';
+    visual:
+      | 'MORNING_SUN'
+      | 'CLEAR_DAY'
+      | 'SUNSET_DAY'
+      | 'RISING_MOON'
+      | 'CLEAR_NIGHT'
+      | 'PARTLY_CLOUDY_DAY'
+      | 'PARTLY_CLOUDY_NIGHT'
+      | 'CLOUDY'
+      | 'RAIN_DAY'
+      | 'RAIN_NIGHT'
+      | 'STORM'
+      | 'MIST'
+      | 'COOL';
+  } | null = null;
+
+  weatherRefreshTimer: any = null;
+  private readonly WEATHER_STORAGE_KEY = 'schoolsense_live_weather_v2';
+
+  get currentDecimalHour(): number {
+    return this.currentTime.getHours() + this.currentTime.getMinutes() / 60;
+  }
+
+  get isDaytimeByClock(): boolean {
+    const h = this.currentDecimalHour;
+    return h >= 5.75 && h < 18.75;
+  }
+
+  get isEffectiveDaytime(): boolean {
+    if (this.headerWeather) {
+      return this.headerWeather.isDay;
+    }
+    return this.isDaytimeByClock;
+  }
+
+  /**
+   * Precise 24-hour Solar & Lunar phase:
+   * - DAWN (05:45–07:30): Soft sunrise
+   * - MORNING (07:30–10:45): Mild morning sun (e.g., 8:06 AM is gentle ~48% intensity, not bright midday)
+   * - MIDDAY (10:45–15:15): Peak bright sun (peaking at 1:00 PM / 13:00 = 100%)
+   * - AFTERNOON (15:15–17:15): Warm golden afternoon sun
+   * - DUSK (17:15–18:45): Sunset horizon
+   * - EVENING_MOON (18:45–21:30): Soft rising crescent moon
+   * - PEAK_NIGHT (21:30–02:30): Deep luminous moonlight (peaking at 12:30 AM = 100%)
+   * - PRE_DAWN (02:30–05:45): Quiet waning moonlight
+   */
+  get celestialPhase():
+    | 'DAWN'
+    | 'MORNING'
+    | 'MIDDAY'
+    | 'AFTERNOON'
+    | 'DUSK'
+    | 'EVENING_MOON'
+    | 'PEAK_NIGHT'
+    | 'PRE_DAWN' {
+    const h = this.currentDecimalHour;
+    if (this.isEffectiveDaytime) {
+      if (h < 7.5) return 'DAWN';
+      if (h < 10.75) return 'MORNING';
+      if (h < 15.25) return 'MIDDAY';
+      if (h < 17.25) return 'AFTERNOON';
+      return 'DUSK';
+    } else {
+      if (h >= 18.75 && h < 21.5) return 'EVENING_MOON';
+      if (h >= 21.5 || h < 2.5) return 'PEAK_NIGHT';
+      return 'PRE_DAWN';
+    }
+  }
+
+  /**
+   * Continuous Solar (day) and Lunar (night) intensity factor in [0.22, 1.0].
+   * - Sun peaks at 13:00 (1:00 PM) -> 1.00 (100%). At 8:06 AM it is ~0.48 (48%).
+   * - Moon peaks at 00:30 (12:30 AM) -> 1.00 (100%). At 7:30 PM it is ~0.40 (40%).
+   */
+  get celestialIntensity(): number {
+    const h = this.currentDecimalHour;
+    if (this.isEffectiveDaytime) {
+      // Solar bell curve between 05:45 (5.75) and 18:45 (18.75), peaking at 13:00 (1:00 PM)
+      const distFromPeak = Math.abs(h - 13.0);
+      const maxSpan = h <= 13.0 ? 7.25 : 5.75;
+      const normalized = Math.min(1, distFromPeak / maxSpan);
+      const curve = Math.cos((normalized * Math.PI) / 2); // 1.0 at 1 PM, ~0.48 at 8:06 AM, 0 at horizon
+      return Number((0.22 + 0.78 * Math.max(0, curve)).toFixed(2));
+    } else {
+      // Lunar bell curve between 18:45 and 05:45, peaking at 00:30 (12:30 AM)
+      const nightHour = h >= 18.0 ? h - 24.0 : h; // [-6.0 .. +5.75]
+      const distFromLunarPeak = Math.abs(nightHour - 0.5);
+      const normalized = Math.min(1, distFromLunarPeak / 5.75);
+      const curve = Math.cos((normalized * Math.PI) / 2);
+      return Number((0.25 + 0.75 * Math.max(0, curve)).toFixed(2));
+    }
+  }
+
+  get celestialIntensityPercent(): number {
+    return Math.round(this.celestialIntensity * 100);
+  }
+
+  get dynamicConditionLabel(): string {
+    if (!this.headerWeather) {
+      return this.isDaytimeByClock ? 'Syncing...' : 'Night';
+    }
+    const code = this.headerWeather.weatherCode ?? 0;
+    // For clear / mostly clear skies (code 0 or 1), align label with solar/lunar phase & intensity
+    if (code === 0 || code === 1) {
+      switch (this.celestialPhase) {
+        case 'DAWN':
+          return 'Sunrise Sky';
+        case 'MORNING':
+          return 'Mild Morning Sun';
+        case 'MIDDAY':
+          return 'Bright Midday Sun';
+        case 'AFTERNOON':
+          return 'Warm Afternoon Sun';
+        case 'DUSK':
+          return 'Golden Sunset';
+        case 'EVENING_MOON':
+          return 'Rising Moonlight';
+        case 'PEAK_NIGHT':
+          return 'Bright Moonlight';
+        case 'PRE_DAWN':
+          return 'Quiet Pre-Dawn';
+      }
+    }
+    return this.headerWeather.conditionLabel;
+  }
+
+  get activeWeatherVisual():
+    | 'MORNING_SUN'
+    | 'CLEAR_DAY'
+    | 'SUNSET_DAY'
+    | 'RISING_MOON'
+    | 'CLEAR_NIGHT'
+    | 'PARTLY_CLOUDY_DAY'
+    | 'PARTLY_CLOUDY_NIGHT'
+    | 'CLOUDY'
+    | 'RAIN_DAY'
+    | 'RAIN_NIGHT'
+    | 'STORM'
+    | 'MIST'
+    | 'COOL' {
+    const baseVisual =
+      this.headerWeather?.visual || (this.isDaytimeByClock ? 'PARTLY_CLOUDY_DAY' : 'CLEAR_NIGHT');
+    const phase = this.celestialPhase;
+
+    if (baseVisual === 'CLEAR_DAY') {
+      if (phase === 'DAWN' || phase === 'MORNING') return 'MORNING_SUN';
+      if (phase === 'DUSK') return 'SUNSET_DAY';
+      return 'CLEAR_DAY';
+    }
+    if (baseVisual === 'CLEAR_NIGHT') {
+      if (phase === 'EVENING_MOON' || phase === 'PRE_DAWN') return 'RISING_MOON';
+      return 'CLEAR_NIGHT';
+    }
+    return baseVisual;
+  }
+
+  get headerWeatherTooltip(): string {
+    if (!this.headerWeather) {
+      return this.isDaytimeByClock ? 'Syncing live weather...' : 'Night • Syncing live weather...';
+    }
+    const bodyName = this.isEffectiveDaytime ? 'Solar Intensity' : 'Lunar Intensity';
+    const cityTag = this.headerWeather.city ? ` • ${this.headerWeather.city}` : '';
+    return `${this.headerWeather.temperature}°C • ${this.dynamicConditionLabel} • ${bodyName}: ${this.celestialIntensityPercent}%${cityTag}`;
+  }
+
+  get isDashboardRoute(): boolean {
+    const url = this.router.url || '';
+    return url === '/dashboard' || url.startsWith('/dashboard?');
+  }
+
+  get headerWeatherClass(): string {
+    if (!this.isDashboardRoute || !this.headerWeather) {
+      return 'bg-[#ffffff] border-slate-200/80';
+    }
+    switch (this.headerWeather.theme) {
+      case 'SUNNY':
+        return 'bg-white border-slate-200/80';
+      case 'RAINY':
+        return 'bg-gradient-to-r from-sky-50/70 via-white to-white border-sky-200/60';
+      case 'STORM':
+        return 'bg-gradient-to-r from-indigo-50/70 via-white to-white border-indigo-200/60';
+      case 'NIGHT':
+        return 'bg-white border-indigo-200/50';
+      case 'COOL':
+        return 'bg-gradient-to-r from-cyan-50/60 via-white to-white border-cyan-200/60';
+      case 'CLOUDY':
+        return 'bg-gradient-to-r from-slate-100/70 via-white to-white border-slate-200/80';
+      default:
+        return 'bg-[#ffffff] border-slate-200/80';
+    }
+  }
+
+  /**
+   * Dynamically scales header warmth (Sun) or indigo depth (Moon) by celestialIntensity:
+   * - At 8:06 AM (~48% intensity): very soft, airy morning tint (not harsh midday yellow)
+   * - At 1:00 PM (100% intensity): full warm sunlit golden-amber glow
+   * - At Night (35%–100% lunar intensity): smooth indigo-slate moonlight progression
+   */
+  get headerWeatherStyle(): Record<string, string> {
+    if (!this.isDashboardRoute || !this.headerWeather) return {};
+    const k = this.celestialIntensity;
+    const phase = this.celestialPhase;
+
+    if (this.headerWeather.theme === 'SUNNY') {
+      if (phase === 'DAWN' || phase === 'MORNING') {
+        const alpha = (0.12 + k * 0.28).toFixed(3); // ~0.25 at 8:06 AM (very gentle morning cream/sky)
+        const borderAlpha = (0.25 + k * 0.35).toFixed(3);
+        return {
+          backgroundImage: `linear-gradient(90deg, rgba(254, 243, 199, ${alpha}) 0%, rgba(240, 249, 255, ${(Number(alpha) * 0.6).toFixed(3)}) 38%, #ffffff 100%)`,
+          borderColor: `rgba(252, 211, 77, ${borderAlpha})`,
+        };
+      }
+      if (phase === 'DUSK') {
+        const alpha = (0.18 + k * 0.35).toFixed(3);
+        return {
+          backgroundImage: `linear-gradient(90deg, rgba(255, 237, 213, ${alpha}) 0%, rgba(238, 242, 255, ${(Number(alpha) * 0.7).toFixed(3)}) 45%, #ffffff 100%)`,
+          borderColor: `rgba(253, 186, 116, 0.45)`,
+        };
+      }
+      // MIDDAY & AFTERNOON: scales up to full golden warmth at 1:00 PM (k = 1.0)
+      const alpha = (0.2 + k * 0.55).toFixed(3);
+      return {
+        backgroundImage: `linear-gradient(90deg, rgba(254, 243, 199, ${alpha}) 0%, rgba(255, 251, 235, ${(Number(alpha) * 0.65).toFixed(3)}) 45%, #ffffff 100%)`,
+        borderColor: `rgba(251, 191, 36, ${(0.25 + k * 0.45).toFixed(3)})`,
+      };
+    }
+
+    if (this.headerWeather.theme === 'NIGHT') {
+      const alpha = (0.16 + k * 0.48).toFixed(3);
+      return {
+        backgroundImage: `linear-gradient(90deg, rgba(224, 231, 255, ${alpha}) 0%, rgba(238, 242, 255, ${(Number(alpha) * 0.6).toFixed(3)}) 45%, #ffffff 100%)`,
+        borderColor: `rgba(165, 180, 252, ${(0.25 + k * 0.4).toFixed(3)})`,
+      };
+    }
+
+    return {};
+  }
+
+  get mainCanvasWeatherClass(): string {
+    if (!this.isDashboardRoute || !this.headerWeather) {
+      return 'bg-[#edf2f7]';
+    }
+    switch (this.headerWeather.theme) {
+      case 'RAINY':
+        return 'bg-gradient-to-br from-[#eef6fc] via-[#edf2f7] to-[#edf2f7]';
+      case 'STORM':
+        return 'bg-gradient-to-br from-[#eef0fa] via-[#edf2f7] to-[#edf2f7]';
+      case 'COOL':
+        return 'bg-gradient-to-br from-[#ecf8f8] via-[#edf2f7] to-[#edf2f7]';
+      case 'CLOUDY':
+        return 'bg-gradient-to-br from-[#f1f5f9] via-[#edf2f7] to-[#edf2f7]';
+      default:
+        return 'bg-[#edf2f7]';
+    }
+  }
+
+  get mainCanvasWeatherStyle(): Record<string, string> {
+    if (!this.isDashboardRoute || !this.headerWeather) return {};
+    const k = this.celestialIntensity;
+    const phase = this.celestialPhase;
+
+    if (this.headerWeather.theme === 'SUNNY') {
+      if (phase === 'DAWN' || phase === 'MORNING') {
+        // Gentle morning breeze & soft warm cream top-left corner at 8:06 AM
+        const warmAlpha = (0.18 + k * 0.32).toFixed(3);
+        return {
+          backgroundImage: `linear-gradient(135deg, rgba(254, 249, 235, ${warmAlpha}) 0%, rgba(240, 247, 254, 0.45) 32%, #edf2f7 75%)`,
+        };
+      }
+      if (phase === 'DUSK') {
+        return {
+          backgroundImage: `linear-gradient(135deg, rgba(255, 241, 226, 0.55) 0%, rgba(238, 240, 251, 0.5) 38%, #edf2f7 80%)`,
+        };
+      }
+      // Peak midday / afternoon sun
+      const warmAlpha = (0.35 + k * 0.65).toFixed(3);
+      return {
+        backgroundImage: `linear-gradient(135deg, rgba(254, 247, 224, ${warmAlpha}) 0%, rgba(254, 251, 240, ${(Number(warmAlpha) * 0.55).toFixed(3)}) 35%, #edf2f7 78%)`,
+      };
+    }
+
+    if (this.headerWeather.theme === 'NIGHT') {
+      const lunarAlpha = (0.25 + k * 0.65).toFixed(3);
+      return {
+        backgroundImage: `linear-gradient(135deg, rgba(230, 234, 248, ${lunarAlpha}) 0%, rgba(235, 239, 250, ${(Number(lunarAlpha) * 0.6).toFixed(3)}) 38%, #edf2f7 80%)`,
+      };
+    }
+
+    return {};
+  }
+
+  get headerWeatherIconBoxClass(): string {
+    const v = this.activeWeatherVisual;
+    switch (v) {
+      case 'MORNING_SUN':
+        return 'bg-gradient-to-br from-amber-50/75 via-sky-50/60 to-white border-amber-200/70 text-amber-500';
+      case 'SUNSET_DAY':
+        return 'bg-gradient-to-br from-orange-50/90 via-rose-50/60 to-indigo-50/60 border-orange-200/80 text-orange-500';
+      case 'CLEAR_DAY':
+      case 'PARTLY_CLOUDY_DAY':
+        return 'bg-gradient-to-br from-amber-50 via-orange-50/70 to-sky-50/50 border-amber-200/85 text-amber-500';
+      case 'RISING_MOON':
+        return 'bg-gradient-to-br from-indigo-900/80 via-slate-800/85 to-indigo-950/90 border-indigo-400/35 text-indigo-200';
+      case 'CLEAR_NIGHT':
+      case 'PARTLY_CLOUDY_NIGHT':
+        return 'bg-gradient-to-br from-indigo-950/95 via-indigo-900/90 to-slate-900 border-indigo-400/45 text-indigo-200';
+      case 'RAIN_DAY':
+        return 'bg-gradient-to-br from-sky-50 via-blue-50/80 to-amber-50/40 border-sky-200/85 text-sky-600 shadow-[inset_1px_1px_2px_#ffffff,0_3px_10px_rgba(14,165,233,0.16)]';
+      case 'RAIN_NIGHT':
+        return 'bg-gradient-to-br from-slate-900 via-indigo-950/90 to-sky-950 border-sky-400/40 text-sky-300 shadow-[inset_1px_1px_2px_rgba(255,255,255,0.16),0_3px_10px_rgba(14,165,233,0.22)]';
+      case 'STORM':
+        return 'bg-gradient-to-br from-indigo-100/95 via-purple-50/80 to-amber-50/50 border-indigo-300/80 text-indigo-700 shadow-[inset_1px_1px_2px_#ffffff,0_3px_10px_rgba(79,70,229,0.18)]';
+      case 'COOL':
+        return 'bg-gradient-to-br from-cyan-50 via-sky-50/80 to-white border-cyan-200/85 text-cyan-600 shadow-[inset_1px_1px_2px_#ffffff,0_3px_10px_rgba(6,182,212,0.15)]';
+      case 'MIST':
+      case 'CLOUDY':
+      default:
+        return 'bg-gradient-to-br from-slate-100 via-sky-50/50 to-white border-slate-200/90 text-slate-600 shadow-[inset_1px_1px_2px_#ffffff,0_3px_8px_rgba(100,116,139,0.12)]';
+    }
+  }
+
+  get headerWeatherIconStyle(): Record<string, string> {
+    const k = this.celestialIntensity;
+    if (this.isEffectiveDaytime) {
+      const glowRadius = Math.round(4 + k * 10);
+      const glowAlpha = (0.06 + k * 0.18).toFixed(2);
+      return {
+        boxShadow: `inset 1px 1px 2px #ffffff, 0 3px ${glowRadius}px rgba(245, 158, 11, ${glowAlpha})`,
+      };
+    } else {
+      const glowRadius = Math.round(5 + k * 9);
+      const glowAlpha = (0.12 + k * 0.22).toFixed(2);
+      return {
+        boxShadow: `inset 1px 1px 2px rgba(255,255,255,0.18), 0 3px ${glowRadius}px rgba(79, 70, 229, ${glowAlpha})`,
+      };
+    }
+  }
+
+  get headerWeatherPillClass(): string {
+    if (!this.headerWeather) return 'bg-slate-100 text-slate-700 border-slate-200';
+    switch (this.headerWeather.theme) {
+      case 'SUNNY':
+        if (this.celestialPhase === 'DAWN' || this.celestialPhase === 'MORNING') {
+          return 'bg-amber-50/55 text-amber-800 border-amber-200/60';
+        }
+        if (this.celestialPhase === 'DUSK') {
+          return 'bg-orange-50/75 text-orange-800 border-orange-200/75';
+        }
+        return 'bg-amber-50/95 text-amber-900 border-amber-300/80';
+      case 'RAINY':
+        return 'bg-sky-50/90 text-sky-800 border-sky-200/80';
+      case 'STORM':
+        return 'bg-indigo-50/90 text-indigo-800 border-indigo-200/80';
+      case 'NIGHT':
+        return 'bg-indigo-50/85 text-indigo-800 border-indigo-200/80';
+      case 'COOL':
+        return 'bg-cyan-50/90 text-cyan-800 border-cyan-200/80';
+      default:
+        return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
+  }
+
+  private buildWeatherState(temp: number, code: number, isDayApi: boolean, city: string) {
+    // Combine Open-Meteo is_day with local clock so day/night transition is always accurate
+    const isDay = isDayApi && this.isDaytimeByClock;
+
+    let theme: 'SUNNY' | 'CLOUDY' | 'RAINY' | 'STORM' | 'COOL' | 'NIGHT' = isDay ? 'SUNNY' : 'NIGHT';
+    let visual:
+      | 'MORNING_SUN'
+      | 'CLEAR_DAY'
+      | 'SUNSET_DAY'
+      | 'RISING_MOON'
+      | 'CLEAR_NIGHT'
+      | 'PARTLY_CLOUDY_DAY'
+      | 'PARTLY_CLOUDY_NIGHT'
+      | 'CLOUDY'
+      | 'RAIN_DAY'
+      | 'RAIN_NIGHT'
+      | 'STORM'
+      | 'MIST'
+      | 'COOL' = isDay ? 'CLEAR_DAY' : 'CLEAR_NIGHT';
+    let conditionLabel = isDay ? 'Sunny' : 'Clear Night';
+
+    if (code >= 95) {
+      theme = 'STORM';
+      visual = 'STORM';
+      conditionLabel = 'Thunderstorm';
+    } else if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) {
+      theme = 'RAINY';
+      visual = isDay ? 'RAIN_DAY' : 'RAIN_NIGHT';
+      conditionLabel = code >= 80 ? 'Rain Showers' : 'Rainy';
+    } else if ((code >= 71 && code <= 77) || temp <= 13) {
+      theme = 'COOL';
+      visual = 'COOL';
+      conditionLabel = code >= 71 ? 'Snow / Cold' : 'Cool Breeze';
+    } else if (code >= 45 && code <= 48) {
+      theme = isDay ? 'CLOUDY' : 'NIGHT';
+      visual = 'MIST';
+      conditionLabel = 'Misty';
+    } else if (code === 3) {
+      theme = isDay ? 'CLOUDY' : 'NIGHT';
+      visual = isDay ? 'CLOUDY' : 'PARTLY_CLOUDY_NIGHT';
+      conditionLabel = 'Overcast';
+    } else if (code === 1 || code === 2) {
+      theme = isDay ? 'SUNNY' : 'NIGHT';
+      visual = isDay ? 'PARTLY_CLOUDY_DAY' : 'PARTLY_CLOUDY_NIGHT';
+      conditionLabel = isDay ? 'Partly Cloudy' : 'Cloudy Night';
+    } else {
+      theme = isDay ? 'SUNNY' : 'NIGHT';
+      visual = isDay ? 'CLEAR_DAY' : 'CLEAR_NIGHT';
+      conditionLabel = isDay ? 'Clear Sky' : 'Clear Night';
+    }
+
+    return {
+      temperature: temp,
+      conditionLabel,
+      city,
+      weatherCode: code,
+      isDay,
+      theme,
+      visual,
+    };
+  }
+
+  private async fetchOpenMeteoWeather(lat: number, lon: number, fallbackCity: string = '') {
+    try {
+      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&current=temperature_2m,is_day,weather_code&timezone=auto`;
+      const res = await fetch(weatherUrl);
+      if (!res.ok) return;
+      const data = await res.json();
+      const cur = data?.current || {};
+
+      let city = fallbackCity;
+      if (!city) {
+        try {
+          const geoRes = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat.toFixed(3)}&longitude=${lon.toFixed(3)}&localityLanguage=en`
+          );
+          if (geoRes.ok) {
+            const geoJson = await geoRes.json();
+            city = geoJson?.city || geoJson?.locality || '';
+          }
+        } catch {}
+      }
+
+      const temp = Math.round(Number(cur.temperature_2m ?? 28));
+      const isDayApi = cur.is_day !== 0;
+      const code = Number(cur.weather_code ?? 0);
+
+      this.headerWeather = this.buildWeatherState(temp, code, isDayApi, city);
+      try {
+        localStorage.setItem(
+          this.WEATHER_STORAGE_KEY,
+          JSON.stringify({
+            timestamp: Date.now(),
+            lat,
+            lon,
+            weatherData: this.headerWeather,
+          })
+        );
+      } catch {}
+    } catch {}
+  }
+
+  private async resolveAutomaticFallbackCoordinates(): Promise<{ lat: number; lon: number; city: string }> {
+    // 1. Try zero-permission IP geolocation first (instant, no browser prompt required)
+    try {
+      const ipRes = await fetch('https://get.geojs.io/v1/ip/geo.json');
+      if (ipRes.ok) {
+        const ipData = await ipRes.json();
+        const lat = parseFloat(ipData?.latitude);
+        const lon = parseFloat(ipData?.longitude);
+        if (!isNaN(lat) && !isNaN(lon)) {
+          return { lat, lon, city: ipData?.city || '' };
+        }
+      }
+    } catch {}
+
+    // 2. Try geocoding the school's configured city from profile if available
+    const schoolCity = (this.auth.currentUser()?.school as any)?.city || '';
+    if (schoolCity) {
+      try {
+        const searchRes = await fetch(
+          `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(schoolCity)}&count=1&language=en&format=json`
+        );
+        if (searchRes.ok) {
+          const searchData = await searchRes.json();
+          const first = searchData?.results?.[0];
+          if (first && typeof first.latitude === 'number' && typeof first.longitude === 'number') {
+            return { lat: first.latitude, lon: first.longitude, city: first.name || schoolCity };
+          }
+        }
+      } catch {}
+    }
+
+    // 3. Final guaranteed fallback: Delhi NCR / Gautam Budh Nagar
+    return { lat: 28.5355, lon: 77.391, city: schoolCity || 'Delhi NCR' };
+  }
+
+  initAutomaticHeaderWeather(forceRefresh = false) {
+    if (this.isSuperAdminOnly()) return;
+
+    if (!forceRefresh) {
+      try {
+        const raw = localStorage.getItem(this.WEATHER_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.weatherData && parsed?.timestamp && Date.now() - parsed.timestamp < 15 * 60 * 1000) {
+            // Re-evaluate day/night state with current clock
+            const w = parsed.weatherData;
+            this.headerWeather = this.buildWeatherState(
+              w.temperature,
+              w.weatherCode ?? 0,
+              w.isDay ?? this.isDaytimeByClock,
+              w.city || ''
+            );
+            return;
+          }
+        }
+      } catch {}
+    }
+
+    let resolvedByBrowserGeo = false;
+
+    // Immediately trigger zero-permission fallback if browser geolocation doesn't answer within 1.8s
+    const fallbackTimeout = setTimeout(async () => {
+      if (!resolvedByBrowserGeo && !this.headerWeather) {
+        const fallback = await this.resolveAutomaticFallbackCoordinates();
+        await this.fetchOpenMeteoWeather(fallback.lat, fallback.lon, fallback.city);
+      }
+    }, 1800);
+
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          resolvedByBrowserGeo = true;
+          clearTimeout(fallbackTimeout);
+          await this.fetchOpenMeteoWeather(pos.coords.latitude, pos.coords.longitude);
+        },
+        async () => {
+          clearTimeout(fallbackTimeout);
+          if (!this.headerWeather) {
+            const fallback = await this.resolveAutomaticFallbackCoordinates();
+            await this.fetchOpenMeteoWeather(fallback.lat, fallback.lon, fallback.city);
+          }
+        },
+        { enableHighAccuracy: false, timeout: 6000, maximumAge: 600000 }
+      );
+    } else {
+      clearTimeout(fallbackTimeout);
+      this.resolveAutomaticFallbackCoordinates().then((fallback) => {
+        this.fetchOpenMeteoWeather(fallback.lat, fallback.lon, fallback.city);
+      });
+    }
+  }
+
   // Support Mode Impersonation State
   supportTeachersList: any[] = [];
   supportClassesList: any[] = [];
@@ -2339,6 +3061,12 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     this.filterMenu();
     this.loadSessions();
     this.loadNotifications();
+    this.initAutomaticHeaderWeather();
+
+    // Auto-refresh live weather every 15 minutes
+    this.weatherRefreshTimer = setInterval(() => {
+      this.initAutomaticHeaderWeather(true);
+    }, 15 * 60 * 1000);
 
     if (this.auth.isSupportSession()) {
       this.loadSupportData();
@@ -2362,6 +3090,10 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     if (this.clockTimer) {
       clearInterval(this.clockTimer);
       this.clockTimer = null;
+    }
+    if (this.weatherRefreshTimer) {
+      clearInterval(this.weatherRefreshTimer);
+      this.weatherRefreshTimer = null;
     }
   }
 
@@ -2590,10 +3322,15 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
 
     const allowedGroups = this.allNavGroups
       .filter((g) => {
+        // Check if group's service is disabled for current school first
+        if (g.service && !this.auth.isServiceEnabled(g.service)) {
+          return false;
+        }
+
         // In binary support mode with full root access:
         if (isBinaryFullAccess) {
           if (g.id === 'super-admin') return false; // Hide platform console
-          return true; // Show all school services (Dashboard, Academics, Timetable, Attendance, Homework, Exams, etc.)
+          return true; // Show all enabled school services (Dashboard, Academics, Timetable, Attendance, Homework, Exams, etc.)
         }
 
         // Super Admin (outside support mode) only manages platform onboarding, network & services

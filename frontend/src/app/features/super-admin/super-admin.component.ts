@@ -107,6 +107,13 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
     description: 'Tuition fee categories, installment structures, invoices, and payment receipts.',
     icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z',
   },
+  {
+    code: 'TRANSPORT',
+    name: 'Transport & Fleet Management',
+    category: 'Operations',
+    description: 'School bus fleet, transit routes, stops, driver rosters, and student transport passes.',
+    icon: 'M8 17a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4zM5 17H3V6a2 2 0 012-2h14a2 2 0 012 2v11h-2m-4 0H9m-6-6h18M8 4v7m8-7v7',
+  },
 ];
 
 @Component({
@@ -138,7 +145,7 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
         <div class="flex items-center gap-3 flex-wrap">
           <button (click)="loadSchools()" [disabled]="loading"
                   class="px-4 py-3 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-2xl border border-slate-300 shadow-[2px_2px_8px_#cbd5e1,-2px_-2px_8px_#ffffff] transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50">
-            <span [class.animate-spin]="loading">↻</span>
+            <svg [class.animate-spin]="loading" class="w-3.5 h-3.5 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
             <span>Refresh Campus Data</span>
           </button>
           <button (click)="openOnboardModal()"
@@ -146,7 +153,7 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
             </svg>
-            <span>+ Onboard New School & Admin</span>
+            <span>Onboard New School & Admin</span>
           </button>
         </div>
       </div>
@@ -154,8 +161,9 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
       <!-- Super Admin Governance Policy Notice -->
       <div class="p-4 sm:p-5 rounded-3xl bg-indigo-50/80 border border-indigo-200/90 text-indigo-950 flex items-start gap-3.5 shadow-xs">
         <div class="w-8 h-8 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
         <div class="text-xs space-y-1">
@@ -170,9 +178,10 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
       <!-- Network Summary Stats Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="p-5 rounded-3xl bg-white border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] flex items-center gap-4">
-          <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-black text-lg border border-indigo-100 shrink-0">
-            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200/80 shadow-[inset_1px_1px_2px_#ffffff,2px_2px_6px_rgba(79,70,229,0.12)] flex items-center justify-center shrink-0">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none">
+              <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16" fill="currentColor" fill-opacity="0.18"/>
+              <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </div>
           <div>
@@ -183,9 +192,10 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
         </div>
 
         <div class="p-5 rounded-3xl bg-white border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] flex items-center gap-4">
-          <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-black text-lg border border-emerald-100 shrink-0">
-            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 shadow-[inset_1px_1px_2px_#ffffff,2px_2px_6px_rgba(16,185,129,0.12)] flex items-center justify-center shrink-0">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="2"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke="currentColor" stroke-width="2.2" d="M9 12l2 2 4-4" />
             </svg>
           </div>
           <div>
@@ -196,9 +206,11 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
         </div>
 
         <div class="p-5 rounded-3xl bg-white border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] flex items-center gap-4">
-          <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center font-black text-lg border border-purple-100 shrink-0">
-            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 border border-purple-200/80 shadow-[inset_1px_1px_2px_#ffffff,2px_2px_6px_rgba(147,51,234,0.12)] flex items-center justify-center shrink-0">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none">
+              <circle cx="9" cy="7" r="4" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="2"/>
+              <path d="M3 20a6 6 0 0 1 12 0v1H3v-1z" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75M21 21v-1a4 4 0 0 0-3-3.85" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
           </div>
           <div>
@@ -209,14 +221,17 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
         </div>
 
         <div class="p-5 rounded-3xl bg-white border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] flex items-center gap-4">
-          <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center font-black text-lg border border-amber-100 shrink-0">
-            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+          <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200/80 shadow-[inset_1px_1px_2px_#ffffff,2px_2px_6px_rgba(245,158,11,0.12)] flex items-center justify-center shrink-0">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="8" r="2.5" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="2"/>
+              <circle cx="6" cy="14" r="2.5" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="2"/>
+              <circle cx="18" cy="16" r="2.5" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="2"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke="currentColor" stroke-width="2" d="M12 5.5V4m0 6.5V20M6 11.5V4m0 12.5V20M18 13.5V4m0 14.5V20" />
             </svg>
           </div>
           <div>
             <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Service Controls</div>
-            <div class="text-xl font-black text-amber-600 mt-0.5">7 Services</div>
+            <div class="text-xl font-black text-amber-600 mt-0.5">{{ availableServices.length }} Services</div>
             <div class="text-[10px] text-slate-500">Configurable per community</div>
           </div>
         </div>
@@ -271,12 +286,15 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
 
                     <!-- Allowed Services Badge -->
                     <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                      {{ getActiveServicesCount(s) }}/7 Services Allowed
+                      {{ getActiveServicesCount(s) }}/{{ availableServices.length }} Services Allowed
                     </span>
 
                     <!-- SaaS Subscription Rate Badge -->
                     <span class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                      <span>🏷️</span>
+                      <svg class="w-3 h-3 text-emerald-600 shrink-0" viewBox="0 0 24 24" fill="none">
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="7" cy="7" r="1.5" fill="currentColor"/>
+                      </svg>
                       <span>₹{{ s.subscription?.perStudentFee || 20 }}/student/mo</span>
                     </span>
 
@@ -285,7 +303,11 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
                           [ngClass]="(s.wallet?.balance || 0) < 0 
                             ? 'bg-rose-50 text-rose-800 border-rose-200' 
                             : 'bg-slate-50 text-slate-800 border-slate-200'">
-                      <span>💳 Wallet: ₹{{ (s.wallet?.balance || 0) | number:'1.2-2' }}</span>
+                      <svg class="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none">
+                        <rect x="2" y="5" width="20" height="14" rx="2" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="2"/>
+                        <line x1="2" y1="10" x2="22" y2="10" stroke="currentColor" stroke-width="2"/>
+                      </svg>
+                      <span>Wallet: ₹{{ (s.wallet?.balance || 0) | number:'1.2-2' }}</span>
                       <span *ngIf="(s.wallet?.balance || 0) < 0" class="text-[9px] uppercase px-1 rounded bg-rose-200 text-rose-900 font-bold">Arrears</span>
                     </span>
                   </div>
@@ -301,10 +323,11 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
                         [disabled]="s.status !== 'ACTIVE'"
                         title="Instant binary support login to configure faculty, timetable, classes without school credentials"
                         class="px-3 py-2 bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-900 border border-amber-300 rounded-2xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:pointer-events-none">
-                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                  <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 18v-6a9 9 0 0 1 18 0v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
-                  <span>🎧 Support Login</span>
+                  <span>Support Login</span>
                 </button>
 
                 <!-- Manage Services Button -->
@@ -419,7 +442,10 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
             <div class="flex items-center gap-2">
               <button type="button" (click)="autoFillSampleSchool()"
                       class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-[11px] font-black transition-all cursor-pointer shadow-xs flex items-center gap-1.5">
-                <span>⚡ Auto-Fill Sample</span>
+                <svg class="w-3.5 h-3.5 text-amber-600 shrink-0" viewBox="0 0 24 24" fill="none">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                </svg>
+                <span>Auto-Fill Sample</span>
               </button>
               <button (click)="showOnboardModal = false" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
             </div>
@@ -707,7 +733,10 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
                     SaaS Monetization Engine
                   </span>
                   <span *ngIf="loadingLivePricing" class="text-[10px] text-indigo-600 font-bold animate-pulse flex items-center gap-1">
-                    <span>⚡</span> Fetching real-time balance...
+                    <svg class="w-3 h-3 text-indigo-600 shrink-0" viewBox="0 0 24 24" fill="none">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Fetching real-time balance...</span>
                   </span>
                 </div>
                 <h3 class="text-base font-black text-slate-900 tracking-tight mt-1">
@@ -783,8 +812,12 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
                         [class.bg-emerald-50]="adjustmentType !== 'CREDIT'"
                         [class.text-emerald-800]="adjustmentType !== 'CREDIT'"
                         [class.border-emerald-200]="adjustmentType !== 'CREDIT'"
-                        class="py-2 px-3 rounded-xl font-bold text-xs transition-all cursor-pointer border">
-                  ➕ Credit (+)
+                        class="py-2 px-3 rounded-xl font-bold text-xs transition-all cursor-pointer border inline-flex items-center justify-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 8v8m-4-4h8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                  </svg>
+                  <span>Credit (+)</span>
                 </button>
 
                 <button type="button" (click)="adjustmentType = 'DEBIT'"
@@ -793,8 +826,12 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
                         [class.bg-rose-50]="adjustmentType !== 'DEBIT'"
                         [class.text-rose-800]="adjustmentType !== 'DEBIT'"
                         [class.border-rose-200]="adjustmentType !== 'DEBIT'"
-                        class="py-2 px-3 rounded-xl font-bold text-xs transition-all cursor-pointer border">
-                  ➖ Debit (-)
+                        class="py-2 px-3 rounded-xl font-bold text-xs transition-all cursor-pointer border inline-flex items-center justify-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="2"/>
+                    <path d="M8 12h8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                  </svg>
+                  <span>Debit (-)</span>
                 </button>
               </div>
             </div>
@@ -1024,7 +1061,7 @@ export class SuperAdminComponent implements OnInit {
       perStudentFee: 20,
     };
     this.onboardError = '';
-    this.toast.info('⚡ Auto-filled sample school data!');
+    this.toast.info('Auto-filled sample school data!');
   }
 
   submitOnboardSchool() {

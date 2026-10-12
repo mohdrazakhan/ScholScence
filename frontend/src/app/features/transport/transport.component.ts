@@ -55,11 +55,11 @@ import {
                   (click)="seedTransportData()"
                   [disabled]="isSeeding"
                   class="px-3.5 py-2 sm:px-4 sm:py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer disabled:opacity-50">
-            <svg *ngIf="!isSeeding" class="w-3.5 h-3.5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            <svg *ngIf="!isSeeding" class="w-3.5 h-3.5 text-amber-700" viewBox="0 0 24 24" fill="none">
+              <path d="M13 2L4.5 13.5h6L9.5 22 19.5 10.5h-6L13 2z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
             <span *ngIf="isSeeding" class="w-3.5 h-3.5 border-2 border-amber-500 border-t-amber-800 rounded-full animate-spin"></span>
-            <span>{{ isSeeding ? 'Setting Up...' : '⚡ Quick Test Setup' }}</span>
+            <span>{{ isSeeding ? 'Setting Up...' : 'Quick Test Setup' }}</span>
           </button>
 
           <!-- Add Vehicle Button -->
@@ -204,8 +204,13 @@ import {
               <!-- Vehicle Header & Type Badge -->
               <div class="flex items-center justify-between gap-2 pb-3 border-b border-slate-100">
                 <div class="flex items-center gap-2">
-                  <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-900 font-bold text-xs flex items-center justify-center">
-                    🚌
+                  <span class="w-8 h-8 rounded-xl bg-amber-100/90 border border-white text-amber-900 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(245,158,11,0.1)]">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <rect x="4" y="4" width="16" height="13" rx="3" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                      <path d="M4 11h16M7.5 17v2.5M16.5 17v2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                      <circle cx="8" cy="14" r="1" fill="currentColor" />
+                      <circle cx="16" cy="14" r="1" fill="currentColor" />
+                    </svg>
                   </span>
                   <div>
                     <h3 class="font-black text-slate-900 text-sm tracking-tight">{{ veh.bus_number || veh.vehicle_number }}</h3>
@@ -245,11 +250,18 @@ import {
 
               <!-- Compliance Expiry Badges -->
               <div class="pt-2 border-t border-slate-100 flex items-center gap-1.5 flex-wrap text-[10px]">
-                <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-medium" title="Insurance Expiry">
-                  🛡️ Ins: {{ veh.insurance_expiry ? (veh.insurance_expiry | date:'MMM yyyy') : 'Valid' }}
+                <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-medium inline-flex items-center gap-1" title="Insurance Expiry">
+                  <svg class="w-3 h-3 text-slate-500" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 3l7 3v5c0 5-3.5 9.2-7 10-3.5-.8-7-5-7-10V6l7-3z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                  </svg>
+                  <span>Ins: {{ veh.insurance_expiry ? (veh.insurance_expiry | date:'MMM yyyy') : 'Valid' }}</span>
                 </span>
-                <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-medium" title="Fitness Expiry">
-                  ⚙️ Fitness: {{ veh.fitness_expiry ? (veh.fitness_expiry | date:'MMM yyyy') : 'Valid' }}
+                <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-medium inline-flex items-center gap-1" title="Fitness Expiry">
+                  <svg class="w-3 h-3 text-slate-500" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="3" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                    <path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36 6.36l-1.41-1.41M7.05 7.05L5.64 5.64m12.72 0l-1.41 1.41M7.05 16.95l-1.41 1.41" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  </svg>
+                  <span>Fitness: {{ veh.fitness_expiry ? (veh.fitness_expiry | date:'MMM yyyy') : 'Valid' }}</span>
                 </span>
               </div>
             </div>
@@ -304,14 +316,22 @@ import {
             <div class="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-2xl text-xs">
               <div>
                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Morning Pickup</span>
-                <span class="font-black text-slate-800 mt-0.5 flex items-center gap-1">
-                  ⏰ {{ r.morning_start_time || '07:00 AM' }}
+                <span class="font-black text-slate-800 mt-0.5 flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 text-amber-600" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="8.5" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                    <path d="M12 7.5v4.5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  <span>{{ r.morning_start_time || '07:00 AM' }}</span>
                 </span>
               </div>
               <div>
                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Evening Drop</span>
-                <span class="font-black text-slate-800 mt-0.5 flex items-center gap-1">
-                  🚏 {{ r.evening_start_time || '02:30 PM' }}
+                <span class="font-black text-slate-800 mt-0.5 flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 text-indigo-600" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 21s-6-5.2-6-10a6 6 0 1112 0c0 4.8-6 10-6 10z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                    <circle cx="12" cy="11" r="2" fill="currentColor" />
+                  </svg>
+                  <span>{{ r.evening_start_time || '02:30 PM' }}</span>
                 </span>
               </div>
             </div>
@@ -512,7 +532,7 @@ import {
           
           <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <h3 class="font-black text-slate-900 text-base">{{ isEditingVehicle ? 'Edit Fleet Vehicle' : 'Add New Fleet Vehicle' }}</h3>
-            <button (click)="closeVehicleModal()" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer">✕</button>
+            <button (click)="closeVehicleModal()" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer"><svg class="w-3.5 h-3.5 inline-block" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
           </div>
 
           <div class="space-y-3 text-xs">
@@ -589,7 +609,7 @@ import {
           
           <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <h3 class="font-black text-slate-900 text-base">{{ isEditingRoute ? 'Edit Route & Stops' : 'Create Transport Route' }}</h3>
-            <button (click)="closeRouteModal()" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer">✕</button>
+            <button (click)="closeRouteModal()" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer"><svg class="w-3.5 h-3.5 inline-block" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
           </div>
 
           <div class="space-y-3 text-xs">
@@ -643,7 +663,7 @@ import {
                     <input type="number" [(ngModel)]="st.monthly_fare" placeholder="₹1200" class="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold" />
                   </div>
                   <div class="col-span-1 text-right">
-                    <button *ngIf="routeForm.stops.length > 1" (click)="removeRouteStopRow(i)" class="text-rose-500 hover:text-rose-700 font-bold cursor-pointer">✕</button>
+                    <button *ngIf="routeForm.stops.length > 1" (click)="removeRouteStopRow(i)" class="text-rose-500 hover:text-rose-700 font-bold cursor-pointer"><svg class="w-3.5 h-3.5 inline-block" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
                   </div>
                 </div>
               </div>
@@ -673,7 +693,7 @@ import {
           
           <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <h3 class="font-black text-slate-900 text-base">Issue Student Bus Pass</h3>
-            <button (click)="closeIssuePassModal()" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer">✕</button>
+            <button (click)="closeIssuePassModal()" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer"><svg class="w-3.5 h-3.5 inline-block" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
           </div>
 
           <div class="space-y-3 text-xs">

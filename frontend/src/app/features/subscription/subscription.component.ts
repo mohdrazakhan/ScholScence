@@ -81,8 +81,11 @@ import {
       <div *ngIf="wallet && wallet.balance < 0"
            class="p-4 bg-rose-50 border border-rose-200 rounded-3xl text-rose-900 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fadeIn">
         <div class="flex items-start gap-3">
-          <div class="w-8 h-8 rounded-xl bg-rose-200 text-rose-800 flex items-center justify-center font-bold text-sm shrink-0">
-            ⚠️
+          <div class="w-8 h-8 rounded-xl bg-rose-200/80 border border-white text-rose-800 flex items-center justify-center shrink-0 shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(225,29,72,0.1)]">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3L2.5 20h19L12 3z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+              <path d="M12 9v4m0 3.5h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
           </div>
           <div>
             <div class="text-xs font-black">
@@ -106,9 +109,12 @@ import {
         <div class="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-[6px_6px_16px_#e2e8f0,-6px_-6px_16px_#ffffff] space-y-3">
           <div class="flex items-center justify-between">
             <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Campus Wallet Balance</span>
-            <span class="w-7 h-7 rounded-xl flex items-center justify-center text-xs font-bold"
-                  [ngClass]="(wallet?.balance || 0) < 0 ? 'bg-rose-50 text-rose-600 border border-rose-200' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'">
-              💳
+            <span class="w-8 h-8 rounded-xl flex items-center justify-center border border-white shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(15,23,42,0.06)]"
+                  [ngClass]="(wallet?.balance || 0) < 0 ? 'bg-rose-50/90 text-rose-600' : 'bg-emerald-50/90 text-emerald-600'">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="5" width="18" height="14" rx="3" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                <path d="M3 10h18M7 15h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
             </span>
           </div>
           <div>
@@ -139,8 +145,12 @@ import {
         <div class="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-[6px_6px_16px_#e2e8f0,-6px_-6px_16px_#ffffff] space-y-3">
           <div class="flex items-center justify-between">
             <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Active Billable Students</span>
-            <span class="w-7 h-7 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center text-xs font-bold">
-              👥
+            <span class="w-8 h-8 rounded-xl bg-indigo-50/90 text-indigo-600 border border-white flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(79,70,229,0.08)]">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <circle cx="9" cy="8" r="3.2" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                <path d="M3.5 19c0-2.8 2.5-5 5.5-5s5.5 2.2 5.5 5" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                <path d="M15.5 7.5a2.8 2.8 0 010 5.2M17 14.5c2 .5 3.5 2 3.5 4.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+              </svg>
             </span>
           </div>
           <div>
@@ -161,8 +171,11 @@ import {
         <div class="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-[6px_6px_16px_#e2e8f0,-6px_-6px_16px_#ffffff] space-y-3">
           <div class="flex items-center justify-between">
             <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Per-Student Rate</span>
-            <span class="w-7 h-7 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center text-xs font-bold">
-              🏷️
+            <span class="w-8 h-8 rounded-xl bg-amber-50/90 text-amber-700 border border-white flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(245,158,11,0.08)]">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <path d="M3.5 11.5V5.5a2 2 0 012-2h6l8.5 8.5a2 2 0 010 2.83l-5.17 5.17a2 2 0 01-2.83 0L3.5 11.5z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                <circle cx="8.5" cy="8.5" r="1.2" fill="currentColor" />
+              </svg>
             </span>
           </div>
           <div>
@@ -184,8 +197,11 @@ import {
         <div class="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-[6px_6px_16px_#e2e8f0,-6px_-6px_16px_#ffffff] space-y-3">
           <div class="flex items-center justify-between">
             <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Estimated Monthly Fee</span>
-            <span class="w-7 h-7 rounded-xl bg-purple-50 text-purple-700 border border-purple-200 flex items-center justify-center text-xs font-bold">
-              📅
+            <span class="w-8 h-8 rounded-xl bg-purple-50/90 text-purple-700 border border-white flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(147,51,234,0.08)]">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <rect x="3.5" y="5" width="17" height="15.5" rx="3" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                <path d="M3.5 9.5h17M8 3.5v3M16 3.5v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
             </span>
           </div>
           <div>
@@ -217,7 +233,11 @@ import {
                     [class.bg-white]="activeTab !== 'CALCULATION'"
                     [class.text-slate-600]="activeTab !== 'CALCULATION'"
                     class="px-4 py-2 rounded-2xl text-xs font-bold border border-slate-200/80 transition-all cursor-pointer flex items-center gap-2">
-              <span>🧮 Live Calculation & Student Roster</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                <rect x="4" y="3" width="16" height="18" rx="2.5" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                <path d="M8 7h8M8 12h2m4 0h2M8 16h2m4 0h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+              <span>Live Calculation & Student Roster</span>
               <span class="px-2 py-0.5 rounded-full text-[10px] font-black"
                     [ngClass]="activeTab === 'CALCULATION' ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-600'">
                 {{ calcData?.total_students || 0 }}
@@ -231,7 +251,11 @@ import {
                     [class.bg-white]="activeTab !== 'LEDGER'"
                     [class.text-slate-600]="activeTab !== 'LEDGER'"
                     class="px-4 py-2 rounded-2xl text-xs font-bold border border-slate-200/80 transition-all cursor-pointer flex items-center gap-2">
-              <span>📜 Wallet Statements & Ledger</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                <rect x="5" y="3" width="14" height="18" rx="2.5" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                <path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+              <span>Wallet Statements & Ledger</span>
               <span class="px-2 py-0.5 rounded-full text-[10px] font-black"
                     [ngClass]="activeTab === 'LEDGER' ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-600'">
                 {{ transactions.length }}
@@ -260,7 +284,11 @@ import {
           <div class="p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl space-y-2.5 text-xs">
             <div class="flex items-center justify-between flex-wrap gap-2">
               <div class="flex items-center gap-2 font-black text-indigo-950">
-                <span>📋 Fair 3-Day (72 Hours) Active Billing Policy:</span>
+                <svg class="w-4 h-4 text-indigo-700 shrink-0" viewBox="0 0 24 24" fill="none">
+                  <rect x="5" y="4" width="14" height="17" rx="2.5" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                  <path d="M9 4h6v2.5H9V4zM9 11h6M9 15h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+                <span>Fair 3-Day (72 Hours) Active Billing Policy:</span>
               </div>
               <span class="text-[11px] font-bold text-indigo-700">
                 Cycle: <strong>{{ calcData?.cycle_month || 'Current Month' }}</strong>
@@ -590,8 +618,11 @@ import {
           
           <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <div class="flex items-center gap-2.5">
-              <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center font-black text-lg shadow-xs">
-                💳
+              <div class="w-10 h-10 rounded-2xl bg-emerald-50/90 text-emerald-700 border border-white flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,0_3px_8px_rgba(16,185,129,0.1)]">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="5" width="18" height="14" rx="3" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                  <path d="M3 10h18M7 15h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
               </div>
               <div>
                 <h3 class="text-base font-black text-slate-900 tracking-tight">Load Funds into School Wallet</h3>
@@ -644,9 +675,9 @@ import {
             <label class="block font-bold text-slate-700">Payment Simulation / Settlement Mode</label>
             <select [(ngModel)]="topUpMethod"
                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
-              <option value="SIMULATED_INSTANT">⚡ Instant Wallet Direct Deposit (Demo/Live)</option>
-              <option value="UPI_BANK_TRANSFER">🏦 NetBanking / UPI Transfer Settlement</option>
-              <option value="OFFLINE_CHEQUE">📄 Institutional Cheque / DD Verified</option>
+              <option value="SIMULATED_INSTANT">Instant Wallet Direct Deposit (Demo/Live)</option>
+              <option value="UPI_BANK_TRANSFER">NetBanking / UPI Transfer Settlement</option>
+              <option value="OFFLINE_CHEQUE">Institutional Cheque / DD Verified</option>
             </select>
           </div>
 

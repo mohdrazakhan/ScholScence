@@ -171,8 +171,11 @@ interface FaqItem {
           <!-- Card 1: The Old Reality -->
           <div class="rounded-2xl sm:rounded-3xl border border-rose-200/90 bg-white p-4 sm:p-7 shadow-xs">
             <div class="flex items-center gap-2.5">
-              <span class="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-600 font-bold text-xs sm:text-sm">
-                ✕
+              <span class="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-600 border border-rose-200/80 shadow-[inset_1px_1px_2px_#ffffff,2px_2px_6px_rgba(225,29,72,0.1)]">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="2"/>
+                  <path d="M15 9l-6 6m0-6l6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+                </svg>
               </span>
               <h3 class="text-sm sm:text-base font-bold text-slate-900">The Old Paper Reality</h3>
             </div>
@@ -199,8 +202,11 @@ interface FaqItem {
           <!-- Card 2: The SchoolSense Solution -->
           <div class="rounded-2xl sm:rounded-3xl border border-blue-200 bg-blue-50/40 p-4 sm:p-7 shadow-sm ring-1 ring-blue-100">
             <div class="flex items-center gap-2.5">
-              <span class="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-blue-600 text-white font-bold text-xs sm:text-sm">
-                ✓
+              <span class="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="2"/>
+                  <path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
               </span>
               <h3 class="text-sm sm:text-base font-bold text-slate-900">The SchoolSense Way</h3>
             </div>
@@ -227,8 +233,10 @@ interface FaqItem {
           <!-- Card 3: The Big Impact -->
           <div class="rounded-2xl sm:rounded-3xl border border-emerald-200/90 bg-white p-4 sm:p-7 shadow-xs">
             <div class="flex items-center gap-2.5">
-              <span class="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 font-bold text-xs sm:text-sm">
-                ★
+              <span class="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 shadow-[inset_1px_1px_2px_#ffffff,2px_2px_6px_rgba(16,185,129,0.1)]">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
               </span>
               <h3 class="text-sm sm:text-base font-bold text-slate-900">The Result for Your School</h3>
             </div>
@@ -667,13 +675,17 @@ interface FaqItem {
                     </td>
                     <td class="p-2.5 sm:p-5 text-center text-slate-600 bg-white">
                       <div class="flex items-center justify-center sm:justify-start gap-2">
-                        <span class="flex h-6 w-6 sm:h-6 sm:w-6 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600 font-bold text-xs">✕</span>
+                        <span class="flex h-6 w-6 sm:h-6 sm:w-6 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600 border border-rose-200/80">
+                          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </span>
                         <span class="hidden sm:inline text-xs text-left leading-relaxed">{{ row.legacy }}</span>
                       </div>
                     </td>
                     <td class="p-2.5 sm:p-5 text-center bg-blue-50/30 border-l border-blue-200">
                       <div class="flex items-center justify-center sm:justify-start gap-2">
-                        <span class="flex h-6 w-6 sm:h-6 sm:w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-bold text-xs">✓</span>
+                        <span class="flex h-6 w-6 sm:h-6 sm:w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200/80">
+                          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
                         <span class="hidden sm:inline text-xs text-left font-semibold text-slate-900 leading-relaxed">{{ row.schoolsense }}</span>
                       </div>
                     </td>

@@ -83,8 +83,11 @@ interface FeatureSectionDef {
 
       <!-- Scope Notice Banner -->
       <div class="p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200/90 flex items-start gap-3 shadow-2xs">
-        <div class="w-7 h-7 rounded-xl bg-slate-200 text-slate-800 flex items-center justify-center shrink-0 text-xs font-black">
-          🔒
+        <div class="w-8 h-8 rounded-xl bg-slate-200/80 border border-white text-slate-800 flex items-center justify-center shrink-0 shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(15,23,42,0.06)]">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+            <rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+            <path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
         </div>
         <div class="text-xs text-slate-600 leading-relaxed min-w-0">
           <strong class="text-slate-900">Admin Isolation & Dedicated Portal Rule:</strong>
@@ -100,7 +103,13 @@ interface FeatureSectionDef {
         <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Staff Accounts</span>
-            <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs">👥</div>
+            <div class="w-8 h-8 rounded-xl bg-slate-100/90 border border-white text-slate-700 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(15,23,42,0.05)]">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <circle cx="9" cy="8" r="3.2" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                <path d="M3.5 19c0-2.8 2.5-5 5.5-5s5.5 2.2 5.5 5" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                <path d="M15.5 7.5a2.8 2.8 0 010 5.2M17 14.5c2 .5 3.5 2 3.5 4.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+              </svg>
+            </div>
           </div>
           <div class="mt-2 text-2xl font-black text-slate-900">{{ usersList.length }}</div>
           <span class="text-[10px] text-slate-400 font-semibold mt-0.5">Across all departments</span>
@@ -109,7 +118,12 @@ interface FeatureSectionDef {
         <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Active Logins</span>
-            <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs">🟢</div>
+            <div class="w-8 h-8 rounded-xl bg-emerald-50/90 border border-white text-emerald-700 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(16,185,129,0.08)]">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="8" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                <path d="M8.5 12.5l2.2 2.2 4.8-4.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </div>
           </div>
           <div class="mt-2 text-2xl font-black text-emerald-600">{{ activeUsersCount }}</div>
           <span class="text-[10px] text-emerald-600/80 font-semibold mt-0.5">Can authenticate live</span>
@@ -118,7 +132,12 @@ interface FeatureSectionDef {
         <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Fee & Accounts</span>
-            <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-xs">💳</div>
+            <div class="w-8 h-8 rounded-xl bg-amber-50/90 border border-white text-amber-700 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(245,158,11,0.08)]">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="5" width="18" height="14" rx="3" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                <path d="M3 10h18M7 15h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+            </div>
           </div>
           <div class="mt-2 text-2xl font-black text-slate-900">{{ feeDeptCount }}</div>
           <span class="text-[10px] text-slate-400 font-semibold mt-0.5">Invoicing & Ledger</span>
@@ -127,7 +146,14 @@ interface FeatureSectionDef {
         <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Transport & Fleet</span>
-            <div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-xs">🚌</div>
+            <div class="w-8 h-8 rounded-xl bg-indigo-50/90 border border-white text-indigo-700 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(79,70,229,0.08)]">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <rect x="4" y="4" width="16" height="13" rx="3" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                <path d="M4 11h16M7.5 17v2.5M16.5 17v2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                <circle cx="8" cy="14" r="1" fill="currentColor" />
+                <circle cx="16" cy="14" r="1" fill="currentColor" />
+              </svg>
+            </div>
           </div>
           <div class="mt-2 text-2xl font-black text-slate-900">{{ transportDeptCount }}</div>
           <span class="text-[10px] text-slate-400 font-semibold mt-0.5">Routes & Bus Passes</span>
@@ -136,7 +162,12 @@ interface FeatureSectionDef {
         <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Specialized Depts</span>
-            <div class="w-7 h-7 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-xs">🏛️</div>
+            <div class="w-8 h-8 rounded-xl bg-purple-50/90 border border-white text-purple-700 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(147,51,234,0.08)]">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <path d="M12 3L4 8h16L12 3z" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                <path d="M6 8v9M10 8v9M14 8v9M18 8v9M4 17h16M3 20h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+            </div>
           </div>
           <div class="mt-2 text-2xl font-black text-slate-900">{{ specializedDeptCount }}</div>
           <span class="text-[10px] text-slate-400 font-semibold mt-0.5">Library, Sports, Security</span>
@@ -201,7 +232,13 @@ interface FeatureSectionDef {
       </div>
 
       <div *ngIf="!loading && filteredUsers.length === 0" class="p-12 text-center bg-white rounded-2xl border border-slate-200 shadow-2xs">
-        <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto text-lg mb-3">👥</div>
+        <div class="w-12 h-12 rounded-2xl bg-slate-100/90 border border-white text-slate-600 flex items-center justify-center mx-auto mb-3 shadow-[inset_2px_2px_4px_#ffffff,0_4px_10px_rgba(15,23,42,0.06)]">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none">
+            <circle cx="9" cy="8" r="3.5" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.8" />
+            <path d="M3 19.5c0-3 2.7-5.5 6-5.5s6 2.5 6 5.5" fill="currentColor" fill-opacity="0.12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            <path d="M16 7a3 3 0 010 5.6M17.5 14.5c2.2.6 3.5 2.2 3.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+          </svg>
+        </div>
         <h3 class="text-sm font-bold text-slate-800">No departmental users found</h3>
         <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
           {{ searchQuery ? 'Try adjusting your search query or department filter.' : 'Click "Add Departmental User" or "Quick Test Setup" to create your first departmental accounts.' }}
@@ -261,11 +298,16 @@ interface FeatureSectionDef {
             <!-- Contact Information -->
             <div class="mt-3.5 space-y-1 text-xs text-slate-600 bg-slate-50/70 p-2.5 rounded-xl border border-slate-100">
               <div class="flex items-center gap-2 truncate">
-                <span class="text-slate-400 shrink-0">✉️</span>
+                <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="5" width="18" height="14" rx="2.5" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.8" />
+                  <path d="M3.5 7l8.5 6 8.5-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
                 <span class="font-medium truncate select-all">{{ u.email }}</span>
               </div>
               <div *ngIf="u.phone" class="flex items-center gap-2 truncate">
-                <span class="text-slate-400 shrink-0">📞</span>
+                <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none">
+                  <path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
                 <span class="font-medium truncate select-all">{{ u.phone }}</span>
               </div>
             </div>
@@ -408,14 +450,14 @@ interface FeatureSectionDef {
                 <label class="block text-[11px] font-bold text-slate-700 mb-1">Department *</label>
                 <select [(ngModel)]="formData.department" (change)="onDepartmentChange()"
                         class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:border-slate-400 outline-none cursor-pointer">
-                  <option value="Fee & Accounts">💳 Fee & Accounts Department</option>
-                  <option value="Transport & Fleet">🚌 Transport & Fleet Department</option>
-                  <option value="Administration">🏛️ School Administration (Sub-Admin)</option>
-                  <option value="Library & Resources">📚 Library & Resource Center</option>
-                  <option value="Sports & Physical Education">⚽ Sports & Physical Education</option>
-                  <option value="Front Desk & Reception">🛎️ Front Desk / Admissions Desk</option>
-                  <option value="Security & Safety">🛡️ Security & Campus Safety</option>
-                  <option value="General Operations">⚙️ General Staff & Operations</option>
+                  <option value="Fee & Accounts">Fee & Accounts Department</option>
+                  <option value="Transport & Fleet">Transport & Fleet Department</option>
+                  <option value="Administration">School Administration (Sub-Admin)</option>
+                  <option value="Library & Resources">Library & Resource Center</option>
+                  <option value="Sports & Physical Education">Sports & Physical Education</option>
+                  <option value="Front Desk & Reception">Front Desk / Admissions Desk</option>
+                  <option value="Security & Safety">Security & Campus Safety</option>
+                  <option value="General Operations">General Staff & Operations</option>
                 </select>
               </div>
 
@@ -433,12 +475,21 @@ interface FeatureSectionDef {
                          class="w-full pl-3 pr-24 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-900 focus:bg-white focus:border-slate-400 outline-none" />
                   <div class="absolute right-1 flex items-center gap-1">
                     <button type="button" (click)="generateStrongPassword()"
-                            class="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-[10px] font-bold text-slate-800 rounded-lg cursor-pointer transition-colors">
-                      ⚡ Generate
+                            class="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-[10px] font-bold text-slate-800 rounded-lg cursor-pointer transition-colors flex items-center gap-1">
+                      <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none">
+                        <path d="M13 2L4.5 13.5h6L9.5 22 19.5 10.5h-6L13 2z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                      <span>Generate</span>
                     </button>
                     <button type="button" (click)="showPassword = !showPassword"
                             class="p-1 text-slate-500 hover:text-slate-900 cursor-pointer">
-                      <span class="text-xs">{{ showPassword ? '👁️' : '🙈' }}</span>
+                      <svg *ngIf="!showPassword" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" />
+                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8" />
+                      </svg>
+                      <svg *ngIf="showPassword" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <path d="M17.94 17.94A10.07 10.07 0 0112 20c-6.5 0-10-8-10-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c6.5 0 10 8 10 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
                     </button>
                   </div>
                 </div>
@@ -466,32 +517,56 @@ interface FeatureSectionDef {
 
             <div class="flex items-center gap-2 flex-wrap">
               <button type="button" (click)="applyPreset('FEE')"
-                      class="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold transition-all cursor-pointer shadow-2xs">
-                💳 Fee Manager Preset
+                      class="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-amber-700" viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="5" width="18" height="14" rx="3" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                  <path d="M3 10h18M7 15h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+                <span>Fee Manager Preset</span>
               </button>
               <button type="button" (click)="applyPreset('TRANSPORT')"
-                      class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 text-xs font-bold transition-all cursor-pointer shadow-2xs">
-                🚌 Transport Dept Preset
+                      class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-indigo-700" viewBox="0 0 24 24" fill="none">
+                  <rect x="4" y="4" width="16" height="13" rx="3" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                  <path d="M4 11h16M7.5 17v2.5M16.5 17v2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+                <span>Transport Dept Preset</span>
               </button>
               <button type="button" (click)="applyPreset('ADMIN')"
-                      class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer shadow-2xs">
-                👑 Full Co-Admin Preset
+                      class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none">
+                  <path d="M3 18h18M4 15l2-9 6 4 6-4 2 9H4z" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>Full Co-Admin Preset</span>
               </button>
               <button type="button" (click)="applyPreset('LIBRARY')"
-                      class="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 text-xs font-bold transition-all cursor-pointer shadow-2xs">
-                📚 Librarian Preset
+                      class="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-purple-700" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>Librarian Preset</span>
               </button>
               <button type="button" (click)="applyPreset('SPORTS')"
-                      class="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-bold transition-all cursor-pointer shadow-2xs">
-                ⚽ Sports & PE Preset
+                      class="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-emerald-700" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                  <path d="M12 7l3 2.2-1.1 3.5H10.1L9 9.2 12 7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                </svg>
+                <span>Sports & PE Preset</span>
               </button>
               <button type="button" (click)="applyPreset('RECEPTION')"
-                      class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-900 border border-rose-200 text-xs font-bold transition-all cursor-pointer shadow-2xs">
-                🛎️ Front Desk Preset
+                      class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-900 border border-rose-200 text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-rose-700" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 17h16M6 17v-2a6 6 0 0112 0v2M12 7v2m-2-2h4" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>Front Desk Preset</span>
               </button>
               <button type="button" (click)="applyPreset('SECURITY')"
-                      class="px-3 py-1.5 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-900 border border-cyan-200 text-xs font-bold transition-all cursor-pointer shadow-2xs">
-                🛡️ Security Warden Preset
+                      class="px-3 py-1.5 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-900 border border-cyan-200 text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-cyan-700" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 3l7 3v5c0 5-3.5 9.2-7 10-3.5-.8-7-5-7-10V6l7-3z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                </svg>
+                <span>Security Warden Preset</span>
               </button>
             </div>
           </div>
@@ -560,8 +635,11 @@ interface FeatureSectionDef {
 
         <!-- Modal Footer -->
         <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-3 shrink-0">
-          <div class="text-[11px] text-slate-500">
-            <span>⚡ Changes take effect immediately upon next user login.</span>
+          <div class="text-[11px] text-slate-500 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-slate-500 shrink-0" viewBox="0 0 24 24" fill="none">
+              <path d="M13 2L4.5 13.5h6L9.5 22 19.5 10.5h-6L13 2z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span>Changes take effect immediately upon next user login.</span>
           </div>
 
           <div class="flex items-center gap-2">
@@ -603,11 +681,20 @@ interface FeatureSectionDef {
                    class="w-full pl-3 pr-24 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:bg-white focus:border-slate-400" />
             <div class="absolute right-1 flex items-center gap-1">
               <button type="button" (click)="generateResetPassword()"
-                      class="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-[10px] font-bold text-slate-800 rounded-lg cursor-pointer">
-                ⚡ Auto
+                      class="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-[10px] font-bold text-slate-800 rounded-lg cursor-pointer flex items-center gap-1">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none">
+                  <path d="M13 2L4.5 13.5h6L9.5 22 19.5 10.5h-6L13 2z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>Auto</span>
               </button>
-              <button type="button" (click)="showResetPass = !showResetPass" class="p-1 text-xs">
-                {{ showResetPass ? '👁️' : '🙈' }}
+              <button type="button" (click)="showResetPass = !showResetPass" class="p-1 text-slate-500 hover:text-slate-900 cursor-pointer">
+                <svg *ngIf="!showResetPass" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" />
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8" />
+                </svg>
+                <svg *ngIf="showResetPass" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                  <path d="M17.94 17.94A10.07 10.07 0 0112 20c-6.5 0-10-8-10-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c6.5 0 10 8 10 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
               </button>
             </div>
           </div>

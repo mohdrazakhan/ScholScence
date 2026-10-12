@@ -117,6 +117,14 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'subscription',
     'fees',
   ],
+  TRANSPORT_MANAGER: [
+    'dashboard',
+    'academics',
+    'academics_students',
+    'communication',
+    'communication_notices',
+    'transport',
+  ],
   GUARDIAN: [
     'dashboard',
     'timetable',
@@ -189,6 +197,13 @@ export class AuthService {
     return !!(scope?.classTeacherSections && scope.classTeacherSections.length > 0);
   });
   isParent = computed(() => ['GUARDIAN', 'PARENT'].includes(this.userRole()));
+  isStudent = computed(() => this.userRole() === 'STUDENT');
+  isFeeManager = computed(() => this.userRole() === 'FEE_MANAGER' || (this.currentUser()?.department || '').toLowerCase().includes('fee'));
+  isTransportManager = computed(() => this.userRole() === 'TRANSPORT_MANAGER' || (this.currentUser()?.department || '').toLowerCase().includes('transport'));
+  isDepartmentalStaff = computed(() => {
+    const r = this.userRole();
+    return !!r && !this.isAdmin() && !this.isTeacher() && !this.isParent() && r !== 'STUDENT';
+  });
 
   /**
    * Set simulated role for Support Session view
@@ -400,11 +415,26 @@ export class AuthService {
   }
 
   isServiceEnabled(serviceCode: string): boolean {
+    const code = (serviceCode || '').toUpperCase().trim();
+    const user = this.currentUser();
+    const schoolId = user?.school?.id;
+    let disabled: string[] = user?.school?.disabledServices || [];
+
+    if (schoolId) {
+      try {
+        const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
+        if (Array.isArray(localProfiles[schoolId]?.disabledServices)) {
+          disabled = localProfiles[schoolId].disabledServices;
+        }
+      } catch {}
+    }
+
+    if (disabled.map((d) => String(d).toUpperCase()).includes(code)) {
+      return false;
+    }
+
     const role = this.userRole();
     if (role === 'SUPER_ADMIN' || role === 'PLATFORM_ADMIN' || role === 'BINARY') return true;
-
-    const disabled = this.currentUser()?.school?.disabledServices || [];
-    if (disabled.includes(serviceCode)) return false;
 
     const serviceToSectionMap: Record<string, string> = {
       TIMETABLE: 'timetable',
@@ -417,9 +447,10 @@ export class AuthService {
       SUBSCRIPTION: 'subscription',
       FEES: 'fees',
       TRANSPORT: 'transport',
+      STAFF_USERS: 'staff_users',
     };
 
-    const sectionId = serviceToSectionMap[serviceCode.toUpperCase()];
+    const sectionId = serviceToSectionMap[code];
     if (sectionId) {
       return this.isSectionAllowedForUser(sectionId);
     }
@@ -793,7 +824,8 @@ export class AuthService {
       throw new Error(error.message || 'Invalid email/phone or password.');
     }
     if (!data || !data.accessToken || !data.user) {
-      throw new Error('Invalid email/phone or password.');
+      const serverMsg = (data as any)?.message;
+      throw new Error(serverMsg || 'Invalid email/phone or password.');
     }
     return data as AuthResponse;
   }
@@ -850,6 +882,30 @@ export class AuthService {
   }
 
   updateSchoolServices(schoolId: string, disabledServices: string[]): Observable<any> {
+    try {
+      const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
+      localProfiles[schoolId] = {
+        ...(localProfiles[schoolId] || {}),
+        disabledServices: [...disabledServices],
+      };
+      localStorage.setItem('schoolsense_school_profiles', JSON.stringify(localProfiles));
+    } catch {}
+
+    const user = this.currentUser();
+    if (user && user.school && user.school.id === schoolId) {
+      const updatedUser: User = {
+        ...user,
+        school: {
+          ...user.school,
+          disabledServices: [...disabledServices],
+        },
+      };
+      this.currentUser.set(updatedUser);
+      try {
+        localStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser));
+      } catch {}
+    }
+
     return of({ success: true, disabledServices });
   }
 
@@ -966,11 +1022,15 @@ export class AuthService {
       const wallet = walletMap.get(s.id) || localWallets[s.id];
       const localProfile = localProfiles[s.id] || {};
       const resolvedLogo = localProfile.logoUrl || localProfile.logo_url || s.logo_url || s.logoUrl || '';
+      const resolvedDisabledServices = Array.isArray(localProfile.disabledServices)
+        ? localProfile.disabledServices
+        : (Array.isArray(s.disabled_services) ? s.disabled_services : (Array.isArray(s.disabledServices) ? s.disabledServices : []));
 
       return {
         ...s,
         logo_url: resolvedLogo,
         logoUrl: resolvedLogo,
+        disabledServices: resolvedDisabledServices,
         admin: adminUser
           ? {
               id: adminUser.id,
@@ -1417,6 +1477,9 @@ export class AuthService {
             }
             if (lp.name) user.school.name = lp.name;
             if (lp.code) user.school.code = lp.code;
+            if (Array.isArray(lp.disabledServices)) {
+              user.school.disabledServices = lp.disabledServices;
+            }
           }
         } catch {}
 

@@ -815,6 +815,8 @@ export class ApiService {
     const userId = user?.id || null;
     const userRole = user?.role || null;
 
+    let baseOverview: DashboardStats | null = null;
+
     // 1. Try Pure Supabase Cloud RPC (Role Scoped Single Cloud DB Call)
     try {
       const { data: rpcData, error: rpcError } = await this.supabase.rpc('get_dashboard_overview', {
@@ -825,177 +827,531 @@ export class ApiService {
       });
 
       if (!rpcError && rpcData && rpcData.stats) {
-        return rpcData as DashboardStats;
-      }
-      if (rpcError) {
+        baseOverview = rpcData as DashboardStats;
+      } else if (rpcError) {
         console.warn('Supabase RPC get_dashboard_overview not detected, running client aggregation fallback:', rpcError);
       }
     } catch (e) {
       console.warn('Supabase RPC get_dashboard_overview error, running client aggregation fallback:', e);
     }
 
-    let activeStudentCount = 0;
-    let inactiveStudentCount = 0;
-    let totalStudentCount = 0;
-    let classCount = 0;
-    let teacherCount = 0;
-    let complaintsCount = 0;
+    if (!baseOverview) {
+      let activeStudentCount = 0;
+      let inactiveStudentCount = 0;
+      let totalStudentCount = 0;
+      let classCount = 0;
+      let teacherCount = 0;
+      let complaintsCount = 0;
 
-    const localStatusMap = (() => {
-      try {
-        return JSON.parse(localStorage.getItem('schoolsense_student_statuses') || '{}');
-      } catch {
-        return {};
-      }
-    })();
-
-    const [cRes, staffRes, compRes, noticesRes, examsRes] = await Promise.all([
-      this.supabase.from('classes').select('id', { count: 'exact', head: true }).eq('school_id', schoolId) as any,
-      this.supabase.from('user_school_roles').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).neq('status', 'INACTIVE') as any,
-      this.supabase.from('complaints').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).eq('status', 'OPEN') as any,
-      this.supabase.from('notices').select('id, title, content, target_audience, publish_date, created_at').eq('school_id', schoolId).order('created_at', { ascending: false }).limit(5) as any,
-      this.supabase.from('exams').select('id, name, code, start_date, end_date, status').eq('school_id', schoolId).order('start_date', { ascending: true }).limit(3) as any,
-    ]);
-
-    classCount = cRes?.count || 0;
-    teacherCount = staffRes?.count || 0;
-    complaintsCount = compRes?.count || 0;
-
-    if (effectiveYearId) {
-      // 1. Query enrollments strictly for this selected academic session
-      try {
-        const { data: enrData } = await this.supabase
-          .from('student_enrollments')
-          .select('id, status, student_id, student:students(id, status)')
-          .eq('academic_year_id', effectiveYearId);
-
-        const enrollments = (enrData || []).filter((e: any) => !!e.student);
-
-        if (enrollments.length > 0) {
-          enrollments.forEach((e: any) => {
-            const rawStatus = localStatusMap[e.student_id]?.status || localStatusMap[e.id]?.status || e.status || e.student?.status || 'ACTIVE';
-            const stStatus = String(rawStatus).toUpperCase();
-            if (stStatus === 'INACTIVE' || stStatus === 'LEFTOUT') {
-              inactiveStudentCount++;
-            } else {
-              activeStudentCount++;
-            }
-          });
-          totalStudentCount = activeStudentCount + inactiveStudentCount;
-        }
-      } catch (e) {
-        console.warn('Dashboard enrollments query note:', e);
-      }
-
-      // 2. Fallback only if 0 total enrollments exist in the entire database (first-time onboarding before sessions)
-      if (totalStudentCount === 0) {
+      const localStatusMap = (() => {
         try {
-          const { count: globalEnrCount } = await this.supabase
+          return JSON.parse(localStorage.getItem('schoolsense_student_statuses') || '{}');
+        } catch {
+          return {};
+        }
+      })();
+
+      const [cRes, staffRes, compRes, noticesRes, examsRes] = await Promise.all([
+        this.supabase.from('classes').select('id', { count: 'exact', head: true }).eq('school_id', schoolId) as any,
+        this.supabase.from('user_school_roles').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).neq('status', 'INACTIVE') as any,
+        this.supabase.from('complaints').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).eq('status', 'OPEN') as any,
+        this.supabase.from('notices').select('id, title, content, target_audience, publish_date, created_at').eq('school_id', schoolId).order('created_at', { ascending: false }).limit(5) as any,
+        this.supabase.from('exams').select('id, name, code, start_date, end_date, status').eq('school_id', schoolId).order('start_date', { ascending: true }).limit(3) as any,
+      ]);
+
+      classCount = cRes?.count || 0;
+      teacherCount = staffRes?.count || 0;
+      complaintsCount = compRes?.count || 0;
+
+      if (effectiveYearId) {
+        try {
+          const { data: enrData } = await this.supabase
             .from('student_enrollments')
-            .select('id', { count: 'exact', head: true });
+            .select('id, status, student_id, student:students(id, status)')
+            .eq('academic_year_id', effectiveYearId);
 
-          if (!globalEnrCount || globalEnrCount === 0) {
-            const { data: allStudents } = await this.supabase
-              .from('students')
-              .select('id, status')
-              .eq('school_id', schoolId)
-              .neq('status', 'ALUMNI');
+          const enrollments = (enrData || []).filter((e: any) => !!e.student);
 
-            if (allStudents && allStudents.length > 0) {
-              allStudents.forEach((st: any) => {
-                const rawStatus = localStatusMap[st.id]?.status || st.status || 'ACTIVE';
-                const stStatus = String(rawStatus).toUpperCase();
-                if (stStatus === 'INACTIVE' || stStatus === 'LEFTOUT') {
-                  inactiveStudentCount++;
-                } else {
-                  activeStudentCount++;
-                }
-              });
-              totalStudentCount = activeStudentCount + inactiveStudentCount;
+          if (enrollments.length > 0) {
+            enrollments.forEach((e: any) => {
+              const rawStatus = localStatusMap[e.student_id]?.status || localStatusMap[e.id]?.status || e.status || e.student?.status || 'ACTIVE';
+              const stStatus = String(rawStatus).toUpperCase();
+              if (stStatus === 'INACTIVE' || stStatus === 'LEFTOUT') {
+                inactiveStudentCount++;
+              } else {
+                activeStudentCount++;
+              }
+            });
+            totalStudentCount = activeStudentCount + inactiveStudentCount;
+          }
+        } catch (e) {
+          console.warn('Dashboard enrollments query note:', e);
+        }
+
+        if (totalStudentCount === 0) {
+          try {
+            const { count: globalEnrCount } = await this.supabase
+              .from('student_enrollments')
+              .select('id', { count: 'exact', head: true });
+
+            if (!globalEnrCount || globalEnrCount === 0) {
+              const { data: allStudents } = await this.supabase
+                .from('students')
+                .select('id, status')
+                .eq('school_id', schoolId)
+                .neq('status', 'ALUMNI');
+
+              if (allStudents && allStudents.length > 0) {
+                allStudents.forEach((st: any) => {
+                  const rawStatus = localStatusMap[st.id]?.status || st.status || 'ACTIVE';
+                  const stStatus = String(rawStatus).toUpperCase();
+                  if (stStatus === 'INACTIVE' || stStatus === 'LEFTOUT') {
+                    inactiveStudentCount++;
+                  } else {
+                    activeStudentCount++;
+                  }
+                });
+                totalStudentCount = activeStudentCount + inactiveStudentCount;
+              }
             }
+          } catch {}
+        }
+      }
+
+      let attendancePercentage = '0.0';
+      let attendanceMarkedCount = 0;
+      if (effectiveYearId && totalStudentCount > 0) {
+        try {
+          const today = new Date().toISOString().split('T')[0];
+          const { data: attRecords } = await this.supabase
+            .from('attendance')
+            .select('id, status')
+            .eq('school_id', schoolId)
+            .eq('date', today);
+
+          if (attRecords && attRecords.length > 0) {
+            attendanceMarkedCount = attRecords.length;
+            const presentCount = attRecords.filter((a: any) => a.status === 'PRESENT' || a.status === 'LATE').length;
+            attendancePercentage = ((presentCount / totalStudentCount) * 100).toFixed(1);
           }
         } catch {}
       }
-    }
 
-    // Today's attendance percentage calculation for this session
-    let attendancePercentage = '0.0';
-    let attendanceMarkedCount = 0;
-    if (effectiveYearId && totalStudentCount > 0) {
+      const notices = noticesRes?.data || [];
+      const exams = examsRes?.data || [];
+
+      const currentUser = this.getCurrentUser();
+      let sessionName = '2026–2027';
       try {
-        const today = new Date().toISOString().split('T')[0];
-        const { data: attRecords } = await this.supabase
-          .from('attendance')
-          .select('id, status')
-          .eq('school_id', schoolId)
-          .eq('date', today);
-
-        if (attRecords && attRecords.length > 0) {
-          attendanceMarkedCount = attRecords.length;
-          const presentCount = attRecords.filter((a: any) => a.status === 'PRESENT' || a.status === 'LATE').length;
-          attendancePercentage = ((presentCount / totalStudentCount) * 100).toFixed(1);
+        const sesRaw = localStorage.getItem('schoolsense_active_session');
+        if (sesRaw) {
+          const sesObj = JSON.parse(sesRaw);
+          sessionName = sesObj?.name || sessionName;
         }
       } catch {}
+
+      baseOverview = {
+        stats: {
+          totalStudents: totalStudentCount,
+          activeStudents: activeStudentCount,
+          inactiveStudents: inactiveStudentCount,
+          totalClasses: classCount,
+          totalTeachers: teacherCount,
+          attendanceTodayPercentage: attendancePercentage,
+          attendanceMarkedCount: attendanceMarkedCount,
+          pendingComplaints: complaintsCount,
+        },
+        campusInfo: {
+          id: schoolId,
+          name: currentUser?.school?.name || 'SchoolSense Academy',
+          code: currentUser?.school?.code || 'CAMPUS-01',
+          logoUrl: currentUser?.school?.logoUrl || currentUser?.school?.logo_url || '',
+          status: currentUser?.school?.status || 'ONLINE',
+          activeSession: sessionName,
+          activeSessionId: effectiveYearId,
+        },
+        recentNotices: notices
+          .filter((n: any) => this.isNoticeAllowedForRole(n.target_audience, userRole))
+          .map((n: any) => ({
+            id: n.id,
+            title: n.title,
+            content: n.content,
+            target_audience: n.target_audience?.[0] || (Array.isArray(n.target_audience) ? n.target_audience[0] : n.target_audience) || 'ALL',
+            published_at: n.publish_date || n.created_at,
+          })),
+        upcomingExams: exams.map((e: any) => ({
+          id: e.id,
+          name: e.name,
+          code: e.code,
+          start_date: e.start_date,
+          end_date: e.end_date,
+          status: e.status,
+        })),
+      };
     }
 
-    const notices = noticesRes?.data || [];
-    const exams = examsRes?.data || [];
+    return await this.enrichDashboardStatsByRole(baseOverview, schoolId, effectiveYearId, userRole, userId);
+  }
 
-    const currentUser = this.getCurrentUser();
-    let sessionName = '2026–2027';
-    try {
-      const sesRaw = localStorage.getItem('schoolsense_active_session');
-      if (sesRaw) {
-        const sesObj = JSON.parse(sesRaw);
-        sessionName = sesObj?.name || sessionName;
+  private async enrichDashboardStatsByRole(
+    overview: DashboardStats,
+    schoolId: string,
+    effectiveYearId?: string,
+    userRole?: string | null,
+    userId?: string | null
+  ): Promise<DashboardStats> {
+    const role = (userRole || 'SCHOOL_ADMIN').toUpperCase();
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    // 1. PARENT / GUARDIAN: Multi-Child Comprehensive Overview
+    if (this.isParentUser() || role === 'GUARDIAN' || role === 'PARENT') {
+      try {
+        const myChildren = await this.getMyChildren();
+        const childIds = myChildren.map((c: any) => c.studentId || c.id).filter(Boolean);
+        const sectionIds = Array.from(new Set(myChildren.map((c: any) => c.sectionId).filter(Boolean)));
+        const dowIso = new Date().getDay() === 0 ? 7 : new Date().getDay();
+        const dowStd = new Date().getDay();
+
+        const [attRes, hwRes, tpRes, feesOverview, transportOverview, complaintsList] = await Promise.all([
+          childIds.length > 0
+            ? (this.supabase.from('attendance').select('student_id, date, status').in('student_id', childIds) as any)
+            : Promise.resolve({ data: [] }),
+          sectionIds.length > 0
+            ? (this.supabase
+                .from('homework')
+                .select('id, section_id, title, due_date, assigned_date, status, class_subject:class_subjects(subject:subjects(name))')
+                .in('section_id', sectionIds)
+                .order('created_at', { ascending: false })
+                .limit(20) as any)
+            : Promise.resolve({ data: [] }),
+          sectionIds.length > 0
+            ? (this.supabase
+                .from('timetable_periods')
+                .select('section_id, period_number, start_time, end_time, room_number, day_of_week, subject:subjects(name), teacher:users(first_name, last_name)')
+                .in('section_id', sectionIds)
+                .eq('status', 'ACTIVE')
+                .order('period_number', { ascending: true }) as any)
+            : Promise.resolve({ data: [] }),
+          this.getFeeInvoices({ academicYearId: effectiveYearId }).catch(() => []),
+          this.getStudentTransportAssignments({ academicYearId: effectiveYearId }).catch(() => []),
+          this.getComplaints().catch(() => []),
+        ]);
+
+        const attRecords = attRes?.data || [];
+        const hwRecords = hwRes?.data || [];
+        const tpRecords = (tpRes?.data || []).filter((p: any) => p.day_of_week === dowIso || p.day_of_week === dowStd);
+        const allInvoices = Array.isArray(feesOverview) ? feesOverview : [];
+        const allPasses = Array.isArray(transportOverview) ? transportOverview : [];
+        const allComplaints = Array.isArray(complaintsList) ? complaintsList : [];
+
+        let presentTodayCount = 0;
+        let totalPendingHomework = 0;
+        let totalPendingFees = 0;
+        let transportSubscribedCount = 0;
+
+        const enrichedChildren = myChildren.map((child: any) => {
+          const cid = child.studentId || child.id;
+          const childAtt = attRecords.filter((a: any) => a.student_id === cid);
+          const todayRec = childAtt.find((a: any) => a.date === todayStr);
+          const todayStatus = todayRec?.status || 'UNMARKED';
+          if (todayStatus === 'PRESENT' || todayStatus === 'LATE' || todayStatus === 'HALF_DAY') {
+            presentTodayCount++;
+          }
+          const presentDays = childAtt.filter((a: any) => a.status === 'PRESENT' || a.status === 'LATE' || a.status === 'HALF_DAY').length;
+          const absentDays = childAtt.filter((a: any) => a.status === 'ABSENT').length;
+          const lateDays = childAtt.filter((a: any) => a.status === 'LATE').length;
+          const totalDays = childAtt.length;
+          const attPct = totalDays > 0 ? ((presentDays / totalDays) * 100).toFixed(1) : '100.0';
+
+          const childPeriods = tpRecords
+            .filter((p: any) => p.section_id === child.sectionId)
+            .map((p: any) => ({
+              periodNumber: p.period_number,
+              subjectName: p.subject?.name || 'Subject',
+              startTime: String(p.start_time || '').slice(0, 5),
+              endTime: String(p.end_time || '').slice(0, 5),
+              teacherName: p.teacher ? `${p.teacher.first_name || ''} ${p.teacher.last_name || ''}`.trim() : '',
+              roomNumber: p.room_number || '',
+            }));
+
+          const childHw = hwRecords.filter((h: any) => h.section_id === child.sectionId);
+          const pendingHw = childHw.filter((h: any) => !h.due_date || h.due_date >= todayStr);
+          totalPendingHomework += pendingHw.length;
+
+          const childInvoices = allInvoices.filter(
+            (inv: any) => inv.student_id === cid || (inv.student_name && child.name && inv.student_name.toLowerCase() === child.name.toLowerCase())
+          );
+          const billed = childInvoices.reduce((s: number, i: any) => s + (Number(i.total_amount) || 0), 0);
+          const paid = childInvoices.reduce((s: number, i: any) => s + (Number(i.paid_amount) || 0), 0);
+          const pendingAmt = Math.max(0, billed - paid);
+          totalPendingFees += pendingAmt;
+          const feeStatus: 'PAID' | 'PARTIAL' | 'PENDING' | 'NO_DUES' =
+            childInvoices.length === 0 ? 'NO_DUES' : pendingAmt === 0 ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING';
+
+          const childPass = allPasses.find(
+            (p: any) => p.student_id === cid || (p.student_name && child.name && p.student_name.toLowerCase() === child.name.toLowerCase())
+          );
+          if (childPass) {
+            transportSubscribedCount++;
+          }
+
+          return {
+            ...child,
+            id: cid,
+            studentId: cid,
+            attendance: {
+              todayStatus,
+              percentage: attPct,
+              presentDays,
+              absentDays,
+              lateDays,
+              totalDays,
+            },
+            todayTimetable: childPeriods,
+            homework: {
+              totalCount: childHw.length,
+              pendingCount: pendingHw.length,
+              recentItems: childHw.slice(0, 3).map((h: any) => ({
+                id: h.id,
+                title: h.title,
+                subjectName: h.class_subject?.subject?.name || 'General',
+                dueDate: h.due_date,
+                status: h.status || 'PUBLISHED',
+              })),
+            },
+            exams: {
+              upcomingCount: (overview.upcomingExams || []).length,
+              upcomingItems: (overview.upcomingExams || []).slice(0, 3),
+            },
+            fees: {
+              totalBilled: billed,
+              totalPaid: paid,
+              pendingAmount: pendingAmt,
+              status: feeStatus,
+              invoicesCount: childInvoices.length,
+              recentInvoices: childInvoices.slice(0, 3),
+            },
+            transport: childPass
+              ? {
+                  isSubscribed: true,
+                  routeName: childPass.route_name || 'Campus Transit Route',
+                  routeCode: childPass.route_code || 'RT-01',
+                  busNumber: childPass.vehicle_number || 'BUS-01',
+                  stopName: childPass.stop_name || 'Assigned Stop',
+                  pickupTime: childPass.pickup_time || '07:30 AM',
+                  dropTime: childPass.drop_time || '02:30 PM',
+                  monthlyFare: Number(childPass.monthly_fare) || 0,
+                  driverName: childPass.driver_name || '',
+                  driverPhone: childPass.driver_phone || '',
+                }
+              : { isSubscribed: false },
+          };
+        });
+
+        const openComplaintsCount = allComplaints.filter((c: any) => c.status === 'OPEN' || c.status === 'IN_PROGRESS').length;
+
+        overview.parentData = {
+          children: enrichedChildren,
+          activeChild: enrichedChildren[0] || null,
+          familySummary: {
+            totalChildren: enrichedChildren.length,
+            presentTodayCount,
+            totalPendingHomework,
+            totalPendingFees,
+            transportSubscribedCount,
+            openComplaintsCount,
+          },
+          complaints: allComplaints.slice(0, 4),
+        };
+      } catch (e) {
+        console.warn('Parent dashboard enrichment note:', e);
       }
-    } catch {}
+      return overview;
+    }
 
-    const overview: DashboardStats = {
-      stats: {
-        totalStudents: totalStudentCount,
-        activeStudents: activeStudentCount,
-        inactiveStudents: inactiveStudentCount,
-        totalClasses: classCount,
-        totalTeachers: teacherCount,
-        attendanceTodayPercentage: attendancePercentage,
-        attendanceMarkedCount: attendanceMarkedCount,
-        pendingComplaints: complaintsCount,
-      },
-      campusInfo: {
-        id: schoolId,
-        name: currentUser?.school?.name || 'SchoolSense Academy',
-        code: currentUser?.school?.code || 'CAMPUS-01',
-        logoUrl: currentUser?.school?.logoUrl || currentUser?.school?.logo_url || '',
-        status: currentUser?.school?.status || 'ONLINE',
-        activeSession: sessionName,
-        activeSessionId: effectiveYearId,
-      },
-      recentNotices: notices
-        .filter((n: any) => this.isNoticeAllowedForRole(n.target_audience, userRole))
-        .map((n: any) => ({
-          id: n.id,
-          title: n.title,
-          content: n.content,
-          target_audience: n.target_audience?.[0] || (Array.isArray(n.target_audience) ? n.target_audience[0] : n.target_audience) || 'ALL',
-          published_at: n.publish_date || n.created_at,
-        })),
-      upcomingExams: exams.map((e: any) => ({
-        id: e.id,
-        name: e.name,
-        code: e.code,
-        start_date: e.start_date,
-        end_date: e.end_date,
-        status: e.status,
-      })),
-    };
+    // 2. TEACHER / CLASS_TEACHER: Enrich teacherData with Homework, Exams & Complaints summary
+    if (role === 'TEACHER' || role === 'CLASS_TEACHER' || role === 'FACULTY') {
+      try {
+        const teacherSecId =
+          overview.teacherData?.classTeacherSection?.sectionId ||
+          overview.teacherData?.subjectAssignments?.[0]?.sectionId ||
+          '';
+        const [hwList, compList] = await Promise.all([
+          this.getHomework(teacherSecId).catch(() => []),
+          this.getComplaints().catch(() => []),
+        ]);
+        const hwArr = Array.isArray(hwList) ? hwList : [];
+        const compArr = Array.isArray(compList) ? compList : [];
+        const openComps = compArr.filter((c: any) => c.status === 'OPEN' || c.status === 'IN_PROGRESS');
 
-    if (this.isParentUser()) {
-      const myChildren = await this.getMyChildren();
-      (overview as any).parentData = {
-        children: myChildren,
-        activeChild: myChildren[0] || null,
-      };
+        if (!overview.teacherData) {
+          overview.teacherData = {
+            isClassTeacher: role === 'CLASS_TEACHER',
+            classTeacherSection: null,
+            assignedClassStrength: {
+              activeStudents: overview.stats?.activeStudents || 0,
+              inactiveStudents: overview.stats?.inactiveStudents || 0,
+              totalStudents: overview.stats?.totalStudents || 0,
+            },
+            todayClassAttendance: {
+              isMarked: (overview.stats?.attendanceMarkedCount || 0) > 0,
+              percentage: overview.stats?.attendanceTodayPercentage || '0.0',
+              presentCount: 0,
+              absentCount: 0,
+              lateCount: 0,
+              totalCount: overview.stats?.attendanceMarkedCount || 0,
+            },
+            classStudents: [],
+            todayTimetable: [],
+            subjectAssignments: [],
+          };
+        }
+        overview.teacherData.teacherHomeworkCount = hwArr.length;
+        overview.teacherData.recentHomework = hwArr.slice(0, 4);
+        overview.teacherData.upcomingExamsCount = (overview.upcomingExams || []).length;
+        overview.teacherData.openComplaintsCount = openComps.length;
+        overview.stats.pendingComplaints = openComps.length;
+      } catch (e) {
+        console.warn('Teacher dashboard enrichment note:', e);
+      }
+      return overview;
+    }
+
+    // 3. ADMIN / PRINCIPAL / DEPARTMENTAL STAFF / STUDENT: Populate modulesOverview across all campus services
+    if (!overview.modulesOverview) {
+      try {
+        const [
+          secRes,
+          subRes,
+          tpRes,
+          hwRes,
+          compAllRes,
+          feesData,
+          transportData,
+          deptData,
+        ] = await Promise.all([
+          this.supabase.from('sections').select('id', { count: 'exact', head: true }).eq('school_id', schoolId) as any,
+          this.supabase.from('subjects').select('id', { count: 'exact', head: true }).eq('school_id', schoolId) as any,
+          this.supabase.from('timetable_periods').select('id, section_id, teacher_id').eq('school_id', schoolId).eq('status', 'ACTIVE') as any,
+          this.supabase
+            .from('homework')
+            .select('id, title, due_date, status, created_at')
+            .eq('school_id', schoolId)
+            .order('created_at', { ascending: false })
+            .limit(20) as any,
+          this.supabase
+            .from('complaints')
+            .select('id, ticket_number, subject, category, status, priority, created_at')
+            .eq('school_id', schoolId)
+            .order('created_at', { ascending: false })
+            .limit(20) as any,
+          this.getFeesManagementOverview(effectiveYearId).catch(() => null),
+          this.getTransportDepartmentOverview(effectiveYearId).catch(() => null),
+          this.getDepartmentalUsersOverview().catch(() => null),
+        ]);
+
+        const totalSections = secRes?.count || 0;
+        const totalSubjects = subRes?.count || 0;
+        const tpList = tpRes?.data || [];
+        const configuredSectionsCount = new Set(tpList.map((p: any) => p.section_id).filter(Boolean)).size;
+        const activeTeachersInRoutine = new Set(tpList.map((p: any) => p.teacher_id).filter(Boolean)).size;
+
+        const hwList = hwRes?.data || [];
+        const dueTodayCount = hwList.filter((h: any) => h.due_date === todayStr).length;
+
+        const compList = compAllRes?.data || [];
+        const openCompCount = compList.filter((c: any) => c.status === 'OPEN' || c.status === 'IN_PROGRESS').length;
+        const resolvedCompCount = compList.filter((c: any) => c.status === 'RESOLVED' || c.status === 'CLOSED').length;
+
+        const feeOv = feesData?.overview || {};
+        const transOv = transportData?.overview || {};
+        const deptStats = deptData?.stats || {};
+
+        const attPctNum = parseFloat(overview.stats?.attendanceTodayPercentage || '0') || 0;
+        const markedCnt = overview.stats?.attendanceMarkedCount || 0;
+        const estPresent = Math.round((attPctNum / 100) * markedCnt);
+        const estAbsent = Math.max(0, markedCnt - estPresent);
+
+        overview.modulesOverview = {
+          academics: {
+            totalStudents: overview.stats?.totalStudents || 0,
+            activeStudents: overview.stats?.activeStudents ?? overview.stats?.totalStudents ?? 0,
+            inactiveStudents: overview.stats?.inactiveStudents || 0,
+            totalClasses: overview.stats?.totalClasses || 0,
+            totalSections,
+            totalSubjects,
+            totalTeachers: overview.stats?.totalTeachers || 0,
+            totalAlumni: 0,
+          },
+          departmental: {
+            totalUsers: deptStats.totalUsers || 0,
+            activeUsers: deptStats.activeUsers || 0,
+            feeUsers: deptStats.feeUsers || 0,
+            transportUsers: deptStats.transportUsers || 0,
+            adminUsers: deptStats.adminUsers || 0,
+            specializedUsers: deptStats.specializedUsers || 0,
+          },
+          fees: {
+            totalBilled: Number(feeOv.totalBilled ?? feeOv.totalExpected) || 0,
+            totalCollected: Number(feeOv.totalCollected) || 0,
+            totalOutstanding: Number(feeOv.totalOutstanding ?? feeOv.pendingDues) || 0,
+            collectionRate: Number(feeOv.collectionRate) || 0,
+            totalInvoicesCount: Number(feeOv.totalInvoicesCount) || (feesData?.invoices || []).length || 0,
+            paidCount: Number(feeOv.paidCount) || 0,
+            unpaidCount: Number(feeOv.unpaidCount) || 0,
+            partialCount: Number(feeOv.partialCount) || 0,
+            overdueCount: Number(feeOv.overdueCount) || 0,
+            recentInvoices: (feesData?.invoices || []).slice(0, 4),
+          },
+          transport: {
+            totalVehicles: Number(transOv.totalVehicles) || 0,
+            activeVehiclesCount: Number(transOv.activeVehiclesCount ?? transOv.totalVehicles) || 0,
+            maintenanceVehiclesCount: Number(transOv.maintenanceVehiclesCount) || 0,
+            totalRoutes: Number(transOv.totalRoutes ?? transOv.activeRoutes) || 0,
+            totalStopsCount: Number(transOv.totalStopsCount ?? transOv.totalStops) || 0,
+            totalFleetCapacity: Number(transOv.totalFleetCapacity ?? transOv.totalCapacity) || 0,
+            subscribedStudentsCount: Number(transOv.subscribedStudentsCount ?? transOv.activePasses) || 0,
+            estimatedMonthlyTransportRevenue: Number(transOv.estimatedMonthlyTransportRevenue) || 0,
+            fleetOccupancyRate: Number(transOv.fleetOccupancyRate ?? transOv.occupancyRate) || 0,
+            routesSummary: (transportData?.routes || []).slice(0, 4),
+          },
+          timetable: {
+            totalPeriods: tpList.length,
+            configuredSectionsCount,
+            activeTeachersInRoutine,
+          },
+          attendance: {
+            todayPercentage: overview.stats?.attendanceTodayPercentage || '0.0',
+            presentCount: overview.stats?.attendancePresentCount ?? estPresent,
+            absentCount: overview.stats?.attendanceAbsentCount ?? estAbsent,
+            lateCount: overview.stats?.attendanceLateCount || 0,
+            markedCount: markedCnt,
+            totalStudents: overview.stats?.activeStudents || overview.stats?.totalStudents || 0,
+            isMarkedToday: markedCnt > 0,
+          },
+          homework: {
+            totalHomework: hwList.length,
+            activeHomework: hwList.filter((h: any) => h.status !== 'CLOSED').length,
+            dueTodayCount,
+            recentHomework: hwList.slice(0, 3),
+          },
+          exams: {
+            totalExams: (overview.upcomingExams || []).length,
+            upcomingCount: (overview.upcomingExams || []).filter((e: any) => e.status !== 'COMPLETED').length,
+            completedCount: (overview.upcomingExams || []).filter((e: any) => e.status === 'COMPLETED').length,
+            upcomingExams: (overview.upcomingExams || []).slice(0, 3),
+          },
+          communication: {
+            totalNotices: (overview.recentNotices || []).length,
+            openComplaints: openCompCount || overview.stats?.pendingComplaints || 0,
+            resolvedComplaints: resolvedCompCount,
+            totalComplaints: compList.length,
+            recentComplaints: compList.slice(0, 3),
+          },
+        };
+      } catch (e) {
+        console.warn('Modules overview enrichment note:', e);
+      }
     }
 
     return overview;
@@ -1732,24 +2088,21 @@ export class ApiService {
         const roleCode = (r?.code || '').toUpperCase();
 
         // Strictly exclude Guardians, Parents, Students, and Super Admin from Faculty & Staff directory
+        const isProtectedStaffRole =
+          roleCode === 'SCHOOL_ADMIN' ||
+          roleCode === 'PRINCIPAL' ||
+          roleCode === 'TEACHER' ||
+          roleCode === 'CLASS_TEACHER';
+
         if (
           roleCode === 'GUARDIAN' ||
           roleCode === 'PARENT' ||
           roleCode === 'STUDENT' ||
           roleCode === 'SUPER_ADMIN' ||
-          guardianUserIdSet.has(u.id)
+          roleCode === 'PLATFORM_ADMIN' ||
+          roleCode === 'BINARY' ||
+          (!isProtectedStaffRole && guardianUserIdSet.has(u.id))
         ) {
-          // If a guardian was mistakenly assigned a non-guardian role, repair their role in background
-          if (guardianUserIdSet.has(u.id) && roleCode !== 'GUARDIAN' && roleCode !== 'PARENT' && guardianRole) {
-            (async () => {
-              try {
-                await this.supabase
-                  .from('user_school_roles')
-                  .update({ role_id: guardianRole.id })
-                  .eq('id', usr.id);
-              } catch {}
-            })();
-          }
           continue;
         }
 
@@ -2304,6 +2657,11 @@ export class ApiService {
   private async deleteStaff(id: string): Promise<any> {
     const schoolId = this.getSchoolId();
     if (!schoolId) throw new Error('No active school context found.');
+
+    const currentUserId = this.getUserId();
+    if (currentUserId && id === currentUserId) {
+      throw new Error('You cannot delete your own active administrator account.');
+    }
 
     try {
       await this.supabase
@@ -4207,23 +4565,25 @@ export class ApiService {
       };
     };
 
-    // Enrich existing currentUser.children if present
+    const initialChildrenMap = new Map<string, any>();
     if (currentUser?.children && currentUser.children.length > 0) {
-      return currentUser.children.map((child: any) => {
+      currentUser.children.forEach((child: any) => {
+        const sid = child.studentId || child.id;
+        if (!sid) return;
         const { classId, className, sectionId, sectionName } = resolveSectionAndClass(
-          { id: child.studentId || child.id, class_id: child.classId, section_id: child.sectionId },
+          { id: sid, class_id: child.classId, section_id: child.sectionId },
           { class: { id: child.classId, name: child.className }, section: { id: child.sectionId, name: child.sectionName } }
         );
-        return {
+        initialChildrenMap.set(sid, {
           ...child,
-          id: child.studentId || child.id,
-          studentId: child.studentId || child.id,
+          id: sid,
+          studentId: sid,
           name: child.name || `${child.firstName || ''} ${child.lastName || ''}`.trim() || 'Student',
           classId: classId || child.classId,
           className: className || child.className || 'Nursery',
           sectionId: sectionId || child.sectionId,
           sectionName: sectionName || child.sectionName || 'Section B',
-        };
+        });
       });
     }
 
@@ -4262,12 +4622,12 @@ export class ApiService {
             .in('id', studentIds);
 
           if (studentsData && studentsData.length > 0) {
-            return studentsData.map((st: any) => {
+            studentsData.forEach((st: any) => {
               const enr = st.student_enrollments?.[0];
               const fullName = `${st.first_name || ''} ${st.last_name || ''}`.trim() || st.admission_number || 'Student';
               const { classId, className, sectionId, sectionName } = resolveSectionAndClass(st, enr);
               const sgObj = sgData.find((sg: any) => sg.student_id === st.id);
-              return {
+              initialChildrenMap.set(st.id, {
                 id: st.id,
                 studentId: st.id,
                 name: fullName,
@@ -4279,10 +4639,12 @@ export class ApiService {
                 sectionName,
                 classId,
                 sectionId,
+                photoUrl: st.photo_url || '',
                 relationship: sgObj?.relationship_type || 'Parent',
                 status: st.status || 'ACTIVE',
-              };
+              });
             });
+            return Array.from(initialChildrenMap.values());
           }
         }
       }
@@ -4308,6 +4670,7 @@ export class ApiService {
 
           // Match by user email/phone in local mapping, or matching phone / name
           const matched = students.filter((s: any) => {
+            if (initialChildrenMap.has(s.id)) return true;
             const mapped = parentMap[s.id];
             if (mapped && (mapped.guardianEmail === userEmail || mapped.parentUserId === userId || (userPhone && mapped.guardianPhone === userPhone))) {
               return true;
@@ -4317,12 +4680,12 @@ export class ApiService {
             return (userPhone && emPhone === userPhone) || (userFirst && userFirst !== 'parent' && emName.includes(userFirst));
           });
 
-          const targetStudents = matched.length > 0 ? matched : students.slice(0, 1);
-          return targetStudents.map((st: any) => {
+          const targetStudents = matched.length > 0 ? matched : (initialChildrenMap.size > 0 ? [] : students.slice(0, 1));
+          targetStudents.forEach((st: any) => {
             const enr = st.student_enrollments?.[0];
             const fullName = `${st.first_name || ''} ${st.last_name || ''}`.trim() || st.admission_number || 'Student';
             const { classId, className, sectionId, sectionName } = resolveSectionAndClass(st, enr);
-            return {
+            initialChildrenMap.set(st.id, {
               id: st.id,
               studentId: st.id,
               name: fullName,
@@ -4334,17 +4697,19 @@ export class ApiService {
               sectionName,
               classId,
               sectionId,
+              photoUrl: st.photo_url || '',
               relationship: 'Parent',
               status: st.status || 'ACTIVE',
-            };
+            });
           });
+          return Array.from(initialChildrenMap.values());
         }
       } catch (err) {
         console.warn('Fallback students query failed:', err);
       }
     }
 
-    return [];
+    return Array.from(initialChildrenMap.values());
   }
 
   private async getMyChildTimetable(studentId?: string): Promise<any> {
@@ -10215,9 +10580,12 @@ export class ApiService {
 
   private async deleteDepartmentalUser(id: string): Promise<any> {
     const schoolId = this.getSchoolId();
+    const currentUserId = this.getUserId();
+    if (currentUserId && id === currentUserId) {
+      throw new Error('You cannot delete your own active administrator account.');
+    }
     try {
       await this.supabase.from('user_school_roles').delete().eq('user_id', id).eq('school_id', schoolId);
-      await this.supabase.from('users').delete().eq('id', id);
     } catch (e) {
       console.warn('Database delete notice for departmental user:', e);
     }

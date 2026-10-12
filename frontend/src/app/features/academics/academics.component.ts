@@ -133,13 +133,15 @@ interface StaffMember {
                         CURRENT
                       </span>
                     </div>
-                    <div class="text-[10px] text-slate-400 font-normal mt-0.5">
-                      {{ ses.start_date }} ➔ {{ ses.end_date }}
+                    <div class="text-[10px] text-slate-400 font-normal mt-0.5 flex items-center gap-1">
+                      <span>{{ ses.start_date }}</span>
+                      <svg class="w-2.5 h-2.5 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+                      <span>{{ ses.end_date }}</span>
                     </div>
                   </div>
 
-                  <div *ngIf="auth.activeAcademicSession()?.id === ses.id" class="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-black shadow-xs">
-                    ✓
+                  <div *ngIf="auth.activeAcademicSession()?.id === ses.id" class="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-xs">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                   </div>
                 </button>
 
@@ -153,7 +155,10 @@ interface StaffMember {
                 <button type="button"
                         (click)="openSessionModal(); isSessionDropdownOpen = false"
                         class="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer">
-                  <span>⚡ Manage Sessions & Rollover</span>
+                  <svg class="w-3.5 h-3.5 text-amber-500 shrink-0" viewBox="0 0 24 24" fill="none">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                  </svg>
+                  <span>Manage Sessions & Rollover</span>
                 </button>
               </div>
 
@@ -166,11 +171,11 @@ interface StaffMember {
                   [disabled]="isAutoProvisioning"
                   title="Auto-provision sections, standard subjects & students across all classes for current session"
                   class="px-3.5 py-2 sm:px-4 sm:py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer disabled:opacity-50">
-            <svg *ngIf="!isAutoProvisioning" class="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            <svg *ngIf="!isAutoProvisioning" class="w-3.5 h-3.5 text-indigo-600 shrink-0" viewBox="0 0 24 24" fill="none">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
             </svg>
             <span *ngIf="isAutoProvisioning" class="w-3.5 h-3.5 border-2 border-indigo-400 border-t-indigo-700 rounded-full animate-spin"></span>
-            <span>{{ isAutoProvisioning ? (autoProvisionProgress || 'Setting up...') : '⚡ Quick Test Setup' }}</span>
+            <span>{{ isAutoProvisioning ? (autoProvisionProgress || 'Setting up...') : 'Quick Test Setup' }}</span>
           </button>
 
           <!-- Buttons for CLASSES tab -->
@@ -679,7 +684,8 @@ interface StaffMember {
           </p>
           <button (click)="setTab('CLASSES')"
                   class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-xs font-bold shadow-md transition-all cursor-pointer flex items-center gap-2">
-            <span>Manage Classes & Sections →</span>
+            <span>Manage Classes & Sections</span>
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
           </button>
         </div>
 
@@ -1731,13 +1737,18 @@ interface StaffMember {
           <!-- Link to Departmental Staff Management -->
           <div *ngIf="auth.canManageStaffUsers()" class="p-3 sm:px-5 bg-slate-50 border-b border-slate-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
             <div class="flex items-center gap-2 text-slate-600 min-w-0">
-              <span class="text-slate-900 font-bold shrink-0">💡 Departmental & Administrative Logins:</span>
+              <span class="text-slate-900 font-bold shrink-0 inline-flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-amber-500 shrink-0" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 21h6m-6-3h6m-3-16a6 6 0 0 0-4.47 10c.58.65 1.15 1.54 1.38 2.5h6.18c.23-.96.8-1.85 1.38-2.5A6 6 0 0 0 12 2z" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Departmental & Administrative Logins:</span>
+              </span>
               <span class="truncate">Need to create logins for Fee Accountants, Transport Supervisors, Librarians, Sports, or Sub-Admins?</span>
             </div>
             <a routerLink="/staff-users" 
-               class="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-[11px] shadow-2xs transition-all flex items-center gap-1 shrink-0 self-start sm:self-auto cursor-pointer">
+               class="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-[11px] shadow-2xs transition-all flex items-center gap-1.5 shrink-0 self-start sm:self-auto cursor-pointer">
               <span>Manage Departmental Access</span>
-              <span>&rarr;</span>
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
             </a>
           </div>
 
@@ -2620,8 +2631,10 @@ interface StaffMember {
                         CURRENT
                       </span>
                     </div>
-                    <div class="text-[10px] text-slate-400 font-medium mt-1">
-                      {{ ses.start_date }} ➔ {{ ses.end_date }}
+                    <div class="text-[10px] text-slate-400 font-medium mt-1 flex items-center gap-1">
+                      <span>{{ ses.start_date }}</span>
+                      <svg class="w-2.5 h-2.5 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+                      <span>{{ ses.end_date }}</span>
                     </div>
                     <div class="text-[10px] text-slate-600 font-bold mt-0.5">
                       {{ ses.student_count || 0 }} Students • {{ ses.section_count || 0 }} Sections
@@ -2718,7 +2731,7 @@ interface StaffMember {
                     <span>Annual Promotion & Grade Progression:</span>
                   </div>
                   <ul class="list-disc list-inside space-y-0.5 text-indigo-800 pl-1">
-                    <li><strong>Grades Progression:</strong> Nursery ➔ LKG ➔ UKG ➔ Class 1 ... ➔ Class 12.</li>
+                    <li><strong>Grades Progression:</strong> Nursery &ndash; LKG &ndash; UKG &ndash; Class 1 ... &ndash; Class 12.</li>
                     <li><strong>Terminal Class:</strong> Class 12 students graduate to <strong>ALUMNI</strong> and appear in Alumni Directory.</li>
                     <li><strong>Sections:</strong> All class sections are automatically replicated for the new session.</li>
                   </ul>
@@ -2735,7 +2748,9 @@ interface StaffMember {
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div class="flex items-start gap-2.5">
                     <span class="w-6 h-6 rounded-lg bg-rose-600 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0 mt-0.5">
-                      ⚠️
+                      <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
                     </span>
                     <div>
                       <h4 class="text-xs font-black text-rose-950">Clean Database & Reset All Sessions/Students</h4>
@@ -2778,8 +2793,10 @@ interface StaffMember {
         <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 space-y-4 animate-scaleUp">
           
           <div class="flex items-start gap-3.5">
-            <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center shrink-0 text-xl shadow-xs">
-              ⚠️
+            <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200/80 shadow-[inset_1px_1px_2px_#ffffff,2px_2px_6px_rgba(225,29,72,0.12)] flex items-center justify-center shrink-0">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
             </div>
             <div>
               <h3 class="text-base font-black text-slate-900 tracking-tight">Wipe All Students & Sessions?</h3>
@@ -4221,16 +4238,20 @@ interface StaffMember {
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <label class="text-xs font-bold text-slate-700">Subject Code *</label>
-                  <span class="text-[10px] text-emerald-600 font-bold flex items-center gap-0.5">
-                    ✨ Auto-Generated
+                  <span class="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                    <svg class="w-3 h-3 text-emerald-500 shrink-0" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275L12 3z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Auto-Generated</span>
                   </span>
                 </div>
                 <div class="relative">
                   <input type="text" [(ngModel)]="newSubject.code" placeholder="e.g. BIO-10"
                          class="w-full px-4 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-mono font-bold text-slate-900 uppercase focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
                   <button type="button" (click)="regenerateCode()" title="Regenerate Unique Code"
-                          class="absolute right-2 top-2 px-2 py-1 text-[10px] font-bold text-indigo-600 hover:bg-indigo-50 rounded-lg cursor-pointer">
-                    ↻ Refresh
+                          class="absolute right-2 top-2 px-2 py-1 text-[10px] font-bold text-indigo-600 hover:bg-indigo-50 rounded-lg cursor-pointer inline-flex items-center gap-1">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    <span>Refresh</span>
                   </button>
                 </div>
                 <p class="text-[10px] text-slate-400 mt-1">Unique campus identifier (fully customizable).</p>
@@ -4266,9 +4287,9 @@ interface StaffMember {
                         [ngClass]="newSubject.isAllSections ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-300' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'"
                         class="p-2.5 rounded-xl text-left transition-all cursor-pointer">
                   <div class="flex items-center gap-1.5 font-bold text-xs">
-                    <span class="w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[9px]"
+                    <span class="w-3.5 h-3.5 rounded-full border flex items-center justify-center"
                           [ngClass]="newSubject.isAllSections ? 'border-white bg-white text-indigo-600' : 'border-slate-400'">
-                      ✓
+                      <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                     </span>
                     <span>All Sections</span>
                   </div>
@@ -4281,9 +4302,9 @@ interface StaffMember {
                         [ngClass]="!newSubject.isAllSections ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-300' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'"
                         class="p-2.5 rounded-xl text-left transition-all cursor-pointer">
                   <div class="flex items-center gap-1.5 font-bold text-xs">
-                    <span class="w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[9px]"
+                    <span class="w-3.5 h-3.5 rounded-full border flex items-center justify-center"
                           [ngClass]="!newSubject.isAllSections ? 'border-white bg-white text-indigo-600' : 'border-slate-400'">
-                      ✓
+                      <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                     </span>
                     <span>Specific Sections Only</span>
                   </div>
@@ -4306,9 +4327,9 @@ interface StaffMember {
                        [ngClass]="isSectionSelectedForSubject(sec.id) ? 'bg-indigo-50/90 border-indigo-300 text-indigo-950 font-bold' : 'bg-white border-slate-200 text-slate-600 font-medium opacity-75'"
                        class="p-2.5 rounded-xl border flex items-center justify-between transition-all cursor-pointer select-none">
                     <div class="flex items-center gap-2">
-                      <div class="w-4 h-4 rounded border flex items-center justify-center text-[10px]"
+                      <div class="w-4 h-4 rounded border flex items-center justify-center"
                            [ngClass]="isSectionSelectedForSubject(sec.id) ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 bg-white'">
-                        <span *ngIf="isSectionSelectedForSubject(sec.id)">✓</span>
+                        <svg *ngIf="isSectionSelectedForSubject(sec.id)" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                       </div>
                       <span class="text-xs">{{ formatSection(sec.name) }}</span>
                     </div>
@@ -4697,7 +4718,10 @@ interface StaffMember {
 
           <div class="p-4 bg-rose-50/70 border border-rose-200/80 rounded-2xl space-y-2 text-xs text-rose-900">
             <div class="font-bold flex items-center gap-1.5 text-rose-700">
-              <span>⚠️ What will happen when you delete this class:</span>
+              <svg class="w-4 h-4 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="none">
+                <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>What will happen when you delete this class:</span>
             </div>
             <ul class="list-disc pl-4 space-y-1 text-[11px] text-rose-800 leading-relaxed font-medium">
               <li>All <strong>{{ classToDelete.sections.length || 0 }} sections</strong> belonging to this class will be permanently removed.</li>
@@ -4741,7 +4765,10 @@ interface StaffMember {
 
           <div class="p-4 bg-rose-50/70 border border-rose-200/80 rounded-2xl space-y-2 text-xs text-rose-900">
             <div class="font-bold flex items-center gap-1.5 text-rose-700">
-              <span>⚠️ What will happen when you delete this section:</span>
+              <svg class="w-4 h-4 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="none">
+                <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>What will happen when you delete this section:</span>
             </div>
             <ul class="list-disc pl-4 space-y-1 text-[11px] text-rose-800 leading-relaxed font-medium">
               <li>Section division <strong>{{ formatSection(sectionToDelete.section.name) }}</strong> will be permanently removed.</li>
@@ -4785,7 +4812,10 @@ interface StaffMember {
 
           <div class="p-4 bg-rose-50/70 border border-rose-200/80 rounded-2xl space-y-2 text-xs text-rose-900">
             <div class="font-bold flex items-center gap-1.5 text-rose-700">
-              <span>⚠️ What will happen when you remove this subject:</span>
+              <svg class="w-4 h-4 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="none">
+                <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>What will happen when you remove this subject:</span>
             </div>
             <ul class="list-disc pl-4 space-y-1 text-[11px] text-rose-800 leading-relaxed font-medium">
               <li>This subject will be unlinked from the academic class curriculum.</li>
