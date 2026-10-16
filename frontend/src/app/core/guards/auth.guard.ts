@@ -14,19 +14,31 @@ export const authGuard: CanActivateFn = (route, state) => {
     return false;
   }
 
-  const isSuper = authService.isSuperAdmin();
   const urlPath = (state.url || '').split('?')[0].replace(/^\//, '');
   const primarySegment = urlPath.split('/')[0] || '';
 
-  // 1. Super Admin root accounts have universal access across all routes and services
-  if (isSuper) {
+  const isSuper = authService.isSuperAdmin();
+  const isSupport = authService.isSupportSession();
+
+  // 1. Root Developer's home is /super-admin. If visiting /dashboard without a support session, route to /super-admin
+  if (isSuper && !isSupport && (primarySegment === 'dashboard' || primarySegment === '')) {
+    router.navigate(['/super-admin']);
+    return false;
+  }
+
+  // 2. STRICT RULE: Developer Console (/super-admin) is exclusively accessible by the root Binary Developer
+  if (primarySegment === 'super-admin') {
+    if (!isSuper || isSupport) {
+      toast.error('Access Denied: Highly restricted developer console. Accessible only by the root platform developer.');
+      router.navigate(['/dashboard']);
+      return false;
+    }
     return true;
   }
 
-  // 2. Regular school members cannot access Super Admin root portal
-  if (primarySegment === 'super-admin') {
-    router.navigate(['/dashboard']);
-    return false;
+  // 3. Super Admin root accounts have universal access across remaining routes and services
+  if (isSuper) {
+    return true;
   }
 
   // 3. Service restrictions check for tenant users

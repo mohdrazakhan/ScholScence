@@ -412,24 +412,26 @@ export interface RoleSectionItem {
         <header class="h-16 border-b flex items-center justify-between px-3 sm:px-6 lg:px-8 flex-shrink-0 shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-all duration-700"
                 [ngClass]="headerWeatherClass"
                 [ngStyle]="headerWeatherStyle">
-          <!-- Top Left for Root Super Admin (Full Width Console Branding) -->
-          <div *ngIf="isSuperAdminOnly()" class="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-900 text-amber-400 font-black text-sm flex items-center justify-center shrink-0 shadow-[inset_1px_1px_2px_rgba(255,255,255,0.15),0_4px_10px_rgba(15,23,42,0.18)] border border-slate-800">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
-                <path d="M13 2L4.5 13.5h6L9.5 22 19.5 10.5h-6L13 2z" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          <!-- Top Left for Root Super Admin (SchoolSense Brand Logo + Tagline + Admin Panel) -->
+          <div *ngIf="isSuperAdminOnly()" class="flex items-center gap-3 min-w-0">
+            <a routerLink="/super-admin" class="flex items-center gap-2.5 shrink-0" title="SchoolSense Developer Console">
+              <img src="/brand/left_icon_logo.png"
+                   alt="SchoolSense"
+                   class="h-8 sm:h-9 w-auto object-contain shrink-0 pointer-events-none" />
+            </a>
+            <div class="hidden sm:flex items-center border-l border-slate-200 pl-3">
+              <span class="text-xs font-semibold text-slate-500 tracking-tight">
+                Building Smarter Schools for Tomorrow.
+              </span>
+            </div>
+            <a routerLink="/super-admin"
+               routerLinkActive="bg-blue-600 text-white shadow-sm shadow-blue-600/25"
+               class="inline-flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-xl text-xs font-black bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors">
+              <svg class="w-3.5 h-3.5 text-blue-600" [class.text-white]="true" viewBox="0 0 24 24" fill="none">
+                <path d="M13 2L4.5 13.5h6L9.5 22 19.5 10.5h-6L13 2z" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
-            </div>
-            <div class="min-w-0">
-              <div class="flex items-center gap-1.5 sm:gap-2">
-                <h2 class="text-xs sm:text-sm font-black text-slate-900 tracking-tight truncate">
-                  SchoolSense Platform Console
-                </h2>
-                <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200 shrink-0">
-                  Root Multi-Tenant Engine
-                </span>
-              </div>
-              <p class="text-[10px] text-slate-400 font-semibold hidden sm:block truncate">Campus Onboarding & Service Governance</p>
-            </div>
+              <span>Platform Admin Panel</span>
+            </a>
           </div>
 
           <!-- Top Left for School Users & Support Mode (Header Details) -->
@@ -877,7 +879,7 @@ export interface RoleSectionItem {
               <!-- User Avatar & Identity -->
               <div class="flex items-center gap-2 pl-1">
                 <!-- Circular Avatar Image -->
-                <div class="w-9 h-9 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-xs ring-2 ring-slate-100 overflow-hidden shrink-0">
+                <div class="w-9 h-9 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-sm shadow-blue-600/25 ring-2 ring-blue-100 overflow-hidden shrink-0">
                   <img [src]="userAvatarUrl" [alt]="userFullName" (error)="$any($event.target).style.display='none'" class="w-full h-full object-cover" />
                   <span class="sr-only">{{ userInitial }}</span>
                 </div>
@@ -1908,6 +1910,7 @@ export interface RoleSectionItem {
 
       <!-- Global Full Viewport Modal Backdrop Dimmer (Dims entire viewport including header & sidebar) -->
       <div *ngIf="modalService.isOpen()"
+           (click)="modalService.close()"
            class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-[60] animate-fadeIn"></div>
 
       <!-- Floating Bottom-Right AI System Navigation Guide (Strictly Internal & Role-Guarded) -->
@@ -2067,7 +2070,10 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   ];
 
   get canAccessSettings(): boolean {
-    return this.auth.isSuperAdmin() || this.auth.isSchoolAdmin() || this.auth.isSupportSession();
+    if (this.isSuperAdminOnly()) {
+      return false; // Platform Developer console is an admin panel for SaaS governance, not a school
+    }
+    return this.auth.isSchoolAdmin() || this.auth.isPrincipal() || this.auth.isSupportSession();
   }
 
   systemRolesList = [
@@ -2333,14 +2339,14 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     const user = this.auth.currentUser();
     if (!user) return '';
     if (user.isSupportSession && (user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN' || user.role === 'SCHOOL_ADMIN')) {
-      return 'School Admin';
+      return 'Delegated School Admin';
     }
-    if (user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN') return 'School Admin';
+    if (user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN') return 'Platform Developer';
     if (this.auth.isTeacher()) {
       return this.auth.isClassTeacher() ? 'Class Teacher' : 'Teacher';
     }
     const rName = user.roleName || user.role;
-    if (rName && rName.toLowerCase().includes('binary')) return 'School Admin';
+    if (rName && rName.toLowerCase().includes('binary')) return 'Platform Developer';
     return rName;
   }
 
