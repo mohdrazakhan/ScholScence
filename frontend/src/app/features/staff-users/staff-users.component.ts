@@ -44,7 +44,7 @@ interface FeatureSectionDef {
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div class="flex items-center gap-2">
-            <span class="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-slate-900 text-white shadow-2xs">
+            <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200/80 shadow-2xs">
               ADMIN ACCESS CONTROL
             </span>
             <span class="text-xs font-semibold text-slate-500">Campus Identity & Permissions</span>
@@ -58,21 +58,8 @@ interface FeatureSectionDef {
         </div>
 
         <div class="flex items-center gap-2.5 flex-wrap">
-          <button type="button" (click)="seedSampleUsers()" [disabled]="seeding"
-                  title="Provision standard demo accounts for all departments"
-                  class="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-98">
-            <svg *ngIf="!seeding" class="w-3.5 h-3.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            <svg *ngIf="seeding" class="w-3.5 h-3.5 animate-spin text-slate-700" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-            </svg>
-            <span>{{ seeding ? 'Configuring...' : 'Quick Test Setup' }}</span>
-          </button>
-
           <button type="button" (click)="openAddModal()"
-                  class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-98">
+                  class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-2xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-98">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
             </svg>
@@ -81,29 +68,12 @@ interface FeatureSectionDef {
         </div>
       </div>
 
-      <!-- Scope Notice Banner -->
-      <div class="p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200/90 flex items-start gap-3 shadow-2xs">
-        <div class="w-8 h-8 rounded-xl bg-slate-200/80 border border-white text-slate-800 flex items-center justify-center shrink-0 shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(15,23,42,0.06)]">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
-            <rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
-            <path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-          </svg>
-        </div>
-        <div class="text-xs text-slate-600 leading-relaxed min-w-0">
-          <strong class="text-slate-900">Admin Isolation & Dedicated Portal Rule:</strong>
-          This management section is exclusively for departmental operations and administrative staff. Teaching faculty and parents have dedicated rosters and authentication in the 
-          <a routerLink="/academics" [queryParams]="{ tab: 'staff' }" class="text-slate-900 font-bold underline hover:text-slate-700">Faculty Directory</a> 
-          and 
-          <a routerLink="/academics" [queryParams]="{ tab: 'students' }" class="text-slate-900 font-bold underline hover:text-slate-700">Student Admissions</a> rosters.
-        </div>
-      </div>
-
-      <!-- Campus Metrics Ribbon -->
+      <!-- Campus Metrics Ribbon (Unified Minimalist Theme) -->
       <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-        <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col justify-between">
+        <div class="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Staff Accounts</span>
-            <div class="w-8 h-8 rounded-xl bg-slate-100/90 border border-white text-slate-700 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(15,23,42,0.05)]">
+            <div class="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100/80 text-indigo-600 flex items-center justify-center shadow-2xs">
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
                 <circle cx="9" cy="8" r="3.2" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
                 <path d="M3.5 19c0-2.8 2.5-5 5.5-5s5.5 2.2 5.5 5" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
@@ -115,24 +85,24 @@ interface FeatureSectionDef {
           <span class="text-[10px] text-slate-400 font-semibold mt-0.5">Across all departments</span>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col justify-between">
+        <div class="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Active Logins</span>
-            <div class="w-8 h-8 rounded-xl bg-emerald-50/90 border border-white text-emerald-700 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(16,185,129,0.08)]">
+            <div class="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100/80 text-indigo-600 flex items-center justify-center shadow-2xs">
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="8" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
                 <path d="M8.5 12.5l2.2 2.2 4.8-4.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
             </div>
           </div>
-          <div class="mt-2 text-2xl font-black text-emerald-600">{{ activeUsersCount }}</div>
-          <span class="text-[10px] text-emerald-600/80 font-semibold mt-0.5">Can authenticate live</span>
+          <div class="mt-2 text-2xl font-black text-slate-900">{{ activeUsersCount }}</div>
+          <span class="text-[10px] text-slate-400 font-semibold mt-0.5">Can authenticate live</span>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col justify-between">
+        <div class="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Fee & Accounts</span>
-            <div class="w-8 h-8 rounded-xl bg-amber-50/90 border border-white text-amber-700 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(245,158,11,0.08)]">
+            <div class="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100/80 text-indigo-600 flex items-center justify-center shadow-2xs">
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
                 <rect x="3" y="5" width="18" height="14" rx="3" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
                 <path d="M3 10h18M7 15h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
@@ -143,10 +113,10 @@ interface FeatureSectionDef {
           <span class="text-[10px] text-slate-400 font-semibold mt-0.5">Invoicing & Ledger</span>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col justify-between">
+        <div class="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Transport & Fleet</span>
-            <div class="w-8 h-8 rounded-xl bg-indigo-50/90 border border-white text-indigo-700 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(79,70,229,0.08)]">
+            <div class="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100/80 text-indigo-600 flex items-center justify-center shadow-2xs">
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
                 <rect x="4" y="4" width="16" height="13" rx="3" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
                 <path d="M4 11h16M7.5 17v2.5M16.5 17v2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
@@ -159,10 +129,10 @@ interface FeatureSectionDef {
           <span class="text-[10px] text-slate-400 font-semibold mt-0.5">Routes & Bus Passes</span>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col justify-between">
+        <div class="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Specialized Depts</span>
-            <div class="w-8 h-8 rounded-xl bg-purple-50/90 border border-white text-purple-700 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(147,51,234,0.08)]">
+            <div class="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100/80 text-indigo-600 flex items-center justify-center shadow-2xs">
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
                 <path d="M12 3L4 8h16L12 3z" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
                 <path d="M6 8v9M10 8v9M14 8v9M18 8v9M4 17h16M3 20h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
@@ -195,7 +165,7 @@ interface FeatureSectionDef {
           <div class="flex items-center gap-1.5 shrink-0">
             <button type="button" (click)="statusFilter = 'ALL'"
                     class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
-                    [ngClass]="statusFilter === 'ALL' ? 'bg-slate-900 text-white shadow-2xs' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'">
+                    [ngClass]="statusFilter === 'ALL' ? 'bg-indigo-600 text-white shadow-2xs' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'">
               All ({{ usersList.length }})
             </button>
             <button type="button" (click)="statusFilter = 'ACTIVE'"
@@ -211,15 +181,15 @@ interface FeatureSectionDef {
           </div>
         </div>
 
-        <!-- Department Filter Pills -->
-        <div class="flex items-center gap-1.5 overflow-x-auto py-1 no-scrollbar border-t border-slate-100 pt-3">
+        <!-- Department Filter Pills (Only show departments that have staff added) -->
+        <div *ngIf="departmentsList.length > 1" class="flex items-center gap-1.5 overflow-x-auto py-1 no-scrollbar border-t border-slate-100 pt-3">
           <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">Department:</span>
           <button *ngFor="let dept of departmentsList"
                   type="button"
                   (click)="activeDepartment = dept"
                   class="px-3 py-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer"
                   [ngClass]="activeDepartment === dept 
-                              ? 'bg-slate-900 text-white shadow-2xs' 
+                              ? 'bg-indigo-600 text-white shadow-2xs' 
                               : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200/80'">
             {{ dept }}
           </button>
@@ -241,7 +211,7 @@ interface FeatureSectionDef {
         </div>
         <h3 class="text-sm font-bold text-slate-800">No departmental users found</h3>
         <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-          {{ searchQuery ? 'Try adjusting your search query or department filter.' : 'Click "Add Departmental User" or "Quick Test Setup" to create your first departmental accounts.' }}
+          {{ searchQuery ? 'Try adjusting your search query or department filter.' : 'Click "Add Departmental User" to create your first departmental accounts.' }}
         </p>
         <div class="mt-4 flex items-center justify-center gap-2">
           <button *ngIf="searchQuery" (click)="searchQuery = ''; activeDepartment = 'All'"
@@ -249,7 +219,7 @@ interface FeatureSectionDef {
             Clear Filters
           </button>
           <button (click)="openAddModal()"
-                  class="px-4 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs transition-colors cursor-pointer">
+                  class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-2xs transition-colors cursor-pointer">
             Add User Now
           </button>
         </div>
@@ -257,113 +227,188 @@ interface FeatureSectionDef {
 
       <div *ngIf="!loading && filteredUsers.length > 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         <div *ngFor="let u of filteredUsers" 
-             class="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between gap-4">
+             class="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between gap-4 relative overflow-hidden group">
           
-          <!-- Card Header: Avatar, Name, Role & Status -->
+          <!-- Top Accent Stripe for Root Administrator -->
+          <div *ngIf="isPrimaryAdmin(u)" class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-400"></div>
+
           <div>
-            <div class="flex items-start justify-between gap-3">
-              <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 shadow-2xs"
-                     [ngClass]="getDepartmentBadgeClass(u.department)">
-                  {{ u.first_name ? u.first_name.charAt(0).toUpperCase() : 'U' }}
+            <!-- Card Header: Avatar, Name, Designation & Status Switch -->
+            <div class="flex items-start justify-between gap-2.5">
+              <div class="flex items-center gap-3 min-w-0 flex-1">
+                <!-- Avatar with Live Status Dot -->
+                <div class="relative shrink-0">
+                  <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm tracking-wider shadow-2xs"
+                       [ngClass]="isPrimaryAdmin(u) ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700 border border-indigo-200/80'">
+                    {{ u.first_name ? u.first_name.charAt(0).toUpperCase() : 'U' }}
+                  </div>
+                  <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white"
+                        [ngClass]="u.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-slate-300'">
+                  </span>
                 </div>
 
-                <div class="min-w-0">
-                  <h3 class="text-sm font-bold text-slate-900 leading-tight truncate">
-                    {{ u.name || (u.first_name + ' ' + (u.last_name || '')) }}
-                  </h3>
-                  <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                    <span class="text-[10px] font-bold text-slate-600 truncate">
-                      {{ u.designation || u.role_name || u.role }}
-                    </span>
-                    <span class="text-[9px] font-mono px-1.5 py-0.2 rounded border"
-                          [ngClass]="getDepartmentPillClass(u.department)">
-                      {{ u.department }}
+                <!-- Name & Department Subtitle -->
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <h3 class="text-sm font-bold text-slate-900 leading-tight truncate">
+                      {{ u.name || (u.first_name + ' ' + (u.last_name || '')) }}
+                    </h3>
+                    <span *ngIf="isPrimaryAdmin(u)" 
+                          class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200/80 leading-normal">
+                      Root Admin
                     </span>
                   </div>
+                  <p class="text-[11px] text-slate-500 mt-0.5 truncate" title="{{ (u.designation || u.role_name || u.role) }} • {{ u.department }}">
+                    <span class="font-semibold text-slate-700">{{ u.designation || u.role_name || u.role }}</span>
+                    <span class="text-slate-300 mx-1">•</span>
+                    <span>{{ u.department }}</span>
+                  </p>
                 </div>
               </div>
 
-              <!-- Status Toggle Pill -->
-              <button type="button" (click)="toggleUserStatus(u)"
-                      title="Click to toggle user status"
-                      class="px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors cursor-pointer shrink-0"
-                      [ngClass]="u.status === 'ACTIVE' 
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80 hover:bg-emerald-100' 
-                                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'">
-                {{ u.status === 'ACTIVE' ? 'Active' : 'Inactive' }}
-              </button>
+              <!-- Status Toggle Switch (Active / Inactive) -->
+              <div class="flex items-center gap-1.5 shrink-0 bg-slate-50/90 py-1 px-2 rounded-xl border border-slate-200/70 shadow-2xs">
+                <button type="button"
+                        (click)="toggleUserStatus(u)"
+                        [disabled]="isPrimaryAdmin(u)"
+                        [title]="isPrimaryAdmin(u) ? 'Primary Administrator cannot be deactivated' : (u.status === 'ACTIVE' ? 'Click to make Inactive' : 'Click to make Active')"
+                        class="relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none"
+                        [ngClass]="{
+                          'bg-emerald-500 hover:bg-emerald-600 cursor-pointer': u.status === 'ACTIVE' && !isPrimaryAdmin(u),
+                          'bg-emerald-500/75 cursor-not-allowed': u.status === 'ACTIVE' && isPrimaryAdmin(u),
+                          'bg-slate-300 hover:bg-slate-400 cursor-pointer': u.status !== 'ACTIVE'
+                        }">
+                  <span class="sr-only">Toggle user status</span>
+                  <span class="inline-block h-3 w-3 transform rounded-full bg-white shadow-2xs transition-transform duration-200 ease-in-out"
+                        [ngClass]="u.status === 'ACTIVE' ? 'translate-x-3.5' : 'translate-x-0.5'">
+                  </span>
+                </button>
+                <span class="text-[10px] font-bold select-none"
+                      [ngClass]="u.status === 'ACTIVE' ? 'text-emerald-700' : 'text-slate-400'">
+                  {{ u.status === 'ACTIVE' ? 'Active' : 'Inactive' }}
+                </span>
+                <svg *ngIf="isPrimaryAdmin(u)" title="Account locked from deactivation" class="w-2.5 h-2.5 text-slate-400" viewBox="0 0 24 24" fill="none">
+                  <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2" />
+                  <path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" stroke-width="2" />
+                </svg>
+              </div>
             </div>
 
-            <!-- Contact Information -->
-            <div class="mt-3.5 space-y-1 text-xs text-slate-600 bg-slate-50/70 p-2.5 rounded-xl border border-slate-100">
-              <div class="flex items-center gap-2 truncate">
-                <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none">
-                  <rect x="3" y="5" width="18" height="14" rx="2.5" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.8" />
-                  <path d="M3.5 7l8.5 6 8.5-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <span class="font-medium truncate select-all">{{ u.email }}</span>
+            <!-- Contact & Credentials Block with Quick Copy -->
+            <div class="mt-3.5 space-y-1.5 bg-slate-50/70 p-2.5 rounded-xl border border-slate-100 text-xs">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                  <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <span class="font-medium text-slate-700 truncate select-all">{{ u.email }}</span>
+                </div>
+                <button type="button" (click)="copyText(u.email, 'Email address')" title="Copy email address"
+                        class="p-1 text-slate-400 hover:text-indigo-600 hover:bg-white rounded transition-colors cursor-pointer shrink-0">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
               </div>
-              <div *ngIf="u.phone" class="flex items-center gap-2 truncate">
-                <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none">
-                  <path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <span class="font-medium truncate select-all">{{ u.phone }}</span>
+
+              <div *ngIf="u.phone" class="flex items-center justify-between gap-2 pt-1 border-t border-slate-200/60">
+                <div class="flex items-center gap-2 min-w-0">
+                  <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                  <span class="font-medium text-slate-700 truncate select-all">{{ u.phone }}</span>
+                </div>
+                <button type="button" (click)="copyText(u.phone, 'Phone number')" title="Copy phone number"
+                        class="p-1 text-slate-400 hover:text-indigo-600 hover:bg-white rounded transition-colors cursor-pointer shrink-0">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
               </div>
             </div>
 
-            <!-- Granular Feature Permissions Summary -->
-            <div class="mt-3.5">
-              <div class="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-1.5">
-                <span>Feature Access</span>
-                <span class="text-[10px] font-mono text-slate-500">
-                  {{ u.custom_permissions.length }}/{{ allSections.length }} Enabled
-                </span>
+            <!-- Feature Access Section (Unified 102px Container for Perfect Grid Alignment) -->
+            <div>
+              <!-- Primary Admin Full Access Card -->
+              <div *ngIf="isPrimaryAdmin(u)" class="mt-3.5 rounded-xl bg-indigo-50/60 border border-indigo-100 p-3 h-[102px] flex flex-col justify-between">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-indigo-950 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-indigo-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    Full Platform Access
+                  </span>
+                  <span class="text-[10px] font-mono font-bold text-indigo-700 bg-white px-2 py-0.5 rounded border border-indigo-200/70 shadow-2xs">
+                    20/20 Enabled
+                  </span>
+                </div>
+                <div class="w-full bg-indigo-200/60 rounded-full h-1.5 overflow-hidden">
+                  <div class="bg-indigo-600 h-full rounded-full w-full"></div>
+                </div>
+                <p class="text-[10px] text-slate-500 leading-snug">
+                  Master institutional access across Academics, Fees, Fleet, Attendance & Campus Settings.
+                </p>
               </div>
 
-              <div class="flex items-center gap-1 flex-wrap max-h-16 overflow-hidden">
-                <span *ngFor="let perm of u.custom_permissions.slice(0, 4)"
-                      class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200/60">
-                  {{ getSectionDisplayName(perm) }}
-                </span>
-                <span *ngIf="u.custom_permissions.length > 4"
-                      class="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-200 text-slate-800">
-                  +{{ u.custom_permissions.length - 4 }} more
-                </span>
-                <span *ngIf="u.custom_permissions.length === 0"
-                      class="text-[10px] font-semibold text-rose-500 italic">
-                  No features assigned
-                </span>
+              <!-- Departmental Staff Permissions Box -->
+              <div *ngIf="!isPrimaryAdmin(u)" class="mt-3.5 rounded-xl bg-slate-50/80 border border-slate-100 p-3 h-[102px] flex flex-col justify-between">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-slate-800">Assigned Modules</span>
+                  <span class="text-[10px] font-mono font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200/80 shadow-2xs">
+                    {{ u.custom_permissions.length }}/{{ allSections.length }} Enabled
+                  </span>
+                </div>
+                <div class="w-full bg-slate-200/70 rounded-full h-1.5 overflow-hidden">
+                  <div class="bg-indigo-600 h-full rounded-full transition-all duration-300"
+                       [style.width.%]="(u.custom_permissions.length / allSections.length) * 100"></div>
+                </div>
+                <div class="flex items-center gap-1.5 overflow-hidden flex-nowrap">
+                  <span *ngFor="let perm of u.custom_permissions.slice(0, 2)"
+                        class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white text-slate-700 border border-slate-200/80 shadow-2xs truncate shrink max-w-[125px]">
+                    {{ getSectionDisplayName(perm) }}
+                  </span>
+                  <span *ngIf="u.custom_permissions.length > 2"
+                        class="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/60 shrink-0">
+                    +{{ u.custom_permissions.length - 2 }} more
+                  </span>
+                  <span *ngIf="u.custom_permissions.length === 0"
+                        class="text-[10px] font-medium text-rose-500 italic">
+                    No features assigned yet
+                  </span>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Actions Bar -->
-          <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-            <div class="flex items-center gap-1.5">
+          <!-- Actions Bar (Clean 2-Tier Layout: Never Overlaps & Equal Height) -->
+          <div class="pt-3 border-t border-slate-100 flex flex-col gap-2">
+            <!-- Row 1: Quick Utility Actions (Equal 50/50 Grid) -->
+            <div class="grid grid-cols-2 gap-2">
               <button type="button" (click)="copyCredentials(u)"
-                      title="Copy Login Email & Details to clipboard"
-                      class="p-2 rounded-xl text-slate-500 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer text-xs font-bold flex items-center gap-1 shadow-2xs">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      title="Copy complete login instructions to clipboard"
+                      class="h-8 px-2.5 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200/90 transition-all cursor-pointer text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs active:scale-98">
+                <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
-                <span>Copy</span>
+                <span class="truncate">Copy</span>
               </button>
 
               <button type="button" (click)="openResetPasswordModal(u)"
-                      title="Reset Login Password"
-                      class="p-2 rounded-xl text-slate-500 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer text-xs font-bold flex items-center gap-1 shadow-2xs">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      title="Reset account password"
+                      class="h-8 px-2.5 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200/90 transition-all cursor-pointer text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs active:scale-98">
+                <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                 </svg>
-                <span>Pass</span>
+                <span class="truncate">Password</span>
               </button>
             </div>
 
-            <div class="flex items-center gap-1.5">
+            <!-- Row 2: Management CTA / Permanent Admin -->
+            <!-- For Departmental Staff: Prominent Edit Access CTA + Delete Button -->
+            <div *ngIf="!isPrimaryAdmin(u)" class="flex items-center gap-2">
               <button type="button" (click)="openEditModal(u)"
-                      class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center gap-1 cursor-pointer">
-                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      class="flex-1 h-8 px-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98">
+                <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
                 <span>Edit Access</span>
@@ -371,11 +416,22 @@ interface FeatureSectionDef {
 
               <button type="button" (click)="deleteUser(u)"
                       title="Revoke user login"
-                      class="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      class="w-8 h-8 rounded-xl bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200/90 hover:border-rose-200 flex items-center justify-center transition-colors cursor-pointer shadow-2xs shrink-0">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </button>
+            </div>
+
+            <!-- For Root Administrator: Dedicated Full-Width Badge -->
+            <div *ngIf="isPrimaryAdmin(u)" 
+                 class="h-8 px-3 text-[11px] font-bold text-indigo-700 bg-indigo-50/80 border border-indigo-200/80 rounded-xl flex items-center justify-center gap-1.5 select-none shadow-2xs w-full"
+                 title="Root Administrator account has permanent privileges">
+              <svg class="w-3.5 h-3.5 text-indigo-600 shrink-0" viewBox="0 0 24 24" fill="none">
+                <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2" />
+                <path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" stroke-width="2" />
+              </svg>
+              <span>Permanent Root Administrator</span>
             </div>
           </div>
 
@@ -394,7 +450,7 @@ interface FeatureSectionDef {
         <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
           <div>
             <div class="flex items-center gap-2">
-              <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-900 text-white">
+              <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-indigo-600 text-white">
                 {{ isEditing ? 'MODIFY PERMISSIONS' : 'NEW LOGIN' }}
               </span>
               <h3 class="text-base font-black text-slate-900">
@@ -648,7 +704,7 @@ interface FeatureSectionDef {
               Cancel
             </button>
             <button type="button" (click)="saveUser()" [disabled]="saving"
-                    class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+                    class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-2xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
               <svg *ngIf="saving" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
@@ -706,7 +762,7 @@ interface FeatureSectionDef {
             Cancel
           </button>
           <button type="button" (click)="saveResetPassword()" [disabled]="resettingPass"
-                  class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all cursor-pointer disabled:opacity-50">
+                  class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-2xl shadow-md transition-all cursor-pointer disabled:opacity-50">
             {{ resettingPass ? 'Resetting...' : 'Confirm Reset' }}
           </button>
         </div>
@@ -757,17 +813,15 @@ export class StaffUsersComponent implements OnInit {
   statusFilter: 'ALL' | 'ACTIVE' | 'INACTIVE' = 'ALL';
   activeDepartment = 'All';
 
-  departmentsList = [
-    'All',
-    'Fee & Accounts',
-    'Transport & Fleet',
-    'Administration',
-    'Library & Resources',
-    'Sports & Physical Education',
-    'Front Desk & Reception',
-    'Security & Safety',
-    'General Operations',
-  ];
+  get departmentsList(): string[] {
+    const present = new Set<string>();
+    for (const u of this.usersList) {
+      if (u.department && u.department.trim()) {
+        present.add(u.department.trim());
+      }
+    }
+    return ['All', ...Array.from(present).sort()];
+  }
 
   // Master List of all platform sections available for grant/revoke
   allSections: FeatureSectionDef[] = [
@@ -861,6 +915,11 @@ export class StaffUsersComponent implements OnInit {
           if ((u.email || '').toLowerCase() === 'admin@schoolscence.in') return false;
           seen.add(u.id);
           return true;
+        }).map((u) => {
+          if (this.isPrimaryAdmin(u)) {
+            u.custom_permissions = this.allSections.map((s) => s.id);
+          }
+          return u;
         });
         this.loading = false;
       },
@@ -871,6 +930,10 @@ export class StaffUsersComponent implements OnInit {
   }
 
   get filteredUsers(): DepartmentalStaffUser[] {
+    if (this.activeDepartment !== 'All' && !this.departmentsList.includes(this.activeDepartment)) {
+      this.activeDepartment = 'All';
+    }
+
     return this.usersList.filter((u) => {
       // Status Filter
       if (this.statusFilter !== 'ALL' && u.status !== this.statusFilter) {
@@ -937,7 +1000,7 @@ export class StaffUsersComponent implements OnInit {
   getDepartmentBadgeClass(dept: string): string {
     if (dept?.includes('Fee') || dept?.includes('Account')) return 'bg-amber-100 text-amber-800 border border-amber-200';
     if (dept?.includes('Transport')) return 'bg-indigo-100 text-indigo-800 border border-indigo-200';
-    if (dept?.includes('Admin')) return 'bg-slate-900 text-white';
+    if (dept?.includes('Admin')) return 'bg-indigo-100 text-indigo-800 border border-indigo-200';
     if (dept?.includes('Library')) return 'bg-purple-100 text-purple-800 border border-purple-200';
     if (dept?.includes('Sports')) return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
     if (dept?.includes('Reception')) return 'bg-rose-100 text-rose-800 border border-rose-200';
@@ -1206,7 +1269,30 @@ export class StaffUsersComponent implements OnInit {
     }
   }
 
+  isPrimaryAdmin(u: DepartmentalStaffUser): boolean {
+    if (!u) return false;
+    const r = (u.role || '').toUpperCase();
+    const desig = (u.designation || '').toLowerCase();
+    const roleName = (u.role_name || '').toLowerCase();
+    const currentUserId = this.auth.currentUser()?.id;
+
+    if (r === 'SCHOOL_ADMIN' || r === 'PRINCIPAL') {
+      return true;
+    }
+    if (roleName.includes('school admin') || desig.includes('school admin')) {
+      return true;
+    }
+    if (currentUserId && u.id === currentUserId && this.auth.isAdmin()) {
+      return true;
+    }
+    return false;
+  }
+
   toggleUserStatus(u: DepartmentalStaffUser): void {
+    if (this.isPrimaryAdmin(u)) {
+      this.toast.error('The primary School Administrator cannot be made inactive.');
+      return;
+    }
     const nextStatus = u.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     this.api.put(`departmental-users/${u.id}`, { status: nextStatus }).subscribe({
       next: () => {
@@ -1246,6 +1332,10 @@ export class StaffUsersComponent implements OnInit {
   }
 
   deleteUser(u: DepartmentalStaffUser): void {
+    if (this.isPrimaryAdmin(u)) {
+      this.toast.error('The primary School Administrator account cannot be deleted.');
+      return;
+    }
     if (!confirm(`Are you sure you want to revoke and delete the login account for ${u.name}?`)) {
       return;
     }
@@ -1266,6 +1356,15 @@ export class StaffUsersComponent implements OnInit {
       this.toast.success(`Login details for ${u.name} copied to clipboard!`);
     }).catch(() => {
       this.toast.info(`Login Email: ${u.email}`);
+    });
+  }
+
+  copyText(val: string, label: string): void {
+    if (!val) return;
+    navigator.clipboard.writeText(val).then(() => {
+      this.toast.success(`Copied ${label} to clipboard!`);
+    }).catch(() => {
+      this.toast.info(val);
     });
   }
 

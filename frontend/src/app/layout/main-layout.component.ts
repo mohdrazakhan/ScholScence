@@ -3,6 +3,7 @@ import { ModalService } from '../core/services/modal.service';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { forkJoin, of } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { AuthService, DEFAULT_ROLE_PERMISSIONS } from '../core/services/auth.service';
 import { ApiService } from '../core/services/api.service';
@@ -270,138 +271,127 @@ export interface RoleSectionItem {
         
         <!-- Binary Support Mode Global Banner with Multi-Role View Switcher -->
         <div *ngIf="auth.isSupportSession()"
-             class="bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 px-3 sm:px-6 py-2.5 text-xs font-bold flex flex-wrap items-center justify-between gap-3 shadow-md shrink-0 border-b border-amber-600/30 animate-fadeIn z-30">
+             class="bg-white text-slate-800 px-3 sm:px-6 py-2 text-xs flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 shadow-xs shrink-0 animate-fadeIn z-30">
           
           <!-- Left: Active status & School info & View Switcher -->
           <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
             <div class="flex items-center gap-2 shrink-0">
-              <span class="w-2.5 h-2.5 rounded-full bg-slate-950 animate-pulse shrink-0"></span>
-              <span class="truncate max-w-[180px] sm:max-w-none">
-                <strong>SUPPORT MODE:</strong> Managing <u>{{ auth.currentUser()?.school?.name }}</u>
+              <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
+              <span class="truncate max-w-[180px] sm:max-w-none text-slate-700">
+                <strong class="font-bold text-slate-900">SUPPORT MODE:</strong> Managing <span class="font-bold text-slate-900 underline underline-offset-2">{{ auth.currentUser()?.school?.name }}</span>
               </span>
             </div>
 
             <!-- Role Simulator Dropdown (Primary) -->
-            <div class="flex items-center gap-1.5 bg-slate-950 text-white px-2.5 py-1 rounded-xl shadow-xs border border-slate-800 shrink-0">
-              <span class="text-[10px] text-amber-300 font-bold uppercase tracking-wider shrink-0">View As:</span>
-              <select [ngModel]="currentSupportRole"
+            <div class="flex items-center gap-1.5 bg-slate-50 text-slate-800 px-2.5 py-1 rounded-lg border border-slate-300 shadow-2xs shrink-0">
+              <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider shrink-0">View As:</span>
+              <select [(ngModel)]="currentSupportRole"
                       (ngModelChange)="onSupportRoleChange($event)"
-                      class="bg-transparent text-white font-black text-xs border-none focus:outline-none cursor-pointer pr-1">
-                <option value="SUPER_ADMIN" class="bg-slate-900 text-white font-bold">Binary (Delegated Admin)</option>
-                <option value="SCHOOL_ADMIN" class="bg-slate-900 text-white font-bold">School Admin</option>
-                <option value="TEACHER" class="bg-slate-900 text-white font-bold">Teacher</option>
-                <option value="PARENT" class="bg-slate-900 text-white font-bold">Parent</option>
-                <option value="FEE_MANAGER" class="bg-slate-900 text-white font-bold">Fee Department</option>
-                <option value="TRANSPORT_MANAGER" class="bg-slate-900 text-white font-bold">Transport Department</option>
-                <option value="DEPT_STAFF" class="bg-slate-900 text-white font-bold">Other Departmental Staff</option>
+                      class="bg-transparent text-slate-800 font-bold text-xs border-none focus:outline-none cursor-pointer pr-1">
+                <option value="SUPER_ADMIN">Binary (Delegated Admin)</option>
+                <option value="SCHOOL_ADMIN">School Admin</option>
+                <option value="TEACHER">Teacher</option>
+                <option value="PARENT">Parent</option>
+                <option *ngIf="isSchoolServiceEnabled('FEES')" value="FEE_MANAGER">Fee Department</option>
+                <option *ngIf="isSchoolServiceEnabled('TRANSPORT')" value="TRANSPORT_MANAGER">Transport Department</option>
+                <option *ngIf="isSchoolServiceEnabled('STAFF_USERS') || supportOtherDeptUsersList.length > 0" value="DEPT_STAFF">Other Departmental Staff</option>
               </select>
             </div>
 
             <!-- Teacher Secondary Dropdown (Select Teacher) -->
-            <div *ngIf="currentSupportRole === 'TEACHER'" class="flex items-center gap-1.5 bg-indigo-950 text-white px-2.5 py-1 rounded-xl shadow-xs border border-indigo-800 shrink-0 animate-fadeIn">
-              <span class="text-[10px] text-indigo-300 font-bold uppercase tracking-wider shrink-0">Teacher:</span>
-              <select [ngModel]="selectedSupportTeacherId"
+            <div *ngIf="currentSupportRole === 'TEACHER'" class="flex items-center gap-1.5 bg-indigo-50 text-indigo-950 px-2.5 py-1 rounded-lg border border-indigo-200 shadow-2xs shrink-0 animate-fadeIn">
+              <span class="text-[10px] text-indigo-700 font-bold uppercase tracking-wider shrink-0">Teacher:</span>
+              <select [(ngModel)]="selectedSupportTeacherId"
                       (ngModelChange)="onSupportTeacherSelect($event)"
-                      class="bg-transparent text-white font-bold text-xs border-none focus:outline-none cursor-pointer max-w-[210px] truncate">
-                <option value="" class="bg-slate-900 text-slate-400">-- Choose Teacher --</option>
-                <option *ngFor="let t of supportTeachersList" [value]="t.id" class="bg-slate-900 text-white font-semibold">
-                  {{ t.name || (t.first_name + ' ' + (t.last_name || '')) }} ({{ t.subject_specialization || t.designation || 'Faculty' }})
+                      class="bg-transparent text-indigo-950 font-bold text-xs border-none focus:outline-none cursor-pointer max-w-[220px] truncate">
+                <option value="">-- Choose Teacher --</option>
+                <option *ngFor="let t of supportTeachersList" [value]="t.id">
+                  {{ t.fullName || t.name || ((t.firstName || '') + ' ' + (t.lastName || '')).trim() }} ({{ t.subject_specialization || t.designation || t.roleName || 'Faculty' }})
                 </option>
+                <option *ngIf="supportTeachersList.length === 0" value="sim_default_teacher">-- Standard School Teacher (Default) --</option>
               </select>
             </div>
 
-            <!-- Parent Secondary Cascading Dropdowns (Class -> Section -> Parent/Student) -->
+            <!-- Parent Secondary Cascading Dropdowns (Class -> Enrolled Students) -->
             <div *ngIf="currentSupportRole === 'PARENT'" class="flex items-center gap-1.5 flex-wrap shrink-0 animate-fadeIn">
               <!-- Class Select -->
-              <div class="flex items-center gap-1 bg-emerald-950 text-white px-2 py-1 rounded-xl shadow-xs border border-emerald-800 shrink-0">
-                <span class="text-[10px] text-emerald-300 font-bold uppercase tracking-wider shrink-0">Class:</span>
-                <select [ngModel]="selectedSupportParentClassId"
+              <div class="flex items-center gap-1 bg-emerald-50 text-emerald-950 px-2.5 py-1 rounded-lg border border-emerald-200 shadow-2xs shrink-0">
+                <span class="text-[10px] text-emerald-700 font-bold uppercase tracking-wider shrink-0">Class:</span>
+                <select [(ngModel)]="selectedSupportParentClassId"
                         (ngModelChange)="onSupportParentClassChange($event)"
-                        class="bg-transparent text-white font-bold text-xs border-none focus:outline-none cursor-pointer">
-                  <option value="" class="bg-slate-900 text-slate-400">-- Class --</option>
-                  <option *ngFor="let c of supportClassesList" [value]="c.id" class="bg-slate-900 text-white font-semibold">
+                        class="bg-transparent text-emerald-950 font-bold text-xs border-none focus:outline-none cursor-pointer">
+                  <option value="">-- Class --</option>
+                  <option *ngFor="let c of supportClassesList" [value]="c.id">
                     {{ c.name }}
                   </option>
                 </select>
               </div>
 
-              <!-- Section Select -->
-              <div *ngIf="currentParentSections.length > 0" class="flex items-center gap-1 bg-emerald-950 text-white px-2 py-1 rounded-xl shadow-xs border border-emerald-800 shrink-0">
-                <span class="text-[10px] text-emerald-300 font-bold uppercase tracking-wider shrink-0">Sec:</span>
-                <select [ngModel]="selectedSupportParentSectionId"
-                        (ngModelChange)="onSupportParentSectionChange($event)"
-                        class="bg-transparent text-white font-bold text-xs border-none focus:outline-none cursor-pointer">
-                  <option value="" class="bg-slate-900 text-slate-400">-- Sec --</option>
-                  <option *ngFor="let s of currentParentSections" [value]="s.id" class="bg-slate-900 text-white font-semibold">
-                    {{ s.name }}
-                  </option>
-                </select>
-              </div>
-
-              <!-- Student/Parent Select -->
-              <div *ngIf="selectedSupportParentSectionId" class="flex items-center gap-1 bg-emerald-950 text-white px-2 py-1 rounded-xl shadow-xs border border-emerald-800 shrink-0">
-                <span class="text-[10px] text-emerald-300 font-bold uppercase tracking-wider shrink-0">Parent/Student:</span>
-                <select [ngModel]="selectedSupportStudentId"
+              <!-- Enrolled Students Select -->
+              <div *ngIf="selectedSupportParentClassId" class="flex items-center gap-1 bg-emerald-50 text-emerald-950 px-2.5 py-1 rounded-lg border border-emerald-200 shadow-2xs shrink-0 animate-fadeIn">
+                <span class="text-[10px] text-emerald-700 font-bold uppercase tracking-wider shrink-0">Student:</span>
+                <select [(ngModel)]="selectedSupportStudentId"
                         (ngModelChange)="onSupportParentStudentSelect($event)"
-                        class="bg-transparent text-white font-bold text-xs border-none focus:outline-none cursor-pointer max-w-[210px] truncate">
-                  <option value="" class="bg-slate-900 text-slate-400">-- Choose Parent & Student --</option>
-                  <option *ngFor="let st of currentSectionStudentsList" [value]="st.id" class="bg-slate-900 text-white font-semibold">
-                    {{ st.guardian_name || st.guardianName || 'Parent' }} (Child: {{ st.full_name || st.name }} - Roll #{{ st.roll_number || st.rollNumber || 'N/A' }})
+                        class="bg-transparent text-emerald-950 font-bold text-xs border-none focus:outline-none cursor-pointer max-w-[260px] truncate">
+                  <option value="">-- Choose Student (Parent) --</option>
+                  <option *ngFor="let st of currentClassStudentsList" [value]="st.id">
+                    {{ st.fullName || st.name }} (Roll #{{ st.rollNumber || st.roll_number || 'N/A' }}<span *ngIf="st.sectionName"> • Sec {{ st.sectionName }}</span>) - Parent: {{ st.guardianName || st.guardian_name || 'Parent' }}
                   </option>
+                  <option *ngIf="currentClassStudentsList.length === 0" value="sim_default_student">-- Sample Student (Parent) --</option>
                 </select>
               </div>
             </div>
 
             <!-- Fee Department Secondary Dropdown -->
-            <div *ngIf="currentSupportRole === 'FEE_MANAGER'" class="flex items-center gap-1.5 bg-purple-950 text-white px-2.5 py-1 rounded-xl shadow-xs border border-purple-800 shrink-0 animate-fadeIn">
-              <span class="text-[10px] text-purple-300 font-bold uppercase tracking-wider shrink-0">Staff:</span>
-              <select [ngModel]="selectedSupportDeptUserId"
+            <div *ngIf="currentSupportRole === 'FEE_MANAGER'" class="flex items-center gap-1.5 bg-purple-50 text-purple-950 px-2.5 py-1 rounded-lg border border-purple-200 shadow-2xs shrink-0 animate-fadeIn">
+              <span class="text-[10px] text-purple-700 font-bold uppercase tracking-wider shrink-0">Fee Staff:</span>
+              <select [(ngModel)]="selectedSupportDeptUserId"
                       (ngModelChange)="onSupportDeptUserSelect($event)"
-                      class="bg-transparent text-white font-bold text-xs border-none focus:outline-none cursor-pointer max-w-[210px] truncate">
-                <option value="" class="bg-slate-900 text-slate-300">-- Standard Fee Manager --</option>
-                <option *ngFor="let u of supportFeeUsersList" [value]="u.id" class="bg-slate-900 text-white font-semibold">
+                      class="bg-transparent text-purple-950 font-bold text-xs border-none focus:outline-none cursor-pointer max-w-[220px] truncate">
+                <option value="">-- Fee Manager (Default) --</option>
+                <option *ngFor="let u of supportFeeUsersList" [value]="u.id">
                   {{ u.first_name }} {{ u.last_name }} ({{ u.designation || 'Accounts' }})
                 </option>
               </select>
             </div>
 
             <!-- Transport Department Secondary Dropdown -->
-            <div *ngIf="currentSupportRole === 'TRANSPORT_MANAGER'" class="flex items-center gap-1.5 bg-amber-950 text-white px-2.5 py-1 rounded-xl shadow-xs border border-amber-800 shrink-0 animate-fadeIn">
-              <span class="text-[10px] text-amber-300 font-bold uppercase tracking-wider shrink-0">Staff:</span>
-              <select [ngModel]="selectedSupportDeptUserId"
+            <div *ngIf="currentSupportRole === 'TRANSPORT_MANAGER'" class="flex items-center gap-1.5 bg-amber-50 text-amber-950 px-2.5 py-1 rounded-lg border border-amber-200 shadow-2xs shrink-0 animate-fadeIn">
+              <span class="text-[10px] text-amber-800 font-bold uppercase tracking-wider shrink-0">Transport Staff:</span>
+              <select [(ngModel)]="selectedSupportDeptUserId"
                       (ngModelChange)="onSupportDeptUserSelect($event)"
-                      class="bg-transparent text-white font-bold text-xs border-none focus:outline-none cursor-pointer max-w-[210px] truncate">
-                <option value="" class="bg-slate-900 text-slate-300">-- Standard Transport In-Charge --</option>
-                <option *ngFor="let u of supportTransportUsersList" [value]="u.id" class="bg-slate-900 text-white font-semibold">
+                      class="bg-transparent text-amber-950 font-bold text-xs border-none focus:outline-none cursor-pointer max-w-[220px] truncate">
+                <option value="">-- Transport Lead (Default) --</option>
+                <option *ngFor="let u of supportTransportUsersList" [value]="u.id">
                   {{ u.first_name }} {{ u.last_name }} ({{ u.designation || 'Fleet Supervisor' }})
                 </option>
               </select>
             </div>
 
             <!-- Other Departmental Staff Secondary Dropdown -->
-            <div *ngIf="currentSupportRole === 'DEPT_STAFF'" class="flex items-center gap-1.5 bg-cyan-950 text-white px-2.5 py-1 rounded-xl shadow-xs border border-cyan-800 shrink-0 animate-fadeIn">
-              <span class="text-[10px] text-cyan-300 font-bold uppercase tracking-wider shrink-0">Staff:</span>
-              <select [ngModel]="selectedSupportDeptUserId"
+            <div *ngIf="currentSupportRole === 'DEPT_STAFF'" class="flex items-center gap-1.5 bg-cyan-50 text-cyan-950 px-2.5 py-1 rounded-lg border border-cyan-200 shadow-2xs shrink-0 animate-fadeIn">
+              <span class="text-[10px] text-cyan-800 font-bold uppercase tracking-wider shrink-0">Staff:</span>
+              <select [(ngModel)]="selectedSupportDeptUserId"
                       (ngModelChange)="onSupportDeptUserSelect($event)"
-                      class="bg-transparent text-white font-bold text-xs border-none focus:outline-none cursor-pointer max-w-[210px] truncate">
-                <option value="" class="bg-slate-900 text-slate-400">-- Choose Department Staff --</option>
-                <option *ngFor="let u of supportOtherDeptUsersList" [value]="u.id" class="bg-slate-900 text-white font-semibold">
+                      class="bg-transparent text-cyan-950 font-bold text-xs border-none focus:outline-none cursor-pointer max-w-[220px] truncate">
+                <option value="">-- Choose Department Staff --</option>
+                <option *ngFor="let u of supportOtherDeptUsersList" [value]="u.id">
                   {{ u.first_name }} {{ u.last_name }} - {{ u.designation }} ({{ u.department }})
                 </option>
               </select>
             </div>
 
             <!-- Active Simulation Info Tag -->
-            <div *ngIf="activeSupportSimName" class="hidden xl:flex items-center gap-1 px-2.5 py-1 bg-amber-600/30 text-slate-950 rounded-lg text-[11px] font-bold border border-amber-600/40 shrink-0">
-              <span>Simulating:</span>
-              <span class="font-extrabold text-slate-900">{{ activeSupportSimName }}</span>
+            <div *ngIf="activeSupportSimName" class="hidden xl:flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-[11px] font-medium border border-slate-200 shrink-0">
+              <span class="text-slate-500">Simulating:</span>
+              <span class="font-bold text-slate-900">{{ activeSupportSimName }}</span>
             </div>
           </div>
 
           <!-- Right: Exit Support Button -->
           <button (click)="exitSupportMode()"
-                  class="px-3.5 py-1.5 bg-slate-950 hover:bg-slate-800 text-white rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0 ml-auto">
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  class="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95 shrink-0 ml-auto">
+            <svg class="w-3.5 h-3.5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             <span>Exit Support</span>
@@ -3012,6 +3002,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
 
   currentParentSections: any[] = [];
   currentSectionStudentsList: any[] = [];
+  currentClassStudentsList: any[] = [];
 
   selectedSupportTeacherId: string = '';
   selectedSupportParentClassId: string = '';
@@ -3019,6 +3010,8 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   selectedSupportStudentId: string = '';
   selectedSupportDeptUserId: string = '';
   loadingSupportData: boolean = false;
+  loadingSupportStudents: boolean = false;
+  private lastLoadedSupportSchoolId: string = '';
 
   get activeSupportSimName(): string {
     const user = this.auth.currentUser();
@@ -3031,7 +3024,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     }
     if (role === 'PARENT' || role === 'GUARDIAN') {
       const child = user.children?.[0];
-      const childInfo = child ? `${child.name} [${child.className || ''}-${child.sectionName || ''}]` : 'Student';
+      const childInfo = child ? `${child.name} [${child.className || ''}${child.sectionName ? '-' + child.sectionName : ''}]` : 'Student';
       return `Parent of ${childInfo}`;
     }
     if (role === 'FEE_MANAGER') {
@@ -3052,7 +3045,16 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   constructor() {
     effect(() => {
       // Re-filter sidebar menus automatically whenever currentUser or support mode changes
-      this.auth.currentUser();
+      const u = this.auth.currentUser();
+      const schoolId = u?.school?.id;
+      if (this.auth.isSupportSession() && schoolId) {
+        if (schoolId !== this.lastLoadedSupportSchoolId) {
+          this.lastLoadedSupportSchoolId = schoolId;
+          this.loadSupportData();
+        }
+      } else {
+        this.lastLoadedSupportSchoolId = '';
+      }
       this.filterMenu();
       this.expandActiveGroup();
     });
@@ -3413,6 +3415,24 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     return r;
   }
 
+  isSchoolServiceEnabled(serviceCode: string): boolean {
+    const code = (serviceCode || '').toUpperCase().trim();
+    const school = this.auth.currentUser()?.school;
+    const schoolId = school?.id;
+    let disabled: string[] = school?.disabledServices || [];
+
+    if (schoolId) {
+      try {
+        const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
+        if (Array.isArray(localProfiles[schoolId]?.disabledServices)) {
+          disabled = localProfiles[schoolId].disabledServices;
+        }
+      } catch {}
+    }
+
+    return !disabled.map((d: any) => String(d).toUpperCase()).includes(code);
+  }
+
   loadSupportData() {
     if (!this.auth.isSupportSession()) return;
     this.loadingSupportData = true;
@@ -3422,10 +3442,31 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       next: (staff) => {
         const list = staff || [];
         this.supportTeachersList = list.filter((s: any) => {
-          const r = (s.role || s.role_name || '').toUpperCase();
+          const r = (s.role || s.roleName || s.role_name || '').toUpperCase();
           const d = (s.designation || '').toLowerCase();
-          return r === 'TEACHER' || r === 'CLASS_TEACHER' || d.includes('teacher') || d.includes('faculty');
+          return (
+            r === 'TEACHER' ||
+            r === 'CLASS_TEACHER' ||
+            d.includes('teacher') ||
+            d.includes('faculty') ||
+            d.includes('instructor')
+          );
         });
+
+        // Fallback: If no explicit teacher found in role, but staff exist, show any staff that aren't admin/guardian
+        if (this.supportTeachersList.length === 0 && list.length > 0) {
+          this.supportTeachersList = list.filter((s: any) => {
+            const r = (s.role || '').toUpperCase();
+            return r !== 'SUPER_ADMIN' && r !== 'PLATFORM_ADMIN' && r !== 'GUARDIAN' && r !== 'PARENT' && r !== 'STUDENT';
+          });
+        }
+
+        if (this.currentSupportRole === 'TEACHER' && this.supportTeachersList.length > 0) {
+          if (!this.selectedSupportTeacherId || !this.supportTeachersList.some((t) => t.id === this.selectedSupportTeacherId)) {
+            this.selectedSupportTeacherId = this.supportTeachersList[0].id;
+            this.onSupportTeacherSelect(this.selectedSupportTeacherId);
+          }
+        }
       },
       error: (err) => console.warn('Failed to load support teachers', err),
     });
@@ -3434,6 +3475,12 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     this.api.get<any[]>('academics/classes').subscribe({
       next: (classes) => {
         this.supportClassesList = classes || [];
+        if (this.currentSupportRole === 'PARENT' && this.supportClassesList.length > 0) {
+          if (!this.selectedSupportParentClassId || !this.supportClassesList.some((c) => c.id === this.selectedSupportParentClassId)) {
+            this.selectedSupportParentClassId = this.supportClassesList[0].id;
+            this.onSupportParentClassChange(this.selectedSupportParentClassId);
+          }
+        }
       },
       error: (err) => console.warn('Failed to load support classes', err),
     });
@@ -3446,12 +3493,14 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
         this.supportFeeUsersList = list.filter((u: any) => {
           const dept = (u.department || '').toUpperCase();
           const role = (u.role || '').toUpperCase();
-          return dept === 'FEES' || dept === 'ACCOUNTS' || role === 'FEE_MANAGER';
+          const des = (u.designation || '').toLowerCase();
+          return dept === 'FEES' || dept === 'ACCOUNTS' || role === 'FEE_MANAGER' || des.includes('fee') || des.includes('account');
         });
         this.supportTransportUsersList = list.filter((u: any) => {
           const dept = (u.department || '').toUpperCase();
           const role = (u.role || '').toUpperCase();
-          return dept === 'TRANSPORT' || role === 'TRANSPORT_MANAGER';
+          const des = (u.designation || '').toLowerCase();
+          return dept === 'TRANSPORT' || role === 'TRANSPORT_MANAGER' || des.includes('transport') || des.includes('driver') || des.includes('fleet');
         });
         this.supportOtherDeptUsersList = list.filter((u: any) => {
           const dept = (u.department || '').toUpperCase();
@@ -3459,6 +3508,19 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
           return dept !== 'FEES' && dept !== 'ACCOUNTS' && dept !== 'TRANSPORT' && role !== 'FEE_MANAGER' && role !== 'TRANSPORT_MANAGER';
         });
         this.loadingSupportData = false;
+
+        if (this.currentSupportRole === 'FEE_MANAGER' && this.supportFeeUsersList.length > 0) {
+          if (!this.selectedSupportDeptUserId || !this.supportFeeUsersList.some((u) => u.id === this.selectedSupportDeptUserId)) {
+            this.selectedSupportDeptUserId = this.supportFeeUsersList[0].id;
+            this.onSupportDeptUserSelect(this.selectedSupportDeptUserId);
+          }
+        }
+        if (this.currentSupportRole === 'TRANSPORT_MANAGER' && this.supportTransportUsersList.length > 0) {
+          if (!this.selectedSupportDeptUserId || !this.supportTransportUsersList.some((u) => u.id === this.selectedSupportDeptUserId)) {
+            this.selectedSupportDeptUserId = this.supportTransportUsersList[0].id;
+            this.onSupportDeptUserSelect(this.selectedSupportDeptUserId);
+          }
+        }
       },
       error: (err) => {
         console.warn('Failed to load support dept users', err);
@@ -3468,6 +3530,10 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   }
 
   onSupportRoleChange(newRole: string) {
+    if (this.supportTeachersList.length === 0 || this.supportClassesList.length === 0) {
+      this.loadSupportData();
+    }
+
     if (newRole === 'SUPER_ADMIN' || newRole === 'SCHOOL_ADMIN') {
       this.auth.setSupportRole(newRole);
       this.selectedSupportTeacherId = '';
@@ -3477,32 +3543,43 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       this.selectedSupportDeptUserId = '';
     } else if (newRole === 'TEACHER') {
       this.auth.setSupportRole('TEACHER');
-      if (this.supportTeachersList.length > 0 && !this.selectedSupportTeacherId) {
-        this.selectedSupportTeacherId = this.supportTeachersList[0].id;
+      if (this.supportTeachersList.length > 0) {
+        if (!this.selectedSupportTeacherId || !this.supportTeachersList.some((t) => t.id === this.selectedSupportTeacherId)) {
+          this.selectedSupportTeacherId = this.supportTeachersList[0].id;
+        }
         this.onSupportTeacherSelect(this.selectedSupportTeacherId);
       }
     } else if (newRole === 'PARENT') {
       this.auth.setSupportRole('PARENT');
-      if (this.supportClassesList.length > 0 && !this.selectedSupportParentClassId) {
-        this.onSupportParentClassChange(this.supportClassesList[0].id);
+      if (this.supportClassesList.length > 0) {
+        if (!this.selectedSupportParentClassId || !this.supportClassesList.some((c) => c.id === this.selectedSupportParentClassId)) {
+          this.selectedSupportParentClassId = this.supportClassesList[0].id;
+        }
+        this.onSupportParentClassChange(this.selectedSupportParentClassId);
       }
     } else if (newRole === 'FEE_MANAGER') {
       this.auth.setSupportRole('FEE_MANAGER');
       if (this.supportFeeUsersList.length > 0) {
         this.selectedSupportDeptUserId = this.supportFeeUsersList[0].id;
         this.onSupportDeptUserSelect(this.selectedSupportDeptUserId);
+      } else {
+        this.selectedSupportDeptUserId = '';
       }
     } else if (newRole === 'TRANSPORT_MANAGER') {
       this.auth.setSupportRole('TRANSPORT_MANAGER');
       if (this.supportTransportUsersList.length > 0) {
         this.selectedSupportDeptUserId = this.supportTransportUsersList[0].id;
         this.onSupportDeptUserSelect(this.selectedSupportDeptUserId);
+      } else {
+        this.selectedSupportDeptUserId = '';
       }
     } else if (newRole === 'DEPT_STAFF') {
       this.auth.setSupportRole('STAFF');
       if (this.supportOtherDeptUsersList.length > 0) {
         this.selectedSupportDeptUserId = this.supportOtherDeptUsersList[0].id;
         this.onSupportDeptUserSelect(this.selectedSupportDeptUserId);
+      } else {
+        this.selectedSupportDeptUserId = '';
       }
     } else {
       this.auth.setSupportRole(newRole);
@@ -3520,10 +3597,30 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       this.filterMenu();
       return;
     }
+
+    if (teacherId === 'sim_default_teacher') {
+      const defaultTeacher = {
+        id: 'sim_default_teacher',
+        name: 'Faculty Teacher',
+        fullName: 'Faculty Teacher',
+        firstName: 'Faculty',
+        lastName: 'Teacher',
+        role: 'TEACHER',
+        roleName: 'Teacher',
+        designation: 'Faculty Instructor',
+        teachingScope: { classTeacherSections: [], subjectAssignments: [] },
+      };
+      this.auth.setSupportTeacher(defaultTeacher);
+      this.toastService.success(`Now simulating Teacher: Faculty Teacher`);
+      this.filterMenu();
+      this.expandActiveGroup();
+      return;
+    }
+
     const teacher = this.supportTeachersList.find((t) => t.id === teacherId);
     if (teacher) {
       this.auth.setSupportTeacher(teacher);
-      const name = teacher.name || `${teacher.first_name || ''} ${teacher.last_name || ''}`.trim();
+      const name = teacher.fullName || teacher.name || `${teacher.firstName || teacher.first_name || ''} ${teacher.lastName || teacher.last_name || ''}`.trim() || 'Teacher';
       this.toastService.success(`Now simulating Teacher: ${name}`);
       this.filterMenu();
       this.expandActiveGroup();
@@ -3532,46 +3629,101 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
 
   onSupportParentClassChange(classId: string) {
     this.selectedSupportParentClassId = classId;
-    this.currentParentSections = [];
-    this.currentSectionStudentsList = [];
-    this.selectedSupportParentSectionId = '';
+    this.currentClassStudentsList = [];
     this.selectedSupportStudentId = '';
 
     if (!classId) return;
     const cls = this.supportClassesList.find((c) => c.id === classId);
-    if (cls && cls.sections && cls.sections.length > 0) {
-      this.currentParentSections = cls.sections;
-      this.selectedSupportParentSectionId = cls.sections[0].id;
-      this.onSupportParentSectionChange(this.selectedSupportParentSectionId);
+    if (!cls) return;
+
+    this.loadingSupportStudents = true;
+    const activeSession = this.auth.activeAcademicSession();
+    const params = activeSession ? { academicYearId: activeSession.id } : undefined;
+
+    const loadStudentsFromSections = (sections: any[]) => {
+      if (!sections || sections.length === 0) {
+        this.loadingSupportStudents = false;
+        return;
+      }
+
+      const requests = sections.map((sec: any) =>
+        this.api.get<any[]>(`academics/sections/${sec.id}/students`, params)
+      );
+
+      forkJoin(requests).subscribe({
+        next: (results) => {
+          const combined: any[] = [];
+          const seen = new Set<string>();
+          results.forEach((stList, idx) => {
+            const secName = sections[idx]?.name || '';
+            (stList || []).forEach((st) => {
+              if (st && st.id && !seen.has(st.id)) {
+                seen.add(st.id);
+                combined.push({
+                  ...st,
+                  sectionName: st.sectionName || secName,
+                  className: st.className || cls.name,
+                });
+              }
+            });
+          });
+
+          this.currentClassStudentsList = combined;
+          this.loadingSupportStudents = false;
+          if (combined.length > 0) {
+            this.selectedSupportStudentId = combined[0].id;
+            this.onSupportParentStudentSelect(this.selectedSupportStudentId);
+          }
+        },
+        error: (err) => {
+          console.warn('Failed to load students for class sections', err);
+          this.loadingSupportStudents = false;
+        },
+      });
+    };
+
+    if (cls.sections && cls.sections.length > 0) {
+      loadStudentsFromSections(cls.sections);
+    } else {
+      this.api.get<any>(`academics/classes/${classId}/details`, params).subscribe({
+        next: (details) => {
+          cls.sections = details?.sections || [];
+          loadStudentsFromSections(cls.sections);
+        },
+        error: () => {
+          this.loadingSupportStudents = false;
+        },
+      });
     }
-  }
-
-  onSupportParentSectionChange(sectionId: string) {
-    this.selectedSupportParentSectionId = sectionId;
-    this.currentSectionStudentsList = [];
-    this.selectedSupportStudentId = '';
-
-    if (!sectionId) return;
-    this.api.get<any[]>(`academics/sections/${sectionId}/students`).subscribe({
-      next: (students) => {
-        this.currentSectionStudentsList = students || [];
-        if (this.currentSectionStudentsList.length > 0) {
-          this.selectedSupportStudentId = this.currentSectionStudentsList[0].id;
-          this.onSupportParentStudentSelect(this.selectedSupportStudentId);
-        }
-      },
-      error: (err) => console.warn('Failed to load section students for support parent sim', err),
-    });
   }
 
   onSupportParentStudentSelect(studentId: string) {
     this.selectedSupportStudentId = studentId;
     if (!studentId) return;
-    const student = this.currentSectionStudentsList.find((s) => s.id === studentId);
+
+    if (studentId === 'sim_default_student') {
+      const cls = this.supportClassesList.find((c) => c.id === this.selectedSupportParentClassId);
+      const defaultStudent = {
+        id: 'sim_default_student',
+        name: 'Student',
+        fullName: 'Sample Student',
+        className: cls?.name || 'Class',
+        sectionName: 'A',
+        rollNumber: 1,
+        guardianName: 'Parent of Student',
+      };
+      this.auth.setSupportParent(defaultStudent);
+      this.toastService.success(`Now simulating Parent: Parent of Student`);
+      this.filterMenu();
+      this.expandActiveGroup();
+      return;
+    }
+
+    const student = this.currentClassStudentsList.find((s) => s.id === studentId);
     if (student) {
       this.auth.setSupportParent(student);
-      const studentName = student.full_name || student.name || 'Student';
-      const guardianName = student.guardian_name || student.guardianName || 'Parent';
+      const studentName = student.fullName || student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student';
+      const guardianName = student.guardianName || student.guardian_name || 'Parent';
       this.toastService.success(`Now simulating Parent: ${guardianName} (Child: ${studentName})`);
       this.filterMenu();
       this.expandActiveGroup();

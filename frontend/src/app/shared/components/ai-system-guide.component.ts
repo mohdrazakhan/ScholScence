@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -18,6 +18,7 @@ export interface GuideWorkflow {
   route: string;
   queryParams?: Record<string, any>;
   highlightTargets: string[]; // Text labels or CSS selectors of buttons on the page to spotlight
+  actionButtonLabel?: string; // Optional direct execution button label
   steps: string[];
 }
 
@@ -78,6 +79,16 @@ export interface GuideChatMessage {
           <span class="font-medium">{{ step }}</span>
         </div>
       </div>
+
+      <!-- Direct One-Click Action Button: Navigates and triggers the action directly -->
+      <button type="button"
+              (click)="triggerTargetAction()"
+              class="mt-3 w-full py-2.5 px-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 active:scale-98 text-white text-xs font-black flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(79,70,229,0.35)] transition-all cursor-pointer">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        <span>{{ activeGuidedWorkflow.actionButtonLabel || 'Open / Click Highlighted Button' }}</span>
+      </button>
 
       <div class="mt-2.5 flex items-center justify-between text-[10px] text-indigo-700 font-bold">
         <span class="inline-flex items-center gap-1">
@@ -152,7 +163,8 @@ export interface GuideChatMessage {
       </div>
 
       <!-- Messages Feed (Bright Airy Claymorphic Surface) -->
-      <div class="flex-1 p-4 overflow-y-auto space-y-3.5 bg-gradient-to-b from-[#f8fafc] to-white max-h-[350px]">
+      <div #messagesContainer
+           class="flex-1 p-4 overflow-y-auto space-y-3.5 bg-gradient-to-b from-[#f8fafc] to-white max-h-[350px] scroll-smooth">
         <div *ngFor="let msg of messages"
              class="flex flex-col"
              [ngClass]="msg.sender === 'USER' ? 'items-end' : 'items-start'">
@@ -209,15 +221,16 @@ export interface GuideChatMessage {
           <span class="text-[9px] font-semibold text-slate-400 mt-1 px-1">{{ msg.timestamp }}</span>
         </div>
 
-        <!-- Thinking / Loading Indicator -->
-        <div *ngIf="isThinking" class="flex items-start">
-          <div class="px-3.5 py-2.5 rounded-2xl rounded-bl-xs bg-white border border-slate-200/90 shadow-[4px_6px_14px_rgba(15,23,42,0.05)] flex items-center gap-2 text-xs text-slate-600 font-semibold">
-            <span class="flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce"></span>
-              <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style="animation-delay: 120ms"></span>
-              <span class="w-1.5 h-1.5 rounded-full bg-indigo-300 animate-bounce" style="animation-delay: 240ms"></span>
-            </span>
-            <span class="text-[11px] text-slate-500">Sense is checking steps...</span>
+        <!-- WhatsApp-style Typing / Thinking Indicator Bubble -->
+        <div *ngIf="isThinking" class="flex items-start animate-fadeIn">
+          <div class="px-4 py-2.5 rounded-2xl rounded-bl-xs bg-white border border-slate-200/90 shadow-[4px_6px_14px_rgba(15,23,42,0.06),-2px_-2px_6px_#ffffff,inset_0_1px_2px_#ffffff] flex items-center gap-2.5">
+            <!-- Animated 3 dots like WhatsApp typing -->
+            <div class="flex items-center gap-1 py-0.5">
+              <span class="w-2 h-2 rounded-full bg-indigo-600 animate-bounce" style="animation-duration: 0.85s;"></span>
+              <span class="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style="animation-duration: 0.85s; animation-delay: 0.18s;"></span>
+              <span class="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style="animation-duration: 0.85s; animation-delay: 0.36s;"></span>
+            </div>
+            <span class="text-[11px] font-medium text-slate-400 italic">Sense is typing...</span>
           </div>
         </div>
       </div>
@@ -346,23 +359,6 @@ export interface GuideChatMessage {
     </button>
   `,
   styles: [`
-    :host ::ng-deep .ai-guide-spotlight-pulse {
-      position: relative !important;
-      z-index: 70 !important;
-      outline: 3px solid #4f46e5 !important;
-      outline-offset: 3px !important;
-      box-shadow: 0 0 0 8px rgba(79, 70, 229, 0.25), 0 8px 24px rgba(79, 70, 229, 0.35) !important;
-      animation: aiSpotlightPulse 1.4s ease-in-out infinite !important;
-      border-radius: 14px !important;
-    }
-    @keyframes aiSpotlightPulse {
-      0%, 100% {
-        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.3), 0 6px 20px rgba(79, 70, 229, 0.35);
-      }
-      50% {
-        box-shadow: 0 0 0 10px rgba(79, 70, 229, 0.12), 0 8px 28px rgba(79, 70, 229, 0.5);
-      }
-    }
     .sense-mascot-float {
       animation: senseFloat 3.2s ease-in-out infinite;
     }
@@ -444,12 +440,14 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
   userQuery = '';
   messages: GuideChatMessage[] = [];
   activeGuidedWorkflow: GuideWorkflow | null = null;
+  matchedTargetElement: HTMLElement | null = null;
+  @ViewChild('messagesContainer') private messagesContainer?: ElementRef<HTMLDivElement>;
   private highlightTimer: any = null;
 
   private readonly workflows: GuideWorkflow[] = [
     {
       id: 'add-student',
-      title: 'Enroll / Add a New Student',
+      title: 'Add a New Student',
       category: 'Academics',
       keywords: ['add student', 'new student', 'enroll student', 'student admission', 'admit student', 'create student', 'register student', 'naya student', 'admission'],
       requiredRoles: ['SCHOOL_ADMIN', 'PRINCIPAL'],
@@ -458,10 +456,11 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
       deniedReason: 'Only School Administrators and Principals are authorized to admit or add new students into the school register.',
       route: '/academics',
       queryParams: { tab: 'students' },
-      highlightTargets: ['Enroll Student', 'Add Student', '+ Enroll Student', 'New Student', 'Students'],
+      highlightTargets: ['btn-add-student', 'Add Student', '+ Add Student'],
+      actionButtonLabel: 'Open "+ Add Student" Form',
       steps: [
-        'Navigate to Academics → Students Directory tab.',
-        'Click the highlighted "+ Enroll Student" button in the top-right action bar.',
+        'Navigate to Academics → Student Admissions & Roster tab.',
+        'Click the highlighted "+ Add Student" button in the top-right action bar.',
         'Fill in student details, class/section, and guardian phone/email, then click Save.',
       ],
     },
@@ -476,7 +475,8 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
       deniedReason: 'Only School Administrators and Principals are authorized to create or modify school classes and sections.',
       route: '/academics',
       queryParams: { tab: 'classes' },
-      highlightTargets: ['Add Class', '+ Add Class', 'New Class', 'Create Class', 'Classes'],
+      highlightTargets: ['btn-add-class', 'Add Class', '+ Add Class', 'Classes'],
+      actionButtonLabel: 'Open "+ Add Class" Form',
       steps: [
         'Open Academics → Classes & Sections view.',
         'Click the highlighted "+ Add Class" button to create a grade or click a class card to add sections.',
@@ -493,10 +493,11 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
       deniedReason: 'Only School Administrators and Principals can onboard faculty members or departmental staff accounts.',
       route: '/academics',
       queryParams: { tab: 'staff' },
-      highlightTargets: ['Add Faculty', 'Add Staff', '+ Add', 'Faculty', 'Staff'],
+      highlightTargets: ['btn-add-staff', 'Add Faculty', 'Add Staff', '+ Add Faculty'],
+      actionButtonLabel: 'Open "+ Add Faculty" Form',
       steps: [
         'Navigate to Academics → Faculty & Staff tab (or Departmental Staff page).',
-        'Click the highlighted "Add Faculty / Staff" button and assign their role and credentials.',
+        'Click the highlighted "Add Faculty" button and assign their role and credentials.',
       ],
     },
     {
@@ -511,6 +512,7 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
       deniedReason: 'You are not authorized to modify the class timetable. Only the designated Class Teacher of that class/section or a School Administrator can add or edit timetable periods.',
       route: '/timetable',
       highlightTargets: ['Add Period', '+ Add Period', 'Edit', 'Configure', 'Save Period', 'Timetable'],
+      actionButtonLabel: 'Open Timetable Planner',
       steps: [
         'Open the Class Timetable module.',
         'Select your assigned Class & Section from the top filter.',
@@ -526,6 +528,7 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
       requiredSectionId: 'timetable',
       route: '/timetable',
       highlightTargets: ['Timetable', 'Monday', 'Tuesday', 'Download', 'Print'],
+      actionButtonLabel: 'View Weekly Timetable',
       steps: [
         'Navigate to the Timetable page.',
         'View the day-by-day period schedule for your class or teaching routine.',
@@ -543,6 +546,7 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
       deniedReason: 'Only designated Class Teachers (for their assigned homeroom section) or School Administrators can mark or modify student attendance registers.',
       route: '/attendance',
       highlightTargets: ['Submit Attendance', 'Save Attendance', 'Mark All Present', 'Attendance'],
+      actionButtonLabel: 'Open Attendance Register',
       steps: [
         'Open the Daily Attendance Register page.',
         'Select your assigned section and date.',
@@ -558,6 +562,7 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
       requiredSectionId: 'attendance',
       route: '/attendance',
       highlightTargets: ['Attendance', 'Calendar', 'Monthly'],
+      actionButtonLabel: 'View Attendance Records',
       steps: [
         'Open the Attendance section.',
         'Review daily present/absent status and monthly attendance percentage.',
@@ -574,6 +579,7 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
       deniedReason: 'Only Teachers and School Administrators are authorized to post homework assignments. Parents and students have read-only access to view homework.',
       route: '/homework',
       highlightTargets: ['Post Homework', 'Add Homework', '+ New Homework', 'Create Homework', 'Assign'],
+      actionButtonLabel: 'Open "+ Post Homework" Form',
       steps: [
         'Open the Homework & Diary module.',
         'Click the highlighted "+ Post Homework" button.',
@@ -589,6 +595,7 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
       requiredSectionId: 'homework',
       route: '/homework',
       highlightTargets: ['Homework', 'Filter'],
+      actionButtonLabel: 'View Homework Diary',
       steps: [
         'Open the Homework & Diary section to view active assignments and due dates.',
       ],
@@ -604,6 +611,7 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
       deniedReason: 'Only Faculty Teachers and School Administrators are authorized to schedule exams or enter student marks.',
       route: '/exams',
       highlightTargets: ['Create Exam', 'Enter Marks', 'Save Marks', '+ New Exam', 'Exams'],
+      actionButtonLabel: 'Open Exam / Marks Portal',
       steps: [
         'Navigate to the Exams & Marks module.',
         'Select the exam and click the highlighted "Enter Marks" or "+ Create Exam" button.',
@@ -618,6 +626,7 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
       requiredSectionId: 'exams',
       route: '/exams',
       highlightTargets: ['Report Card', 'Exams', 'Results'],
+      actionButtonLabel: 'View Exam Results',
       steps: [
         'Open the Exams & Report Cards section to view upcoming exam dates and published subject marks.',
       ],
@@ -633,6 +642,7 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
       deniedReason: 'Only the Fee Management Department and School Administrators are authorized to generate fee structures or record fee payments.',
       route: '/fees',
       highlightTargets: ['Generate Invoices', 'Record Payment', 'Collect Fee', '+ Create', 'Fee'],
+      actionButtonLabel: 'Open Fee Management',
       steps: [
         'Open the Fee Management module.',
         'Use the highlighted action button to create fee structures, generate invoices, or record student fee payments.',
@@ -647,6 +657,7 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
       requiredSectionId: 'fees',
       route: '/fees',
       highlightTargets: ['Invoices', 'Receipt', 'Fees'],
+      actionButtonLabel: 'View Fee Receipts & Invoices',
       steps: [
         'Navigate to the Fee Invoices & Receipts page to view billed amounts, paid receipts, and pending dues.',
       ],
@@ -662,6 +673,7 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
       deniedReason: 'Only the Transport Department Officer and School Administrators can modify buses, transit routes, or student bus pass allocations.',
       route: '/transport',
       highlightTargets: ['Add Vehicle', 'Create Route', 'Issue Pass', 'Assign Pass', 'Transport'],
+      actionButtonLabel: 'Open Transport Manager',
       steps: [
         'Open the Transport & Fleet Department module.',
         'Click the highlighted action button to register a bus, configure route stops, or issue a student bus pass.',
@@ -678,6 +690,7 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
       deniedReason: 'Only School Administrators and authorized Faculty can broadcast official school circulars.',
       route: '/communication',
       highlightTargets: ['Publish Notice', 'New Notice', '+ Create Notice', 'Broadcast'],
+      actionButtonLabel: 'Open "+ Publish Notice" Form',
       steps: [
         'Navigate to the Communication Hub.',
         'Click the highlighted "+ Publish Notice" button, choose target audience, and broadcast.',
@@ -693,6 +706,7 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
       route: '/communication',
       queryParams: { tab: 'complaints' },
       highlightTargets: ['Raise Complaint', 'New Complaint', 'Complaints', '+ New Ticket', 'Support'],
+      actionButtonLabel: 'Open "+ Raise Complaint" Ticket',
       steps: [
         'Open the Communication & Grievance Desk.',
         'Switch to the highlighted "Complaints" tab to raise a new ticket or reply to an existing thread.',
@@ -741,9 +755,54 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
 
   toggleOpen() {
     this.isOpen = !this.isOpen;
-    if (this.isOpen && this.messages.length === 0) {
-      this.resetWelcomeMessage();
+    if (this.isOpen) {
+      if (this.messages.length === 0) {
+        this.resetWelcomeMessage();
+      }
+      this.scrollToBottom(80);
     }
+  }
+
+  scrollToBottom(delay: number = 30) {
+    setTimeout(() => {
+      try {
+        if (this.messagesContainer?.nativeElement) {
+          const el = this.messagesContainer.nativeElement;
+          el.scrollTo({
+            top: el.scrollHeight,
+            behavior: 'smooth',
+          });
+        }
+      } catch {}
+    }, delay);
+  }
+
+  private async pushBotMessage(
+    msg: {
+      sender: 'BOT';
+      text: string;
+      status?: 'ALLOWED' | 'DENIED' | 'OFF_TOPIC' | 'INFO';
+      workflow?: GuideWorkflow;
+    },
+    startTime: number
+  ) {
+    const elapsed = Date.now() - startTime;
+    // ~700ms delivers an authentic WhatsApp typing feel while staying well within 1 second
+    const targetDelay = 700;
+    if (elapsed < targetDelay) {
+      await new Promise((resolve) => setTimeout(resolve, targetDelay - elapsed));
+    }
+    this.isThinking = false;
+    this.messages.push({
+      id: 'b-' + Date.now(),
+      sender: msg.sender,
+      text: msg.text,
+      status: msg.status,
+      workflow: msg.workflow,
+      timestamp: this.nowTime(),
+    });
+    this.scrollToBottom(30);
+    this.scrollToBottom(150);
   }
 
   resetWelcomeMessage() {
@@ -757,9 +816,11 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
         timestamp: this.nowTime(),
       },
     ];
+    this.scrollToBottom(60);
   }
 
   askSuggestion(promptText: string) {
+    if (this.isThinking) return;
     this.userQuery = promptText;
     this.submitQuery();
   }
@@ -775,18 +836,19 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
       timestamp: this.nowTime(),
     });
     this.userQuery = '';
+    this.isThinking = true;
+    this.scrollToBottom(20);
 
+    const startTime = Date.now();
     const q = raw.toLowerCase();
 
     // 1. Immediate local guardrail against obvious coding / general trivia / external topics
     if (this.isOffTopicQuery(q)) {
-      this.messages.push({
-        id: 'b-' + Date.now(),
+      await this.pushBotMessage({
         sender: 'BOT',
         status: 'OFF_TOPIC',
         text: `I'm Sense, your SchoolSense campus assistant! I only chat about topics related to the SchoolSense platform and your school operations.\n\nFeel free to ask me anything about Admissions, Attendance, Timetable, Homework, Exams, Fees, Transport, or how to use any feature here!`,
-        timestamp: this.nowTime(),
-      });
+      }, startTime);
       return;
     }
 
@@ -795,35 +857,29 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
 
     // 2. Use Gemini (gemini-flash-latest) for natural conversation about SchoolSense & workflow intent matching
     if (this.hasGeminiKey) {
-      this.isThinking = true;
       const geminiResult = await this.classifyIntentWithGemini(raw);
-      this.isThinking = false;
 
       if (geminiResult) {
         if (geminiResult.intentType === 'OFF_TOPIC') {
-          this.messages.push({
-            id: 'b-' + Date.now(),
+          await this.pushBotMessage({
             sender: 'BOT',
             status: 'OFF_TOPIC',
             text:
               geminiResult.friendlyMessage ||
               `I'm Sense! I can only chat about the SchoolSense platform and help you manage your school tasks here.`,
-            timestamp: this.nowTime(),
-          });
+          }, startTime);
           return;
         }
 
         // Natural conversation about greetings, thanks, or general SchoolSense platform questions
         if (geminiResult.intentType === 'CONVERSATION' && (!geminiResult.workflowId || geminiResult.workflowId === 'NONE')) {
-          this.messages.push({
-            id: 'b-' + Date.now(),
+          await this.pushBotMessage({
             sender: 'BOT',
             status: 'INFO',
             text:
               geminiResult.friendlyMessage ||
               this.getNaturalConversationalReply(q),
-            timestamp: this.nowTime(),
-          });
+          }, startTime);
           return;
         }
 
@@ -842,52 +898,44 @@ export class AiSystemGuideComponent implements OnInit, OnDestroy {
     // 4. If no specific workflow was triggered, check if it's natural conversational talk or a general SchoolSense question
     if (!matched) {
       const conversationalReply = this.getNaturalConversationalReply(q);
-      this.messages.push({
-        id: 'b-' + Date.now(),
+      await this.pushBotMessage({
         sender: 'BOT',
         status: 'INFO',
         text: conversationalReply,
-        timestamp: this.nowTime(),
-      });
+      }, startTime);
       return;
     }
 
     // 5. Check if the module/service is enabled for this school
     if (matched.requiredService && !this.auth.isServiceEnabled(matched.requiredService)) {
-      this.messages.push({
-        id: 'b-' + Date.now(),
+      await this.pushBotMessage({
         sender: 'BOT',
         status: 'DENIED',
         text: `The "${matched.category}" service is currently disabled for your school campus. Please contact your School Administrator if this module needs to be activated.`,
-        timestamp: this.nowTime(),
-      });
+      }, startTime);
       return;
     }
 
     // 6. Hard deterministic Role-Based & Class-Teacher Authorization Check
     const authCheck = this.verifyUserAuthorization(matched, q);
     if (!authCheck.allowed) {
-      this.messages.push({
-        id: 'b-' + Date.now(),
+      await this.pushBotMessage({
         sender: 'BOT',
         status: 'DENIED',
         text: authCheck.reason,
-        timestamp: this.nowTime(),
-      });
+      }, startTime);
       return;
     }
 
     // 7. Authorized! Present step-by-step confirmation card before navigating
-    this.messages.push({
-      id: 'b-' + Date.now(),
+    await this.pushBotMessage({
       sender: 'BOT',
       status: 'ALLOWED',
       text:
         customBotNote ||
         `Sure! I can guide you to "${matched.title}".\n\nConfirm below and I'll open the page and highlight the exact button for you:`,
       workflow: matched,
-      timestamp: this.nowTime(),
-    });
+    }, startTime);
   }
 
   private getNaturalConversationalReply(q: string): string {
@@ -1168,9 +1216,37 @@ User message: "${userPrompt}"`;
     this.isOpen = false;
 
     this.router.navigate([wf.route], { queryParams: wf.queryParams || {} }).then(() => {
-      setTimeout(() => this.highlightDomElements(wf.highlightTargets), 450);
-      setTimeout(() => this.highlightDomElements(wf.highlightTargets), 1200);
+      // Multiple attempts to ensure the DOM has rendered after route change / tab switch
+      setTimeout(() => this.highlightDomElements(wf.highlightTargets), 250);
+      setTimeout(() => this.highlightDomElements(wf.highlightTargets), 650);
+      setTimeout(() => this.highlightDomElements(wf.highlightTargets), 1400);
+      setTimeout(() => this.highlightDomElements(wf.highlightTargets), 2400);
     });
+  }
+
+  triggerTargetAction() {
+    if (this.matchedTargetElement) {
+      try {
+        this.matchedTargetElement.click();
+      } catch (err) {
+        console.warn('Failed to click matched target element:', err);
+      }
+      this.stopGuidedSpotlight();
+      return;
+    }
+
+    if (this.activeGuidedWorkflow && typeof document !== 'undefined') {
+      const found = this.findMatchingDomElement(this.activeGuidedWorkflow.highlightTargets);
+      if (found) {
+        try {
+          found.click();
+        } catch (err) {
+          console.warn('Failed to click target element:', err);
+        }
+        this.stopGuidedSpotlight();
+        return;
+      }
+    }
   }
 
   reHighlightTargets() {
@@ -1189,48 +1265,86 @@ User message: "${userPrompt}"`;
       clearTimeout(this.highlightTimer);
       this.highlightTimer = null;
     }
+    this.matchedTargetElement = null;
     if (typeof document !== 'undefined') {
+      document.querySelectorAll('.ai-guide-pointer-badge').forEach((badge) => badge.remove());
       document.querySelectorAll('.ai-guide-spotlight-pulse').forEach((el) => {
         el.classList.remove('ai-guide-spotlight-pulse');
       });
     }
   }
 
+  private findMatchingDomElement(targets: string[]): HTMLElement | null {
+    if (typeof document === 'undefined' || !targets || targets.length === 0) return null;
+
+    // 1. Direct ID lookup (e.g. 'btn-add-student' or '#btn-add-student')
+    for (const target of targets) {
+      const cleanId = target.startsWith('#') ? target.slice(1) : target;
+      const elById = document.getElementById(cleanId);
+      if (elById && !elById.closest('app-ai-system-guide')) {
+        return elById;
+      }
+    }
+
+    // 2. Query all interactive elements
+    const candidates = Array.from(
+      document.querySelectorAll('button, a, [role="button"], input[type="submit"], input[type="button"]')
+    ) as HTMLElement[];
+
+    for (const targetText of targets) {
+      const needle = targetText.toLowerCase().trim();
+      const found = candidates.find((el) => {
+        if (el.closest('app-ai-system-guide')) return false; // Ignore guide's own buttons
+
+        const id = (el.id || '').toLowerCase().trim();
+        const text = (el.innerText || el.textContent || '').toLowerCase().trim();
+        const title = (el.getAttribute('title') || '').toLowerCase().trim();
+        const ariaLabel = (el.getAttribute('aria-label') || '').toLowerCase().trim();
+
+        if (id === needle) return true;
+        if (text === needle || (text && text.includes(needle))) return true;
+        if (title === needle || (title && title.includes(needle))) return true;
+        if (ariaLabel === needle || (ariaLabel && ariaLabel.includes(needle))) return true;
+
+        return false;
+      });
+
+      if (found) return found;
+    }
+
+    return null;
+  }
+
   private highlightDomElements(targets: string[]) {
     if (typeof document === 'undefined' || !targets || targets.length === 0) return;
     this.clearHighlights();
 
-    const candidates = Array.from(
-      document.querySelectorAll('button, a, [role="button"], input[type="submit"]')
-    ) as HTMLElement[];
+    const matched = this.findMatchingDomElement(targets);
+    if (!matched) return;
 
-    let matchedElements: HTMLElement[] = [];
+    this.matchedTargetElement = matched;
+    matched.classList.add('ai-guide-spotlight-pulse');
 
-    for (const targetText of targets) {
-      const needle = targetText.toLowerCase().trim();
-      const found = candidates.filter((el) => {
-        const text = (el.innerText || el.textContent || '').toLowerCase().trim();
-        const title = (el.getAttribute('title') || '').toLowerCase().trim();
-        return (text && text.includes(needle)) || (title && title.includes(needle));
-      });
-      if (found.length > 0) {
-        matchedElements = found.slice(0, 2);
-        break;
+    // Add pointer badge above the target element if not already present
+    if (!matched.querySelector('.ai-guide-pointer-badge')) {
+      const badge = document.createElement('span');
+      badge.className = 'ai-guide-pointer-badge';
+      const buttonText = (matched.innerText || matched.textContent || '').trim().replace(/\s+/g, ' ');
+      const label = buttonText.length > 0 && buttonText.length < 24 ? buttonText : 'Click Here';
+      badge.innerHTML = `👉 <strong>Click "${label}"</strong>`;
+      if (!matched.style.position || matched.style.position === 'static') {
+        matched.style.position = 'relative';
       }
+      matched.appendChild(badge);
     }
 
-    matchedElements.forEach((el, idx) => {
-      el.classList.add('ai-guide-spotlight-pulse');
-      if (idx === 0) {
-        try {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } catch {}
-      }
-    });
+    try {
+      matched.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch {}
 
     this.highlightTimer = setTimeout(() => {
       this.clearHighlights();
-    }, 12000);
+    }, 15000);
   }
 
   private nowTime(): string {

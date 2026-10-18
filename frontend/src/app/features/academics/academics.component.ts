@@ -179,7 +179,7 @@ interface StaffMember {
           </button>
 
           <!-- Buttons for CLASSES tab -->
-          <button *ngIf="canManage && activeTab === 'CLASSES'" (click)="openAddClassModal()"
+          <button *ngIf="canManage && activeTab === 'CLASSES'" (click)="openAddClassModal()" id="btn-add-class"
                   class="px-4 py-2 sm:px-5 sm:py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
@@ -188,7 +188,7 @@ interface StaffMember {
           </button>
 
           <!-- Buttons for STUDENTS tab -->
-          <button *ngIf="canManage && activeTab === 'STUDENTS'" (click)="openAddStudentModal()"
+          <button *ngIf="canManage && activeTab === 'STUDENTS'" (click)="openAddStudentModal()" id="btn-add-student"
                   class="px-4 py-2 sm:px-5 sm:py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -197,7 +197,7 @@ interface StaffMember {
           </button>
 
           <!-- Buttons for ALUMNI tab -->
-          <button *ngIf="canManage && activeTab === 'ALUMNI'" (click)="openAddAlumniModal()"
+          <button *ngIf="canManage && activeTab === 'ALUMNI'" (click)="openAddAlumniModal()" id="btn-add-alumni"
                   class="px-4 py-2 sm:px-5 sm:py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -206,7 +206,7 @@ interface StaffMember {
           </button>
 
           <!-- Buttons for STAFF tab -->
-          <button *ngIf="canManage && activeTab === 'STAFF'" (click)="openAddStaffModal()"
+          <button *ngIf="canManage && activeTab === 'STAFF'" (click)="openAddStaffModal()" id="btn-add-staff"
                   class="px-4 py-2 sm:px-5 sm:py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
@@ -215,7 +215,7 @@ interface StaffMember {
           </button>
 
           <!-- Buttons for SUBJECTS tab -->
-          <button *ngIf="canManage && activeTab === 'SUBJECTS'" (click)="openAddSubjectModal()"
+          <button *ngIf="canManage && activeTab === 'SUBJECTS'" (click)="openAddSubjectModal()" id="btn-add-subject"
                   class="px-4 py-2 sm:px-5 sm:py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -7018,6 +7018,14 @@ export class AcademicsComponent implements OnInit {
 
       if (params['manageSessions'] || params['openSessionModal'] === 'true') {
         this.openSessionModal();
+      }
+
+      if (params['openAddStudent'] === 'true' || params['addStudent'] === 'true') {
+        setTimeout(() => {
+          if (this.canManage && this.activeTab === 'STUDENTS') {
+            this.openAddStudentModal();
+          }
+        }, 350);
       }
 
       this.loadTabData(this.activeTab);

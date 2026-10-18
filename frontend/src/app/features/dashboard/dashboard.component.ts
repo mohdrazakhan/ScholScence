@@ -31,7 +31,7 @@ import {
              class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] hover:border-slate-400/80 transition-all flex flex-col justify-between group cursor-pointer">
             <div class="flex items-center justify-between">
               <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Enrolled Students</span>
-              <div class="w-9 h-9 rounded-2xl bg-indigo-50/90 border border-indigo-100/80 text-indigo-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,2px_2px_5px_#dbe4f0] group-hover:bg-slate-900 group-hover:border-slate-900 group-hover:text-white transition-all">
+              <div class="w-9 h-9 rounded-2xl bg-indigo-50/90 border border-indigo-100/80 text-indigo-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,2px_2px_5px_#dbe4f0] group-hover:scale-105 transition-all">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
                   <circle cx="9" cy="7" r="3.5" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.8"/>
                   <path d="M3.5 19.5C3.5 16.4624 5.96243 14 9 14C12.0376 14 14.5 16.4624 14.5 19.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
@@ -66,7 +66,7 @@ import {
              class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] hover:border-slate-400/80 transition-all flex flex-col justify-between group cursor-pointer">
             <div class="flex items-center justify-between">
               <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Faculty & Staff</span>
-              <div class="w-9 h-9 rounded-2xl bg-purple-50/90 border border-purple-100/80 text-purple-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,2px_2px_5px_#dbe4f0] group-hover:bg-slate-900 group-hover:border-slate-900 group-hover:text-white transition-all">
+              <div class="w-9 h-9 rounded-2xl bg-indigo-50/90 border border-indigo-100/80 text-indigo-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,2px_2px_5px_#dbe4f0] group-hover:scale-105 transition-all">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
                   <path d="M12 3L2 8L12 13L22 8L12 3Z" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
                   <path d="M6 10.5V16.5C6 18.433 8.68629 20 12 20C15.3137 20 18 18.433 18 16.5V10.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -93,7 +93,7 @@ import {
              class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] hover:border-slate-400/80 transition-all flex flex-col justify-between group cursor-pointer">
             <div class="flex items-center justify-between">
               <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Today's Attendance</span>
-              <div class="w-9 h-9 rounded-2xl bg-emerald-50/90 border border-emerald-100/80 text-emerald-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,2px_2px_5px_#dbe4f0] group-hover:bg-slate-900 group-hover:border-slate-900 group-hover:text-white transition-all">
+              <div class="w-9 h-9 rounded-2xl bg-indigo-50/90 border border-indigo-100/80 text-indigo-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,2px_2px_5px_#dbe4f0] group-hover:scale-105 transition-all">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
                   <circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8"/>
                   <path d="M8.5 12.5L10.8 14.8L15.5 9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -119,7 +119,7 @@ import {
              class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] hover:border-slate-400/80 transition-all flex flex-col justify-between group cursor-pointer">
             <div class="flex items-center justify-between">
               <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Fee Collection</span>
-              <div class="w-9 h-9 rounded-2xl bg-amber-50/90 border border-amber-100/80 text-amber-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,2px_2px_5px_#dbe4f0] group-hover:bg-slate-900 group-hover:border-slate-900 group-hover:text-white transition-all">
+              <div class="w-9 h-9 rounded-2xl bg-indigo-50/90 border border-indigo-100/80 text-indigo-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,2px_2px_5px_#dbe4f0] group-hover:scale-105 transition-all">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
                   <rect x="2" y="5" width="20" height="14" rx="2.5" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.8"/>
                   <path d="M2 10h20M7 15h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
@@ -143,7 +143,7 @@ import {
                class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] hover:border-slate-400/80 transition-all flex flex-col justify-between group cursor-pointer">
               <div class="flex items-center justify-between">
                 <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Classes Configured</span>
-                <div class="w-9 h-9 rounded-2xl bg-blue-50/90 border border-blue-100/80 text-blue-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,2px_2px_5px_#dbe4f0] group-hover:bg-slate-900 group-hover:border-slate-900 group-hover:text-white transition-all">
+                <div class="w-9 h-9 rounded-2xl bg-indigo-50/90 border border-indigo-100/80 text-indigo-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,2px_2px_5px_#dbe4f0] group-hover:scale-105 transition-all">
                   <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
                     <rect x="3" y="10" width="18" height="10" rx="2.5" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8"/>
                     <path d="M5 10V7.5C5 6.11929 6.11929 5 7.5 5H16.5C17.8807 5 19 6.11929 19 7.5V10" stroke="currentColor" stroke-width="1.8"/>
@@ -167,44 +167,129 @@ import {
         <!-- Automatically hides any module disabled for this school        -->
         <!-- ============================================================== -->
         <div *ngIf="enabledMatrixModules.length > 0">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 px-1">
-            <div>
-              <h2 class="text-sm sm:text-base font-black text-slate-900 tracking-tight">
-                Department & Service Analytics Matrix
-              </h2>
-              <p class="text-xs text-slate-500">
-                Select any module from the right list to inspect its live analytics in the center spotlight
-              </p>
-            </div>
-            <div class="flex items-center gap-2 self-start sm:self-auto">
-              <span class="px-2.5 py-1 rounded-xl bg-white border border-slate-200/80 text-[11px] font-black text-slate-600 shadow-2xs">
-                Module {{ activeMatrixModuleIndex + 1 }} of {{ enabledMatrixModules.length }}
-              </span>
-              <div class="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200/80 shadow-2xs">
-                <button type="button" (click)="stepMatrixModule(-1)"
-                        title="Previous Module"
-                        class="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer">
-                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+          <!-- Spotlight Header Template (Rendered inside the active module card) -->
+          <ng-template #matrixSpotlightHeader>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-6 border-b border-slate-100">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                  <h2 class="text-sm sm:text-base font-black text-slate-900 tracking-tight">
+                    Department &amp; Service Analytics Matrix
+                  </h2>
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Select any module from the right list to inspect its live analytics in the center spotlight
+                </p>
+              </div>
+              <div class="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                <span class="px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] font-black text-slate-600 shadow-2xs">
+                  Module {{ activeMatrixModuleIndex + 1 }} of {{ enabledMatrixModules.length }}
+                </span>
+                <div class="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200/80 shadow-2xs">
+                  <button type="button" (click)="stepMatrixModule(-1)"
+                          title="Previous Module"
+                          class="w-7 h-7 rounded-lg hover:bg-white text-slate-600 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <button type="button" (click)="stepMatrixModule(1)"
+                          title="Next Module"
+                          class="w-7 h-7 rounded-lg hover:bg-white text-slate-600 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                    </svg>
+                  </button>
+                </div>
+                <button type="button" (click)="closeMatrixModule()"
+                        title="Close Spotlight"
+                        class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                   </svg>
-                </button>
-                <button type="button" (click)="stepMatrixModule(1)"
-                        title="Next Module"
-                        class="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer">
-                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                  </svg>
+                  <span>Close</span>
                 </button>
               </div>
             </div>
-          </div>
+          </ng-template>
 
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
 
             <!-- ========================================================== -->
-            <!-- CENTER / LEFT: ANIMATED SINGLE FEATURE SPOTLIGHT STAGE     -->
+            <!-- CENTER / LEFT: SPOTLIGHT STAGE / LANDING CIRCULARS FEED     -->
             <!-- ========================================================== -->
             <div class="lg:col-span-7 xl:col-span-8 flex flex-col">
+
+              <!-- LANDING STATE: ALL MODULES CLOSED -> RECENT CAMPUS CIRCULARS ON TOP -->
+              <div *ngIf="!activeMatrixModuleId" class="flex-1 flex flex-col space-y-6">
+                <!-- Recent Campus Circulars Card -->
+                <div *ngIf="auth.isServiceEnabled('COMMUNICATION')" class="bg-white p-6 sm:p-7 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] flex-1 flex flex-col justify-between">
+                  <div>
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                      <div>
+                        <div class="flex items-center gap-2">
+                          <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                          <h2 class="text-base font-bold text-slate-900">Recent Campus Circulars</h2>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">Official announcements broadcast to teachers, parents & staff</p>
+                      </div>
+                      <a routerLink="/communication" class="text-xs font-bold text-blue-700 hover:text-blue-900 px-3 py-1.5 rounded-xl bg-blue-50/80 border border-blue-200/60 hover:bg-blue-100 transition-colors">
+                        View All →
+                      </a>
+                    </div>
+                    <div class="divide-y divide-slate-100 mt-2">
+                      <div *ngFor="let notice of stats?.recentNotices" class="py-3.5 first:pt-2 last:pb-0 flex items-start justify-between gap-4">
+                        <div class="space-y-1">
+                          <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
+                            <h3 class="text-sm font-bold text-slate-900">{{ notice.title }}</h3>
+                          </div>
+                          <p class="text-xs text-slate-600 line-clamp-2 pl-4">{{ notice.content }}</p>
+                        </div>
+                        <div class="text-right shrink-0">
+                          <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
+                            {{ notice.target_audience || 'ALL' }}
+                          </span>
+                          <div class="text-[11px] text-slate-400 mt-1">{{ notice.published_at | date:'mediumDate' }}</div>
+                        </div>
+                      </div>
+                      <div *ngIf="!stats?.recentNotices?.length" class="py-12 text-center text-slate-400 text-xs">
+                        No recent notices published.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Upcoming Exams Card (when exams service enabled) -->
+                <div *ngIf="auth.isServiceEnabled('EXAMS')" class="bg-white p-6 sm:p-7 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff]">
+                  <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                        <h2 class="text-base font-bold text-slate-900">Upcoming Exams</h2>
+                      </div>
+                      <p class="text-xs text-slate-500 mt-0.5">Scheduled assessments and term examinations</p>
+                    </div>
+                    <a routerLink="/exams" class="text-xs font-bold text-indigo-700 hover:text-indigo-900 px-3 py-1.5 rounded-xl bg-indigo-50/80 border border-indigo-200/60 hover:bg-indigo-100 transition-colors">
+                      Manage →
+                    </a>
+                  </div>
+                  <div class="space-y-3 mt-4">
+                    <div *ngFor="let exam of stats?.upcomingExams" class="p-3.5 rounded-2xl border border-slate-200/80 bg-[#f8fafc] flex items-center justify-between">
+                      <div>
+                        <div class="text-xs font-bold text-slate-900">{{ exam.name }}</div>
+                        <div class="text-[11px] text-slate-500 mt-0.5">Starts: {{ exam.start_date | date:'mediumDate' }}</div>
+                      </div>
+                      <span class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-white text-slate-700 border border-slate-200 shadow-2xs">
+                        {{ exam.status }}
+                      </span>
+                    </div>
+                    <div *ngIf="!stats?.upcomingExams?.length" class="py-8 text-center text-slate-400 text-xs">
+                      No upcoming exams scheduled.
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               <!-- MODULE 1: ACADEMICS (Classes, Sections, Subjects, Students) -->
               <div *ngIf="activeMatrixModuleId === 'ACADEMICS'"
@@ -212,6 +297,7 @@ import {
                 <div class="matrix-glow pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full bg-indigo-400/10 blur-3xl"></div>
 
                 <div class="relative z-10">
+                  <ng-container *ngTemplateOutlet="matrixSpotlightHeader"></ng-container>
                   <div class="flex items-start justify-between gap-4 flex-wrap">
                     <div class="flex items-center gap-4">
                       <div class="matrix-icon-float w-14 h-14 rounded-2xl bg-indigo-50/90 border border-indigo-100 text-indigo-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,3px_3px_8px_#dbe4f0] shrink-0">
@@ -273,9 +359,9 @@ import {
                 <!-- Shortcuts Footer -->
                 <div class="relative z-10 pt-4 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
                   <div class="flex items-center gap-2 flex-wrap">
-                    <a routerLink="/academics" [queryParams]="{tab: 'classes'}" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-900 hover:text-white text-slate-700 text-xs font-bold transition-all">Classes & Sections</a>
-                    <a routerLink="/academics" [queryParams]="{tab: 'students'}" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-900 hover:text-white text-slate-700 text-xs font-bold transition-all">Student Directory</a>
-                    <a routerLink="/academics" [queryParams]="{tab: 'staff'}" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-900 hover:text-white text-slate-700 text-xs font-bold transition-all">Faculty Roster</a>
+                    <a routerLink="/academics" [queryParams]="{tab: 'classes'}" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-800 text-slate-700 text-xs font-bold transition-all">Classes & Sections</a>
+                    <a routerLink="/academics" [queryParams]="{tab: 'students'}" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-800 text-slate-700 text-xs font-bold transition-all">Student Directory</a>
+                    <a routerLink="/academics" [queryParams]="{tab: 'staff'}" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-800 text-slate-700 text-xs font-bold transition-all">Faculty Roster</a>
                   </div>
                   <a routerLink="/academics" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition-all">
                     <span>Open Academics</span>
@@ -290,6 +376,7 @@ import {
                 <div class="matrix-glow pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full bg-purple-400/10 blur-3xl"></div>
 
                 <div class="relative z-10">
+                  <ng-container *ngTemplateOutlet="matrixSpotlightHeader"></ng-container>
                   <div class="flex items-start justify-between gap-4 flex-wrap">
                     <div class="flex items-center gap-4">
                       <div class="matrix-icon-float w-14 h-14 rounded-2xl bg-purple-50/90 border border-purple-100 text-purple-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,3px_3px_8px_#dbe4f0] shrink-0">
@@ -337,7 +424,7 @@ import {
                 </div>
 
                 <div class="relative z-10 pt-4 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
-                  <a routerLink="/role-permissions" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-900 hover:text-white text-slate-700 text-xs font-bold transition-all">
+                  <a routerLink="/role-permissions" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-purple-50 hover:text-purple-800 text-slate-700 text-xs font-bold transition-all">
                     Role Access Matrix
                   </a>
                   <a routerLink="/departmental-users" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition-all">
@@ -353,6 +440,7 @@ import {
                 <div class="matrix-glow pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full bg-amber-400/10 blur-3xl"></div>
 
                 <div class="relative z-10">
+                  <ng-container *ngTemplateOutlet="matrixSpotlightHeader"></ng-container>
                   <div class="flex items-start justify-between gap-4 flex-wrap">
                     <div class="flex items-center gap-4">
                       <div class="matrix-icon-float w-14 h-14 rounded-2xl bg-amber-50/90 border border-amber-100 text-amber-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,3px_3px_8px_#dbe4f0] shrink-0">
@@ -417,6 +505,7 @@ import {
                 <div class="matrix-glow pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full bg-cyan-400/10 blur-3xl"></div>
 
                 <div class="relative z-10">
+                  <ng-container *ngTemplateOutlet="matrixSpotlightHeader"></ng-container>
                   <div class="flex items-start justify-between gap-4 flex-wrap">
                     <div class="flex items-center gap-4">
                       <div class="matrix-icon-float w-14 h-14 rounded-2xl bg-cyan-50/90 border border-cyan-100 text-cyan-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,3px_3px_8px_#dbe4f0] shrink-0">
@@ -474,6 +563,7 @@ import {
                 <div class="matrix-glow pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full bg-blue-400/10 blur-3xl"></div>
 
                 <div class="relative z-10">
+                  <ng-container *ngTemplateOutlet="matrixSpotlightHeader"></ng-container>
                   <div class="flex items-start justify-between gap-4 flex-wrap">
                     <div class="flex items-center gap-4">
                       <div class="matrix-icon-float w-14 h-14 rounded-2xl bg-blue-50/90 border border-blue-100 text-blue-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,3px_3px_8px_#dbe4f0] shrink-0">
@@ -524,6 +614,7 @@ import {
                 <div class="matrix-glow pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full bg-emerald-400/10 blur-3xl"></div>
 
                 <div class="relative z-10">
+                  <ng-container *ngTemplateOutlet="matrixSpotlightHeader"></ng-container>
                   <div class="flex items-start justify-between gap-4 flex-wrap">
                     <div class="flex items-center gap-4">
                       <div class="matrix-icon-float w-14 h-14 rounded-2xl bg-emerald-50/90 border border-emerald-100 text-emerald-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,3px_3px_8px_#dbe4f0] shrink-0">
@@ -580,6 +671,7 @@ import {
                 <div class="matrix-glow pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full bg-sky-400/10 blur-3xl"></div>
 
                 <div class="relative z-10">
+                  <ng-container *ngTemplateOutlet="matrixSpotlightHeader"></ng-container>
                   <div class="flex items-start justify-between gap-4 flex-wrap">
                     <div class="flex items-center gap-4">
                       <div class="matrix-icon-float w-14 h-14 rounded-2xl bg-sky-50/90 border border-sky-100 text-sky-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,3px_3px_8px_#dbe4f0] shrink-0">
@@ -628,6 +720,7 @@ import {
                 <div class="matrix-glow pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full bg-violet-400/10 blur-3xl"></div>
 
                 <div class="relative z-10">
+                  <ng-container *ngTemplateOutlet="matrixSpotlightHeader"></ng-container>
                   <div class="flex items-start justify-between gap-4 flex-wrap">
                     <div class="flex items-center gap-4">
                       <div class="matrix-icon-float w-14 h-14 rounded-2xl bg-violet-50/90 border border-violet-100 text-violet-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,3px_3px_8px_#dbe4f0] shrink-0">
@@ -667,7 +760,7 @@ import {
                 </div>
 
                 <div class="relative z-10 pt-4 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
-                  <a routerLink="/exams" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-900 hover:text-white text-slate-700 text-xs font-bold transition-all">
+                  <a routerLink="/exams" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-violet-50 hover:text-violet-800 text-slate-700 text-xs font-bold transition-all">
                     Enter Student Marks
                   </a>
                   <a routerLink="/exams" class="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition-all">
@@ -683,6 +776,7 @@ import {
                 <div class="matrix-glow pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full bg-rose-400/10 blur-3xl"></div>
 
                 <div class="relative z-10">
+                  <ng-container *ngTemplateOutlet="matrixSpotlightHeader"></ng-container>
                   <div class="flex items-start justify-between gap-4 flex-wrap">
                     <div class="flex items-center gap-4">
                       <div class="matrix-icon-float w-14 h-14 rounded-2xl bg-rose-50/90 border border-rose-100 text-rose-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,3px_3px_8px_#dbe4f0] shrink-0">
@@ -751,11 +845,11 @@ import {
                         (click)="selectMatrixModule(mod.id)"
                         class="w-full text-left p-3 rounded-2xl border transition-all duration-300 flex items-center justify-between gap-3 cursor-pointer group"
                         [ngClass]="activeMatrixModuleId === mod.id
-                          ? 'bg-slate-900 text-white border-slate-900 shadow-md translate-x-1'
+                          ? 'bg-blue-50/90 text-blue-950 border-blue-300 shadow-xs ring-1 ring-blue-500/20 translate-x-1'
                           : 'bg-[#f8fafc] hover:bg-white text-slate-800 border-slate-200/80 hover:border-slate-300 hover:shadow-xs'">
                   <div class="flex items-center gap-3 min-w-0">
                     <div class="w-9 h-9 rounded-xl flex items-center justify-center border shrink-0 transition-transform duration-300 group-hover:scale-105"
-                         [ngClass]="activeMatrixModuleId === mod.id ? 'bg-white/15 border-white/20 text-white' : mod.iconClass">
+                         [ngClass]="activeMatrixModuleId === mod.id ? 'bg-blue-600 border-blue-600 text-white shadow-xs' : mod.iconClass">
                       <!-- Module Icons -->
                       <svg *ngIf="mod.id === 'ACADEMICS'" class="w-4 h-4" viewBox="0 0 24 24" fill="none">
                         <path d="M12 3L2 8L12 13L22 8L12 3Z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
@@ -797,11 +891,11 @@ import {
 
                     <div class="min-w-0">
                       <div class="text-xs font-black truncate"
-                           [ngClass]="activeMatrixModuleId === mod.id ? 'text-white' : 'text-slate-900'">
+                           [ngClass]="activeMatrixModuleId === mod.id ? 'text-blue-950' : 'text-slate-900'">
                         {{ mod.title }}
                       </div>
                       <div class="text-[10px] truncate mt-0.5"
-                           [ngClass]="activeMatrixModuleId === mod.id ? 'text-slate-300' : 'text-slate-500'">
+                           [ngClass]="activeMatrixModuleId === mod.id ? 'text-blue-700/80' : 'text-slate-500'">
                         {{ mod.subtitle }}
                       </div>
                     </div>
@@ -809,11 +903,11 @@ import {
 
                   <div class="flex items-center gap-2 shrink-0">
                     <span class="px-2 py-0.5 rounded-lg text-[10px] font-black border"
-                          [ngClass]="activeMatrixModuleId === mod.id ? 'bg-white/15 text-white border-white/20' : mod.badgeClass">
+                          [ngClass]="activeMatrixModuleId === mod.id ? 'bg-blue-100 text-blue-800 border-blue-200' : mod.badgeClass">
                       {{ mod.badge }}
                     </span>
                     <svg class="w-3.5 h-3.5 transition-transform duration-300"
-                         [ngClass]="activeMatrixModuleId === mod.id ? 'text-white translate-x-0.5' : 'text-slate-400 group-hover:translate-x-0.5'"
+                         [ngClass]="activeMatrixModuleId === mod.id ? 'text-blue-600 translate-x-0.5' : 'text-slate-400 group-hover:translate-x-0.5'"
                          fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                     </svg>
@@ -825,8 +919,8 @@ import {
           </div>
         </div>
 
-        <!-- Bottom Feed: Recent Campus Circulars & Upcoming Exams -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" *ngIf="auth.isServiceEnabled('COMMUNICATION') || auth.isServiceEnabled('EXAMS')">
+        <!-- Bottom Feed: Recent Campus Circulars & Upcoming Exams (Only shown when activeMatrixModuleId is active) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" *ngIf="activeMatrixModuleId && (auth.isServiceEnabled('COMMUNICATION') || auth.isServiceEnabled('EXAMS'))">
           <div *ngIf="auth.isServiceEnabled('COMMUNICATION')" class="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff]">
             <div class="flex items-center justify-between pb-4 border-b border-slate-100">
               <div>
@@ -1270,11 +1364,11 @@ import {
             <!-- Parent Quick Shortcuts -->
             <div class="flex items-center gap-2 flex-wrap">
               <a *ngIf="auth.isServiceEnabled('FEES')" routerLink="/fees"
-                 class="px-3.5 py-2 bg-[#f8fafc] hover:bg-slate-900 hover:text-white text-slate-700 border border-slate-200 rounded-2xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5">
+                 class="px-3.5 py-2 bg-[#f8fafc] hover:bg-indigo-50 hover:text-indigo-800 text-slate-700 border border-slate-200 rounded-2xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5">
                 <span>Fee Invoices</span>
               </a>
               <a *ngIf="auth.isServiceEnabled('COMPLAINTS')" routerLink="/communication" [queryParams]="{tab: 'complaints'}"
-                 class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5">
+                 class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5">
                 <span>Raise / Track Complaint</span>
               </a>
             </div>
@@ -1287,7 +1381,7 @@ import {
                       (click)="selectChild('ALL')"
                       class="px-3.5 py-2 rounded-2xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 border"
                       [ngClass]="selectedChildId === 'ALL' || !selectedChildId
-                        ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
                         : 'bg-[#f8fafc] text-slate-700 border-slate-200 hover:bg-slate-100'">
                 <span>All Children ({{ parentChildren.length }})</span>
               </button>
@@ -1359,27 +1453,27 @@ import {
             <!-- Child Module Action Shortcuts -->
             <div class="flex items-center gap-2 flex-wrap">
               <a *ngIf="auth.isServiceEnabled('ATTENDANCE')" routerLink="/attendance"
-                 class="px-3 py-1.5 bg-[#f8fafc] hover:bg-slate-900 hover:text-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-all">
+                 class="px-3 py-1.5 bg-[#f8fafc] hover:bg-indigo-50 hover:text-indigo-800 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-all">
                 Attendance
               </a>
               <a *ngIf="auth.isServiceEnabled('TIMETABLE')" routerLink="/timetable"
-                 class="px-3 py-1.5 bg-[#f8fafc] hover:bg-slate-900 hover:text-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-all">
+                 class="px-3 py-1.5 bg-[#f8fafc] hover:bg-indigo-50 hover:text-indigo-800 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-all">
                 Timetable
               </a>
               <a *ngIf="auth.isServiceEnabled('HOMEWORK')" routerLink="/homework"
-                 class="px-3 py-1.5 bg-[#f8fafc] hover:bg-slate-900 hover:text-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-all">
+                 class="px-3 py-1.5 bg-[#f8fafc] hover:bg-indigo-50 hover:text-indigo-800 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-all">
                 Homework
               </a>
               <a *ngIf="auth.isServiceEnabled('EXAMS')" routerLink="/exams"
-                 class="px-3 py-1.5 bg-[#f8fafc] hover:bg-slate-900 hover:text-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-all">
+                 class="px-3 py-1.5 bg-[#f8fafc] hover:bg-indigo-50 hover:text-indigo-800 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-all">
                 Report Card
               </a>
               <a *ngIf="auth.isServiceEnabled('FEES')" routerLink="/fees"
-                 class="px-3 py-1.5 bg-[#f8fafc] hover:bg-slate-900 hover:text-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-all">
+                 class="px-3 py-1.5 bg-[#f8fafc] hover:bg-indigo-50 hover:text-indigo-800 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-all">
                 Fees
               </a>
               <a *ngIf="auth.isServiceEnabled('TRANSPORT')" routerLink="/transport"
-                 class="px-3 py-1.5 bg-[#f8fafc] hover:bg-slate-900 hover:text-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-all">
+                 class="px-3 py-1.5 bg-[#f8fafc] hover:bg-indigo-50 hover:text-indigo-800 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-all">
                 Transport
               </a>
             </div>
@@ -1895,7 +1989,7 @@ export class DashboardComponent implements OnInit {
   stats: DashboardStats | null = null;
   selectedChildId = 'ALL';
   teacherStudentSearch = '';
-  selectedMatrixModuleId = 'ACADEMICS';
+  selectedMatrixModuleId: string | null = null;
 
   constructor() {
     effect(() => {
@@ -1916,6 +2010,9 @@ export class DashboardComponent implements OnInit {
     iconClass: string;
     badgeClass: string;
   }> {
+    const UNIFIED_ICON = 'bg-indigo-50/90 border-indigo-100/80 text-indigo-600';
+    const UNIFIED_BADGE = 'bg-indigo-50/80 text-indigo-700 border-indigo-200/70';
+
     const list: Array<{
       id: string;
       title: string;
@@ -1931,8 +2028,8 @@ export class DashboardComponent implements OnInit {
         title: 'Academics & Enrollment',
         subtitle: 'Classes, sections, subjects & students',
         badge: `${this.stats?.stats?.totalClasses ?? 0} Grades`,
-        iconClass: 'bg-indigo-50 border-indigo-100 text-indigo-600',
-        badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+        iconClass: UNIFIED_ICON,
+        badgeClass: UNIFIED_BADGE,
       });
     }
 
@@ -1942,8 +2039,8 @@ export class DashboardComponent implements OnInit {
         title: 'Departmental Staff',
         subtitle: 'Fee desk, transport officers & roles',
         badge: `${this.modules?.departmental?.activeUsers ?? 0} Active`,
-        iconClass: 'bg-purple-50 border-purple-100 text-purple-600',
-        badgeClass: 'bg-purple-50 text-purple-700 border-purple-200',
+        iconClass: UNIFIED_ICON,
+        badgeClass: UNIFIED_BADGE,
       });
     }
 
@@ -1953,8 +2050,8 @@ export class DashboardComponent implements OnInit {
         title: 'Fee Management',
         subtitle: 'Invoices, receipts & dues collection',
         badge: `${this.modules?.fees?.collectionRate ?? 0}% Collected`,
-        iconClass: 'bg-amber-50 border-amber-100 text-amber-600',
-        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        iconClass: UNIFIED_ICON,
+        badgeClass: UNIFIED_BADGE,
       });
     }
 
@@ -1964,8 +2061,8 @@ export class DashboardComponent implements OnInit {
         title: 'Transport Department',
         subtitle: 'Buses, transit routes, stops & passes',
         badge: `${this.modules?.transport?.fleetOccupancyRate ?? 0}% Occupancy`,
-        iconClass: 'bg-cyan-50 border-cyan-100 text-cyan-600',
-        badgeClass: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+        iconClass: UNIFIED_ICON,
+        badgeClass: UNIFIED_BADGE,
       });
     }
 
@@ -1975,8 +2072,8 @@ export class DashboardComponent implements OnInit {
         title: 'Class Timetables',
         subtitle: 'Weekly period grids & teacher schedules',
         badge: `${this.modules?.timetable?.totalPeriods ?? 0} Periods`,
-        iconClass: 'bg-blue-50 border-blue-100 text-blue-600',
-        badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
+        iconClass: UNIFIED_ICON,
+        badgeClass: UNIFIED_BADGE,
       });
     }
 
@@ -1987,10 +2084,8 @@ export class DashboardComponent implements OnInit {
         title: 'Daily Attendance',
         subtitle: 'Roll call registers & absentee tracking',
         badge: isMarked ? `${this.modules?.attendance?.todayPercentage}% Present` : 'Awaiting Roll Call',
-        iconClass: 'bg-emerald-50 border-emerald-100 text-emerald-600',
-        badgeClass: isMarked
-          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-          : 'bg-amber-50 text-amber-700 border-amber-200',
+        iconClass: UNIFIED_ICON,
+        badgeClass: UNIFIED_BADGE,
       });
     }
 
@@ -2000,8 +2095,8 @@ export class DashboardComponent implements OnInit {
         title: 'Homework & Diaries',
         subtitle: 'Daily classwork & homework dispatches',
         badge: `${this.modules?.homework?.activeHomework ?? 0} Active`,
-        iconClass: 'bg-sky-50 border-sky-100 text-sky-600',
-        badgeClass: 'bg-sky-50 text-sky-700 border-sky-200',
+        iconClass: UNIFIED_ICON,
+        badgeClass: UNIFIED_BADGE,
       });
     }
 
@@ -2011,8 +2106,8 @@ export class DashboardComponent implements OnInit {
         title: 'Exams & Report Cards',
         subtitle: 'Term schedules, marksheets & grading',
         badge: `${(this.stats?.upcomingExams || []).length} Scheduled`,
-        iconClass: 'bg-violet-50 border-violet-100 text-violet-600',
-        badgeClass: 'bg-violet-50 text-violet-700 border-violet-200',
+        iconClass: UNIFIED_ICON,
+        badgeClass: UNIFIED_BADGE,
       });
     }
 
@@ -2023,38 +2118,49 @@ export class DashboardComponent implements OnInit {
         title: 'Communication & Support',
         subtitle: 'Circulars, notices & parent tickets',
         badge: `${openTickets} Open`,
-        iconClass: 'bg-rose-50 border-rose-100 text-rose-600',
-        badgeClass:
-          openTickets > 0
-            ? 'bg-rose-50 text-rose-700 border-rose-200'
-            : 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        iconClass: UNIFIED_ICON,
+        badgeClass: UNIFIED_BADGE,
       });
     }
 
     return list;
   }
 
-  get activeMatrixModuleId(): string {
+  get activeMatrixModuleId(): string | null {
+    if (!this.selectedMatrixModuleId) return null;
     const enabled = this.enabledMatrixModules;
-    if (!enabled.length) return '';
     if (enabled.some((m) => m.id === this.selectedMatrixModuleId)) {
       return this.selectedMatrixModuleId;
     }
-    return enabled[0].id;
+    return null;
   }
 
   get activeMatrixModuleIndex(): number {
-    const idx = this.enabledMatrixModules.findIndex((m) => m.id === this.activeMatrixModuleId);
+    const activeId = this.activeMatrixModuleId;
+    if (!activeId) return 0;
+    const idx = this.enabledMatrixModules.findIndex((m) => m.id === activeId);
     return idx >= 0 ? idx : 0;
   }
 
   selectMatrixModule(id: string) {
-    this.selectedMatrixModuleId = id;
+    if (this.selectedMatrixModuleId === id) {
+      this.selectedMatrixModuleId = null;
+    } else {
+      this.selectedMatrixModuleId = id;
+    }
+  }
+
+  closeMatrixModule() {
+    this.selectedMatrixModuleId = null;
   }
 
   stepMatrixModule(delta: number) {
     const enabled = this.enabledMatrixModules;
     if (!enabled.length) return;
+    if (!this.activeMatrixModuleId) {
+      this.selectedMatrixModuleId = enabled[0].id;
+      return;
+    }
     const nextIdx = (this.activeMatrixModuleIndex + delta + enabled.length) % enabled.length;
     this.selectedMatrixModuleId = enabled[nextIdx].id;
   }

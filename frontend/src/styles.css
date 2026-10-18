@@ -394,3 +394,72 @@
     animation: none;
   }
 }
+
+/* ==========================================================================
+   AI SYSTEM GUIDE SPOTLIGHT & POINTER BEACON (Global)
+   ========================================================================== */
+.ai-guide-spotlight-pulse {
+  position: relative !important;
+  z-index: 60 !important;
+  outline: 3px solid #4f46e5 !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 6px rgba(79, 70, 229, 0.35), 0 8px 30px rgba(79, 70, 229, 0.55) !important;
+  animation: aiGuideSpotlightPulse 1.4s ease-in-out infinite !important;
+  border-radius: 0.75rem !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes aiGuideSpotlightPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.4), 0 6px 22px rgba(79, 70, 229, 0.5);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(79, 70, 229, 0.18), 0 10px 36px rgba(79, 70, 229, 0.7);
+    transform: scale(1.04);
+  }
+}
+
+.ai-guide-pointer-badge {
+  position: absolute !important;
+  bottom: calc(100% + 10px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  background: #1e1b4b !important;
+  color: #ffffff !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.02em !important;
+  padding: 5px 12px !important;
+  border-radius: 9999px !important;
+  white-space: nowrap !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3) !important;
+  pointer-events: none !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  animation: aiGuideBadgeBounce 1.2s ease-in-out infinite !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.ai-guide-pointer-badge::after {
+  content: '' !important;
+  position: absolute !important;
+  top: 100% !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  border-width: 6px !important;
+  border-style: solid !important;
+  border-color: #1e1b4b transparent transparent transparent !important;
+}
+
+@keyframes aiGuideBadgeBounce {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-5px);
+  }
+}
+

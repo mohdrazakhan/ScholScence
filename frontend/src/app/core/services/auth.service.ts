@@ -228,18 +228,18 @@ export class AuthService {
     const user = this.currentUser();
     if (!user || !user.isSupportSession) return;
 
-    const teacherName = teacher.name || `${teacher.first_name || ''} ${teacher.last_name || ''}`.trim() || 'Teacher';
+    const teacherName = teacher.fullName || teacher.name || `${teacher.firstName || teacher.first_name || ''} ${teacher.lastName || teacher.last_name || ''}`.trim() || 'Teacher';
     const roleCode = (teacher.role || (teacher.isClassTeacher ? 'CLASS_TEACHER' : 'TEACHER')).toUpperCase();
 
     const updatedUser: User = {
       ...user,
       id: teacher.id || teacher.user_id || user.id,
-      firstName: teacher.first_name || teacherName.split(' ')[0] || 'Teacher',
-      lastName: teacher.last_name || teacherName.split(' ').slice(1).join(' ') || '',
+      firstName: teacher.firstName || teacher.first_name || teacherName.split(' ')[0] || 'Teacher',
+      lastName: teacher.lastName || teacher.last_name || teacherName.split(' ').slice(1).join(' ') || '',
       email: teacher.email || user.email,
       phone: teacher.phone || user.phone,
       role: roleCode,
-      roleName: teacher.designation || (roleCode === 'CLASS_TEACHER' ? 'Class Teacher' : 'Teacher'),
+      roleName: teacher.designation || teacher.roleName || (roleCode === 'CLASS_TEACHER' ? 'Class Teacher' : 'Teacher'),
       teachingScope: {
         classTeacherSections: teacher.classTeacherSections || [],
         subjectAssignments: teacher.subjectAssignments || teacher.subjects || [],
@@ -258,9 +258,9 @@ export class AuthService {
     const user = this.currentUser();
     if (!user || !user.isSupportSession) return;
 
-    const gName = guardian?.name || student.guardianName || student.primaryContact?.name || 'Parent / Guardian';
-    const firstGName = guardian?.first_name || gName.split(' ')[0] || 'Parent';
-    const lastGName = guardian?.last_name || gName.split(' ').slice(1).join(' ') || '';
+    const gName = guardian?.name || guardian?.fullName || student.guardianName || student.guardian_name || student.primaryContact?.name || 'Parent / Guardian';
+    const firstGName = guardian?.firstName || guardian?.first_name || gName.split(' ')[0] || 'Parent';
+    const lastGName = guardian?.lastName || guardian?.last_name || gName.split(' ').slice(1).join(' ') || '';
 
     const childRecord = {
       id: student.id || student.studentId,

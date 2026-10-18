@@ -2168,6 +2168,9 @@ export class ApiService {
           id: u.id,
           firstName: u.first_name || 'Staff',
           lastName: u.last_name || '',
+          first_name: u.first_name || 'Staff',
+          last_name: u.last_name || '',
+          name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'Staff Member',
           fullName: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'Staff Member',
           email: u.email,
           phone: u.phone,
@@ -2184,6 +2187,7 @@ export class ApiService {
           emergencyContactName: profileLocal.emergencyContactName || '',
           emergencyContactPhone: profileLocal.emergencyContactPhone || '',
           department: profileLocal.department || '',
+          designation: profileLocal.designation || r?.name || (roleCode === 'SCHOOL_ADMIN' ? 'School Admin' : (roleCode === 'PRINCIPAL' ? 'Principal' : 'Teacher')),
           role: roleCode,
           roleName: r?.name || (roleCode === 'SCHOOL_ADMIN' ? 'School Admin' : (roleCode === 'PRINCIPAL' ? 'Principal' : 'Teacher')),
           classTeacherSections: cts,
@@ -10465,7 +10469,6 @@ export class ApiService {
 
   private async createDepartmentalUser(body: any): Promise<DepartmentalStaffUser> {
     const schoolId = this.getSchoolId();
-    const userId = body.id || crypto.randomUUID();
     const email = (body.email || '').trim().toLowerCase();
     const firstName = (body.first_name || body.name || 'Staff').trim();
     const lastName = (body.last_name || '').trim();
@@ -10476,8 +10479,164 @@ export class ApiService {
     const status = body.status || 'ACTIVE';
     const customPermissions = body.custom_permissions || DEFAULT_ROLE_PERMISSIONS[role] || ['dashboard'];
 
+    if (!email || !email.includes('@')) {
+      throw new Error('A valid email address is required to create a departmental user.');
+    }
+
+    let targetUserId = body.id || null;
+
+    // 1. Try DB RPC if deployed
+    try {
+      const { data: rpcRes, error: rpcErr } = await this.supabase.rpc('create_departmental_user', {
+        p_school_id: schoolId,
+        p_first_name: firstName,
+        p_last_name: lastName,
+        p_email: email,
+        p_phone: phone,
+        p_role_code: role,
+        p_department: department,
+        p_designation: designation,
+        p_password: body.password || 'School@123',
+        p_custom_permissions: customPermissions,
+      });
+
+      if (!rpcErr && rpcRes && rpcRes.success !== false) {
+        targetUserId = rpcRes.id;
+      }
+    } catch (e) {
+      // Fallback to direct client flow below
+    }
+
+    // 2. Direct Supabase flow if not handled by RPC
+    if (!targetUserId) {
+      // Check if user already exists in users table by email
+      const { data: existingUser } = await this.supabase
+        .from('users')
+        .select('id, email, first_name, last_name, phone')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (existingUser?.id) {
+        targetUserId = existingUser.id;
+        // Update user profile info & password if provided
+        const userUpdates: any = {
+          first_name: firstName || existingUser.first_name,
+          last_name: lastName || existingUser.last_name,
+          phone: phone || existingUser.phone || undefined,
+          department,
+          designation,
+          custom_permissions: customPermissions,
+          status,
+        };
+        if (body.password) {
+          userUpdates.password_hash = body.password;
+        }
+        await this.supabase.from('users').update(userUpdates).eq('id', targetUserId);
+      } else {
+        targetUserId = crypto.randomUUID();
+        const { error: insUserErr } = await this.supabase.from('users').insert({
+          id: targetUserId,
+          email,
+          phone,
+          first_name: firstName,
+          last_name: lastName,
+          password_hash: body.password || 'School@123',
+          status,
+          department,
+          designation,
+          custom_permissions: customPermissions,
+        });
+
+        if (insUserErr) {
+          // If duplicate email race condition occurred (23505)
+          if (insUserErr.code === '23505' || insUserErr.message?.includes('users_email_key')) {
+            const { data: found } = await this.supabase.from('users').select('id').eq('email', email).maybeSingle();
+            if (found?.id) {
+              targetUserId = found.id;
+            } else {
+              throw new Error(`The email "${email}" is already registered. Please use another email or contact support.`);
+            }
+          } else {
+            throw new Error(insUserErr.message || 'Failed to create user credentials.');
+          }
+        }
+      }
+
+      // Link in user_school_roles for this school
+      let roleId: string | null = null;
+      const { data: rolesData } = await this.supabase.from('roles').select('id, code').eq('code', role).maybeSingle();
+      if (rolesData?.id) {
+        roleId = rolesData.id;
+      } else {
+        // Try to register the role in roles table if permitted
+        try {
+          const { data: newRole } = await this.supabase.from('roles').insert({
+            name: designation || role,
+            code: role,
+            description: `${designation || role} role for campus operations`,
+            is_system_role: true,
+            status: 'ACTIVE',
+          }).select('id').maybeSingle();
+          if (newRole?.id) roleId = newRole.id;
+        } catch {}
+
+        // Fallback to existing valid operational role
+        if (!roleId) {
+          const { data: fallbackRole } = await this.supabase
+            .from('roles')
+            .select('id')
+            .in('code', ['STAFF', 'SCHOOL_ADMIN', 'TEACHER'])
+            .limit(1)
+            .maybeSingle();
+          roleId = fallbackRole?.id || null;
+        }
+
+        // Ultimate safety: grab any valid role row so foreign key constraint is never violated
+        if (!roleId) {
+          const { data: anyRole } = await this.supabase.from('roles').select('id').limit(1).maybeSingle();
+          roleId = anyRole?.id || null;
+        }
+      }
+
+      if (!roleId) {
+        throw new Error('Unable to resolve an operational role from the database.');
+      }
+
+      const { data: existingLink } = await this.supabase
+        .from('user_school_roles')
+        .select('id')
+        .eq('user_id', targetUserId)
+        .eq('school_id', schoolId)
+        .maybeSingle();
+
+      if (existingLink?.id) {
+        const { error: linkUpdErr } = await this.supabase.from('user_school_roles').update({
+          role_id: roleId,
+          status,
+          department,
+          designation,
+          custom_permissions: customPermissions,
+          deleted_at: null,
+        }).eq('id', existingLink.id);
+
+        if (linkUpdErr) throw new Error(linkUpdErr.message || 'Failed to update user school role.');
+      } else {
+        const { error: linkInsErr } = await this.supabase.from('user_school_roles').insert({
+          user_id: targetUserId,
+          school_id: schoolId,
+          role_id: roleId,
+          status,
+          department,
+          designation,
+          custom_permissions: customPermissions,
+        });
+
+        if (linkInsErr) throw new Error(linkInsErr.message || 'Failed to assign user school role.');
+      }
+    }
+
     const newDeptUser: DepartmentalStaffUser = {
-      id: userId,
+      id: targetUserId,
       school_id: schoolId,
       first_name: firstName,
       last_name: lastName,
@@ -10493,42 +10652,11 @@ export class ApiService {
       created_at: new Date().toISOString(),
     };
 
-    // 1. Insert into Supabase if connected
-    try {
-      await this.supabase.from('users').insert({
-        id: userId,
-        email,
-        phone,
-        first_name: firstName,
-        last_name: lastName,
-        password_hash: body.password || 'School@123',
-        status,
-        department,
-        designation,
-        custom_permissions: customPermissions,
-      });
-
-      const { data: rolesData } = await this.supabase.from('roles').select('id, code').eq('code', role).maybeSingle();
-      const roleId = rolesData?.id || '00000000-0000-0000-0000-000000000003';
-
-      await this.supabase.from('user_school_roles').insert({
-        user_id: userId,
-        school_id: schoolId,
-        role_id: roleId,
-        status,
-        department,
-        designation,
-        custom_permissions: customPermissions,
-      });
-    } catch (e) {
-      console.warn('Database insert notice for departmental user:', e);
-    }
-
-    // 2. Persist in local storage cache
+    // 3. Persist in local storage cache
     try {
       const cachedRaw = localStorage.getItem(this.getDeptUsersCacheKey(schoolId));
       let list: DepartmentalStaffUser[] = cachedRaw ? JSON.parse(cachedRaw) : [];
-      list = list.filter(u => u.id !== userId);
+      list = list.filter(u => u.id !== targetUserId && u.email !== email);
       list.unshift(newDeptUser);
       localStorage.setItem(this.getDeptUsersCacheKey(schoolId), JSON.stringify(list));
     } catch {}
@@ -10540,18 +10668,29 @@ export class ApiService {
     const schoolId = this.getSchoolId();
 
     try {
-      const updates: any = {};
-      if (body.first_name !== undefined) updates.first_name = body.first_name;
-      if (body.last_name !== undefined) updates.last_name = body.last_name;
-      if (body.phone !== undefined) updates.phone = body.phone;
-      if (body.email !== undefined) updates.email = body.email.toLowerCase().trim();
-      if (body.department !== undefined) updates.department = body.department;
-      if (body.designation !== undefined) updates.designation = body.designation;
-      if (body.status !== undefined) updates.status = body.status;
-      if (body.custom_permissions !== undefined) updates.custom_permissions = body.custom_permissions;
+      const userUpdates: any = {};
+      if (body.first_name !== undefined) userUpdates.first_name = body.first_name;
+      if (body.last_name !== undefined) userUpdates.last_name = body.last_name;
+      if (body.phone !== undefined) userUpdates.phone = body.phone;
+      if (body.email !== undefined) userUpdates.email = body.email.toLowerCase().trim();
+      if (body.department !== undefined) userUpdates.department = body.department;
+      if (body.designation !== undefined) userUpdates.designation = body.designation;
+      if (body.status !== undefined) userUpdates.status = body.status;
+      if (body.custom_permissions !== undefined) userUpdates.custom_permissions = body.custom_permissions;
+      if (body.password) userUpdates.password_hash = body.password;
 
-      await this.supabase.from('users').update(updates).eq('id', id);
-      await this.supabase.from('user_school_roles').update(updates).eq('user_id', id).eq('school_id', schoolId);
+      const roleUpdates: any = {};
+      if (body.department !== undefined) roleUpdates.department = body.department;
+      if (body.designation !== undefined) roleUpdates.designation = body.designation;
+      if (body.status !== undefined) roleUpdates.status = body.status;
+      if (body.custom_permissions !== undefined) roleUpdates.custom_permissions = body.custom_permissions;
+
+      if (Object.keys(userUpdates).length > 0) {
+        await this.supabase.from('users').update(userUpdates).eq('id', id);
+      }
+      if (Object.keys(roleUpdates).length > 0) {
+        await this.supabase.from('user_school_roles').update(roleUpdates).eq('user_id', id).eq('school_id', schoolId);
+      }
     } catch (e) {
       console.warn('Database update notice for departmental user:', e);
     }
