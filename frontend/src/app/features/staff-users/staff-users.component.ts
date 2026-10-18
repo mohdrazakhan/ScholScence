@@ -729,11 +729,21 @@ interface FeatureSectionDef {
           Resetting password for <strong>{{ targetUserForPassword?.name }}</strong> (<span class="font-mono text-slate-700">{{ targetUserForPassword?.email }}</span>).
         </p>
 
+        <!-- Inactive Account Notice -->
+        <div *ngIf="targetUserForPassword?.status === 'INACTIVE'" 
+             class="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-medium flex items-center gap-2.5 animate-fadeIn">
+          <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span>This account is currently <strong>Inactive</strong>. Toggle it to <strong>Active</strong> on their card after updating the password to allow them to log in.</span>
+        </div>
+
         <div>
           <label class="block text-[11px] font-bold text-slate-700 mb-1">New Password</label>
           <div class="relative flex items-center">
             <input [type]="showResetPass ? 'text' : 'password'" [(ngModel)]="newPasswordInput"
-                   placeholder="Enter new password"
+                   placeholder="Enter new password (min. 6 characters)"
+                   autocomplete="new-password"
                    class="w-full pl-3 pr-24 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:bg-white focus:border-slate-400" />
             <div class="absolute right-1 flex items-center gap-1">
               <button type="button" (click)="generateResetPassword()"
@@ -1297,7 +1307,11 @@ export class StaffUsersComponent implements OnInit {
     this.api.put(`departmental-users/${u.id}`, { status: nextStatus }).subscribe({
       next: () => {
         u.status = nextStatus;
-        this.toast.success(`Account for ${u.name} is now ${nextStatus === 'ACTIVE' ? 'Active' : 'Inactive'}.`);
+        if (nextStatus === 'ACTIVE') {
+          this.toast.success(`Account for ${u.name} is now Active. Login access enabled.`);
+        } else {
+          this.toast.warning(`Account for ${u.name} is now Inactive. Login access is disabled.`);
+        }
       },
       error: () => {
         this.toast.error('Failed to change status.');
@@ -1307,25 +1321,36 @@ export class StaffUsersComponent implements OnInit {
 
   openResetPasswordModal(u: DepartmentalStaffUser): void {
     this.targetUserForPassword = u;
-    this.newPasswordInput = 'School@123';
+    this.newPasswordInput = ''; // Cleared so modal never opens with a pre-filled password
     this.showResetPass = false;
     this.isPasswordModalOpen = true;
   }
 
   saveResetPassword(): void {
-    if (!this.targetUserForPassword || !this.newPasswordInput.trim()) return;
+    if (!this.targetUserForPassword) return;
+    const pwd = this.newPasswordInput.trim();
+    if (!pwd) {
+      this.toast.error('Please enter a new password or click Auto to generate one.');
+      return;
+    }
+    if (pwd.length < 6) {
+      this.toast.error('Password must be at least 6 characters long.');
+      return;
+    }
+
     this.resettingPass = true;
     this.api.post('departmental-users/reset-password', {
       userId: this.targetUserForPassword.id,
-      newPassword: this.newPasswordInput.trim(),
+      newPassword: pwd,
     }).subscribe({
-      next: () => {
-        this.toast.success(`Password reset successfully for ${this.targetUserForPassword?.name}.`);
+      next: (res: any) => {
+        this.toast.success(`Password updated successfully for ${this.targetUserForPassword?.name}. They can now login with this new password.`);
         this.resettingPass = false;
         this.isPasswordModalOpen = false;
+        this.newPasswordInput = '';
       },
-      error: () => {
-        this.toast.error('Failed to reset password.');
+      error: (err: any) => {
+        this.toast.error(err?.message || 'Failed to reset password. Please check permissions.');
         this.resettingPass = false;
       },
     });

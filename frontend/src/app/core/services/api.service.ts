@@ -10742,11 +10742,38 @@ export class ApiService {
   }
 
   private async resetDepartmentalUserPassword(userId: string, newPassword?: string): Promise<any> {
-    const pwd = newPassword || 'School@123';
+    const pwd = (newPassword || '').trim();
+    if (!userId || !pwd) {
+      throw new Error('User ID and new password are required.');
+    }
+
+    // 1. Try atomic RPC if available
     try {
-      await this.supabase.from('users').update({ password_hash: pwd }).eq('id', userId);
-    } catch (e) {}
-    return { success: true, message: 'Password reset successfully.' };
+      const { data: rpcRes, error: rpcErr } = await this.supabase.rpc('admin_reset_user_password', {
+        p_target_user_id: userId,
+        p_new_password: pwd,
+      });
+      if (!rpcErr && rpcRes && rpcRes.success !== false) {
+        return rpcRes;
+      }
+      if (rpcErr) {
+        console.warn('admin_reset_user_password RPC notice, trying direct update fallback:', rpcErr);
+      }
+    } catch (e) {
+      console.warn('RPC admin_reset_user_password exception, trying direct update fallback:', e);
+    }
+
+    // 2. Direct Supabase update fallback (trigger trg_hash_password_on_insert hashes plaintext password)
+    const { error: updErr } = await this.supabase.from('users').update({
+      password_hash: pwd,
+    }).eq('id', userId);
+
+    if (updErr) {
+      console.error('Failed to reset user password in database:', updErr);
+      throw new Error(updErr.message || 'Failed to update user password in database.');
+    }
+
+    return { success: true, message: 'Password reset successfully. The user can now login with the new password.' };
   }
 
   private async seedSampleDepartmentalUsers(): Promise<any> {
