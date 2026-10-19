@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 
 /**
  * Resolves the school context from the browser URL, enabling per-school
@@ -23,22 +24,25 @@ import { Injectable } from '@angular/core';
 const PARAM_KEY = 'school';
 
 /** Base domains whose subdomains map to schools. Checked right-to-left. */
-const MANAGED_BASE_DOMAINS = ['schoolsense.in', 'localhost'];
+const MANAGED_BASE_DOMAINS = ['schoolsense.in', 'localhost', 'lvh.me', 'test', 'local'];
 
 @Injectable({ providedIn: 'root' })
 export class SchoolContextService {
+  private doc = inject(DOCUMENT);
+
   /**
    * Returns the subdomain that should force a specific school portal,
    * or null when on the main platform domain.
    */
   detectForcedSubdomain(): string | null {
     try {
+      const search = this.doc?.defaultView?.location?.search || (typeof window !== 'undefined' ? window.location.search : '') || '';
       // 1. Explicit ?school= param — highest priority, works on every host.
-      const param = new URLSearchParams(window.location.search).get(PARAM_KEY);
+      const param = new URLSearchParams(search).get(PARAM_KEY);
       if (param && this.isValidSubdomain(param)) return param.toLowerCase();
 
       // 2. Hostname: dha.schoolsense.in / dha.uat.schoolsense.in / dha.localhost
-      const host = window.location.hostname.toLowerCase();
+      const host = (this.doc?.defaultView?.location?.hostname || (typeof window !== 'undefined' ? window.location.hostname : '') || '').toLowerCase();
       for (const base of MANAGED_BASE_DOMAINS) {
         if (host === base || host === `www.${base}`) continue; // main site — no forced school
         if (host.endsWith(`.${base}`)) {

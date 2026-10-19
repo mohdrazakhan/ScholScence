@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, from, map, tap, of, throwError } from 'rxjs';
+import { Observable, from, map, tap, of, throwError, switchMap } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { AuthResponse, User, AcademicSession } from '../models';
 
@@ -114,7 +114,6 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'academics_alumni',
     'communication',
     'communication_notices',
-    'subscription',
     'fees',
   ],
   TRANSPORT_MANAGER: [
@@ -345,14 +344,15 @@ export class AuthService {
     const role = this.userRole();
     if (!role) return false;
 
-    // Super Admin / Platform Admin / Binary Delegated Admin have universal access
-    if (role === 'SUPER_ADMIN' || role === 'PLATFORM_ADMIN' || role === 'BINARY') return true;
+    // Super Admin / Platform Admin / Binary / School Admin / Principal have universal access
+    if (role === 'SUPER_ADMIN' || role === 'PLATFORM_ADMIN' || role === 'BINARY' || role === 'SCHOOL_ADMIN' || role === 'PRINCIPAL') return true;
 
     // Map any aliases
     const normalizedId = this.normalizeSectionId(sectionId);
+    if (normalizedId === 'dashboard') return true;
 
     // If user has custom explicit permissions granted by admin, check against them
-    if (user?.customPermissions && Array.isArray(user.customPermissions) && user.customPermissions.length > 0) {
+    if (user?.customPermissions && Array.isArray(user.customPermissions)) {
       const parentMap: Record<string, string> = {
         academics_classes: 'academics',
         academics_students: 'academics',
@@ -520,10 +520,29 @@ export class AuthService {
 
   constructor() {
     const user = this.currentUser();
-    if (user?.school?.id && !user.school.name && !user.school.logoUrl) {
+    if (user?.school?.id && (!user.school.logoUrl || !user.school.logo_url || !user.school.name)) {
       this.syncSchoolProfileFromDb(user.school.id);
     }
     this.validateStoredSession();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('schoolsense_permissions_updated', ((event: CustomEvent) => {
+        const detail = event.detail;
+        const cur = this.currentUser();
+        if (cur && (cur.id === detail?.userId || (detail?.email && cur.email?.toLowerCase() === detail.email.toLowerCase()))) {
+          if (Array.isArray(detail?.permissions)) {
+            const updated: User = {
+              ...cur,
+              customPermissions: [...detail.permissions],
+            };
+            this.currentUser.set(updated);
+            try {
+              localStorage.setItem(this.USER_KEY, JSON.stringify(updated));
+            } catch {}
+          }
+        }
+      }) as EventListener);
+    }
   }
 
   /**
@@ -550,10 +569,43 @@ export class AuthService {
         } else if (payload.valid === true && payload.signingSecret) {
           localStorage.setItem(this.SIGNING_SECRET_KEY, payload.signingSecret);
           this.supabase.setAuthToken(token, payload.signingSecret);
+          await this.syncCurrentStaffPermissions();
         }
       }
     } catch {
       // Network hiccup — keep the local session; subsequent calls decide.
+    }
+  }
+
+  async syncCurrentStaffPermissions(): Promise<void> {
+    const user = this.currentUser();
+    if (!user || !user.id || !user.school?.id) return;
+    const role = (user.role || '').toUpperCase();
+    if (['SUPER_ADMIN', 'PLATFORM_ADMIN', 'BINARY', 'SCHOOL_ADMIN', 'PRINCIPAL'].includes(role)) {
+      return;
+    }
+    try {
+      const { data: roleRow, error } = await this.supabase
+        .from('user_school_roles')
+        .select('custom_permissions, department, designation')
+        .eq('user_id', user.id)
+        .eq('school_id', user.school.id)
+        .maybeSingle();
+
+      if (!error && roleRow && Array.isArray(roleRow.custom_permissions)) {
+        const updated: User = {
+          ...user,
+          customPermissions: roleRow.custom_permissions,
+          department: roleRow.department || user.department,
+          designation: roleRow.designation || user.designation,
+        };
+        this.currentUser.set(updated);
+        try {
+          localStorage.setItem(this.USER_KEY, JSON.stringify(updated));
+        } catch {}
+      }
+    } catch (e) {
+      console.warn('syncCurrentStaffPermissions error:', e);
     }
   }
 
@@ -792,19 +844,62 @@ export class AuthService {
 
   login(identifier: string, password: string, schoolCode?: string): Observable<AuthResponse> {
     return from(this.executeLogin(identifier, password, schoolCode)).pipe(
-      tap((res) => {
+      switchMap(async (res) => {
         localStorage.setItem(this.TOKEN_KEY, res.accessToken);
         if (res.signingSecret) {
           localStorage.setItem(this.SIGNING_SECRET_KEY, res.signingSecret);
         } else {
           localStorage.removeItem(this.SIGNING_SECRET_KEY);
         }
-        localStorage.setItem(this.USER_KEY, JSON.stringify(res.user));
         this.supabase.setAuthToken(res.accessToken, res.signingSecret || null);
-        this.currentUser.set(res.user);
-        if (res.user?.school?.id) {
-          this.syncSchoolProfileFromDb(res.user.school.id);
+
+        // Fetch fresh custom permissions for departmental/staff users directly from DB
+        const role = (res.user?.role || '').toUpperCase();
+        const isRootAdmin = ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'BINARY', 'SCHOOL_ADMIN', 'PRINCIPAL'].includes(role);
+        if (!isRootAdmin && res.user?.school?.id) {
+          try {
+            const { data: roleRow, error: roleErr } = await this.supabase
+              .from('user_school_roles')
+              .select('custom_permissions, department, designation')
+              .eq('user_id', res.user.id)
+              .eq('school_id', res.user.school.id)
+              .maybeSingle();
+
+            if (!roleErr && roleRow) {
+              if (roleRow.custom_permissions && Array.isArray(roleRow.custom_permissions)) {
+                res.user.customPermissions = roleRow.custom_permissions;
+              }
+              if (roleRow.department) res.user.department = roleRow.department;
+              if (roleRow.designation) res.user.designation = roleRow.designation;
+            }
+          } catch (e) {
+            console.warn('Could not fetch custom permissions on login:', e);
+          }
         }
+
+        if (res.user && !res.user.customPermissions) {
+          this.resolveUserCustomPermissionsFromLocal(res.user);
+        }
+
+        localStorage.setItem(this.USER_KEY, JSON.stringify(res.user));
+        this.currentUser.set(res.user);
+        if (res.user?.school) {
+          const sLogo = res.user.school.logoUrl || res.user.school.logo_url;
+          if (sLogo) {
+            localStorage.setItem('schoolsense_selected_school_logo', sLogo);
+          }
+          if (res.user.school.name) {
+            localStorage.setItem('schoolsense_selected_school_name', res.user.school.name);
+          }
+          if (res.user.school.code) {
+            localStorage.setItem('schoolsense_selected_school_code', res.user.school.code);
+          }
+          if (res.user.school.id) {
+            localStorage.setItem('schoolsense_selected_school_id', res.user.school.id);
+            this.syncSchoolProfileFromDb(res.user.school.id);
+          }
+        }
+        return res;
       })
     );
   }
@@ -827,7 +922,43 @@ export class AuthService {
       const serverMsg = (data as any)?.message;
       throw new Error(serverMsg || 'Invalid email/phone or password.');
     }
-    return data as AuthResponse;
+    const authRes = data as AuthResponse;
+    if (authRes.user) {
+      this.resolveUserCustomPermissionsFromLocal(authRes.user);
+    }
+    return authRes;
+  }
+
+  private resolveUserCustomPermissionsFromLocal(user: any): void {
+    if (!user) return;
+    const role = (user.role || '').toUpperCase();
+    if (role === 'SUPER_ADMIN' || role === 'PLATFORM_ADMIN' || role === 'SCHOOL_ADMIN' || role === 'PRINCIPAL') {
+      return;
+    }
+
+    if (user.customPermissions && Array.isArray(user.customPermissions) && user.customPermissions.length > 0) {
+      return;
+    }
+    if (user.custom_permissions && Array.isArray(user.custom_permissions) && user.custom_permissions.length > 0) {
+      user.customPermissions = user.custom_permissions;
+      return;
+    }
+
+    const schoolId = user.school?.id;
+    if (schoolId && typeof localStorage !== 'undefined') {
+      try {
+        const cachedRaw = localStorage.getItem(`schoolsense_dept_users_${schoolId}`);
+        if (cachedRaw) {
+          const list = JSON.parse(cachedRaw);
+          const match = list.find((u: any) => u.id === user.id || (u.email && u.email.toLowerCase() === user.email?.toLowerCase()));
+          if (match && Array.isArray(match.custom_permissions)) {
+            user.customPermissions = match.custom_permissions;
+            if (match.department && !user.department) user.department = match.department;
+            if (match.designation && !user.designation) user.designation = match.designation;
+          }
+        }
+      } catch (e) {}
+    }
   }
 
   fetchProfile(): Observable<User> {
@@ -841,9 +972,10 @@ export class AuthService {
         .eq('id', current.id)
         .single()
     ).pipe(
-      map(({ data, error }) => {
+      switchMap(async ({ data, error }) => {
         if (error || !data) throw error || new Error('User not found');
-        return current;
+        await this.syncCurrentStaffPermissions();
+        return this.currentUser() || current;
       })
     );
   }
@@ -852,11 +984,15 @@ export class AuthService {
     const current = this.currentUser();
     if (!current || !current.school) return;
     const logo = schoolData.logoUrl || schoolData.logo_url || current.school.logoUrl || current.school.logo_url;
+    const name = schoolData.name || current.school.name;
+    const code = schoolData.code || current.school.code;
     const updatedUser: User = {
       ...current,
       school: {
         ...current.school,
         ...schoolData,
+        name,
+        code,
         logoUrl: logo,
         logo_url: logo,
       },
@@ -864,6 +1000,18 @@ export class AuthService {
     this.currentUser.set(updatedUser);
     try {
       localStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser));
+      if (logo) {
+        localStorage.setItem('schoolsense_selected_school_logo', logo);
+      }
+      if (name) {
+        localStorage.setItem('schoolsense_selected_school_name', name);
+      }
+      if (code) {
+        localStorage.setItem('schoolsense_selected_school_code', code);
+      }
+      if (current.school.id) {
+        localStorage.setItem('schoolsense_selected_school_id', current.school.id);
+      }
     } catch {}
   }
 

@@ -434,8 +434,10 @@ export class ApiService {
     if (cleanEndpoint === 'academics/students/convert-alumni' || cleanEndpoint === 'academics/students/graduate') {
       return from(this.convertStudentToAlumni(body)) as unknown as Observable<T>;
     }
-    if (cleanEndpoint === 'academics/alumni/certificates' || cleanEndpoint === 'academics/students/certificates') {
-      return from(this.recordStudentCertificate(body)) as unknown as Observable<T>;
+    // Parent Portal Password Management (immediate update)
+    const parentPwdMatch = cleanEndpoint.match(/^academics\/students\/([^/]+)\/(?:reset-parent-password|parent-password)$/);
+    if (parentPwdMatch) {
+      return from(this.resetStudentParentPassword(parentPwdMatch[1], body.password || body.newPassword || body.guardianPassword, body)) as unknown as Observable<T>;
     }
 
     // Student Academic / Deactivation Request
@@ -3439,8 +3441,8 @@ export class ApiService {
     // Invalidate caches so UI immediately displays new student data
     this.sectionStudentsCache.clear();
 
-    // Update parent/guardian user if email or phone is updated
-    if (guardianEmail || guardianPhone) {
+    // Update parent/guardian user and password if email, phone, or password is provided
+    if (guardianEmail || guardianPhone || body.guardianPassword || body.parentPassword || body.password) {
       await this.ensureParentUserAndGuardian(schoolId, studentId, body);
     }
 
@@ -4463,6 +4465,11 @@ export class ApiService {
     const schoolId = this.getSchoolId();
     let query = this.supabase.from('complaints').select('*, sender:users(id, first_name, last_name, email), messages:complaint_messages(*, sender:users(id, first_name, last_name, email))');
     if (schoolId) query = query.eq('school_id', schoolId);
+    if (params && (params['myOnly'] || params['submittedByMe'])) {
+      const myId = this.getUserId();
+      if (myId) query = query.eq('submitted_by_id', myId);
+    }
+    query = query.order('created_at', { ascending: false });
     const { data, error } = await query;
     if (error) throw error;
     return (data || []).map((c: any) => ({
@@ -4470,6 +4477,9 @@ export class ApiService {
       ticket_number: c.id.slice(0, 8).toUpperCase(),
       category: c.category,
       subject: c.title,
+      description: c.description,
+      target_type: c.target_type || 'SCHOOL_ADMIN',
+      targetType: c.target_type || 'SCHOOL_ADMIN',
       status: c.status,
       priority: c.priority,
       created_at: c.created_at,
@@ -5980,15 +5990,30 @@ export class ApiService {
   private async createComplaint(body: any) {
     const schoolId = this.getSchoolId();
     const userId = this.getUserId();
-    const { data, error } = await this.supabase.from('complaints').insert({
+    const title = (body.title || body.subject || 'Support Query').trim();
+    const description = (body.description || '').trim();
+    const category = body.category || 'GENERAL';
+    const priority = body.priority || 'MEDIUM';
+    const targetType = body.target_type || body.targetType || 'SCHOOL_ADMIN';
+
+    let insertPayload: any = {
       school_id: schoolId,
       submitted_by_id: userId,
-      title: body.subject,
-      description: body.description,
-      category: body.category || 'GENERAL',
-      priority: body.priority || 'MEDIUM',
+      title: title,
+      description: description,
+      category: category,
+      priority: priority,
+      target_type: targetType,
       status: 'OPEN',
-    });
+    };
+
+    let { data, error } = await this.supabase.from('complaints').insert(insertPayload).select().single();
+    if (error && (error.code === 'PGRST204' || error.message?.includes('target_type'))) {
+      delete insertPayload.target_type;
+      const res = await this.supabase.from('complaints').insert(insertPayload).select().single();
+      data = res.data;
+      error = res.error;
+    }
     if (error) throw error;
     return data;
   }
@@ -7671,7 +7696,7 @@ export class ApiService {
             section_name: resolvedSectionName,
             roll_number: body.rollNumber ? String(body.rollNumber) : '1',
             login_email: parentLoginEmail,
-            default_password: 'password123',
+            default_password: (body.guardianPassword || body.parentPassword || body.password || '').trim() || 'password123',
             academic_session: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
             current_date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
           }
@@ -7693,8 +7718,9 @@ export class ApiService {
     const guardianPhone = (body.guardianPhone || body.emergencyContactPhone || '').trim();
     const guardianName = (body.guardianName || body.emergencyContactName || '').trim();
     const relationship = body.relationship || 'FATHER';
+    const guardianPassword = (body.guardianPassword || body.parentPassword || body.password || '').trim();
 
-    if (!guardianEmail && !guardianPhone && !guardianName) return;
+    if (!guardianEmail && !guardianPhone && !guardianName && !guardianPassword) return;
 
     const nameParts = (guardianName || 'Parent').split(' ');
     const firstName = nameParts[0] || 'Parent';
@@ -7703,7 +7729,26 @@ export class ApiService {
     try {
       // 1. Check if user already exists
       let parentUserId: string | null = null;
-      if (guardianEmail) {
+
+      // Check existing link via student_guardians first
+      if (studentId) {
+        try {
+          const { data: sg } = await this.supabase
+            .from('student_guardians')
+            .select('guardian:guardians(id, user_id)')
+            .eq('student_id', studentId)
+            .limit(1)
+            .maybeSingle();
+          if ((sg as any)?.guardian?.user_id) {
+            parentUserId = (sg as any).guardian.user_id;
+          }
+        } catch (sgErr) {
+          console.warn('Check student_guardians user link notice:', sgErr);
+        }
+      }
+
+      // If still not resolved, check by email
+      if (!parentUserId && guardianEmail) {
         const { data: existingUser } = await this.supabase
           .from('users')
           .select('id')
@@ -7712,7 +7757,7 @@ export class ApiService {
         if (existingUser) {
           parentUserId = existingUser.id;
         }
-      } else if (guardianPhone) {
+      } else if (!parentUserId && guardianPhone) {
         const { data: existingUser } = await this.supabase
           .from('users')
           .select('id, phone')
@@ -7723,7 +7768,24 @@ export class ApiService {
         }
       }
 
-      // 2. If user doesn't exist, insert into users table with default password 'password123'
+      // 2. If user exists, immediately update password if a new password was provided!
+      if (parentUserId && guardianPassword) {
+        await this.resetDepartmentalUserPassword(parentUserId, guardianPassword);
+      }
+
+      // If user exists and email was changed, update email in public.users
+      if (parentUserId && guardianEmail) {
+        try {
+          await this.supabase.from('users').update({
+            email: guardianEmail,
+            updated_at: new Date().toISOString(),
+          }).eq('id', parentUserId);
+        } catch (emErr) {
+          console.warn('Update parent email notice:', emErr);
+        }
+      }
+
+      // 3. If user doesn't exist, insert into users table with provided password (or default 'password123')
       if (!parentUserId && (guardianEmail || guardianPhone)) {
         const generatedParentUserId =
           typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
@@ -7734,6 +7796,7 @@ export class ApiService {
                 return v.toString(16);
               });
 
+        const initialPwd = guardianPassword || 'password123';
         const { error: uErr } = await this.supabase
           .from('users')
           .insert({
@@ -7742,7 +7805,7 @@ export class ApiService {
             phone: guardianPhone || null,
             first_name: firstName,
             last_name: lastName || null,
-            password_hash: 'password123',
+            password_hash: initialPwd, // Database trigger trg_users_hash_password crypts plaintext to bcrypt
             status: 'ACTIVE',
           });
 
@@ -7768,7 +7831,7 @@ export class ApiService {
 
           const { data: signUpData } = await this.supabase.auth.signUp({
             email: guardianEmail,
-            password: 'password123',
+            password: guardianPassword || 'password123',
             options: {
               data: {
                 first_name: firstName,
@@ -10667,50 +10730,85 @@ export class ApiService {
   private async updateDepartmentalUser(id: string, body: any): Promise<any> {
     const schoolId = this.getSchoolId();
 
-    try {
-      const userUpdates: any = {};
-      if (body.first_name !== undefined) userUpdates.first_name = body.first_name;
-      if (body.last_name !== undefined) userUpdates.last_name = body.last_name;
-      if (body.phone !== undefined) userUpdates.phone = body.phone;
-      if (body.email !== undefined) userUpdates.email = body.email.toLowerCase().trim();
-      if (body.department !== undefined) userUpdates.department = body.department;
-      if (body.designation !== undefined) userUpdates.designation = body.designation;
-      if (body.status !== undefined) userUpdates.status = body.status;
-      if (body.custom_permissions !== undefined) userUpdates.custom_permissions = body.custom_permissions;
-      if (body.password) userUpdates.password_hash = body.password;
+    // 1. Update user_school_roles (where custom_permissions, department, designation live)
+    const roleUpdates: any = {};
+    if (body.department !== undefined) roleUpdates.department = body.department;
+    if (body.designation !== undefined) roleUpdates.designation = body.designation;
+    if (body.status !== undefined) roleUpdates.status = body.status;
+    if (body.custom_permissions !== undefined) roleUpdates.custom_permissions = body.custom_permissions;
 
-      const roleUpdates: any = {};
-      if (body.department !== undefined) roleUpdates.department = body.department;
-      if (body.designation !== undefined) roleUpdates.designation = body.designation;
-      if (body.status !== undefined) roleUpdates.status = body.status;
-      if (body.custom_permissions !== undefined) roleUpdates.custom_permissions = body.custom_permissions;
-
-      if (Object.keys(userUpdates).length > 0) {
-        await this.supabase.from('users').update(userUpdates).eq('id', id);
+    if (Object.keys(roleUpdates).length > 0) {
+      try {
+        let query = this.supabase.from('user_school_roles').update(roleUpdates).eq('user_id', id);
+        if (schoolId) {
+          query = query.eq('school_id', schoolId);
+        }
+        const { error: roleErr } = await query;
+        if (roleErr) {
+          console.warn('user_school_roles update error:', roleErr);
+        }
+      } catch (e) {
+        console.warn('user_school_roles update exception:', e);
       }
-      if (Object.keys(roleUpdates).length > 0) {
-        await this.supabase.from('user_school_roles').update(roleUpdates).eq('user_id', id).eq('school_id', schoolId);
-      }
-    } catch (e) {
-      console.warn('Database update notice for departmental user:', e);
     }
 
-    // Update local cache
+    // 2. Update core user fields (first_name, last_name, phone, email, status, password_hash)
+    const userUpdates: any = {};
+    if (body.first_name !== undefined) userUpdates.first_name = body.first_name;
+    if (body.last_name !== undefined) userUpdates.last_name = body.last_name;
+    if (body.phone !== undefined) userUpdates.phone = body.phone;
+    if (body.email !== undefined) userUpdates.email = body.email.toLowerCase().trim();
+    if (body.status !== undefined) userUpdates.status = body.status;
+    if (body.password) userUpdates.password_hash = body.password;
+
+    if (Object.keys(userUpdates).length > 0) {
+      try {
+        const { error: userErr } = await this.supabase.from('users').update(userUpdates).eq('id', id);
+        if (userErr) {
+          console.warn('users update error:', userErr);
+        }
+      } catch (e) {
+        console.warn('users update exception:', e);
+      }
+    }
+
+    // 3. Update local cache and broadcast permission changes
     try {
       const cachedRaw = localStorage.getItem(this.getDeptUsersCacheKey(schoolId));
       if (cachedRaw) {
         let list: DepartmentalStaffUser[] = JSON.parse(cachedRaw);
         list = list.map(u => {
-          if (u.id === id) {
+          if (u.id === id || (body.email && u.email?.toLowerCase() === body.email.toLowerCase())) {
             return {
               ...u,
               ...body,
+              custom_permissions: body.custom_permissions !== undefined ? [...body.custom_permissions] : u.custom_permissions,
               name: `${body.first_name || u.first_name} ${body.last_name || u.last_name || ''}`.trim(),
             };
           }
           return u;
         });
         localStorage.setItem(this.getDeptUsersCacheKey(schoolId), JSON.stringify(list));
+      }
+
+      // If active session belongs to this user, immediately sync customPermissions
+      const curUserRaw = localStorage.getItem('schoolsense_user');
+      if (curUserRaw) {
+        const curUser = JSON.parse(curUserRaw);
+        if (curUser.id === id || (body.email && curUser.email?.toLowerCase() === body.email.toLowerCase())) {
+          if (body.custom_permissions !== undefined) {
+            curUser.customPermissions = [...body.custom_permissions];
+          }
+          if (body.department) curUser.department = body.department;
+          if (body.designation) curUser.designation = body.designation;
+          localStorage.setItem('schoolsense_user', JSON.stringify(curUser));
+        }
+      }
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('schoolsense_permissions_updated', {
+          detail: { userId: id, email: body.email, permissions: body.custom_permissions }
+        }));
       }
     } catch {}
 
@@ -10774,6 +10872,44 @@ export class ApiService {
     }
 
     return { success: true, message: 'Password reset successfully. The user can now login with the new password.' };
+  }
+
+  public async resetStudentParentPassword(studentId: string, newPassword?: string, extraBody?: any): Promise<any> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) throw new Error('School context missing');
+
+    const pwd = (newPassword || '').trim();
+    if (!pwd || pwd.length < 6) {
+      throw new Error('Password must be at least 6 characters long.');
+    }
+
+    // 1. Try atomic database RPC first
+    try {
+      const { data: rpcRes, error: rpcErr } = await this.supabase.rpc('admin_set_parent_password', {
+        p_student_id: studentId,
+        p_new_password: pwd,
+        p_email: extraBody?.guardianEmail || extraBody?.email || null,
+      });
+      if (!rpcErr && rpcRes && rpcRes.success !== false) {
+        return rpcRes;
+      }
+      if (rpcErr) {
+        console.warn('admin_set_parent_password RPC notice, using direct fallback:', rpcErr);
+      }
+    } catch (e) {
+      console.warn('RPC admin_set_parent_password exception, using direct fallback:', e);
+    }
+
+    // 2. Direct database update fallback
+    await this.ensureParentUserAndGuardian(schoolId, studentId, {
+      ...extraBody,
+      guardianPassword: pwd,
+    });
+
+    return {
+      success: true,
+      message: 'Parent portal login password updated immediately. The parent can now log in with the new password.',
+    };
   }
 
   private async seedSampleDepartmentalUsers(): Promise<any> {

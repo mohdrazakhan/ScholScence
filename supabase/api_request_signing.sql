@@ -352,7 +352,7 @@ begin
   select id, email, phone, first_name, last_name, status
     into v_user from public.users where id = (v_sess ->> 'user_id')::uuid;
 
-  select id, name, code
+  select id, name, code, logo_url
     into v_school from public.schools where id = nullif(v_sess ->> 'school_id', '')::uuid;
 
   v_out := jsonb_build_object(
@@ -364,7 +364,7 @@ begin
       'status', v_user.status
     ),
     'school', case when v_school.id is null then null else
-      jsonb_build_object('id', v_school.id, 'name', v_school.name, 'code', v_school.code) end,
+      jsonb_build_object('id', v_school.id, 'name', v_school.name, 'code', v_school.code, 'logoUrl', v_school.logo_url, 'logo_url', v_school.logo_url) end,
     'role', v_sess ->> 'role'
   );
 
@@ -604,11 +604,16 @@ begin
     r.name as role_name,
     s.name as school_name,
     s.code as school_code,
-    s.status as school_status
+    s.status as school_status,
+    s.logo_url as school_logo_url,
+    coalesce(usr.custom_permissions, u.custom_permissions, '[]'::jsonb) as custom_permissions,
+    coalesce(usr.department, u.department, '') as department,
+    coalesce(usr.designation, u.designation, r.name) as designation
   into v_usr
   from public.user_school_roles usr
   join public.roles r on r.id = usr.role_id
   join public.schools s on s.id = usr.school_id
+  join public.users u on u.id = usr.user_id
   where usr.user_id = v_user.id
     and usr.status = 'ACTIVE'
     and usr.deleted_at is null
@@ -651,11 +656,16 @@ begin
       'lastName', coalesce(v_user.last_name, ''),
       'role', v_usr.role_code,
       'roleName', v_usr.role_name,
+      'department', v_usr.department,
+      'designation', v_usr.designation,
+      'customPermissions', v_usr.custom_permissions,
       'school', jsonb_build_object(
         'id', v_usr.school_id,
         'name', v_usr.school_name,
         'code', v_usr.school_code,
         'status', v_usr.school_status,
+        'logoUrl', v_usr.school_logo_url,
+        'logo_url', v_usr.school_logo_url,
         'disabledServices', jsonb_build_array()
       ),
       'permissions', jsonb_build_array()

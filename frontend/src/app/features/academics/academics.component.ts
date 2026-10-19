@@ -165,19 +165,6 @@ interface StaffMember {
             </div>
           </div>
 
-          <!-- Quick Test Data Provisioning Button (Admin / Principal) -->
-          <button *ngIf="canManage && (activeTab === 'CLASSES' || activeTab === 'STUDENTS')" 
-                  (click)="autoSetupAllClasses()"
-                  [disabled]="isAutoProvisioning"
-                  title="Auto-provision sections, standard subjects & students across all classes for current session"
-                  class="px-3.5 py-2 sm:px-4 sm:py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer disabled:opacity-50">
-            <svg *ngIf="!isAutoProvisioning" class="w-3.5 h-3.5 text-indigo-600 shrink-0" viewBox="0 0 24 24" fill="none">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
-            </svg>
-            <span *ngIf="isAutoProvisioning" class="w-3.5 h-3.5 border-2 border-indigo-400 border-t-indigo-700 rounded-full animate-spin"></span>
-            <span>{{ isAutoProvisioning ? (autoProvisionProgress || 'Setting up...') : 'Quick Test Setup' }}</span>
-          </button>
-
           <!-- Buttons for CLASSES tab -->
           <button *ngIf="canManage && activeTab === 'CLASSES'" (click)="openAddClassModal()" id="btn-add-class"
                   class="px-4 py-2 sm:px-5 sm:py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
@@ -255,7 +242,7 @@ interface StaffMember {
             <!-- Metric 3: Students & Capacity -->
             <div class="px-1.5 flex flex-col items-center justify-center">
               <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Intake</span>
-              <span class="text-base font-black text-purple-700 mt-0.5">
+              <span class="text-base font-black text-slate-900 dark:text-white mt-0.5">
                 {{ loadingClasses ? '—' : ((classesOverviewSummary?.enrolledStudents ?? totalEnrolledStudents) + '/' + (classesOverviewSummary?.totalCapacity ?? totalCampusCapacity)) }}
               </span>
               <span class="text-[9px] text-slate-500 truncate mt-0.5">Students/Cap</span>
@@ -265,43 +252,43 @@ interface StaffMember {
 
         <!-- Desktop View (3 Distinct Cards) -->
         <div class="hidden sm:grid sm:grid-cols-3 gap-4">
-          <div class="p-5 rounded-3xl bg-white border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] flex items-center gap-4">
-            <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center border border-indigo-100 shrink-0">
-              <svg class="w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <div class="p-5 rounded-3xl bg-white dark:bg-[#121214] border border-slate-200/80 dark:border-[#222226] shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] dark:shadow-none flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-[#1a1a1e] text-indigo-700 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-white/10 shrink-0">
+              <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
               </svg>
             </div>
             <div>
               <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Grade Levels</div>
-              <div class="text-xl font-black text-slate-900 mt-0.5">{{ loadingClasses ? '—' : ((classesOverviewSummary?.totalClasses ?? classes.length) + ' Classes') }}</div>
-              <div class="text-[10px] text-slate-500">From Pre-Nursery to Grade 12</div>
+              <div class="text-xl font-black text-slate-900 dark:text-white mt-0.5">{{ loadingClasses ? '—' : ((classesOverviewSummary?.totalClasses ?? classes.length) + ' Classes') }}</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">From Pre-Nursery to Grade 12</div>
             </div>
           </div>
 
-          <div class="p-5 rounded-3xl bg-white border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] flex items-center gap-4">
-            <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-100 shrink-0">
-              <svg class="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <div class="p-5 rounded-3xl bg-white dark:bg-[#121214] border border-slate-200/80 dark:border-[#222226] shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] dark:shadow-none flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-[#1a1a1e] text-emerald-700 dark:text-emerald-400 flex items-center justify-center border border-emerald-100 dark:border-white/10 shrink-0">
+              <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
             </div>
             <div>
               <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active Divisions</div>
-              <div class="text-xl font-black text-emerald-700 mt-0.5">{{ loadingClasses ? '—' : ((classesOverviewSummary?.totalSections ?? totalSectionsCount) + ' Sections') }}</div>
-              <div class="text-[10px] text-slate-500">Custom and lettered divisions</div>
+              <div class="text-xl font-black text-emerald-700 dark:text-emerald-400 mt-0.5">{{ loadingClasses ? '—' : ((classesOverviewSummary?.totalSections ?? totalSectionsCount) + ' Sections') }}</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">Custom and lettered divisions</div>
             </div>
           </div>
 
-          <div class="p-5 rounded-3xl bg-white border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] flex items-center gap-4">
-            <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center border border-purple-100 shrink-0">
-              <svg class="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <div class="p-5 rounded-3xl bg-white dark:bg-[#121214] border border-slate-200/80 dark:border-[#222226] shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] dark:shadow-none flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-[#1a1a1e] text-purple-700 dark:text-purple-400 flex items-center justify-center border border-purple-100 dark:border-white/10 shrink-0">
+              <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
             <div>
               <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Student Intake & Capacity</div>
-              <div class="text-xl font-black text-purple-700 mt-0.5">{{ loadingClasses ? '—' : ((classesOverviewSummary?.enrolledStudents ?? totalEnrolledStudents) + ' / ' + (classesOverviewSummary?.totalCapacity ?? totalCampusCapacity)) }}</div>
-              <div class="text-[10px] text-slate-500">Enrolled out of total classroom capacity</div>
+              <div class="text-xl font-black text-slate-900 dark:text-white mt-0.5">{{ loadingClasses ? '—' : ((classesOverviewSummary?.enrolledStudents ?? totalEnrolledStudents) + ' / ' + (classesOverviewSummary?.totalCapacity ?? totalCampusCapacity)) }}</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">Enrolled out of total classroom capacity</div>
             </div>
           </div>
         </div>
@@ -345,18 +332,18 @@ interface StaffMember {
                   <!-- Intake Capacity & Fill Badge -->
                   <div class="px-2.5 py-1 rounded-xl text-[11px] font-black border flex items-center gap-1.5 shadow-2xs transition-all"
                        [ngClass]="getClassEnrolledCount(c) >= getClassCapacity(c) && getClassCapacity(c) > 0 
-                         ? 'bg-rose-50 border-rose-200 text-rose-700' 
+                         ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-300' 
                          : getClassEnrolledCount(c) > 0 
-                           ? 'bg-indigo-50 border-indigo-200 text-indigo-800' 
-                           : 'bg-slate-50 border-slate-200 text-slate-500'"
+                           ? 'bg-slate-100 dark:bg-[#18181c] border-slate-200 dark:border-[#282832] text-slate-900 dark:text-white' 
+                           : 'bg-slate-50 dark:bg-[#121214] border-slate-200 dark:border-[#222226] text-slate-500 dark:text-slate-400'"
                        title="Total Enrolled Students / Total Section Capacity across all sections">
                     <span class="w-1.5 h-1.5 rounded-full"
                           [ngClass]="getClassEnrolledCount(c) >= getClassCapacity(c) && getClassCapacity(c) > 0 
-                            ? 'bg-rose-500' 
+                            ? 'bg-rose-500 dark:bg-rose-400' 
                             : getClassEnrolledCount(c) > 0 
-                              ? 'bg-indigo-500' 
-                              : 'bg-slate-400'"></span>
-                    <span>{{ getClassEnrolledCount(c) }} / {{ getClassCapacity(c) }}</span>
+                              ? 'bg-emerald-500 dark:bg-emerald-400' 
+                              : 'bg-slate-400 dark:bg-slate-600'"></span>
+                    <span class="font-mono tracking-tight">{{ getClassEnrolledCount(c) }} / {{ getClassCapacity(c) }}</span>
                   </div>
 
                   <!-- Class Header 3-Dot Actions Menu -->
@@ -435,7 +422,7 @@ interface StaffMember {
                     </span>
                     <span>Sections ({{ c.sectionCount ?? (c.sections?.length || 0) }})</span>
                   </div>
-                  <span>Capacity: <strong class="text-slate-700">{{ (c.enrolledCount ?? getClassEnrolledCount(c)) }} / {{ getClassCapacity(c) }}</strong></span>
+                  <span>Capacity: <strong class="text-slate-800 dark:text-slate-100 font-bold">{{ (c.enrolledCount ?? getClassEnrolledCount(c)) }} / {{ getClassCapacity(c) }}</strong></span>
                 </div>
 
                 <!-- Sections list (Collapsible, hidden by default unless expanded) -->
@@ -450,7 +437,7 @@ interface StaffMember {
                     <div *ngFor="let sec of c.sections"
                          class="p-3 bg-[#f8fafc] hover:bg-white border border-slate-200/80 rounded-2xl flex items-center justify-between transition-all group shadow-2xs relative">
                       <div class="flex items-center gap-2.5 min-w-0">
-                        <div class="w-7 h-7 rounded-xl bg-indigo-100 text-indigo-800 font-bold text-xs flex items-center justify-center shrink-0">
+                        <div class="w-7 h-7 rounded-xl bg-slate-100 dark:bg-[#1a1a20] text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-white/10 font-bold text-xs flex items-center justify-center shrink-0">
                           {{ (sec.code || sec.name).slice(0, 2).toUpperCase() }}
                         </div>
                         <div class="min-w-0">
@@ -458,7 +445,7 @@ interface StaffMember {
                             {{ formatSection(sec.name) }}
                           </div>
                           <div class="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 flex-wrap mt-0.5">
-                            <span>Capacity: <strong class="text-slate-700">{{ sec.enrolled_count || 0 }} / {{ sec.capacity || 40 }}</strong></span>
+                            <span>Capacity: <strong class="text-slate-800 dark:text-slate-100 font-bold">{{ sec.enrolled_count || 0 }} / {{ sec.capacity || 40 }}</strong></span>
                             <span class="text-slate-300">•</span>
                             <span *ngIf="getSectionClassTeacher(sec)" class="text-emerald-700 font-bold inline-flex items-center gap-1">
                               <svg class="w-3 h-3 text-emerald-600 inline shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -552,15 +539,15 @@ interface StaffMember {
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                       </svg>
                     </span>
-                    <svg class="w-3.5 h-3.5 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg class="w-3.5 h-3.5 text-slate-600 dark:text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
                     <span>Class Subjects ({{ c.subjectCount ?? getClassSubjects(c).length }})</span>
                   </div>
 
                   <button type="button" (click)="openAddSubjectToClass(c, $event)"
-                          class="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold hover:underline cursor-pointer flex items-center gap-1">
-                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                          class="text-[10px] text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white font-bold hover:underline cursor-pointer flex items-center gap-1">
+                    <svg class="w-3 h-3 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
                     <span>Add Subject</span>
                   </button>
                 </div>
@@ -568,22 +555,22 @@ interface StaffMember {
                 <!-- Subjects list (Collapsible, hidden by default unless expanded) -->
                 <div *ngIf="isSubjectsExpanded(c.id)" class="animate-fadeIn">
                   <!-- Loading spinner while fetching single class subjects -->
-                  <div *ngIf="classDetailsLoading[c.id]" class="p-3 text-center text-xs text-slate-400 bg-[#f8fafc] rounded-2xl flex items-center justify-center gap-2 border border-dashed border-slate-200">
-                    <div class="w-3.5 h-3.5 border-2 border-slate-300 border-t-indigo-600 rounded-full animate-spin"></div>
+                  <div *ngIf="classDetailsLoading[c.id]" class="p-3 text-center text-xs text-slate-400 bg-[#f8fafc] dark:bg-[#141418] rounded-2xl flex items-center justify-center gap-2 border border-dashed border-slate-200 dark:border-[#26262e]">
+                    <div class="w-3.5 h-3.5 border-2 border-slate-300 dark:border-slate-600 border-t-slate-700 dark:border-t-white rounded-full animate-spin"></div>
                     <span>Loading curriculum subjects...</span>
                   </div>
 
                   <ng-container *ngIf="!classDetailsLoading[c.id]">
                     <div *ngIf="getClassSubjects(c).length > 0" class="flex flex-wrap gap-1.5 pt-0.5">
                       <span *ngFor="let sub of getClassSubjects(c)" 
-                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-white text-slate-800 border border-slate-200/90 shadow-2xs group/sub hover:border-slate-300 transition-colors">
-                        <span class="font-bold text-slate-900">{{ sub.name }}</span>
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-white dark:bg-[#18181c] text-slate-800 dark:text-slate-200 border border-slate-200/90 dark:border-[#27272e] shadow-2xs group/sub hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
+                        <span class="font-bold text-slate-900 dark:text-white">{{ sub.name }}</span>
                         <span *ngIf="!sub.is_all_sections && sub.section_names?.length" 
-                              class="text-[9px] px-1.5 py-0.2 rounded-md bg-amber-50 text-amber-900 font-bold border border-amber-200">
+                              class="text-[9px] px-1.5 py-0.2 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 font-bold border border-amber-200 dark:border-amber-900/50">
                           {{ sub.section_names.join(', ') }}
                         </span>
                         <span *ngIf="sub.is_all_sections || !sub.section_names?.length" 
-                              class="text-[9px] px-1.5 py-0.2 rounded-md bg-emerald-50 text-emerald-800 font-bold border border-emerald-200">
+                              class="text-[9px] px-1.5 py-0.2 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-900/50">
                           All Sec
                         </span>
                         <!-- Remove Subject Button -->
@@ -591,7 +578,7 @@ interface StaffMember {
                                 type="button" 
                                 (click)="promptDeleteSubject(sub, c, $event)" 
                                 title="Remove Subject {{ sub.name }}"
-                                class="w-4 h-4 rounded-md hover:bg-rose-100 text-slate-400 hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer ml-0.5">
+                                class="w-4 h-4 rounded-md hover:bg-rose-100 dark:hover:bg-rose-950/50 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 flex items-center justify-center transition-colors cursor-pointer ml-0.5">
                           <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                           </svg>
@@ -601,9 +588,9 @@ interface StaffMember {
 
                     <div *ngIf="getClassSubjects(c).length === 0" 
                          (click)="openAddSubjectToClass(c, $event)"
-                         class="py-2 px-3 bg-slate-50/70 hover:bg-indigo-50/50 border border-dashed border-slate-200 hover:border-indigo-300 rounded-xl text-center cursor-pointer transition-colors group">
-                      <span class="text-[11px] font-medium text-slate-400 group-hover:text-indigo-600 flex items-center justify-center gap-1">
-                        <svg class="w-3 h-3 text-slate-400 group-hover:text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                         class="py-2 px-3 bg-slate-50/70 dark:bg-[#141418] hover:bg-slate-100 dark:hover:bg-[#1c1c22] border border-dashed border-slate-200 dark:border-[#26262e] rounded-xl text-center cursor-pointer transition-colors group">
+                      <span class="text-[11px] font-medium text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200 flex items-center justify-center gap-1">
+                        <svg class="w-3 h-3 text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
                         No subjects added yet. Click to add.
                       </span>
                     </div>
@@ -613,9 +600,9 @@ interface StaffMember {
             </div>
 
             <!-- Card Bottom Footer -->
-            <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+            <div class="pt-3 border-t border-slate-100 dark:border-[#222226] flex items-center justify-between text-[11px] text-slate-400">
               <span>Status: <strong class="text-emerald-600">Active</strong></span>
-              <button (click)="openAddSectionModal(c)" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs cursor-pointer">
+              <button (click)="openAddSectionModal(c)" class="text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white font-bold text-xs cursor-pointer">
                 + Add Section
               </button>
             </div>
@@ -656,8 +643,8 @@ interface StaffMember {
               </span>
               <span class="text-[10px] font-black px-1.5 py-0.5 rounded-md shrink-0"
                     [ngClass]="selectedClass?.id === c.id 
-                      ? 'bg-slate-900 text-white shadow-2xs' 
-                      : 'bg-indigo-50 text-indigo-700 border border-indigo-100/80'"
+                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-2xs' 
+                      : 'bg-slate-100 dark:bg-[#1c1c22] text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-[#2e2e38]'"
                     title="Enrolled Students / Total Capacity">
                 {{ getClassEnrolledCount(c) }}/{{ getClassCapacity(c) }}
               </span>
@@ -3261,9 +3248,71 @@ interface StaffMember {
                 </div>
               </div>
 
-              <p class="text-[10px] text-slate-500 leading-tight">
-                This verified email will be used by the family to log into the SchoolSense Parent Portal to track attendance, fees, homework, and report cards.
-              </p>
+              <!-- Parent Portal Password Setting & Immediate Editing -->
+              <div class="pt-2.5 border-t border-indigo-100/90">
+                <div class="flex items-center justify-between mb-1.5">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <label class="block font-bold text-slate-800 text-xs">
+                      {{ isEditingStudent ? 'Parent Portal Login Password' : 'Set Initial Parent Password' }}
+                    </label>
+                    <span *ngIf="!isEditingStudent" class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-indigo-100 text-indigo-700">Default: password123</span>
+                    <span *ngIf="isEditingStudent" class="text-[10px] font-medium text-slate-500">(Leave blank to keep unchanged)</span>
+                  </div>
+                  <button type="button" (click)="showGuardianPassword = !showGuardianPassword"
+                          class="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 focus:outline-none transition-colors cursor-pointer">
+                    <svg *ngIf="!showGuardianPassword" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <svg *ngIf="showGuardianPassword" class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                    </svg>
+                    <span>{{ showGuardianPassword ? 'Hide Password' : 'Show Password' }}</span>
+                  </button>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <div class="relative flex-1">
+                    <input [type]="showGuardianPassword ? 'text' : 'password'"
+                           [(ngModel)]="newStudent.guardianPassword"
+                           (input)="parentPasswordSuccessMsg = ''"
+                           [placeholder]="isEditingStudent ? 'Enter new password (min. 6 characters)' : 'Enter custom password or keep default'"
+                           class="w-full px-3.5 py-2 bg-white border border-indigo-200 rounded-xl text-xs font-mono font-medium text-slate-900 focus:outline-none focus:border-indigo-600 shadow-inner" />
+                  </div>
+
+                  <!-- Quick Action for editing: Immediate password update button -->
+                  <button *ngIf="isEditingStudent" type="button"
+                          (click)="updateParentPasswordImmediately()"
+                          [disabled]="updatingParentPassword || !newStudent.guardianPassword || newStudent.guardianPassword.trim().length < 6"
+                          class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer">
+                    <svg *ngIf="!updatingParentPassword" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+                    </svg>
+                    <svg *ngIf="updatingParentPassword" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                    </svg>
+                    <span>{{ updatingParentPassword ? 'Changing...' : 'Update Password Now' }}</span>
+                  </button>
+
+                  <button *ngIf="!isEditingStudent" type="button"
+                          (click)="newStudent.guardianPassword = 'password123'; parentPasswordSuccessMsg = ''"
+                          class="px-2.5 py-2 bg-white hover:bg-indigo-50 border border-indigo-200 text-indigo-700 text-[11px] font-bold rounded-xl transition-all shrink-0 cursor-pointer">
+                    Reset to Default
+                  </button>
+                </div>
+
+                <div *ngIf="parentPasswordSuccessMsg" class="mt-1.5 text-[11px] font-bold text-emerald-600 flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>{{ parentPasswordSuccessMsg }}</span>
+                </div>
+
+                <p class="text-[10px] text-slate-500 leading-tight mt-1.5">
+                  {{ isEditingStudent ? 'Clicking "Update Password Now" or saving changes immediately updates the database credentials so the parent can log into the portal with the new password.' : 'This password will be assigned to the parent portal login account immediately upon enrollment.' }}
+                </p>
+              </div>
             </div>
 
             <div *ngIf="studentModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
@@ -4178,89 +4227,90 @@ interface StaffMember {
       </div>
 
       <!-- ============================================================== -->
-      <!-- MODAL: ADD / CONFIGURE SUBJECT FOR CLASS & SECTIONS            -->
+      <!-- ============================================================== -->
+      <!-- MODAL: ADD / CONFIGURE SUBJECT FOR CLASS & SECTIONS (CLAYMORPHIC) -->
       <!-- ============================================================== -->
       <div *ngIf="showAddSubjectModal" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[70] animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-lg w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
+        <!-- Frosted Glass Backdrop -->
+        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-md transition-opacity" (click)="closeAddSubjectModal()"></div>
+
+        <!-- Claymorphic Modal Card -->
+        <div class="relative bg-white/95 dark:bg-[#121214] backdrop-blur-xl rounded-[2.25rem] max-w-xl w-full flex flex-col max-h-[88vh] shadow-[0_24px_64px_-12px_rgba(15,23,42,0.28)] dark:shadow-none border border-slate-200/70 dark:border-[#222226] overflow-hidden animate-scaleUp z-10">
           
           <!-- Modal Header -->
-          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
-            <div class="flex items-center gap-2.5">
-              <div class="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center shrink-0 shadow-xs">
-                <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <div class="px-6 sm:px-8 pt-7 pb-6 border-b border-slate-100 dark:border-[#222226] flex items-center justify-between shrink-0 bg-white/95 dark:bg-[#121214] backdrop-blur-md">
+            <div class="flex items-center gap-3.5">
+              <!-- Refined Claymorphic Icon Badge -->
+              <div class="w-11 h-11 rounded-2xl bg-indigo-50/90 dark:bg-[#1a1a1e] text-indigo-600 dark:text-indigo-400 border border-indigo-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(255,255,255,0.9),0_3px_10px_rgba(99,102,241,0.12)] dark:shadow-none flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
               </div>
               <div>
-                <h3 class="text-base font-black text-slate-900 tracking-tight">
-                  {{ subjectTargetClass ? 'Add Subject to ' + subjectTargetClass.name : 'Add Subject to Curriculum' }}
+                <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                  <span>{{ subjectTargetClass ? 'Add Subject to ' + subjectTargetClass.name : 'Add Subject to Curriculum' }}</span>
+                  <span *ngIf="subjectTargetClass" class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-lg bg-indigo-50 dark:bg-[#1e1e24] text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-[#282830]">{{ subjectTargetClass.code }}</span>
                 </h3>
-                <p class="text-xs text-slate-500 mt-0.5">Define subject name, auto-generated code, and section applicability.</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 leading-relaxed">Configure curriculum subject details and section assignments.</p>
               </div>
             </div>
-            <button (click)="closeAddSubjectModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+            <!-- Tactile Close Button -->
+            <button (click)="closeAddSubjectModal()"
+                    class="w-9 h-9 rounded-full bg-slate-100 dark:bg-[#18181c] hover:bg-slate-200 dark:hover:bg-[#222228] text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-all cursor-pointer border border-slate-200/60 dark:border-[#27272e] active:scale-95 text-lg font-bold leading-none shrink-0"
+                    title="Close modal">
+              &times;
+            </button>
           </div>
 
           <!-- Modal Body (Scrollable) -->
-          <div class="p-5 sm:px-6 py-4 space-y-4 overflow-y-auto flex-1 custom-clay-scroll bg-white">
+          <div class="px-6 sm:px-8 py-6 space-y-5 overflow-y-auto flex-1 custom-clay-scroll bg-gradient-to-b from-white via-slate-50/30 to-slate-50/60 dark:from-[#121214] dark:via-[#121214] dark:to-[#121214]">
             
             <!-- Target Class Selector -->
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Target Class / Grade Level *</label>
+              <label class="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                <span>Target Class / Grade Level</span>
+                <span class="text-rose-500 font-black">*</span>
+              </label>
               <select [(ngModel)]="selectedSubjectClassId" (change)="onSubjectClassChange(selectedSubjectClassId)"
-                      class="w-full px-4 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner font-semibold">
+                      class="clay-input w-full px-4 py-2.5 text-xs text-slate-900 font-bold cursor-pointer">
                 <option value="">-- General / Applicable to All Classes --</option>
                 <option *ngFor="let c of classes" [value]="c.id">{{ c.name }} ({{ c.code }})</option>
               </select>
             </div>
 
-            <!-- Subject Name & Quick Suggestions -->
+            <!-- Subject Name -->
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Subject Name *</label>
+              <label class="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                <span>Subject Name</span>
+                <span class="text-rose-500 font-black">*</span>
+              </label>
               <input type="text" [(ngModel)]="newSubject.name" (ngModelChange)="onSubjectNameChange()"
                      placeholder="e.g. Biology, Mathematics, Computer Science"
-                     class="w-full px-4 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 font-semibold focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
-              
-              <!-- Quick Suggestions Chips -->
-              <div class="mt-2">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Quick Suggestions:</span>
-                <div class="flex flex-wrap gap-1.5">
-                  <button type="button" *ngFor="let sug of quickSubjectSuggestions" (click)="applyQuickSubject(sug)"
-                          class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 transition-colors cursor-pointer">
-                    + {{ sug }}
-                  </button>
-                </div>
-              </div>
+                     class="clay-input w-full px-4 py-2.5 text-xs text-slate-900 font-bold placeholder:text-slate-400 placeholder:font-normal" />
             </div>
 
-            <!-- Subject Code (Auto-Generated & Editable) & Subject Type -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- Subject Code & Subject Type in Tactile Card (No Auto-Generated badge) -->
+            <div class="p-4 rounded-2xl bg-gradient-to-b from-slate-50/90 to-slate-100/50 dark:from-[#16161c] dark:to-[#16161c] border border-slate-200/80 dark:border-[#222226] shadow-[inset_0_2px_4px_rgba(255,255,255,0.8),0_4px_12px_rgba(15,23,42,0.03)] dark:shadow-none grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
-                <div class="flex items-center justify-between mb-1">
-                  <label class="text-xs font-bold text-slate-700">Subject Code *</label>
-                  <span class="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-                    <svg class="w-3 h-3 text-emerald-500 shrink-0" viewBox="0 0 24 24" fill="none">
-                      <path d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275L12 3z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    <span>Auto-Generated</span>
-                  </span>
-                </div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Subject Code <span class="text-rose-500">*</span></label>
                 <div class="relative">
                   <input type="text" [(ngModel)]="newSubject.code" placeholder="e.g. BIO-10"
-                         class="w-full px-4 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-mono font-bold text-slate-900 uppercase focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+                         class="clay-input w-full px-4 py-2.5 text-xs font-mono font-bold text-slate-900 uppercase pr-20" />
                   <button type="button" (click)="regenerateCode()" title="Regenerate Unique Code"
-                          class="absolute right-2 top-2 px-2 py-1 text-[10px] font-bold text-indigo-600 hover:bg-indigo-50 rounded-lg cursor-pointer inline-flex items-center gap-1">
-                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                          class="absolute right-1.5 top-1.5 px-2.5 py-1 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 bg-white dark:bg-[#1e1e24] hover:bg-indigo-50 dark:hover:bg-[#252530] rounded-xl border border-slate-200/90 dark:border-[#282830] shadow-2xs hover:shadow-xs cursor-pointer inline-flex items-center gap-1 transition-all active:scale-95">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
                     <span>Refresh</span>
                   </button>
                 </div>
-                <p class="text-[10px] text-slate-400 mt-1">Unique campus identifier (fully customizable).</p>
+                <p class="text-[10px] text-slate-400 font-medium mt-1">Unique campus identifier for timetables & exams.</p>
               </div>
 
               <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Subject Type</label>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Subject Type</label>
                 <select [(ngModel)]="newSubject.subjectType"
-                        class="w-full px-4 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner font-semibold">
+                        class="clay-input w-full px-4 py-2.5 text-xs text-slate-900 font-bold cursor-pointer">
                   <option value="ACADEMIC">Academic / Theory</option>
                   <option value="LAB">Lab & Practical</option>
                   <option value="LANGUAGE">Language</option>
@@ -4268,105 +4318,124 @@ interface StaffMember {
                   <option value="ACTIVITY">Co-Curricular</option>
                   <option value="VOCATIONAL">Vocational</option>
                 </select>
+                <p class="text-[10px] text-slate-400 font-medium mt-1">Defines grading scale & report format.</p>
               </div>
             </div>
 
-            <!-- Section Applicability / Section Selection -->
+            <!-- Section Applicability / Section Selection (Tactile Clay Card) -->
             <div *ngIf="subjectTargetClass && subjectTargetClass.sections && subjectTargetClass.sections.length > 0" 
-                 class="p-4 bg-slate-50/90 rounded-2xl border border-slate-200/90 space-y-3">
+                 class="p-4 rounded-2xl bg-gradient-to-b from-slate-50/90 to-slate-100/60 dark:from-[#16161c] dark:to-[#16161c] border border-slate-200/80 dark:border-[#222226] shadow-[inset_0_2px_4px_rgba(255,255,255,0.8),0_4px_12px_rgba(15,23,42,0.03)] dark:shadow-none space-y-3.5">
               <div class="flex items-center justify-between">
                 <div>
-                  <h4 class="text-xs font-black text-slate-900">Section Applicability</h4>
-                  <p class="text-[11px] text-slate-500 mt-0.5">Is this subject taught across all sections or specific sections only?</p>
+                  <h4 class="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <span>Section Applicability</span>
+                  </h4>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">Is this subject taught across all sections or specific sections only?</p>
                 </div>
               </div>
 
-              <!-- Option Tabs: All Sections vs Specific Sections -->
-              <div class="grid grid-cols-2 gap-2">
+              <!-- Option Tabs: Tactile 3D Buttons -->
+              <div class="grid grid-cols-2 gap-2.5">
                 <button type="button" (click)="selectAllSectionsForSubject()"
-                        [ngClass]="newSubject.isAllSections ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-300' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'"
-                        class="p-2.5 rounded-xl text-left transition-all cursor-pointer">
-                  <div class="flex items-center gap-1.5 font-bold text-xs">
-                    <span class="w-3.5 h-3.5 rounded-full border flex items-center justify-center"
-                          [ngClass]="newSubject.isAllSections ? 'border-white bg-white text-indigo-600' : 'border-slate-400'">
-                      <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        [ngClass]="newSubject.isAllSections ? 'bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-[0_8px_18px_rgba(79,70,229,0.38),inset_0_2px_4px_rgba(255,255,255,0.35),inset_0_-2px_4px_rgba(30,27,75,0.35)] border border-white/20' : 'bg-white dark:bg-[#121214] text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-[#222226] hover:bg-slate-50 dark:hover:bg-[#18181c] hover:border-indigo-200 dark:hover:border-indigo-500/40 shadow-[0_2px_8px_rgba(15,23,42,0.04),inset_0_1px_2px_rgba(255,255,255,0.9)] dark:shadow-none'"
+                        class="p-3 rounded-2xl text-left transition-all cursor-pointer active:scale-98">
+                  <div class="flex items-center gap-2 font-black text-xs">
+                    <span class="w-4 h-4 rounded-full border flex items-center justify-center shrink-0"
+                          [ngClass]="newSubject.isAllSections ? 'border-white bg-white text-indigo-600 shadow-xs' : 'border-slate-300 dark:border-[#27272e] bg-slate-100 dark:bg-[#18181c]'">
+                      <svg *ngIf="newSubject.isAllSections" class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
                     </span>
                     <span>All Sections</span>
                   </div>
-                  <div class="text-[10px] mt-0.5 opacity-80 truncate">
+                  <div class="text-[10px] mt-1 opacity-80 font-medium truncate">
                     Applicable to all {{ subjectTargetClass.sections.length }} sections
                   </div>
                 </button>
 
                 <button type="button" (click)="selectSpecificSectionsForSubject()"
-                        [ngClass]="!newSubject.isAllSections ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-300' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'"
-                        class="p-2.5 rounded-xl text-left transition-all cursor-pointer">
-                  <div class="flex items-center gap-1.5 font-bold text-xs">
-                    <span class="w-3.5 h-3.5 rounded-full border flex items-center justify-center"
-                          [ngClass]="!newSubject.isAllSections ? 'border-white bg-white text-indigo-600' : 'border-slate-400'">
-                      <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        [ngClass]="!newSubject.isAllSections ? 'bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-[0_8px_18px_rgba(79,70,229,0.38),inset_0_2px_4px_rgba(255,255,255,0.35),inset_0_-2px_4px_rgba(30,27,75,0.35)] border border-white/20' : 'bg-white dark:bg-[#121214] text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-[#222226] hover:bg-slate-50 dark:hover:bg-[#18181c] hover:border-indigo-200 dark:hover:border-indigo-500/40 shadow-[0_2px_8px_rgba(15,23,42,0.04),inset_0_1px_2px_rgba(255,255,255,0.9)] dark:shadow-none'"
+                        class="p-3 rounded-2xl text-left transition-all cursor-pointer active:scale-98">
+                  <div class="flex items-center gap-2 font-black text-xs">
+                    <span class="w-4 h-4 rounded-full border flex items-center justify-center shrink-0"
+                          [ngClass]="!newSubject.isAllSections ? 'border-white bg-white text-indigo-600 shadow-xs' : 'border-slate-300 dark:border-[#27272e] bg-slate-100 dark:bg-[#18181c]'">
+                      <svg *ngIf="!newSubject.isAllSections" class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
                     </span>
                     <span>Specific Sections Only</span>
                   </div>
-                  <div class="text-[10px] mt-0.5 opacity-80 truncate">
+                  <div class="text-[10px] mt-1 opacity-80 font-medium truncate">
                     Select individual sections
                   </div>
                 </button>
               </div>
 
               <!-- Specific Section Checkboxes Grid -->
-              <div *ngIf="!newSubject.isAllSections" class="pt-2 border-t border-slate-200/80 space-y-2 animate-fadeIn">
-                <div class="flex items-center justify-between text-[11px] font-bold text-slate-700">
+              <div *ngIf="!newSubject.isAllSections" class="pt-2 border-t border-slate-200/80 dark:border-[#222226] space-y-2 animate-fadeIn">
+                <div class="flex items-center justify-between text-[11px] font-bold text-slate-700 dark:text-slate-300">
                   <span>Choose which sections have this subject:</span>
-                  <span class="text-indigo-600">{{ newSubject.selectedSectionIds.length }} / {{ subjectTargetClass.sections.length }} Selected</span>
+                  <span class="clay-badge-indigo text-[10px] py-0.5 px-2 font-bold">{{ newSubject.selectedSectionIds.length }} / {{ subjectTargetClass.sections.length }} Selected</span>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div *ngFor="let sec of subjectTargetClass.sections"
                        (click)="toggleSubjectSection(sec.id)"
-                       [ngClass]="isSectionSelectedForSubject(sec.id) ? 'bg-indigo-50/90 border-indigo-300 text-indigo-950 font-bold' : 'bg-white border-slate-200 text-slate-600 font-medium opacity-75'"
-                       class="p-2.5 rounded-xl border flex items-center justify-between transition-all cursor-pointer select-none">
+                       [ngClass]="isSectionSelectedForSubject(sec.id) ? 'bg-indigo-50/90 dark:bg-[#1a1c2e] border-2 border-indigo-500 text-indigo-950 dark:text-indigo-200 font-bold shadow-[0_4px_14px_rgba(79,70,229,0.18),inset_0_1px_2px_rgba(255,255,255,0.9)] dark:shadow-none' : 'bg-white dark:bg-[#121214] border border-slate-200 dark:border-[#222226] text-slate-600 dark:text-slate-300 font-medium shadow-2xs hover:border-slate-300 dark:hover:border-[#383842]'"
+                       class="p-2.5 rounded-xl flex items-center justify-between transition-all cursor-pointer select-none active:scale-98">
                     <div class="flex items-center gap-2">
-                      <div class="w-4 h-4 rounded border flex items-center justify-center"
-                           [ngClass]="isSectionSelectedForSubject(sec.id) ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 bg-white'">
-                        <svg *ngIf="isSectionSelectedForSubject(sec.id)" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      <div class="w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all"
+                           [ngClass]="isSectionSelectedForSubject(sec.id) ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs' : 'border-slate-300 dark:border-[#27272e] bg-slate-50 dark:bg-[#18181c]'">
+                        <svg *ngIf="isSectionSelectedForSubject(sec.id)" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
                       </div>
                       <span class="text-xs">{{ formatSection(sec.name) }}</span>
                     </div>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/80 border border-slate-200/80">
+                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg bg-white/90 dark:bg-[#18181c] border border-slate-200/80 dark:border-[#27272e] text-slate-700 dark:text-slate-300 shadow-2xs">
                       {{ sec.code || 'SEC' }}
                     </span>
                   </div>
                 </div>
 
-                <div *ngIf="newSubject.selectedSectionIds.length === 0" class="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-[11px] font-medium flex items-center gap-1.5">
-                  <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <div *ngIf="newSubject.selectedSectionIds.length === 0" class="p-3 bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl text-amber-800 dark:text-amber-200 text-[11px] font-bold flex items-center gap-2 shadow-2xs">
+                  <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                  </svg>
                   <span>Please check at least one section for this subject.</span>
                 </div>
               </div>
             </div>
 
+            <!-- Description (Optional) -->
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Description (Optional)</label>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Description (Optional)</label>
               <textarea [(ngModel)]="newSubject.description" rows="2" placeholder="Syllabus overview, topics, or notes..."
-                        class="w-full px-4 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner"></textarea>
+                        class="clay-input w-full px-4 py-2.5 text-xs text-slate-900 font-medium placeholder:text-slate-400"></textarea>
             </div>
 
-            <div *ngIf="subjectModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
-              {{ subjectModalError }}
+            <!-- Error Banner -->
+            <div *ngIf="subjectModalError" class="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-2xl text-rose-700 dark:text-rose-300 text-xs font-bold flex items-center gap-2 shadow-2xs">
+              <svg class="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span>{{ subjectModalError }}</span>
             </div>
           </div>
 
-          <!-- Modal Footer -->
-          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
-            <button (click)="closeAddSubjectModal()" class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
+          <!-- Modal Footer with Claymorphic Tactile Buttons -->
+          <div class="px-6 py-4 border-t border-slate-100 dark:border-[#222226] bg-slate-50/70 dark:bg-[#121214] backdrop-blur-md rounded-b-[2.25rem] flex items-center justify-end gap-3 shrink-0">
+            <button (click)="closeAddSubjectModal()"
+                    class="clay-button-secondary px-5 py-2.5 text-xs font-bold rounded-2xl shadow-2xs">
               Cancel
             </button>
             <button (click)="saveSubject()" [disabled]="savingSubject"
-                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95 flex items-center gap-1.5">
-              <svg *ngIf="!savingSubject" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    class="clay-button-primary px-6 py-2.5 text-xs font-bold rounded-2xl flex items-center gap-2 disabled:opacity-50">
+              <svg *ngIf="!savingSubject" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+              </svg>
               <span *ngIf="!savingSubject">Save & Assign Subject</span>
-              <span *ngIf="savingSubject">Saving...</span>
+              <span *ngIf="savingSubject">Saving Subject...</span>
             </button>
           </div>
         </div>
@@ -4376,39 +4445,40 @@ interface StaffMember {
       <!-- MODAL 4: ADD CLASS / GRADE LEVEL                               -->
       <!-- ============================================================== -->
       <div *ngIf="showAddClassModal" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[70] animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-lg w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
-          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+        <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-xs transition-opacity" (click)="closeAddClassModal()"></div>
+        <div class="relative bg-white dark:bg-[#121214] rounded-3xl max-w-lg w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] dark:shadow-2xl border border-slate-200/90 dark:border-[#222226] overflow-hidden animate-scaleUp z-10">
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 dark:border-[#222226] flex items-center justify-between shrink-0 bg-white dark:bg-[#121214]">
             <div>
-              <h3 class="text-base font-black text-slate-900 tracking-tight">Add New Class / Grade Level</h3>
-              <p class="text-xs text-slate-500 mt-0.5">Provision academic grade level with flexible custom section names.</p>
+              <h3 class="text-base font-black text-slate-900 dark:text-white tracking-tight">Add New Class / Grade Level</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Provision academic grade level with flexible custom section names.</p>
             </div>
-            <button (click)="closeAddClassModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+            <button (click)="closeAddClassModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-[#18181c] cursor-pointer transition-colors">&times;</button>
           </div>
 
-          <div class="p-5 sm:p-6 space-y-4 text-xs overflow-y-auto flex-1 custom-clay-scroll bg-white">
+          <div class="p-5 sm:p-6 space-y-4 text-xs overflow-y-auto flex-1 custom-clay-scroll bg-white dark:bg-[#121214]">
             <div>
-              <label class="block font-bold text-slate-700 mb-1">Class / Grade Name *</label>
+              <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Class / Grade Name *</label>
               <select [(ngModel)]="newClass.name" (change)="onGradeSelect(newClass.name)"
-                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner font-medium">
+                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] dark:bg-[#0e0e11] border border-slate-300 dark:border-[#27272e] rounded-2xl text-xs text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#121214] focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 shadow-inner font-medium">
                 <option value="" disabled>-- Select Class / Grade Level --</option>
                 <option *ngFor="let g of STANDARD_GRADE_LEVELS" [value]="g.name">{{ g.name }}</option>
               </select>
             </div>
 
             <div>
-              <label class="block font-bold text-slate-700 mb-1">Class Code *</label>
+              <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Class Code *</label>
               <input type="text" [(ngModel)]="newClass.code" placeholder="e.g. CLS_1, NUR, LKG"
-                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 uppercase focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] dark:bg-[#0e0e11] border border-slate-300 dark:border-[#27272e] rounded-2xl text-xs text-slate-900 dark:text-white uppercase focus:bg-white dark:focus:bg-[#121214] focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 shadow-inner" />
             </div>
 
             <!-- Sections to Provision (Custom Section Tags & Presets) -->
             <div class="space-y-2">
-              <label class="block font-bold text-slate-700">Sections to Provision *</label>
+              <label class="block font-bold text-slate-700 dark:text-slate-300">Sections to Provision *</label>
               
               <!-- Active Section Chips -->
-              <div class="flex items-center gap-1.5 flex-wrap p-2.5 bg-slate-50 border border-slate-200 rounded-2xl min-h-[44px]">
+              <div class="flex items-center gap-1.5 flex-wrap p-2.5 bg-slate-50 dark:bg-[#18181c] border border-slate-200 dark:border-[#27272e] rounded-2xl min-h-[44px]">
                 <div *ngFor="let s of newClass.sectionsList"
-                     class="px-2.5 py-1 bg-slate-900 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs animate-fadeIn">
+                     class="px-2.5 py-1 bg-slate-900 dark:bg-[#27272e] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs animate-fadeIn border dark:border-[#383844]">
                   <span>{{ formatSection(s) }}</span>
                   <button type="button" (click)="removeSectionFromNewClass(s)" class="text-slate-400 hover:text-white leading-none font-black text-sm cursor-pointer">&times;</button>
                 </div>
@@ -4420,7 +4490,7 @@ interface StaffMember {
               <!-- Custom Name Input Tag -->
               <div class="flex items-center gap-2 mt-1">
                 <input type="text" [(ngModel)]="customSectionInput" (keydown.enter)="addCustomSectionToNewClass()" placeholder="Type custom name (e.g. Lotus, Ruby, Boys, Commerce) & press Enter..."
-                       class="flex-1 px-3.5 py-2 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+                       class="flex-1 px-3.5 py-2 bg-[#f8fafc] dark:bg-[#0e0e11] border border-slate-300 dark:border-[#27272e] rounded-2xl text-xs text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#121214] focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 shadow-inner" />
                 <button type="button" (click)="addCustomSectionToNewClass()"
                         class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl text-xs shadow-xs transition-all cursor-pointer">
                   + Add
@@ -4429,14 +4499,14 @@ interface StaffMember {
 
               <!-- Quick Preset Categories -->
               <div class="space-y-1.5 pt-1">
-                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quick Presets:</div>
+                <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Quick Presets:</div>
                 <div class="flex items-center gap-1.5 flex-wrap">
                   <button type="button" *ngFor="let p of ['A', 'B', 'C', 'D', 'E']"
                           (click)="togglePresetSectionInNewClass(p)"
                           [class.bg-indigo-100]="newClass.sectionsList.includes('Section ' + p) || newClass.sectionsList.includes(p)"
                           [class.text-indigo-800]="newClass.sectionsList.includes('Section ' + p) || newClass.sectionsList.includes(p)"
                           [class.border-indigo-300]="newClass.sectionsList.includes('Section ' + p) || newClass.sectionsList.includes(p)"
-                          class="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold text-slate-600 transition-colors cursor-pointer">
+                          class="px-2.5 py-1 bg-white dark:bg-[#18181c] hover:bg-slate-50 dark:hover:bg-[#222228] border border-slate-200 dark:border-[#27272e] rounded-xl text-[11px] font-bold text-slate-600 dark:text-slate-300 transition-colors cursor-pointer">
                     + Sec {{ p }}
                   </button>
                   <button type="button" *ngFor="let g of ['Ruby', 'Emerald', 'Sapphire', 'Diamond']"
@@ -4444,7 +4514,7 @@ interface StaffMember {
                           [class.bg-amber-100]="newClass.sectionsList.includes(g)"
                           [class.text-amber-800]="newClass.sectionsList.includes(g)"
                           [class.border-amber-300]="newClass.sectionsList.includes(g)"
-                          class="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold text-slate-600 transition-colors cursor-pointer">
+                          class="px-2.5 py-1 bg-white dark:bg-[#18181c] hover:bg-slate-50 dark:hover:bg-[#222228] border border-slate-200 dark:border-[#27272e] rounded-xl text-[11px] font-bold text-slate-600 dark:text-slate-300 transition-colors cursor-pointer">
                     + {{ g }}
                   </button>
                   <button type="button" *ngFor="let h of ['Lotus', 'Rose', 'Sunflower', 'Newton', 'Einstein']"
@@ -4452,7 +4522,7 @@ interface StaffMember {
                           [class.bg-emerald-100]="newClass.sectionsList.includes(h)"
                           [class.text-emerald-800]="newClass.sectionsList.includes(h)"
                           [class.border-emerald-300]="newClass.sectionsList.includes(h)"
-                          class="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold text-slate-600 transition-colors cursor-pointer">
+                          class="px-2.5 py-1 bg-white dark:bg-[#18181c] hover:bg-slate-50 dark:hover:bg-[#222228] border border-slate-200 dark:border-[#27272e] rounded-xl text-[11px] font-bold text-slate-600 dark:text-slate-300 transition-colors cursor-pointer">
                     + {{ h }}
                   </button>
                 </div>
@@ -4460,25 +4530,25 @@ interface StaffMember {
             </div>
 
             <div>
-              <label class="block font-bold text-slate-700 mb-1">Default Student Capacity per Section</label>
+              <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Default Student Capacity per Section</label>
               <input type="number" [(ngModel)]="newClass.capacity" min="10" max="100"
-                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
-              <p class="mt-1.5 text-[11px] text-slate-500 font-medium">
-                Total Class Capacity: <strong class="text-slate-800 font-bold">{{ (newClass.capacity || 40) * (newClass.sectionsList.length || 1) }} students</strong> across {{ newClass.sectionsList.length || 1 }} section{{ (newClass.sectionsList.length || 1) > 1 ? 's' : '' }} ({{ newClass.capacity || 40 }} per section)
+                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] dark:bg-[#0e0e11] border border-slate-300 dark:border-[#27272e] rounded-2xl text-xs text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#121214] focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 shadow-inner" />
+              <p class="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                Total Class Capacity: <strong class="text-slate-800 dark:text-slate-200 font-bold">{{ (newClass.capacity || 40) * (newClass.sectionsList.length || 1) }} students</strong> across {{ newClass.sectionsList.length || 1 }} section{{ (newClass.sectionsList.length || 1) > 1 ? 's' : '' }} ({{ newClass.capacity || 40 }} per section)
               </p>
             </div>
 
-            <div *ngIf="classModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+            <div *ngIf="classModalError" class="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-2xl text-rose-700 dark:text-rose-300 text-xs font-semibold">
               {{ classModalError }}
             </div>
           </div>
 
-          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
-            <button (click)="closeAddClassModal()" class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
+          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 dark:border-[#222226] bg-slate-50/90 dark:bg-[#121214] rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
+            <button (click)="closeAddClassModal()" class="px-4 py-2.5 bg-white dark:bg-[#18181c] hover:bg-slate-100 dark:hover:bg-[#222228] text-slate-700 dark:text-slate-200 text-xs font-bold rounded-2xl border border-slate-200 dark:border-[#27272e] transition-colors cursor-pointer shadow-2xs">
               Cancel
             </button>
             <button (click)="submitAddClass()" [disabled]="savingClass || newClass.sectionsList.length === 0"
-                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95">
+                    class="px-5 py-2.5 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95">
               <span *ngIf="!savingClass">Create Class & Sections</span>
               <span *ngIf="savingClass">Creating...</span>
             </button>
@@ -4490,38 +4560,39 @@ interface StaffMember {
       <!-- MODAL 5: ADD SECTION TO CLASS                                  -->
       <!-- ============================================================== -->
       <div *ngIf="showAddSectionModal" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[70] animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-md w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
-          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+        <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-xs transition-opacity" (click)="closeAddSectionModal()"></div>
+        <div class="relative bg-white dark:bg-[#121214] rounded-3xl max-w-md w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] dark:shadow-2xl border border-slate-200/90 dark:border-[#222226] overflow-hidden animate-scaleUp z-10">
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 dark:border-[#222226] flex items-center justify-between shrink-0 bg-white dark:bg-[#121214]">
             <div>
-              <h3 class="text-base font-black text-slate-900 tracking-tight">Add New Section</h3>
-              <p class="text-xs text-slate-500 mt-0.5">Attach another section division to an existing class.</p>
+              <h3 class="text-base font-black text-slate-900 dark:text-white tracking-tight">Add New Section</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Attach another section division to an existing class.</p>
             </div>
-            <button (click)="closeAddSectionModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+            <button (click)="closeAddSectionModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-[#18181c] cursor-pointer transition-colors">&times;</button>
           </div>
 
-          <div class="p-5 sm:p-6 space-y-4 text-xs overflow-y-auto flex-1 custom-clay-scroll bg-white">
+          <div class="p-5 sm:p-6 space-y-4 text-xs overflow-y-auto flex-1 custom-clay-scroll bg-white dark:bg-[#121214]">
             <div>
-              <label class="block font-bold text-slate-700 mb-1">Parent Class *</label>
+              <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Parent Class *</label>
               <select [(ngModel)]="newSection.class_id"
-                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
+                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] dark:bg-[#0e0e11] border border-slate-300 dark:border-[#27272e] rounded-2xl text-xs text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#121214] focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 shadow-inner">
                 <option value="" disabled>-- Select Class --</option>
                 <option *ngFor="let c of classes" [value]="c.id">{{ c.name }} ({{ c.code }})</option>
               </select>
             </div>
 
             <div>
-              <label class="block font-bold text-slate-700 mb-1">Section Name *</label>
+              <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Section Name *</label>
               <input type="text" [(ngModel)]="newSection.name" (input)="onSectionNameChange()" placeholder="e.g. Section C, Lotus, Ruby, Shift-A"
-                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] dark:bg-[#0e0e11] border border-slate-300 dark:border-[#27272e] rounded-2xl text-xs text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#121214] focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 shadow-inner" />
             </div>
 
             <!-- Suggestion Chips for Add Section -->
             <div class="space-y-1">
-              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quick Suggestions:</span>
+              <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Quick Suggestions:</span>
               <div class="flex items-center gap-1.5 flex-wrap">
                 <button type="button" *ngFor="let name of ['Section C', 'Section D', 'Ruby', 'Emerald', 'Lotus', 'Rose', 'Einstein', 'Morning', 'Science']"
                         (click)="setSectionPreset(name)"
-                        class="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-[11px] font-bold text-slate-600 cursor-pointer transition-colors">
+                        class="px-2.5 py-1 bg-white dark:bg-[#18181c] hover:bg-slate-100 dark:hover:bg-[#222228] border border-slate-200 dark:border-[#27272e] rounded-xl text-[11px] font-bold text-slate-600 dark:text-slate-300 cursor-pointer transition-colors">
                   {{ name }}
                 </button>
               </div>
@@ -4529,40 +4600,40 @@ interface StaffMember {
 
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block font-bold text-slate-700 mb-1">Section Code *</label>
+                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Section Code *</label>
                 <input type="text" [(ngModel)]="newSection.code" placeholder="e.g. C, RUBY, LOTUS"
-                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 uppercase focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] dark:bg-[#0e0e11] border border-slate-300 dark:border-[#27272e] rounded-2xl text-xs text-slate-900 dark:text-white uppercase focus:bg-white dark:focus:bg-[#121214] focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 shadow-inner" />
               </div>
               <div>
-                <label class="block font-bold text-slate-700 mb-1">Student Capacity</label>
+                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Student Capacity</label>
                 <input type="number" [(ngModel)]="newSection.capacity" min="10" max="100"
-                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] dark:bg-[#0e0e11] border border-slate-300 dark:border-[#27272e] rounded-2xl text-xs text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#121214] focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 shadow-inner" />
               </div>
             </div>
 
             <div>
-              <label class="block font-bold text-slate-700 mb-1">Class Teacher (Homeroom In-charge)</label>
+              <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Class Teacher (Homeroom In-charge)</label>
               <select [(ngModel)]="newSection.class_teacher_id"
-                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
+                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] dark:bg-[#0e0e11] border border-slate-300 dark:border-[#27272e] rounded-2xl text-xs font-bold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#121214] focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 shadow-inner">
                 <option value="">-- No Class Teacher (Assign Later) --</option>
                 <option *ngFor="let t of teachersList" [value]="t.id">
                   {{ t.fullName }} ({{ t.roleName || t.role }})
                 </option>
               </select>
-              <p class="text-[10px] text-slate-400 mt-1">Class Teacher takes morning homeroom roll call and attendance.</p>
+              <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Class Teacher takes morning homeroom roll call and attendance.</p>
             </div>
 
-            <div *ngIf="sectionModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+            <div *ngIf="sectionModalError" class="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-2xl text-rose-700 dark:text-rose-300 text-xs font-semibold">
               {{ sectionModalError }}
             </div>
           </div>
 
-          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
-            <button (click)="closeAddSectionModal()" class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
+          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 dark:border-[#222226] bg-slate-50/90 dark:bg-[#121214] rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
+            <button (click)="closeAddSectionModal()" class="px-4 py-2.5 bg-white dark:bg-[#18181c] hover:bg-slate-100 dark:hover:bg-[#222228] text-slate-700 dark:text-slate-200 text-xs font-bold rounded-2xl border border-slate-200 dark:border-[#27272e] transition-colors cursor-pointer shadow-2xs">
               Cancel
             </button>
             <button (click)="submitAddSection()" [disabled]="savingSection"
-                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95">
+                    class="px-5 py-2.5 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95">
               <span *ngIf="!savingSection">Add Section</span>
               <span *ngIf="savingSection">Adding...</span>
             </button>
@@ -4574,47 +4645,48 @@ interface StaffMember {
       <!-- MODAL: EDIT CLASS                                              -->
       <!-- ============================================================== -->
       <div *ngIf="showEditClassModal && classToEdit" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[75] animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-md w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
-          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+        <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-xs transition-opacity" (click)="closeEditClassModal()"></div>
+        <div class="relative bg-white dark:bg-[#121214] rounded-3xl max-w-md w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] dark:shadow-2xl border border-slate-200/90 dark:border-[#222226] overflow-hidden animate-scaleUp z-10">
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 dark:border-[#222226] flex items-center justify-between shrink-0 bg-white dark:bg-[#121214]">
             <div>
-              <h3 class="text-base font-black text-slate-900 tracking-tight">Edit Class / Grade Level</h3>
-              <p class="text-xs text-slate-500 mt-0.5">Update class name and code.</p>
+              <h3 class="text-base font-black text-slate-900 dark:text-white tracking-tight">Edit Class / Grade Level</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Update class name and code.</p>
             </div>
-            <button (click)="closeEditClassModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+            <button (click)="closeEditClassModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-[#18181c] cursor-pointer transition-colors">&times;</button>
           </div>
 
-          <div class="p-5 sm:p-6 space-y-4 text-xs overflow-y-auto flex-1 custom-clay-scroll bg-white">
+          <div class="p-5 sm:p-6 space-y-4 text-xs overflow-y-auto flex-1 custom-clay-scroll bg-white dark:bg-[#121214]">
             <div>
-              <label class="block font-bold text-slate-700 mb-1">Standard Grade Level</label>
+              <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Standard Grade Level</label>
               <select [(ngModel)]="editClassForm.name" (change)="onEditGradeSelect(editClassForm.name)"
-                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner font-medium">
+                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] dark:bg-[#0e0e11] border border-slate-300 dark:border-[#27272e] rounded-2xl text-xs text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#121214] focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 shadow-inner font-medium">
                 <option *ngFor="let g of STANDARD_GRADE_LEVELS" [value]="g.name">{{ g.name }}</option>
               </select>
             </div>
 
             <div>
-              <label class="block font-bold text-slate-700 mb-1">Class Name *</label>
+              <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Class Name *</label>
               <input type="text" [(ngModel)]="editClassForm.name" placeholder="e.g. Class 1, Nursery"
-                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner font-medium" />
+                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] dark:bg-[#0e0e11] border border-slate-300 dark:border-[#27272e] rounded-2xl text-xs text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#121214] focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 shadow-inner font-medium" />
             </div>
 
             <div>
-              <label class="block font-bold text-slate-700 mb-1">Class Code *</label>
+              <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Class Code *</label>
               <input type="text" [(ngModel)]="editClassForm.code" placeholder="e.g. CLS_1, NUR, LKG"
-                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 uppercase focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] dark:bg-[#0e0e11] border border-slate-300 dark:border-[#27272e] rounded-2xl text-xs text-slate-900 dark:text-white uppercase focus:bg-white dark:focus:bg-[#121214] focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 shadow-inner" />
             </div>
 
-            <div *ngIf="editClassModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+            <div *ngIf="editClassModalError" class="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-2xl text-rose-700 dark:text-rose-300 text-xs font-semibold">
               {{ editClassModalError }}
             </div>
           </div>
 
-          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
-            <button (click)="closeEditClassModal()" class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
+          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 dark:border-[#222226] bg-slate-50/90 dark:bg-[#121214] rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
+            <button (click)="closeEditClassModal()" class="px-4 py-2.5 bg-white dark:bg-[#18181c] hover:bg-slate-100 dark:hover:bg-[#222228] text-slate-700 dark:text-slate-200 text-xs font-bold rounded-2xl border border-slate-200 dark:border-[#27272e] transition-colors cursor-pointer shadow-2xs">
               Cancel
             </button>
             <button (click)="submitEditClass()" [disabled]="savingEditClass"
-                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95">
+                    class="px-5 py-2.5 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95">
               <span *ngIf="!savingEditClass">Save Changes</span>
               <span *ngIf="savingEditClass">Saving...</span>
             </button>
@@ -4626,29 +4698,30 @@ interface StaffMember {
       <!-- MODAL: EDIT SECTION                                            -->
       <!-- ============================================================== -->
       <div *ngIf="showEditSectionModal && sectionToEdit" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[75] animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-md w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp">
-          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+        <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-xs transition-opacity" (click)="closeEditSectionModal()"></div>
+        <div class="relative bg-white dark:bg-[#121214] rounded-3xl max-w-md w-full flex flex-col max-h-[85vh] sm:max-h-[88vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] dark:shadow-2xl border border-slate-200/90 dark:border-[#222226] overflow-hidden animate-scaleUp z-10">
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 dark:border-[#222226] flex items-center justify-between shrink-0 bg-white dark:bg-[#121214]">
             <div>
-              <h3 class="text-base font-black text-slate-900 tracking-tight">Edit Section</h3>
-              <p class="text-xs text-slate-500 mt-0.5">Modify section details for {{ sectionToEdit.classItem.name }}.</p>
+              <h3 class="text-base font-black text-slate-900 dark:text-white tracking-tight">Edit Section</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Modify section details for {{ sectionToEdit.classItem.name }}.</p>
             </div>
-            <button (click)="closeEditSectionModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">&times;</button>
+            <button (click)="closeEditSectionModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-[#18181c] cursor-pointer transition-colors">&times;</button>
           </div>
 
-          <div class="p-5 sm:p-6 space-y-4 text-xs overflow-y-auto flex-1 custom-clay-scroll bg-white">
+          <div class="p-5 sm:p-6 space-y-4 text-xs overflow-y-auto flex-1 custom-clay-scroll bg-white dark:bg-[#121214]">
             <div>
-              <label class="block font-bold text-slate-700 mb-1">Section Name *</label>
+              <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Section Name *</label>
               <input type="text" [(ngModel)]="editSectionForm.name" (input)="onEditSectionNameChange()" placeholder="e.g. Section A, Lotus, Ruby"
-                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+                     class="w-full px-3.5 py-2.5 bg-[#f8fafc] dark:bg-[#0e0e11] border border-slate-300 dark:border-[#27272e] rounded-2xl text-xs text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#121214] focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 shadow-inner" />
             </div>
 
             <!-- Suggestion Chips for Edit Section -->
             <div class="space-y-1">
-              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quick Presets:</span>
+              <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Quick Presets:</span>
               <div class="flex items-center gap-1.5 flex-wrap">
                 <button type="button" *ngFor="let name of ['Section A', 'Section B', 'Section C', 'Ruby', 'Emerald', 'Lotus', 'Rose', 'Newton']"
                         (click)="setEditSectionPreset(name)"
-                        class="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-[11px] font-bold text-slate-600 cursor-pointer transition-colors">
+                        class="px-2.5 py-1 bg-white dark:bg-[#18181c] hover:bg-slate-100 dark:hover:bg-[#222228] border border-slate-200 dark:border-[#27272e] rounded-xl text-[11px] font-bold text-slate-600 dark:text-slate-300 cursor-pointer transition-colors">
                   {{ name }}
                 </button>
               </div>
@@ -4656,40 +4729,40 @@ interface StaffMember {
 
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block font-bold text-slate-700 mb-1">Section Code *</label>
+                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Section Code *</label>
                 <input type="text" [(ngModel)]="editSectionForm.code" placeholder="e.g. A, B, LOTUS"
-                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 uppercase focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] dark:bg-[#0e0e11] border border-slate-300 dark:border-[#27272e] rounded-2xl text-xs text-slate-900 dark:text-white uppercase focus:bg-white dark:focus:bg-[#121214] focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 shadow-inner" />
               </div>
               <div>
-                <label class="block font-bold text-slate-700 mb-1">Student Capacity</label>
+                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Student Capacity</label>
                 <input type="number" [(ngModel)]="editSectionForm.capacity" min="10" max="100"
-                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner" />
+                       class="w-full px-3.5 py-2.5 bg-[#f8fafc] dark:bg-[#0e0e11] border border-slate-300 dark:border-[#27272e] rounded-2xl text-xs text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#121214] focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 shadow-inner" />
               </div>
             </div>
 
             <div>
-              <label class="block font-bold text-slate-700 mb-1">Class Teacher (Homeroom In-charge)</label>
+              <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Class Teacher (Homeroom In-charge)</label>
               <select [(ngModel)]="editSectionForm.class_teacher_id"
-                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 shadow-inner">
+                      class="w-full px-3.5 py-2.5 bg-[#f8fafc] dark:bg-[#0e0e11] border border-slate-300 dark:border-[#27272e] rounded-2xl text-xs font-bold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#121214] focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 shadow-inner">
                 <option value="">-- No Class Teacher Assigned --</option>
                 <option *ngFor="let t of teachersList" [value]="t.id">
                   {{ t.fullName }} ({{ t.roleName || t.role }})
                 </option>
               </select>
-              <p class="text-[10px] text-slate-400 mt-1">Class Teacher takes morning homeroom roll call and attendance.</p>
+              <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Class Teacher takes morning homeroom roll call and attendance.</p>
             </div>
 
-            <div *ngIf="editSectionModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+            <div *ngIf="editSectionModalError" class="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-2xl text-rose-700 dark:text-rose-300 text-xs font-semibold">
               {{ editSectionModalError }}
             </div>
           </div>
 
-          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
-            <button (click)="closeEditSectionModal()" class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
+          <div class="px-5 sm:px-6 py-4 border-t border-slate-100 dark:border-[#222226] bg-slate-50/90 dark:bg-[#121214] rounded-b-3xl flex items-center justify-end gap-2.5 shrink-0">
+            <button (click)="closeEditSectionModal()" class="px-4 py-2.5 bg-white dark:bg-[#18181c] hover:bg-slate-100 dark:hover:bg-[#222228] text-slate-700 dark:text-slate-200 text-xs font-bold rounded-2xl border border-slate-200 dark:border-[#27272e] transition-colors cursor-pointer shadow-2xs">
               Cancel
             </button>
             <button (click)="submitEditSection()" [disabled]="savingEditSection"
-                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95">
+                    class="px-5 py-2.5 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-xs font-bold rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95">
               <span *ngIf="!savingEditSection">Save Changes</span>
               <span *ngIf="savingEditSection">Saving...</span>
             </button>
@@ -4701,38 +4774,39 @@ interface StaffMember {
       <!-- MODAL: DELETE CLASS CONFIRMATION                               -->
       <!-- ============================================================== -->
       <div *ngIf="showDeleteClassModal && classToDelete" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[80] animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 space-y-4 animate-scaleUp">
+        <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-xs transition-opacity" (click)="closeDeleteClassModal()"></div>
+        <div class="relative bg-white dark:bg-[#121214] rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.3)] dark:shadow-2xl border border-slate-200/90 dark:border-[#222226] space-y-4 animate-scaleUp z-10">
           <div class="flex items-start gap-3.5">
-            <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center shrink-0 shadow-xs">
+            <div class="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/50 flex items-center justify-center shrink-0 shadow-xs">
               <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
             <div>
-              <h3 class="text-base font-black text-slate-900 tracking-tight">Delete Class & All Sections?</h3>
-              <p class="text-xs text-slate-500 mt-1">
-                You are about to delete <strong class="text-slate-800">{{ classToDelete.name }} ({{ classToDelete.code }})</strong>.
+              <h3 class="text-base font-black text-slate-900 dark:text-white tracking-tight">Delete Class & All Sections?</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                You are about to delete <strong class="text-slate-800 dark:text-slate-200">{{ classToDelete.name }} ({{ classToDelete.code }})</strong>.
               </p>
             </div>
           </div>
 
-          <div class="p-4 bg-rose-50/70 border border-rose-200/80 rounded-2xl space-y-2 text-xs text-rose-900">
-            <div class="font-bold flex items-center gap-1.5 text-rose-700">
-              <svg class="w-4 h-4 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="none">
+          <div class="p-4 bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/40 rounded-2xl space-y-2 text-xs text-rose-900 dark:text-rose-300">
+            <div class="font-bold flex items-center gap-1.5 text-rose-700 dark:text-rose-400">
+              <svg class="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" viewBox="0 0 24 24" fill="none">
                 <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
               <span>What will happen when you delete this class:</span>
             </div>
-            <ul class="list-disc pl-4 space-y-1 text-[11px] text-rose-800 leading-relaxed font-medium">
+            <ul class="list-disc pl-4 space-y-1 text-[11px] text-rose-800 dark:text-rose-300/90 leading-relaxed font-medium">
               <li>All <strong>{{ classToDelete.sections.length || 0 }} sections</strong> belonging to this class will be permanently removed.</li>
               <li>Students enrolled in this class will become unassigned and require re-enrollment.</li>
               <li>Class timetables, attendance records, and exam entries linked to this class will be unlinked.</li>
             </ul>
           </div>
 
-          <div class="pt-2 border-t border-slate-100 flex items-center justify-end gap-2.5">
+          <div class="pt-2 border-t border-slate-100 dark:border-[#222226] flex items-center justify-end gap-2.5">
             <button (click)="closeDeleteClassModal()" [disabled]="isDeletingClass"
-                    class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
+                    class="px-4 py-2.5 bg-white dark:bg-[#18181c] hover:bg-slate-100 dark:hover:bg-[#222228] text-slate-700 dark:text-slate-200 text-xs font-bold rounded-2xl border border-slate-200 dark:border-[#27272e] transition-colors cursor-pointer shadow-2xs">
               Cancel
             </button>
             <button (click)="executeDeleteClass()" [disabled]="isDeletingClass"
@@ -4748,38 +4822,39 @@ interface StaffMember {
       <!-- MODAL: DELETE SECTION CONFIRMATION                             -->
       <!-- ============================================================== -->
       <div *ngIf="showDeleteSectionModal && sectionToDelete" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[80] animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 space-y-4 animate-scaleUp">
+        <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-xs transition-opacity" (click)="closeDeleteSectionModal()"></div>
+        <div class="relative bg-white dark:bg-[#121214] rounded-3xl max-md w-full p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.3)] dark:shadow-2xl border border-slate-200/90 dark:border-[#222226] space-y-4 animate-scaleUp z-10">
           <div class="flex items-start gap-3.5">
-            <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center shrink-0 shadow-xs">
+            <div class="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/50 flex items-center justify-center shrink-0 shadow-xs">
               <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </div>
             <div>
-              <h3 class="text-base font-black text-slate-900 tracking-tight">Delete Section?</h3>
-              <p class="text-xs text-slate-500 mt-1">
-                You are about to delete <strong class="text-slate-800">{{ formatSection(sectionToDelete.section.name) }}</strong> from <strong class="text-slate-800">{{ sectionToDelete.classItem.name }}</strong>.
+              <h3 class="text-base font-black text-slate-900 dark:text-white tracking-tight">Delete Section?</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                You are about to delete <strong class="text-slate-800 dark:text-slate-200">{{ formatSection(sectionToDelete.section.name) }}</strong> from <strong class="text-slate-800 dark:text-slate-200">{{ sectionToDelete.classItem.name }}</strong>.
               </p>
             </div>
           </div>
 
-          <div class="p-4 bg-rose-50/70 border border-rose-200/80 rounded-2xl space-y-2 text-xs text-rose-900">
-            <div class="font-bold flex items-center gap-1.5 text-rose-700">
-              <svg class="w-4 h-4 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="none">
+          <div class="p-4 bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/40 rounded-2xl space-y-2 text-xs text-rose-900 dark:text-rose-300">
+            <div class="font-bold flex items-center gap-1.5 text-rose-700 dark:text-rose-400">
+              <svg class="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" viewBox="0 0 24 24" fill="none">
                 <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
               <span>What will happen when you delete this section:</span>
             </div>
-            <ul class="list-disc pl-4 space-y-1 text-[11px] text-rose-800 leading-relaxed font-medium">
+            <ul class="list-disc pl-4 space-y-1 text-[11px] text-rose-800 dark:text-rose-300/90 leading-relaxed font-medium">
               <li>Section division <strong>{{ formatSection(sectionToDelete.section.name) }}</strong> will be permanently removed.</li>
               <li>Students currently assigned to this section will lose their section assignment and need to be re-allocated.</li>
               <li>Section-specific timetables and attendance logs will be unlinked.</li>
             </ul>
           </div>
 
-          <div class="pt-2 border-t border-slate-100 flex items-center justify-end gap-2.5">
+          <div class="pt-2 border-t border-slate-100 dark:border-[#222226] flex items-center justify-end gap-2.5">
             <button (click)="closeDeleteSectionModal()" [disabled]="isDeletingSection"
-                    class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
+                    class="px-4 py-2.5 bg-white dark:bg-[#18181c] hover:bg-slate-100 dark:hover:bg-[#222228] text-slate-700 dark:text-slate-200 text-xs font-bold rounded-2xl border border-slate-200 dark:border-[#27272e] transition-colors cursor-pointer shadow-2xs">
               Cancel
             </button>
             <button (click)="executeDeleteSection()" [disabled]="isDeletingSection"
@@ -4795,38 +4870,39 @@ interface StaffMember {
       <!-- MODAL: DELETE / REMOVE SUBJECT CONFIRMATION                   -->
       <!-- ============================================================== -->
       <div *ngIf="showDeleteSubjectModal && subjectToDelete" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[80] animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 space-y-4 animate-scaleUp">
+        <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-xs transition-opacity" (click)="closeDeleteSubjectModal()"></div>
+        <div class="relative bg-white dark:bg-[#121214] rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.3)] dark:shadow-2xl border border-slate-200/90 dark:border-[#222226] space-y-4 animate-scaleUp z-10">
           <div class="flex items-start gap-3.5">
-            <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center shrink-0 shadow-xs">
+            <div class="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/50 flex items-center justify-center shrink-0 shadow-xs">
               <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </div>
             <div>
-              <h3 class="text-base font-black text-slate-900 tracking-tight">Remove Subject?</h3>
-              <p class="text-xs text-slate-500 mt-1">
-                You are about to remove <strong class="text-slate-800">{{ subjectToDelete.subject.name }} ({{ subjectToDelete.subject.code }})</strong><span *ngIf="subjectToDelete.classItem"> from <strong class="text-slate-800">{{ subjectToDelete.classItem.name }}</strong></span>.
+              <h3 class="text-base font-black text-slate-900 dark:text-white tracking-tight">Remove Subject?</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                You are about to remove <strong class="text-slate-800 dark:text-slate-200">{{ subjectToDelete.subject.name }} ({{ subjectToDelete.subject.code }})</strong><span *ngIf="subjectToDelete.classItem"> from <strong class="text-slate-800 dark:text-slate-200">{{ subjectToDelete.classItem.name }}</strong></span>.
               </p>
             </div>
           </div>
 
-          <div class="p-4 bg-rose-50/70 border border-rose-200/80 rounded-2xl space-y-2 text-xs text-rose-900">
-            <div class="font-bold flex items-center gap-1.5 text-rose-700">
-              <svg class="w-4 h-4 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="none">
+          <div class="p-4 bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/40 rounded-2xl space-y-2 text-xs text-rose-900 dark:text-rose-300">
+            <div class="font-bold flex items-center gap-1.5 text-rose-700 dark:text-rose-400">
+              <svg class="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" viewBox="0 0 24 24" fill="none">
                 <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
               <span>What will happen when you remove this subject:</span>
             </div>
-            <ul class="list-disc pl-4 space-y-1 text-[11px] text-rose-800 leading-relaxed font-medium">
+            <ul class="list-disc pl-4 space-y-1 text-[11px] text-rose-800 dark:text-rose-300/90 leading-relaxed font-medium">
               <li>This subject will be unlinked from the academic class curriculum.</li>
               <li>Subject teacher assignments and timetable periods for this subject will be removed.</li>
               <li>You can re-add or re-configure this subject at any time.</li>
             </ul>
           </div>
 
-          <div class="pt-2 border-t border-slate-100 flex items-center justify-end gap-2.5">
+          <div class="pt-2 border-t border-slate-100 dark:border-[#222226] flex items-center justify-end gap-2.5">
             <button (click)="closeDeleteSubjectModal()" [disabled]="isDeletingSubject"
-                    class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
+                    class="px-4 py-2.5 bg-white dark:bg-[#18181c] hover:bg-slate-100 dark:hover:bg-[#222228] text-slate-700 dark:text-slate-200 text-xs font-bold rounded-2xl border border-slate-200 dark:border-[#27272e] transition-colors cursor-pointer shadow-2xs">
               Cancel
             </button>
             <button (click)="executeDeleteSubject()" [disabled]="isDeletingSubject"
@@ -6373,6 +6449,9 @@ export class AcademicsComponent implements OnInit {
   uploadingGuardianPhoto = false;
   uploadingStaffPhoto = false;
   hideLoginEmail = false;
+  showGuardianPassword = false;
+  updatingParentPassword = false;
+  parentPasswordSuccessMsg = '';
 
   newStudent = {
     firstName: '',
@@ -6394,6 +6473,7 @@ export class AcademicsComponent implements OnInit {
     primaryGuardianType: 'FATHER' as 'FATHER' | 'MOTHER' | 'GUARDIAN',
     guardianEmail: '',
     confirmGuardianEmail: '',
+    guardianPassword: '',
     guardianPhotoUrl: '',
     relationship: 'FATHER',
   };
@@ -6431,7 +6511,7 @@ export class AcademicsComponent implements OnInit {
   showDeactivationRequestsModal = false;
   loadingDeactivationRequests = false;
   reviewNotes = '';
-  studentStatusFilter: 'ALL' | 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'LEFTOUT' = 'ACTIVE';
+  studentStatusFilter: 'ALL' | 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'LEFTOUT' = 'ALL';
   staffStatusFilter: 'ALL' | 'ACTIVE' | 'INACTIVE' = 'ALL';
   staffRoleFilter: 'ALL' | 'PRINCIPAL' | 'SCHOOL_ADMIN' | 'CLASS_TEACHER' | 'TEACHER' = 'ALL';
   staffCurrentPage = 1;
@@ -6981,8 +7061,11 @@ export class AcademicsComponent implements OnInit {
     } else if (tab === 'STUDENTS') {
       if (this.classes.length === 0 || forceRefresh) {
         this.loadClassesAndSubjects();
-      } else if (this.selectedClass) {
-        this.ensureClassDetailsLoaded(this.selectedClass.id);
+      } else {
+        const clsToSelect = this.selectedClass || this.classes[0];
+        if (clsToSelect) {
+          this.selectClass(clsToSelect);
+        }
       }
     } else if (tab === 'STAFF') {
       this.loadStaffList();
@@ -7002,19 +7085,32 @@ export class AcademicsComponent implements OnInit {
   ngOnInit() {
     this.route.queryParams.subscribe((params) => {
       const tab = params['tab']?.toLowerCase();
+      let resolvedTab: 'CLASSES' | 'STUDENTS' | 'ALUMNI' | 'STAFF' | 'SUBJECTS' = 'CLASSES';
       if (tab === 'classes') {
-        this.activeTab = 'CLASSES';
+        resolvedTab = 'CLASSES';
       } else if (tab === 'staff') {
-        this.activeTab = 'STAFF';
+        resolvedTab = 'STAFF';
       } else if (tab === 'subjects') {
-        this.activeTab = 'SUBJECTS';
+        resolvedTab = 'SUBJECTS';
       } else if (tab === 'alumni') {
-        this.activeTab = 'ALUMNI';
+        resolvedTab = 'ALUMNI';
       } else if (tab === 'students') {
-        this.activeTab = 'STUDENTS';
+        resolvedTab = 'STUDENTS';
       } else {
-        this.activeTab = 'CLASSES';
+        const priorityOrder: ('CLASSES' | 'STUDENTS' | 'ALUMNI' | 'STAFF' | 'SUBJECTS')[] = ['STUDENTS', 'CLASSES', 'ALUMNI', 'STAFF', 'SUBJECTS'];
+        const firstPermitted = priorityOrder.find(t => this.auth.isSectionAllowedForUser(`academics_${t.toLowerCase()}`));
+        resolvedTab = firstPermitted || 'CLASSES';
       }
+
+      if (!this.auth.isSectionAllowedForUser(`academics_${resolvedTab.toLowerCase()}`)) {
+        const priorityOrder: ('CLASSES' | 'STUDENTS' | 'ALUMNI' | 'STAFF' | 'SUBJECTS')[] = ['STUDENTS', 'CLASSES', 'ALUMNI', 'STAFF', 'SUBJECTS'];
+        const firstPermitted = priorityOrder.find(t => this.auth.isSectionAllowedForUser(`academics_${t.toLowerCase()}`));
+        if (firstPermitted) {
+          resolvedTab = firstPermitted;
+        }
+      }
+
+      this.activeTab = resolvedTab;
 
       if (params['manageSessions'] || params['openSessionModal'] === 'true') {
         this.openSessionModal();
@@ -7684,7 +7780,7 @@ export class AcademicsComponent implements OnInit {
     if (this.studentStatusFilter === 'ACTIVE') {
       list = list.filter((s) => {
         const st = (s.status || 'ACTIVE').toUpperCase();
-        return st === 'ACTIVE' || st === 'ALUMNI' || st === 'GRADUATED';
+        return st === 'ACTIVE' || st === 'ENROLLED' || st === 'ADMITTED' || st === 'PROMOTED' || st === 'ALUMNI' || st === 'GRADUATED';
       });
     } else if (this.studentStatusFilter === 'INACTIVE') {
       list = list.filter((s) => (s.status || 'ACTIVE').toUpperCase() === 'INACTIVE');
@@ -8627,12 +8723,7 @@ export class AcademicsComponent implements OnInit {
           }
 
           if (this.activeTab === 'STUDENTS') {
-            this.ensureClassDetailsLoaded(targetToSelect.id).then(() => {
-              if (targetToSelect.sections && targetToSelect.sections.length > 0) {
-                const stillSection = this.selectedSection ? targetToSelect.sections.find((s) => s.id === this.selectedSection?.id) : null;
-                this.selectSection(stillSection || targetToSelect.sections[0]);
-              }
-            });
+            this.selectClass(targetToSelect);
           }
         } else {
           this.selectedClass = null;
@@ -9493,11 +9584,15 @@ export class AcademicsComponent implements OnInit {
       primaryGuardianType: 'FATHER',
       guardianEmail: '',
       confirmGuardianEmail: '',
+      guardianPassword: 'password123',
       guardianPhotoUrl: '',
       relationship: 'FATHER',
     };
     this.studentModalError = '';
     this.hideLoginEmail = false;
+    this.showGuardianPassword = false;
+    this.updatingParentPassword = false;
+    this.parentPasswordSuccessMsg = '';
     this.autoGenerateAdmissionNumber();
     this.modalService.open('ADD_STUDENT');
     this.showAddStudentModal = true;
@@ -9674,12 +9769,16 @@ export class AcademicsComponent implements OnInit {
       primaryGuardianType: primaryRel === 'MOTHER' ? 'MOTHER' : (primaryRel === 'GUARDIAN' ? 'GUARDIAN' : 'FATHER'),
       guardianEmail: existingEmail,
       confirmGuardianEmail: existingEmail,
+      guardianPassword: '',
       guardianPhotoUrl: student.guardianPhotoUrl || (student as any).guardian_photo_url || student.primaryContact?.photoUrl || (student.primaryContact as any)?.photo_url || '',
       relationship: primaryRel,
     };
 
     this.studentModalError = '';
     this.hideLoginEmail = false;
+    this.showGuardianPassword = false;
+    this.updatingParentPassword = false;
+    this.parentPasswordSuccessMsg = '';
     this.modalService.open('EDIT_STUDENT');
     this.showAddStudentModal = true;
   }
@@ -9745,6 +9844,13 @@ export class AcademicsComponent implements OnInit {
         this.studentModalError = 'Please enter a valid email address (e.g. parent@gmail.com).';
         return;
       }
+    }
+
+    // Validate parent login password if provided
+    const pwdInput = (this.newStudent.guardianPassword || '').trim();
+    if (pwdInput && pwdInput.length < 6) {
+      this.studentModalError = 'Parent Portal Login Password must be at least 6 characters long.';
+      return;
     }
 
     this.savingStudent = true;
@@ -9819,6 +9925,38 @@ export class AcademicsComponent implements OnInit {
         },
       });
     }
+  }
+
+  updateParentPasswordImmediately() {
+    const studentId = this.editingStudentId;
+    const pwd = (this.newStudent.guardianPassword || '').trim();
+    if (!studentId) {
+      this.toast.error('Student context missing.');
+      return;
+    }
+    if (!pwd || pwd.length < 6) {
+      this.toast.error('Password must be at least 6 characters long.');
+      return;
+    }
+
+    this.updatingParentPassword = true;
+    this.parentPasswordSuccessMsg = '';
+
+    this.api.post(`academics/students/${studentId}/reset-parent-password`, {
+      password: pwd,
+      guardianEmail: (this.newStudent.guardianEmail || '').trim().toLowerCase(),
+    }).subscribe({
+      next: (res: any) => {
+        this.updatingParentPassword = false;
+        this.parentPasswordSuccessMsg = 'Password updated immediately! Parent can now log in with the new password.';
+        this.toast.success(res?.message || 'Parent login password updated immediately!');
+      },
+      error: (err: any) => {
+        this.updatingParentPassword = false;
+        const msg = this.formatErrorMessage(err, 'Failed to update parent password.');
+        this.toast.error(msg);
+      }
+    });
   }
 
   // --- Add Staff ---
@@ -10671,241 +10809,6 @@ export class AcademicsComponent implements OnInit {
         this.toast.error(this.formatErrorMessage(err, 'Failed to delete subject.'));
       },
     });
-  }
-
-  // ==============================================================
-  // QUICK TEST DATA AUTO-PROVISIONING UTILITY
-  // ==============================================================
-  isAutoProvisioning = false;
-  autoProvisionProgress = '';
-
-  private readonly MALE_STUDENT_NAMES = [
-    'Aarav Sharma', 'Vihaan Gupta', 'Aditya Verma', 'Arjun Singh', 'Reyansh Patel',
-    'Ishaan Kumar', 'Atharv Joshi', 'Advik Shah', 'Pranav Mehta', 'Dhruv Nair',
-    'Kabir Iyer', 'Rohan Reddy', 'Karan Banerjee', 'Yash Chatterjee', 'Aryan Das',
-    'Samar Roy', 'Rudra Choudhury', 'Siddharth Mishra', 'Varun Pandey', 'Gautam Trivedi'
-  ];
-
-  private readonly FEMALE_STUDENT_NAMES = [
-    'Aanya Sharma', 'Diya Verma', 'Saanvi Gupta', 'Ananya Patel', 'Fatima Singh',
-    'Isha Kumar', 'Aadhya Joshi', 'Kavya Shah', 'Avani Mehta', 'Sara Nair',
-    'Myra Iyer', 'Anika Reddy', 'Navya Banerjee', 'Pari Chatterjee', 'Riya Das',
-    'Sneha Roy', 'Shreya Choudhury', 'Tanvi Mishra', 'Pooja Pandey', 'Neha Saxena'
-  ];
-
-  getStandardSubjectsForGrade(gradeName: string): { name: string; code: string; type: string }[] {
-    const gn = (gradeName || '').toLowerCase();
-    if (gn.includes('nur') || gn.includes('lkg') || gn.includes('ukg') || gn.includes('pre')) {
-      return [
-        { name: 'English', code: 'ENG', type: 'THEORY' },
-        { name: 'Hindi', code: 'HIN', type: 'THEORY' },
-        { name: 'Mathematics', code: 'MATH', type: 'THEORY' },
-        { name: 'Rhymes & Art', code: 'ART', type: 'PRACTICAL' },
-      ];
-    }
-    if (gn.includes('11') || gn.includes('12')) {
-      return [
-        { name: 'Physics', code: 'PHY', type: 'THEORY' },
-        { name: 'Chemistry', code: 'CHEM', type: 'THEORY' },
-        { name: 'Mathematics', code: 'MATH', type: 'THEORY' },
-        { name: 'English Core', code: 'ENG_COR', type: 'THEORY' },
-        { name: 'Computer Science', code: 'CS', type: 'PRACTICAL' },
-      ];
-    }
-    if (gn.includes('9') || gn.includes('10')) {
-      return [
-        { name: 'English Language', code: 'ENG', type: 'THEORY' },
-        { name: 'Mathematics', code: 'MATH', type: 'THEORY' },
-        { name: 'Science', code: 'SCI', type: 'THEORY' },
-        { name: 'Social Science', code: 'SST', type: 'THEORY' },
-        { name: 'Hindi', code: 'HIN', type: 'THEORY' },
-      ];
-    }
-    // Grades 1-8
-    return [
-      { name: 'English', code: 'ENG', type: 'THEORY' },
-      { name: 'Hindi', code: 'HIN', type: 'THEORY' },
-      { name: 'Mathematics', code: 'MATH', type: 'THEORY' },
-      { name: 'Science', code: 'SCI', type: 'THEORY' },
-      { name: 'Social Studies', code: 'SST', type: 'THEORY' },
-      { name: 'Computer Studies', code: 'COMP', type: 'PRACTICAL' },
-    ];
-  }
-
-  getStudentDOB(gradeName: string, index: number): string {
-    const gn = (gradeName || '').toLowerCase();
-    let birthYear = 2016;
-    if (gn.includes('pre-nur') || gn.includes('prenur')) birthYear = 2024;
-    else if (gn.includes('nursery') || gn.includes('nur')) birthYear = 2023;
-    else if (gn.includes('lkg')) birthYear = 2022;
-    else if (gn.includes('ukg')) birthYear = 2021;
-    else if (gn.includes('12')) birthYear = 2010;
-    else if (gn.includes('11')) birthYear = 2011;
-    else if (gn.includes('10')) birthYear = 2012;
-    else if (gn.includes('9')) birthYear = 2013;
-    else if (gn.includes('8')) birthYear = 2014;
-    else if (gn.includes('7')) birthYear = 2015;
-    else if (gn.includes('6')) birthYear = 2016;
-    else if (gn.includes('5')) birthYear = 2017;
-    else if (gn.includes('4')) birthYear = 2018;
-    else if (gn.includes('3')) birthYear = 2019;
-    else if (gn.includes('2')) birthYear = 2020;
-    else if (gn.includes('1')) birthYear = 2021;
-
-    const month = String((index % 12) + 1).padStart(2, '0');
-    const day = String(((index * 4) % 28) + 1).padStart(2, '0');
-    return `${birthYear}-${month}-${day}`;
-  }
-
-  async autoSetupAllClasses() {
-    if (this.isAutoProvisioning) return;
-    const session = this.auth.activeAcademicSession();
-    const sessionName = session?.name || 'Current Session';
-    const confirmed = confirm(
-      `Auto-provision sections, standard subjects, and test students across all classes for "${sessionName}"?`
-    );
-    if (!confirmed) return;
-
-    this.isAutoProvisioning = true;
-    this.autoProvisionProgress = 'Starting setup...';
-    const activeSessionId = session?.id;
-
-    try {
-      const classesList = [...this.classes];
-      let sectionsCreated = 0;
-      let subjectsAssigned = 0;
-      let studentsEnrolled = 0;
-
-      for (let i = 0; i < classesList.length; i++) {
-        const cls = classesList[i];
-        this.autoProvisionProgress = `Setting up ${cls.name} (${i + 1}/${classesList.length})...`;
-
-        // 1. Ensure Sections exist
-        let details = await this.ensureClassDetailsLoaded(cls.id);
-        let sections = [...(details.sections || [])];
-        if (sections.length === 0) {
-          try {
-            const secA: any = await firstValueFrom(
-              this.api.post('academics/sections', {
-                class_id: cls.id,
-                name: 'Section A',
-                code: 'A',
-                capacity: 40,
-                academic_year_id: activeSessionId,
-              })
-            );
-            if (secA) sections.push(secA);
-            sectionsCreated++;
-          } catch (e) {
-            console.warn(`Section A creation error for ${cls.name}:`, e);
-          }
-
-          try {
-            const secB: any = await firstValueFrom(
-              this.api.post('academics/sections', {
-                class_id: cls.id,
-                name: 'Section B',
-                code: 'B',
-                capacity: 40,
-                academic_year_id: activeSessionId,
-              })
-            );
-            if (secB) sections.push(secB);
-            sectionsCreated++;
-          } catch (e) {
-            console.warn(`Section B creation error for ${cls.name}:`, e);
-          }
-
-          this.classDetailsCache.delete(cls.id);
-          details = await this.ensureClassDetailsLoaded(cls.id);
-          sections = details.sections || sections;
-        }
-
-        // 2. Ensure Standard Subjects exist
-        let subjects = details.subjects || [];
-        if (subjects.length === 0) {
-          const standardSubjects = this.getStandardSubjectsForGrade(cls.name);
-          const secIds = sections.map((s) => s.id);
-          for (const sub of standardSubjects) {
-            try {
-              await firstValueFrom(
-                this.api.post('academics/subjects', {
-                  name: sub.name,
-                  code: `${sub.code}_${cls.code || cls.name.replace(/[^a-zA-Z0-9]/g, '')}`.toUpperCase().slice(0, 15),
-                  subject_type: sub.type || 'THEORY',
-                  type: sub.type || 'THEORY',
-                  class_id: cls.id,
-                  class_name: cls.name,
-                  academic_year_id: activeSessionId,
-                  is_all_sections: true,
-                  section_ids: secIds,
-                })
-              );
-              subjectsAssigned++;
-            } catch (e) {
-              console.warn(`Subject ${sub.name} assignment error:`, e);
-            }
-          }
-          this.classDetailsCache.delete(cls.id);
-        }
-
-        // 3. Ensure Students exist for each section (enroll up to 5 per section)
-        for (let sIdx = 0; sIdx < sections.length; sIdx++) {
-          const sec = sections[sIdx];
-          const currentEnrolled = Number((sec as any).enrolledCount ?? sec.enrolled_count ?? 0);
-          if (currentEnrolled < 5) {
-            const needed = 5 - currentEnrolled;
-            for (let k = 1; k <= needed; k++) {
-              const roll = String(currentEnrolled + k);
-              const isMale = k % 2 === 1;
-              const pool = isMale ? this.MALE_STUDENT_NAMES : this.FEMALE_STUDENT_NAMES;
-              const fullName = pool[(i * 7 + sIdx * 5 + k) % pool.length];
-              const parts = fullName.split(' ');
-              const firstName = parts[0];
-              const lastName = parts.slice(1).join(' ') || 'Kumar';
-              const guardianFirst = isMale ? 'Rajesh' : 'Sunita';
-              const dob = this.getStudentDOB(cls.name, k);
-
-              try {
-                await firstValueFrom(
-                  this.api.post('academics/students', {
-                    firstName,
-                    lastName,
-                    gender: isMale ? 'MALE' : 'FEMALE',
-                    dateOfBirth: dob,
-                    bloodGroup: ['A+', 'B+', 'O+', 'AB+'][k % 4],
-                    classId: cls.id,
-                    sectionId: sec.id,
-                    rollNumber: roll,
-                    guardianName: `${guardianFirst} ${lastName}`,
-                    guardianPhone: `+91 98765 ${String(20000 + i * 100 + sIdx * 10 + k).slice(-5)}`,
-                    guardianRelationship: 'Father',
-                    academicYearId: activeSessionId,
-                  })
-                );
-                studentsEnrolled++;
-              } catch (e) {
-                console.warn(`Student ${firstName} creation error:`, e);
-              }
-            }
-          }
-        }
-      }
-
-      this.classDetailsCache.clear();
-      this.toast.success(
-        `Setup complete! Added ${sectionsCreated} sections, ${subjectsAssigned} subjects, and ${studentsEnrolled} enrolled students for ${sessionName}.`
-      );
-      this.loadClassesAndSubjects();
-      this.loadSubjectsMaster();
-      this.loadStaffList();
-    } catch (err: any) {
-      console.error('Auto setup error:', err);
-      this.toast.error('Setup encountered an error: ' + (err?.message || 'Check browser console'));
-    } finally {
-      this.isAutoProvisioning = false;
-      this.autoProvisionProgress = '';
-    }
   }
 }
 

@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -800,11 +801,20 @@ export class SubscriptionComponent implements OnInit {
     );
   }
 
+  router = inject(Router);
+
   constructor() {
-    this.loadAllData();
+    if (this.auth.isSectionAllowedForUser('subscription')) {
+      this.loadAllData();
+    }
   }
 
   ngOnInit() {
+    if (!this.auth.isSectionAllowedForUser('subscription')) {
+      this.toast.error('Access Restricted: You do not have permission to access SaaS Subscription & Wallet.');
+      this.router.navigate(['/dashboard']);
+      return;
+    }
     this.auth.fetchProfile().subscribe();
   }
 

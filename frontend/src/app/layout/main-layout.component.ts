@@ -8,6 +8,7 @@ import { filter } from 'rxjs/operators';
 import { AuthService, DEFAULT_ROLE_PERMISSIONS } from '../core/services/auth.service';
 import { ApiService } from '../core/services/api.service';
 import { ToastService } from '../core/services/toast.service';
+import { ThemeService } from '../core/services/theme.service';
 import { ImageUploadService } from '../core/services/image-upload.service';
 import { AcademicSession, Notice } from '../core/models';
 import { AiSystemGuideComponent } from '../shared/components/ai-system-guide.component';
@@ -47,7 +48,7 @@ export interface RoleSectionItem {
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule, AiSystemGuideComponent],
   template: `
-    <div class="flex h-screen bg-[#edf2f7] overflow-hidden font-sans text-slate-800">
+    <div class="flex h-screen bg-[#edf2f7] dark:bg-[#09090b] overflow-hidden font-sans text-slate-800 dark:text-slate-100">
       
       <!-- Mobile Backdrop Overlay -->
       <div *ngIf="isMobileSidebarOpen" (click)="isMobileSidebarOpen = false"
@@ -440,7 +441,7 @@ export interface RoleSectionItem {
               </svg>
             </button>
 
-            <!-- Dynamic Real-Time Weather & Sun/Moon Intensity Claymorphic Vector Art Badge -->
+            <!-- Dynamic Real-Time Weather & Sun/Moon Intensity Claymorphic Vector Art Badge (Both Light & Dark Theme) -->
             <div class="shrink-0 flex items-center justify-center">
               <span class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl border flex items-center justify-center shrink-0 transition-all duration-700 relative overflow-hidden"
                     [ngClass]="headerWeatherIconBoxClass"
@@ -590,14 +591,12 @@ export interface RoleSectionItem {
 
                 <!-- Compact Automatic Live Weather Pill in Header -->
                 <ng-container *ngIf="headerWeather">
-                  <span class="w-1 h-1 rounded-full bg-slate-300 hidden sm:inline-block shrink-0"></span>
+                  <span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700 hidden sm:inline-block shrink-0"></span>
                   <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-extrabold border shrink-0 transition-all duration-700"
                        [ngClass]="headerWeatherPillClass"
                        [title]="headerWeatherTooltip">
                     <span>{{ headerWeather.temperature }}°C</span>
-                    <span class="font-semibold opacity-90">{{ dynamicConditionLabel }}</span>
-                    <span class="hidden md:inline text-[9px] font-bold opacity-75">• {{ celestialIntensityPercent }}% {{ isEffectiveDaytime ? 'Sun' : 'Moon' }}</span>
-                    <span *ngIf="headerWeather.city" class="hidden xl:inline opacity-70 font-medium">• {{ headerWeather.city }}</span>
+                    <span *ngIf="headerWeather.city" class="opacity-80 font-medium">• {{ headerWeather.city }}</span>
                   </div>
                 </ng-container>
               </div>
@@ -681,7 +680,6 @@ export interface RoleSectionItem {
                 <span *ngIf="canManageSessions" class="w-1 h-1 rounded-full bg-slate-300 shrink-0"></span>
                 <p class="text-[11px] font-medium text-slate-500 truncate flex items-center gap-1.5">
                   <span class="font-semibold text-slate-700 truncate">{{ auth.currentUser()?.school?.name || 'SchoolSense Campus' }}</span>
-                  <span class="text-slate-400 shrink-0">• {{ displayRole }} Workspace</span>
                 </p>
               </div>
 
@@ -689,7 +687,6 @@ export interface RoleSectionItem {
               <div class="flex lg:hidden items-center gap-1 mt-0.5 min-w-0">
                 <p class="text-[10px] font-medium text-slate-500 truncate flex items-center gap-1">
                   <span class="font-semibold text-slate-700 truncate">{{ auth.currentUser()?.school?.name || 'SchoolSense' }}</span>
-                  <span class="text-slate-400 shrink-0">• {{ displayRole }}</span>
                 </p>
               </div>
             </div>
@@ -766,6 +763,37 @@ export interface RoleSectionItem {
                   </div>
                 </div>
               </div>
+
+              <!-- Mobile Theme Toggle Button -->
+              <button type="button"
+                      (click)="themeService.toggleTheme()"
+                      [title]="themeService.isDark() ? 'Switch to Light Theme' : 'Switch to Dark Theme'"
+                      class="relative w-8 h-8 rounded-full text-slate-600 hover:text-amber-500 hover:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center">
+                <svg *ngIf="themeService.isDark()" class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <svg *ngIf="!themeService.isDark()" class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              </button>
+
+              <!-- Mobile Support Button -->
+              <button type="button"
+                      (click)="openSupportModal()"
+                      title="Help & Support Desk"
+                      class="relative w-8 h-8 rounded-full text-slate-600 hover:text-indigo-600 hover:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center">
+                <svg class="w-4 h-4 text-slate-600" viewBox="0 0 24 24" fill="none">
+                  <path d="M7 11.5V9C7 6.23858 9.23858 4 12 4C14.7614 4 17 6.23858 17 9V11.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  <path d="M8.5 7.5C10 6 12 8 15.5 6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  <path d="M6 10.5C5.17157 10.5 4.5 11.1716 4.5 12C4.5 12.8284 5.17157 13.5 6 13.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  <rect x="17.5" y="10" width="2" height="4" rx="1" fill="currentColor" />
+                  <circle cx="10" cy="11.5" r="1.1" fill="currentColor" />
+                  <circle cx="14" cy="11.5" r="1.1" fill="currentColor" />
+                  <path d="M6.5 13.5C7.2 16.5 9.3 19 12 19C12.8 19 13.5 18.8 14.2 18.4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  <path d="M18.5 13.5V15C18.5 17 17 18.5 14.5 18.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  <circle cx="14" cy="18.5" r="1.6" fill="currentColor" />
+                </svg>
+              </button>
 
               <!-- Profile Pic Capsule Button with Down Arrow (Transparent background) -->
               <div class="relative">
@@ -1013,6 +1041,46 @@ export interface RoleSectionItem {
                 </div>
               </div>
 
+              <!-- Theme Switcher Button (Light / Dark Mode, Icon-Only matching Bell & Settings) -->
+              <button type="button"
+                      (click)="themeService.toggleTheme()"
+                      [title]="themeService.isDark() ? 'Switch to Light Theme' : 'Switch to Dark Theme'"
+                      class="relative w-9 h-9 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center shrink-0">
+                <!-- Sun Icon when dark mode active -->
+                <svg *ngIf="themeService.isDark()" class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <!-- Moon Icon when light mode active -->
+                <svg *ngIf="!themeService.isDark()" class="w-4 h-4 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              </button>
+
+              <!-- Support / Helpdesk Button (Accessible to ALL users, Icon-Only matching Bell & Settings) -->
+              <button type="button"
+                      (click)="openSupportModal()"
+                      title="Help & Support Desk (Connect with SchoolSense or Root Admin)"
+                      class="relative w-9 h-9 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center shrink-0">
+                <!-- Exact Customer Support Agent with Headset & Mic Icon from User Image -->
+                <svg class="w-4 h-4 text-slate-700" viewBox="0 0 24 24" fill="none">
+                  <!-- Head / Face Outline -->
+                  <path d="M7 11.5V9C7 6.23858 9.23858 4 12 4C14.7614 4 17 6.23858 17 9V11.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  <!-- Hair Fringe Detail -->
+                  <path d="M8.5 7.5C10 6 12 8 15.5 6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  <!-- Left Ear / Cushion -->
+                  <path d="M6 10.5C5.17157 10.5 4.5 11.1716 4.5 12C4.5 12.8284 5.17157 13.5 6 13.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  <!-- Right Headphone Band & Ear Pad -->
+                  <rect x="17.5" y="10" width="2" height="4" rx="1" fill="currentColor" />
+                  <!-- Eyes -->
+                  <circle cx="10" cy="11.5" r="1.1" fill="currentColor" />
+                  <circle cx="14" cy="11.5" r="1.1" fill="currentColor" />
+                  <!-- Jawline & Headset Boom Microphone with Capsule Tip -->
+                  <path d="M6.5 13.5C7.2 16.5 9.3 19 12 19C12.8 19 13.5 18.8 14.2 18.4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  <path d="M18.5 13.5V15C18.5 17 17 18.5 14.5 18.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  <circle cx="14" cy="18.5" r="1.6" fill="currentColor" />
+                </svg>
+              </button>
+
               <!-- Sign Out Button -->
               <button (click)="auth.logout()"
                       title="Sign Out"
@@ -1040,33 +1108,370 @@ export interface RoleSectionItem {
       <!-- Global Production Toast Notifications Overlay (Claymorphic) -->
       <div class="fixed top-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0">
         <div *ngFor="let t of toastService.toasts()"
-             class="pointer-events-auto p-4 rounded-3xl shadow-[6px_6px_20px_rgba(0,0,0,0.08)] border flex items-start gap-3 transition-all transform duration-200 bg-white"
+             class="pointer-events-auto p-4 rounded-3xl shadow-[6px_6px_20px_rgba(0,0,0,0.12)] border flex items-start gap-3 transition-all transform duration-200 bg-white dark:bg-[#121214] dark:border-[#222226]"
              [class.border-emerald-200]="t.type === 'SUCCESS'"
              [class.border-rose-200]="t.type === 'ERROR'"
              [class.border-slate-300]="t.type === 'INFO'"
              [class.border-amber-200]="t.type === 'WARNING'">
           
           <div class="flex-shrink-0 mt-0.5">
-            <span *ngIf="t.type === 'SUCCESS'" class="w-6 h-6 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs font-bold border border-emerald-200 shadow-xs">
+            <span *ngIf="t.type === 'SUCCESS'" class="w-6 h-6 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold border border-emerald-200 dark:border-emerald-800 shadow-xs">
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
             </span>
-            <span *ngIf="t.type === 'ERROR'" class="w-6 h-6 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-xs font-bold border border-rose-200 shadow-xs">
+            <span *ngIf="t.type === 'ERROR'" class="w-6 h-6 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xs font-bold border border-rose-200 dark:border-rose-800 shadow-xs">
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </span>
-            <span *ngIf="t.type === 'INFO'" class="w-6 h-6 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-xs font-bold border border-slate-200 shadow-xs">
+            <span *ngIf="t.type === 'INFO'" class="w-6 h-6 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center text-xs font-bold border border-slate-200 dark:border-slate-700 shadow-xs">
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </span>
-            <span *ngIf="t.type === 'WARNING'" class="w-6 h-6 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xs font-bold border border-amber-200 shadow-xs">
+            <span *ngIf="t.type === 'WARNING'" class="w-6 h-6 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs font-bold border border-amber-200 dark:border-amber-800 shadow-xs">
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
             </span>
           </div>
 
           <div class="flex-1 min-w-0">
-            <div class="text-xs font-bold text-slate-900">{{ t.title || t.type }}</div>
-            <div class="text-xs text-slate-600 mt-0.5 leading-relaxed">{{ t.message }}</div>
+            <div class="text-xs font-bold text-slate-900 dark:text-slate-100">{{ t.title || t.type }}</div>
+            <div class="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">{{ t.message }}</div>
           </div>
 
-          <button (click)="toastService.dismiss(t.id)" class="text-slate-400 hover:text-slate-700 font-bold text-lg leading-none cursor-pointer p-1 rounded-lg hover:bg-slate-100 transition-colors">&times;</button>
+          <button (click)="toastService.dismiss(t.id)" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-bold text-lg leading-none cursor-pointer p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">&times;</button>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- MODAL: HELP & SUPPORT DESK (SchoolSense & School Admin Direct)  -->
+      <!-- ============================================================== -->
+      <div *ngIf="showSupportModal" class="fixed inset-0 flex items-center justify-center p-3 sm:p-4 z-[95] animate-fadeIn">
+        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" (click)="closeSupportModal()"></div>
+        <div class="bg-white rounded-3xl max-w-2xl w-full flex flex-col max-h-[92vh] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-slate-200/90 overflow-hidden animate-scaleUp relative z-10">
+          
+          <!-- Modal Header -->
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 border border-indigo-200/80 flex items-center justify-center font-black text-lg shadow-xs shrink-0">
+                <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              </div>
+              <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3 class="text-base font-black text-slate-900 tracking-tight">Help & Support Desk</h3>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                    {{ displayRole }}
+                  </span>
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  {{ auth.isAdmin() ? 'Direct communication channel between School Administration & SchoolSense Platform' : 'Raise queries related to portal working with SchoolSense or connect with your School Root Admin' }}
+                </p>
+              </div>
+            </div>
+            <button (click)="closeSupportModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer transition-colors">&times;</button>
+          </div>
+
+          <!-- Tabs & Fast Action Bar -->
+          <div class="px-5 sm:px-6 py-2.5 bg-slate-50 border-b border-slate-200/80 flex items-center justify-between gap-2 shrink-0">
+            <div class="flex items-center gap-1.5">
+              <button type="button" (click)="activeSupportTab = 'NEW_TICKET'"
+                      [ngClass]="activeSupportTab === 'NEW_TICKET' ? 'bg-slate-900 text-white font-black shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-100 font-bold border border-slate-200'"
+                      class="px-3 py-1.5 rounded-xl text-xs transition-all cursor-pointer flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Raise New Query</span>
+              </button>
+
+              <button type="button" (click)="activeSupportTab = 'MY_TICKETS'; loadMySupportTickets()"
+                      [ngClass]="activeSupportTab === 'MY_TICKETS' ? 'bg-slate-900 text-white font-black shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-100 font-bold border border-slate-200'"
+                      class="px-3 py-1.5 rounded-xl text-xs transition-all cursor-pointer flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <span>My Queries</span>
+                <span *ngIf="mySupportTickets.length > 0" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full"
+                      [ngClass]="activeSupportTab === 'MY_TICKETS' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'">
+                  {{ mySupportTickets.length }}
+                </span>
+              </button>
+            </div>
+
+            <!-- Fast WhatsApp Button -->
+            <button type="button" (click)="openWhatsAppSupport()"
+                    title="Instant WhatsApp Support"
+                    class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/90 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0">
+              <svg class="w-3.5 h-3.5 text-emerald-600 fill-current" viewBox="0 0 24 24">
+                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.99.539 1.98.817 2.8.817 3.178 0 5.767-2.587 5.767-5.768 0-3.18-2.589-5.766-5.771-5.766zm3.393 8.305c-.149.421-.767.768-1.074.808-.288.037-.625.07-1.782-.416-1.481-.621-2.434-2.128-2.508-2.227-.074-.099-.607-.808-.607-1.542 0-.734.385-1.096.521-1.245.137-.149.298-.186.397-.186.099 0 .198.002.285.006.092.004.215-.035.335.254.124.298.421 1.029.458 1.104.037.074.062.161.012.26-.049.099-.074.161-.148.248-.074.087-.156.195-.223.262-.074.074-.152.155-.065.304.087.149.387.639.831 1.034.572.509 1.054.667 1.203.741.149.074.235.062.322-.037.087-.099.372-.434.471-.583.099-.149.198-.124.335-.074.136.05 1.028.485 1.204.572.176.087.294.13.337.205.043.074.043.432-.106.853z"/>
+              </svg>
+              <span class="hidden sm:inline">WhatsApp Help</span>
+            </button>
+          </div>
+
+          <!-- Modal Body Content -->
+          <div class="p-5 sm:p-6 overflow-y-auto max-h-[calc(92vh-140px)] custom-clay-scroll space-y-4">
+            
+            <!-- TAB 1: RAISE QUERY FORM -->
+            <div *ngIf="activeSupportTab === 'NEW_TICKET'" class="space-y-4">
+              
+              <!-- Recipient Routing Card -->
+              <!-- Case A: School Admin / Principal (Direct to SchoolSense) -->
+              <div *ngIf="auth.isAdmin()"
+                   class="p-4 rounded-2xl bg-gradient-to-r from-indigo-50/90 to-blue-50/80 border border-indigo-200/80 shadow-xs flex items-start gap-3">
+                <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-xs font-black text-indigo-950">Direct Connection to SchoolSense Platform Team</span>
+                    <span class="text-[9px] font-black px-2 py-0.5 rounded-full bg-indigo-200/80 text-indigo-800">Priority Admin Channel</span>
+                  </div>
+                  <p class="text-[11px] text-indigo-900/80 mt-0.5 leading-relaxed">
+                    As a School Administrator, your queries, technical issues, complaints, and feature suggestions are routed directly to SchoolSense engineering and senior support.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Case B: Lower Accounts (Teacher, Staff, Parent, Student) -> Choose recipient -->
+              <div *ngIf="!auth.isAdmin()" class="space-y-2">
+                <label class="block text-xs font-bold text-slate-800">
+                  Who would you like to connect with? <span class="text-rose-500">*</span>
+                </label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <!-- Option 1: School Administration (Root Admin) -->
+                  <div (click)="supportTarget = 'SCHOOL_ADMIN'"
+                       [ngClass]="supportTarget === 'SCHOOL_ADMIN' ? 'border-indigo-600 bg-indigo-50/70 ring-2 ring-indigo-500/20' : 'border-slate-200/90 bg-white hover:bg-slate-50'"
+                       class="p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 shadow-2xs">
+                    <input type="radio" name="supportTarget" [checked]="supportTarget === 'SCHOOL_ADMIN'" class="mt-0.5 text-indigo-600 focus:ring-indigo-500" />
+                    <div>
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="text-xs font-bold text-slate-900">School Administration</span>
+                        <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-600 border border-slate-200">Root Admin</span>
+                      </div>
+                      <p class="text-[10px] text-slate-500 mt-1 leading-normal">
+                        For internal school matters: class schedules, attendance corrections, leave approvals, marks or fee inquiries.
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Option 2: SchoolSense Platform Support -->
+                  <div (click)="supportTarget = 'SCHOOLSENSE_SUPPORT'"
+                       [ngClass]="supportTarget === 'SCHOOLSENSE_SUPPORT' ? 'border-indigo-600 bg-indigo-50/70 ring-2 ring-indigo-500/20' : 'border-slate-200/90 bg-white hover:bg-slate-50'"
+                       class="p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 shadow-2xs">
+                    <input type="radio" name="supportTarget" [checked]="supportTarget === 'SCHOOLSENSE_SUPPORT'" class="mt-0.5 text-indigo-600 focus:ring-indigo-500" />
+                    <div>
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="text-xs font-bold text-slate-900">SchoolSense Support</span>
+                        <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-indigo-100 text-indigo-700 border border-indigo-200">Portal Technical</span>
+                      </div>
+                      <p class="text-[10px] text-slate-500 mt-1 leading-normal">
+                        For questions on how the portal works, bugs, feature requests, or software errors with the SchoolSense application.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Query Type / Category -->
+              <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-800">
+                  Query Category <span class="text-rose-500">*</span>
+                </label>
+                <div class="flex flex-wrap gap-1.5">
+                  <button type="button" (click)="supportCategory = 'PORTAL_WORKING'"
+                          [ngClass]="supportCategory === 'PORTAL_WORKING' ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-100 font-medium border border-slate-200'"
+                          class="px-3 py-1.5 rounded-xl text-xs transition-all cursor-pointer flex items-center gap-1.5">
+                    <span>❓ Portal Working & How-To</span>
+                  </button>
+                  <button type="button" (click)="supportCategory = 'BUG'"
+                          [ngClass]="supportCategory === 'BUG' ? 'bg-rose-600 text-white font-bold shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-100 font-medium border border-slate-200'"
+                          class="px-3 py-1.5 rounded-xl text-xs transition-all cursor-pointer flex items-center gap-1.5">
+                    <span>🐛 Bug / Technical Issue</span>
+                  </button>
+                  <button type="button" (click)="supportCategory = 'SUGGESTION'"
+                          [ngClass]="supportCategory === 'SUGGESTION' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-100 font-medium border border-slate-200'"
+                          class="px-3 py-1.5 rounded-xl text-xs transition-all cursor-pointer flex items-center gap-1.5">
+                    <span>💡 Feature Suggestion</span>
+                  </button>
+                  <button type="button" (click)="supportCategory = 'COMPLAINT'"
+                          [ngClass]="supportCategory === 'COMPLAINT' ? 'bg-amber-600 text-white font-bold shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-100 font-medium border border-slate-200'"
+                          class="px-3 py-1.5 rounded-xl text-xs transition-all cursor-pointer flex items-center gap-1.5">
+                    <span>⚠️ Complaint / Grievance</span>
+                  </button>
+                  <button type="button" (click)="supportCategory = 'HELP'"
+                          [ngClass]="supportCategory === 'HELP' ? 'bg-blue-600 text-white font-bold shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-100 font-medium border border-slate-200'"
+                          class="px-3 py-1.5 rounded-xl text-xs transition-all cursor-pointer flex items-center gap-1.5">
+                    <span>🤝 General Help</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Subject & Priority Grid -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-bold text-slate-800 mb-1">
+                    Subject / Query Title <span class="text-rose-500">*</span>
+                  </label>
+                  <input type="text" [(ngModel)]="supportTitle"
+                         placeholder="e.g. Trouble generating class report cards, or new section request"
+                         class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-indigo-600 shadow-inner font-medium placeholder:text-slate-400 placeholder:font-normal" />
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-800 mb-1">Priority</label>
+                  <select [(ngModel)]="supportPriority"
+                          class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 font-bold focus:outline-none focus:border-indigo-600 shadow-inner">
+                    <option value="LOW">Low (General Query)</option>
+                    <option value="MEDIUM">Medium (Standard)</option>
+                    <option value="HIGH">High (Important)</option>
+                    <option value="URGENT">Urgent (Blocking)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Detailed Description -->
+              <div>
+                <label class="block text-xs font-bold text-slate-800 mb-1">
+                  Detailed Description <span class="text-rose-500">*</span>
+                </label>
+                <textarea [(ngModel)]="supportDescription" rows="4"
+                          placeholder="Please describe what you are trying to do, what happened, or the exact improvement or issue you would like addressed..."
+                          class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-indigo-600 shadow-inner leading-relaxed resize-none font-medium placeholder:text-slate-400 placeholder:font-normal"></textarea>
+              </div>
+
+              <!-- Contact Phone Number (Pre-filled) -->
+              <div>
+                <label class="block text-xs font-bold text-slate-800 mb-1">
+                  Callback / Contact Phone (Optional)
+                </label>
+                <input type="tel" [(ngModel)]="supportContactPhone"
+                       placeholder="+91 98765 43210"
+                       class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-indigo-600 shadow-inner font-medium placeholder:text-slate-400" />
+                <span class="text-[10px] text-slate-400 mt-1 block">Our support coordinators will use this phone number if urgent assistance or callback is needed.</span>
+              </div>
+
+              <!-- Error & Success Banners -->
+              <div *ngIf="supportErrorMessage" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-bold flex items-center gap-2">
+                <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span>{{ supportErrorMessage }}</span>
+              </div>
+
+              <div *ngIf="supportSuccessMessage" class="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>{{ supportSuccessMessage }}</span>
+              </div>
+
+              <!-- Submit Buttons -->
+              <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                <button type="button" (click)="closeSupportModal()"
+                        class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-colors cursor-pointer shadow-2xs">
+                  Close
+                </button>
+                <button type="button" (click)="submitSupportTicket()" [disabled]="isSubmittingSupport || !supportTitle.trim() || !supportDescription.trim()"
+                        class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-md transition-all disabled:opacity-50 cursor-pointer active:scale-95 flex items-center gap-1.5">
+                  <svg *ngIf="isSubmittingSupport" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                  </svg>
+                  <span>{{ isSubmittingSupport ? 'Submitting...' : 'Submit Support Query' }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- TAB 2: MY TICKETS & HISTORY -->
+            <div *ngIf="activeSupportTab === 'MY_TICKETS'" class="space-y-3">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <span class="text-xs font-bold text-slate-700">Your Submitted Queries & History</span>
+                <button type="button" (click)="loadMySupportTickets()"
+                        class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer flex items-center gap-1">
+                  <svg class="w-3 h-3" [class.animate-spin]="isLoadingMyTickets" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span>Refresh</span>
+                </button>
+              </div>
+
+              <!-- Loading State -->
+              <div *ngIf="isLoadingMyTickets" class="py-10 text-center">
+                <div class="w-8 h-8 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin mx-auto mb-2"></div>
+                <p class="text-xs font-bold text-slate-500">Loading your queries...</p>
+              </div>
+
+              <!-- Empty State -->
+              <div *ngIf="!isLoadingMyTickets && mySupportTickets.length === 0" class="py-12 text-center">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-400 mx-auto flex items-center justify-center mb-2.5 border border-indigo-100 shadow-2xs">
+                  <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <p class="text-xs font-bold text-slate-700">No support queries found</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">You have not submitted any queries yet.</p>
+                <button type="button" (click)="activeSupportTab = 'NEW_TICKET'"
+                        class="mt-3 px-3 py-1.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-all cursor-pointer">
+                  Raise a New Query
+                </button>
+              </div>
+
+              <!-- Tickets List -->
+              <div *ngIf="!isLoadingMyTickets && mySupportTickets.length > 0" class="space-y-2.5">
+                <div *ngFor="let t of mySupportTickets"
+                     class="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-xs transition-all space-y-1.5">
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="text-[10px] font-mono font-black text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200/80">
+                        #{{ t.ticket_number || t.id.slice(0, 8).toUpperCase() }}
+                      </span>
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded-md"
+                            [ngClass]="t.target_type === 'SCHOOLSENSE_SUPPORT' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-700'">
+                        {{ t.target_type === 'SCHOOLSENSE_SUPPORT' ? '⚡ SchoolSense Platform' : '🏢 School Admin' }}
+                      </span>
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                        {{ t.category }}
+                      </span>
+                    </div>
+
+                    <span class="text-[10px] font-black px-2 py-0.5 rounded-full shrink-0"
+                          [ngClass]="{
+                            'bg-amber-100 text-amber-700 border border-amber-200': t.status === 'OPEN',
+                            'bg-blue-100 text-blue-700 border border-blue-200': t.status === 'IN_PROGRESS',
+                            'bg-emerald-100 text-emerald-700 border border-emerald-200': t.status === 'RESOLVED',
+                            'bg-slate-100 text-slate-700 border border-slate-200': t.status === 'CLOSED'
+                          }">
+                      {{ t.status }}
+                    </span>
+                  </div>
+
+                  <h4 class="text-xs font-bold text-slate-900 leading-snug">{{ t.subject }}</h4>
+                  <p class="text-[11px] text-slate-600 line-clamp-2 leading-relaxed whitespace-pre-line">{{ t.description }}</p>
+
+                  <div class="text-[10px] text-slate-400 pt-1 flex items-center justify-between border-t border-slate-100">
+                    <span>Submitted {{ formatNoticeTime(t.created_at) }}</span>
+                    <span *ngIf="t.priority" class="font-bold text-slate-500 uppercase">{{ t.priority }} Priority</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Modal Footer: Official Direct Channels -->
+          <div class="px-5 sm:px-6 py-3 border-t border-slate-100 bg-slate-50/90 rounded-b-3xl flex items-center justify-between flex-wrap gap-2 shrink-0 text-[11px] text-slate-500">
+            <div class="flex items-center gap-3">
+              <span class="flex items-center gap-1 font-bold text-slate-700">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                SchoolSense Live Support
+              </span>
+              <span class="hidden sm:inline text-slate-400">•</span>
+              <a href="mailto:support@schoolsense.in" class="hover:text-indigo-600 hover:underline text-slate-600">support&#64;schoolsense.in</a>
+            </div>
+            <div class="text-[10px] text-slate-400">
+              Mon–Sat: 9:00 AM – 7:00 PM IST
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -1112,7 +1517,7 @@ export interface RoleSectionItem {
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              <span>2. Leadership & In-Charges ({{ schoolProfileForm.directors.length }} Directors)</span>
+              <span>2. Leadership & Directors ({{ schoolProfileForm.directors.length }} Directors)</span>
             </button>
 
             <button type="button" (click)="schoolProfileActiveTab = 'CONTACT'"
@@ -1498,53 +1903,6 @@ export interface RoleSectionItem {
                       <input type="text" [(ngModel)]="schoolProfileForm.vicePrincipalPhone" placeholder="+91 98765 00002"
                              [disabled]="!canManageSessions"
                              class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-2xs" />
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Section C: Department & Wing In-Charges -->
-                <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <span class="font-black text-slate-900 text-xs block">Department & Wing In-Charges</span>
-                      <span class="text-[10px] text-slate-500">Coordinators and heads for examinations, wings, sports, IT, and disciplines.</span>
-                    </div>
-                    <button *ngIf="canManageSessions" type="button" (click)="addInChargeRow()"
-                            class="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-800 font-bold text-[10px] rounded-xl border border-slate-300 shadow-2xs flex items-center gap-1 cursor-pointer">
-                      <span>+ Add Department In-Charge</span>
-                    </button>
-                  </div>
-
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <div *ngFor="let inc of schoolProfileForm.inCharges; let idx = index" class="p-2.5 bg-white rounded-xl border border-slate-200 shadow-2xs flex items-center gap-2.5">
-                      <!-- In-Charge Avatar Thumbnail -->
-                      <div class="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 relative group">
-                        <img *ngIf="inc.photoUrl" [src]="inc.photoUrl" class="w-full h-full object-cover" alt="In-Charge" />
-                        <span *ngIf="!inc.photoUrl" class="text-xs font-black text-slate-600">{{ (inc.name || 'I').charAt(0).toUpperCase() }}</span>
-                        <label *ngIf="canManageSessions" class="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity text-[8px] font-bold">
-                          <span>Edit</span>
-                          <input type="file" accept="image/*" (change)="onInChargePhotoSelected($event, idx)" class="hidden" />
-                        </label>
-                      </div>
-
-                      <div class="flex-1 space-y-1">
-                        <input type="text" [(ngModel)]="inc.department" placeholder="Department / Wing Title"
-                               [disabled]="!canManageSessions"
-                               class="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 focus:bg-white focus:outline-none focus:border-slate-800" />
-                        <div class="flex items-center gap-1.5">
-                          <input type="text" [(ngModel)]="inc.name" placeholder="In-Charge Faculty Name"
-                                 [disabled]="!canManageSessions"
-                                 class="flex-1 px-2 py-1 bg-[#f8fafc] border border-slate-300 rounded-lg text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800" />
-                          <input type="text" [(ngModel)]="inc.phone" placeholder="Phone"
-                                 [disabled]="!canManageSessions"
-                                 class="w-24 px-2 py-1 bg-[#f8fafc] border border-slate-300 rounded-lg text-[11px] text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800" />
-                        </div>
-                      </div>
-                      <button *ngIf="canManageSessions" type="button" (click)="removeInChargeRow(idx)"
-                              title="Remove In-Charge"
-                              class="text-slate-400 hover:text-rose-600 font-bold text-base p-1 rounded-lg hover:bg-rose-50 cursor-pointer">
-                        &times;
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -1952,6 +2310,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   api = inject(ApiService);
   router = inject(Router);
   toastService = inject(ToastService);
+  themeService = inject(ThemeService);
   modalService = inject(ModalService);
   imageUploadService = inject(ImageUploadService);
   
@@ -1965,6 +2324,20 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   availableSessions: AcademicSession[] = [];
   notifications: Notice[] = [];
   dismissedNoticeIds = new Set<string>();
+  // Support & Helpdesk Modal State
+  showSupportModal = false;
+  activeSupportTab: 'NEW_TICKET' | 'MY_TICKETS' = 'NEW_TICKET';
+  supportTarget: 'SCHOOL_ADMIN' | 'SCHOOLSENSE_SUPPORT' = 'SCHOOLSENSE_SUPPORT';
+  supportCategory: 'PORTAL_WORKING' | 'BUG' | 'SUGGESTION' | 'COMPLAINT' | 'HELP' = 'PORTAL_WORKING';
+  supportPriority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT' = 'MEDIUM';
+  supportTitle: string = '';
+  supportDescription: string = '';
+  supportContactPhone: string = '';
+  isSubmittingSupport: boolean = false;
+  supportSuccessMessage: string = '';
+  supportErrorMessage: string = '';
+  mySupportTickets: any[] = [];
+  isLoadingMyTickets: boolean = false;
 
   // School Profile & Role Management Modal State
   showSchoolProfileModal = false;
@@ -2271,7 +2644,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       id: 'subscription',
       label: 'Subscription & Wallet',
       route: '/subscription',
-      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'FEE_MANAGER'],
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL'],
     },
     {
       id: 'timetable',
@@ -2594,11 +2967,10 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
 
   get headerWeatherTooltip(): string {
     if (!this.headerWeather) {
-      return this.isDaytimeByClock ? 'Syncing live weather...' : 'Night • Syncing live weather...';
+      return 'Syncing live weather...';
     }
-    const bodyName = this.isEffectiveDaytime ? 'Solar Intensity' : 'Lunar Intensity';
     const cityTag = this.headerWeather.city ? ` • ${this.headerWeather.city}` : '';
-    return `${this.headerWeather.temperature}°C • ${this.dynamicConditionLabel} • ${bodyName}: ${this.celestialIntensityPercent}%${cityTag}`;
+    return `${this.headerWeather.temperature}°C${cityTag}`;
   }
 
   get isDashboardRoute(): boolean {
@@ -2607,6 +2979,9 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   }
 
   get headerWeatherClass(): string {
+    if (this.themeService.isDark()) {
+      return 'bg-[#121214] border-[#222226]';
+    }
     if (!this.isDashboardRoute || !this.headerWeather) {
       return 'bg-[#ffffff] border-slate-200/80';
     }
@@ -2633,9 +3008,10 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
    * - At 8:06 AM (~48% intensity): very soft, airy morning tint (not harsh midday yellow)
    * - At 1:00 PM (100% intensity): full warm sunlit golden-amber glow
    * - At Night (35%–100% lunar intensity): smooth indigo-slate moonlight progression
+   * Note: Completely disabled in Dark Mode (pure dark theme).
    */
   get headerWeatherStyle(): Record<string, string> {
-    if (!this.isDashboardRoute || !this.headerWeather) return {};
+    if (this.themeService.isDark() || !this.isDashboardRoute || !this.headerWeather) return {};
     const k = this.celestialIntensity;
     const phase = this.celestialPhase;
 
@@ -2675,6 +3051,9 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   }
 
   get mainCanvasWeatherClass(): string {
+    if (this.themeService.isDark()) {
+      return 'bg-[#09090b]';
+    }
     if (!this.isDashboardRoute || !this.headerWeather) {
       return 'bg-[#edf2f7]';
     }
@@ -2693,7 +3072,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   }
 
   get mainCanvasWeatherStyle(): Record<string, string> {
-    if (!this.isDashboardRoute || !this.headerWeather) return {};
+    if (this.themeService.isDark() || !this.isDashboardRoute || !this.headerWeather) return {};
     const k = this.celestialIntensity;
     const phase = this.celestialPhase;
 
@@ -2729,6 +3108,34 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
 
   get headerWeatherIconBoxClass(): string {
     const v = this.activeWeatherVisual;
+    const isDark = this.themeService.isDark();
+
+    if (isDark) {
+      switch (v) {
+        case 'MORNING_SUN':
+        case 'CLEAR_DAY':
+        case 'PARTLY_CLOUDY_DAY':
+        case 'SUNSET_DAY':
+          return 'bg-[#1a1a20] border-amber-400/30 text-amber-400 shadow-[0_2px_8px_rgba(245,158,11,0.18)]';
+        case 'RISING_MOON':
+        case 'CLEAR_NIGHT':
+        case 'PARTLY_CLOUDY_NIGHT':
+          return 'bg-[#1a1a20] border-indigo-400/30 text-indigo-300 shadow-[0_2px_8px_rgba(99,102,241,0.18)]';
+        case 'RAIN_DAY':
+        case 'RAIN_NIGHT':
+          return 'bg-[#1a1a20] border-sky-400/30 text-sky-400 shadow-[0_2px_8px_rgba(14,165,233,0.18)]';
+        case 'STORM':
+          return 'bg-[#1a1a20] border-amber-400/30 text-amber-400 shadow-[0_2px_8px_rgba(245,158,11,0.18)]';
+        case 'COOL':
+          return 'bg-[#1a1a20] border-cyan-400/30 text-cyan-300 shadow-[0_2px_8px_rgba(6,182,212,0.18)]';
+        case 'MIST':
+        case 'CLOUDY':
+        default:
+          return 'bg-[#1a1a20] border-white/10 text-slate-300 shadow-[0_2px_8px_rgba(0,0,0,0.5)]';
+      }
+    }
+
+    // Light Mode (radiant morning/afternoon gradient & sunlight/moonlight warmth)
     switch (v) {
       case 'MORNING_SUN':
         return 'bg-gradient-to-br from-amber-50/75 via-sky-50/60 to-white border-amber-200/70 text-amber-500';
@@ -2758,6 +3165,11 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   }
 
   get headerWeatherIconStyle(): Record<string, string> {
+    if (this.themeService.isDark()) {
+      return {
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.08)',
+      };
+    }
     const k = this.celestialIntensity;
     if (this.isEffectiveDaytime) {
       const glowRadius = Math.round(4 + k * 10);
@@ -2776,6 +3188,9 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
 
   get headerWeatherPillClass(): string {
     if (!this.headerWeather) return 'bg-slate-100 text-slate-700 border-slate-200';
+    if (this.themeService.isDark()) {
+      return 'bg-[#18181c] text-slate-200 border-white/10 shadow-2xs';
+    }
     switch (this.headerWeather.theme) {
       case 'SUNNY':
         if (this.celestialPhase === 'DAWN' || this.celestialPhase === 'MORNING') {
@@ -3351,7 +3766,22 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
           return false;
         }
 
-        // Role-based permissions check:
+        const curUser = this.auth.currentUser();
+        const hasCustomPerms = curUser?.customPermissions && Array.isArray(curUser.customPermissions);
+
+        // Management setting rule: for departmental users with configured permissions,
+        // the list of enabled access is the strict source of truth ("if enabled then show else not")
+        if (hasCustomPerms) {
+          if (!this.auth.isSectionAllowedForUser(g.id)) {
+            return false;
+          }
+          if (g.service && !this.auth.isServiceEnabled(g.service)) {
+            return false;
+          }
+          return true;
+        }
+
+        // Role-based permissions check for standard users without custom permissions:
         if (!this.auth.isSectionAllowedForUser(g.id)) {
           return false;
         }
@@ -4235,4 +4665,141 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       },
     });
   }
+
+  // =========================================================================
+  // SUPPORT & HELPDESK METHODS
+  // =========================================================================
+
+  openSupportModal(event?: Event) {
+    if (event) event.stopPropagation();
+    this.isSettingsDropdownOpen = false;
+    this.isMobileUserMenuOpen = false;
+
+    // Default target: If user is Root Admin/Principal/Platform, target is SchoolSense platform.
+    // If user is Teacher/Staff/Parent/Student, default to School Administration (with toggle to SchoolSense).
+    if (this.auth.isAdmin() || this.auth.isSuperAdmin() || this.auth.isPrincipal()) {
+      this.supportTarget = 'SCHOOLSENSE_SUPPORT';
+    } else {
+      this.supportTarget = 'SCHOOL_ADMIN';
+    }
+
+    const u = this.auth.currentUser();
+    this.supportContactPhone = u?.phone || '';
+    this.supportTitle = '';
+    this.supportDescription = '';
+    this.supportCategory = 'PORTAL_WORKING';
+    this.supportPriority = 'MEDIUM';
+    this.supportSuccessMessage = '';
+    this.supportErrorMessage = '';
+    this.activeSupportTab = 'NEW_TICKET';
+    this.showSupportModal = true;
+
+    // Preload user's submitted queries
+    this.loadMySupportTickets();
+  }
+
+  closeSupportModal() {
+    this.showSupportModal = false;
+    this.supportSuccessMessage = '';
+    this.supportErrorMessage = '';
+  }
+
+  setSupportTab(tab: 'NEW_TICKET' | 'MY_TICKETS') {
+    this.activeSupportTab = tab;
+    this.supportSuccessMessage = '';
+    this.supportErrorMessage = '';
+    if (tab === 'MY_TICKETS') {
+      this.loadMySupportTickets();
+    }
+  }
+
+  setSupportTarget(target: 'SCHOOL_ADMIN' | 'SCHOOLSENSE_SUPPORT') {
+    this.supportTarget = target;
+  }
+
+  setSupportCategory(cat: 'PORTAL_WORKING' | 'BUG' | 'SUGGESTION' | 'COMPLAINT' | 'HELP') {
+    this.supportCategory = cat;
+  }
+
+  setSupportPriority(prio: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT') {
+    this.supportPriority = prio;
+  }
+
+  submitSupportTicket() {
+    if (!this.supportTitle || !this.supportTitle.trim()) {
+      this.supportErrorMessage = 'Please enter a query or issue subject.';
+      return;
+    }
+    if (!this.supportDescription || !this.supportDescription.trim()) {
+      this.supportErrorMessage = 'Please describe your query or problem in detail.';
+      return;
+    }
+
+    this.isSubmittingSupport = true;
+    this.supportErrorMessage = '';
+    this.supportSuccessMessage = '';
+
+    const u = this.auth.currentUser();
+    const school = u?.school;
+    const roleName = this.displayRole || u?.role || 'Staff';
+    const targetLabel = this.supportTarget === 'SCHOOLSENSE_SUPPORT'
+      ? 'SchoolSense Engineering & Platform Team'
+      : 'School Administration (Root Admin & Principal)';
+
+    // Append context metadata to description for clarity across platforms
+    const metaNote = `\n\n--- Ticket Meta ---\nTarget: ${targetLabel}\nRaised by: ${this.userFullName} (${roleName})\nSchool: ${school?.name || 'School'} [${school?.code || 'N/A'}]\nContact: ${this.supportContactPhone || u?.phone || u?.email || 'N/A'}`;
+    const fullDescription = this.supportDescription.trim() + metaNote;
+
+    const payload = {
+      title: this.supportTitle.trim(),
+      description: fullDescription,
+      category: this.supportCategory,
+      priority: this.supportPriority,
+      target_type: this.supportTarget,
+    };
+
+    this.api.post('complaints', payload).subscribe({
+      next: () => {
+        this.isSubmittingSupport = false;
+        this.supportSuccessMessage = this.supportTarget === 'SCHOOLSENSE_SUPPORT'
+          ? 'Your query has been logged with the SchoolSense Support & Engineering team. We will review it promptly!'
+          : 'Your query has been routed directly to your School Administration. They have received your submission!';
+        this.toastService.success('Support ticket submitted successfully!');
+        this.supportTitle = '';
+        this.supportDescription = '';
+        this.loadMySupportTickets();
+      },
+      error: (err) => {
+        this.isSubmittingSupport = false;
+        console.error('Failed to submit support ticket', err);
+        this.supportErrorMessage = err?.message || 'Could not submit support ticket. Please check your network or reach out via WhatsApp.';
+        this.toastService.error('Failed to submit query. Please try again.');
+      },
+    });
+  }
+
+  loadMySupportTickets() {
+    this.isLoadingMyTickets = true;
+    this.api.get<any[]>('complaints', { myOnly: true }).subscribe({
+      next: (res) => {
+        this.mySupportTickets = res || [];
+        this.isLoadingMyTickets = false;
+      },
+      error: (err) => {
+        console.warn('Failed to load my support tickets', err);
+        this.isLoadingMyTickets = false;
+      },
+    });
+  }
+
+  openWhatsAppSupport() {
+    const u = this.auth.currentUser();
+    const school = u?.school;
+    const role = this.displayRole || u?.role || 'User';
+    const userName = this.userFullName || 'User';
+    const msg = `Hello SchoolSense Team, I need assistance with the portal.\n\nName: ${userName}\nRole: ${role}\nSchool: ${school?.name || 'N/A'} (${school?.code || 'N/A'})\nQuery: ${this.supportTitle ? this.supportTitle.trim() : 'Assistance requested'}`;
+    const url = `https://wa.me/919876543210?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
+  }
 }
+

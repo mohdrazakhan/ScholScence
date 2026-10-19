@@ -72,8 +72,130 @@
   }
   </script>
 
-  <link rel="icon" type="image/png" href="/brand/icon.png" id="app-favicon">
-  <link rel="shortcut icon" href="/brand/icon.png" id="app-shortcut-favicon">
+  <!-- Synchronous pre-boot branding detection and dark theme initialization to eliminate flash -->
+  <script>
+    (function() {
+      try {
+        var savedTheme = localStorage.getItem('schoolsense_theme');
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches && savedTheme === 'system')) {
+          document.documentElement.classList.add('dark');
+        } else if (savedTheme === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch(e) {}
+    })();
+  </script>
+  <script>
+    (function() {
+      try {
+        var host = window.location.hostname.toLowerCase();
+        var search = window.location.search || '';
+        var isForced = false;
+        var schoolParam = null;
+        if (search) {
+          var match = search.match(/[?&]school=([a-z0-9-]+)/i);
+          if (match) schoolParam = match[1].toLowerCase();
+        }
+        var bases = ['schoolsense.in', 'localhost', 'lvh.me', 'test', 'local'];
+        for (var i = 0; i < bases.length; i++) {
+          var b = bases[i];
+          if (host !== b && host !== 'www.' + b && (host.endsWith('.' + b) || schoolParam)) {
+            isForced = true;
+            break;
+          }
+        }
+        var cachedName = localStorage.getItem('schoolsense_selected_school_name');
+        var cachedLogo = localStorage.getItem('schoolsense_selected_school_logo');
+        var cachedCode = localStorage.getItem('schoolsense_selected_school_code');
+        var token = localStorage.getItem('schoolsense_token');
+
+        // Check inside schoolsense_user if standalone keys not yet populated
+        if (!cachedLogo || !cachedName) {
+          try {
+            var userRaw = localStorage.getItem('schoolsense_user');
+            if (userRaw) {
+              var u = JSON.parse(userRaw);
+              if (u && u.school) {
+                if (!cachedName && u.school.name) cachedName = u.school.name;
+                if (!cachedCode && u.school.code) cachedCode = u.school.code;
+                if (!cachedLogo) cachedLogo = u.school.logoUrl || u.school.logo_url;
+              }
+            }
+          } catch(e) {}
+        }
+
+        // Set page title immediately for school portals or logged-in users
+        if ((isForced || token) && cachedName) {
+          document.title = cachedName;
+        }
+
+        if (isForced) {
+          var style = document.createElement('style');
+          style.id = 'schoolsense-forced-suppression';
+          style.innerHTML = '.schoolsence-back-home, .schoolsence-platform-showcase, .schoolsence-platform-select { display: none !important; }';
+          document.head.appendChild(style);
+        }
+
+        // Determine target favicon:
+        var targetFavicon = cachedLogo;
+        if (!targetFavicon && (isForced || token) && cachedName) {
+          try {
+            var canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            var ctx = canvas.getContext('2d');
+            if (ctx) {
+              var grad = ctx.createLinearGradient(0, 0, 64, 64);
+              grad.addColorStop(0, '#4f46e5');
+              grad.addColorStop(1, '#0f172a');
+              ctx.fillStyle = grad;
+              if (typeof ctx.roundRect === 'function') {
+                ctx.beginPath();
+                ctx.roundRect(0, 0, 64, 64, 16);
+                ctx.fill();
+              } else {
+                ctx.fillRect(0, 0, 64, 64);
+              }
+              var initials = (cachedCode || cachedName.split(' ').map(function(w){return w[0];}).join('')).slice(0, 3).toUpperCase() || 'SCH';
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(initials, 32, 33);
+              targetFavicon = canvas.toDataURL('image/png');
+            }
+          } catch(e) {}
+        }
+
+        if (!targetFavicon) {
+          targetFavicon = '/brand/icon.png';
+        }
+
+        var cleanFav = targetFavicon.split('?')[0].toLowerCase();
+        var mime = (cleanFav.endsWith('.svg') || targetFavicon.indexOf('image/svg') !== -1)
+          ? 'image/svg+xml'
+          : (cleanFav.endsWith('.png') || targetFavicon.indexOf('image/png') !== -1)
+          ? 'image/png'
+          : (cleanFav.endsWith('.jpg') || cleanFav.endsWith('.jpeg') || targetFavicon.indexOf('image/jpeg') !== -1)
+          ? 'image/jpeg'
+          : (cleanFav.endsWith('.webp') || targetFavicon.indexOf('image/webp') !== -1)
+          ? 'image/webp'
+          : 'image/x-icon';
+
+        document.write('<link rel="icon" type="' + mime + '" href="' + targetFavicon + '" id="app-favicon">');
+        document.write('<link rel="shortcut icon" type="' + mime + '" href="' + targetFavicon + '" id="app-shortcut-favicon">');
+      } catch (e) {
+        document.write('<link rel="icon" type="image/png" href="/brand/icon.png" id="app-favicon">');
+        document.write('<link rel="shortcut icon" href="/brand/icon.png" id="app-shortcut-favicon">');
+      }
+    })();
+  </script>
+  <noscript>
+    <link rel="icon" type="image/png" href="/brand/icon.png" id="app-favicon">
+    <link rel="shortcut icon" href="/brand/icon.png" id="app-shortcut-favicon">
+  </noscript>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">

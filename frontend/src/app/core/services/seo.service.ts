@@ -1,6 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { Title, Meta } from '@angular/platform-browser';
+import { SchoolBrandingService, DEFAULT_APP_FAVICON } from './school-branding.service';
+import { SchoolContextService } from './school-context.service';
 
 /**
  * Production site URL — used for canonical URLs, Open Graph and sitemap references.
@@ -34,8 +36,13 @@ export class SeoService {
   private titleService = inject(Title);
   private meta = inject(Meta);
   private doc = inject(DOCUMENT);
+  private branding = inject(SchoolBrandingService);
+  private schoolContext = inject(SchoolContextService);
 
   setPage(seo: PageSeo): void {
+    if (!this.schoolContext.detectForcedSubdomain()) {
+      this.branding.setFaviconHref(DEFAULT_APP_FAVICON);
+    }
     const fullTitle = seo.title.includes(SITE_NAME) ? seo.title : `${seo.title} | ${SITE_NAME}`;
     const url = `${SITE_URL}${seo.path}`;
     const image = seo.ogImage?.startsWith('http')

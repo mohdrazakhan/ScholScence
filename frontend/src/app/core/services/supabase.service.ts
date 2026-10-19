@@ -92,7 +92,16 @@ const ALLOWED_PERSISTENT_KEYS = new Set<string>([
   'schoolsense_user',
   'schoolsense_active_session',
   'schoolsense_root_session',
+  'schoolsense_selected_school_id',
+  'schoolsense_selected_school_name',
+  'schoolsense_selected_school_code',
+  'schoolsense_selected_school_logo',
+  'schoolsense_school_profiles',
 ]);
+
+function isAllowedPersistentKey(key: string): boolean {
+  return ALLOWED_PERSISTENT_KEYS.has(key) || key.startsWith('schoolsense_role_perms_');
+}
 
 const inMemoryVolatileStore = new Map<string, string>();
 let firewallInstalled = false;
@@ -118,7 +127,7 @@ function installLocalStorageFirewall(): void {
     const keysToPurge: string[] = [];
     for (let i = 0; i < rawStorage.length; i++) {
       const key = rawStorage.key(i);
-      if (key && !ALLOWED_PERSISTENT_KEYS.has(key)) {
+      if (key && !isAllowedPersistentKey(key)) {
         keysToPurge.push(key);
       }
     }
@@ -128,14 +137,14 @@ function installLocalStorageFirewall(): void {
 
     // 2. Intercept getItem / setItem / removeItem so non-whitelisted keys never touch disk localStorage
     Storage.prototype.getItem = function (key: string): string | null {
-      if (this === rawStorage && !ALLOWED_PERSISTENT_KEYS.has(key)) {
+      if (this === rawStorage && !isAllowedPersistentKey(key)) {
         return inMemoryVolatileStore.has(key) ? inMemoryVolatileStore.get(key)! : null;
       }
       return nativeGetItem(key);
     };
 
     Storage.prototype.setItem = function (key: string, value: string): void {
-      if (this === rawStorage && !ALLOWED_PERSISTENT_KEYS.has(key)) {
+      if (this === rawStorage && !isAllowedPersistentKey(key)) {
         inMemoryVolatileStore.set(key, String(value));
         nativeRemoveItem(key);
         return;

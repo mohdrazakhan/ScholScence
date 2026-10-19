@@ -3,7 +3,6 @@
 /pricing
 /about
 /contact
-/login
 /blog
 /blog/schoolsense-vs-traditional-school-erp-software
 /blog/school-erp-pricing-india-hidden-costs

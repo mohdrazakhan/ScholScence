@@ -492,11 +492,16 @@ begin
     r.name as role_name,
     s.name as school_name,
     s.code as school_code,
-    s.status as school_status
+    s.status as school_status,
+    s.logo_url as school_logo_url,
+    coalesce(usr.custom_permissions, u.custom_permissions, '[]'::jsonb) as custom_permissions,
+    coalesce(usr.department, u.department, '') as department,
+    coalesce(usr.designation, u.designation, r.name) as designation
   into v_usr
   from public.user_school_roles usr
   join public.roles r on r.id = usr.role_id
   join public.schools s on s.id = usr.school_id
+  join public.users u on u.id = usr.user_id
   where usr.user_id = v_user.id
     and usr.status = 'ACTIVE'
     and s.status = 'ACTIVE'
@@ -530,11 +535,16 @@ begin
       'lastName', coalesce(v_user.last_name, ''),
       'role', v_usr.role_code,
       'roleName', v_usr.role_name,
+      'department', v_usr.department,
+      'designation', v_usr.designation,
+      'customPermissions', v_usr.custom_permissions,
       'school', jsonb_build_object(
         'id', v_usr.school_id,
         'name', v_usr.school_name,
         'code', v_usr.school_code,
         'status', v_usr.school_status,
+        'logoUrl', v_usr.school_logo_url,
+        'logo_url', v_usr.school_logo_url,
         'disabledServices', jsonb_build_array()
       ),
       'permissions', jsonb_build_array()
@@ -560,27 +570,39 @@ declare
   v_sess jsonb;
   v_user RECORD;
   v_school RECORD;
+  v_usr RECORD;
 begin
   v_sess := public.current_session();
   if v_sess is null then
     return jsonb_build_object('valid', false);
   end if;
 
-  select id, email, phone, first_name, last_name, status
+  select id, email, phone, first_name, last_name, status, department, designation, custom_permissions
     into v_user from public.users where id = (v_sess ->> 'user_id')::uuid;
 
   select id, name, code
     into v_school from public.schools where id = nullif(v_sess ->> 'school_id', '')::uuid;
+
+  select coalesce(usr.custom_permissions, v_user.custom_permissions, '[]'::jsonb) as custom_permissions,
+         coalesce(usr.department, v_user.department, '') as department,
+         coalesce(usr.designation, v_user.designation, '') as designation
+    into v_usr
+    from public.user_school_roles usr
+   where usr.user_id = v_user.id and (v_school.id is null or usr.school_id = v_school.id)
+   limit 1;
 
   return jsonb_build_object(
     'valid', true,
     'user', jsonb_build_object(
       'id', v_user.id, 'email', v_user.email, 'phone', v_user.phone,
       'firstName', v_user.first_name, 'lastName', coalesce(v_user.last_name, ''),
-      'status', v_user.status
+      'status', v_user.status,
+      'department', coalesce(v_usr.department, v_user.department, ''),
+      'designation', coalesce(v_usr.designation, v_user.designation, ''),
+      'customPermissions', coalesce(v_usr.custom_permissions, v_user.custom_permissions, '[]'::jsonb)
     ),
     'school', case when v_school.id is null then null else
-      jsonb_build_object('id', v_school.id, 'name', v_school.name, 'code', v_school.code) end,
+      jsonb_build_object('id', v_school.id, 'name', v_school.name, 'code', v_school.code, 'logoUrl', v_school.logo_url, 'logo_url', v_school.logo_url) end,
     'role', v_sess ->> 'role',
     'isSupportSession', coalesce((v_sess ->> 'is_support')::boolean, false)
   );

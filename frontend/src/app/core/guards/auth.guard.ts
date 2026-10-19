@@ -59,6 +59,29 @@ export const authGuard: CanActivateFn = (route, state) => {
     return false;
   }
 
+  // 4. Section / Feature module permissions check for tenant users
+  const sectionMap: Record<string, string> = {
+    dashboard: 'dashboard',
+    subscription: 'subscription',
+    fees: 'fees',
+    transport: 'transport',
+    timetable: 'timetable',
+    attendance: 'attendance',
+    homework: 'homework',
+    exams: 'exams',
+    communication: 'communication',
+    complaints: 'communication_complaints',
+    academics: 'academics',
+    'staff-users': 'staff_users',
+  };
+
+  const requiredSection = sectionMap[primarySegment];
+  if (requiredSection && !authService.isSectionAllowedForUser(requiredSection)) {
+    toast.error('Access Restricted: You do not have permission to access this module.');
+    router.navigate(['/dashboard']);
+    return false;
+  }
+
   return true;
 };
 

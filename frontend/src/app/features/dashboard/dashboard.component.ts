@@ -81,7 +81,7 @@ import {
               <span class="text-slate-500 font-semibold">
                 {{ stats?.stats?.totalTeachers ?? 0 }} Faculty • {{ modules?.departmental?.totalUsers ?? 0 }} Dept
               </span>
-              <span class="text-slate-400 group-hover:text-slate-900 font-bold text-[11px] transition-colors inline-flex items-center gap-1">
+              <span class="text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white font-bold text-[11px] transition-colors inline-flex items-center gap-1">
                 Manage
                 <svg class="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6l6 6-6 6"/></svg>
               </span>
@@ -107,7 +107,7 @@ import {
               <span class="text-emerald-600 font-semibold">
                 {{ stats?.stats?.attendanceMarkedCount ?? 0 }} Marked Today
               </span>
-              <span class="text-slate-400 group-hover:text-slate-900 font-bold text-[11px] transition-colors inline-flex items-center gap-1">
+              <span class="text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white font-bold text-[11px] transition-colors inline-flex items-center gap-1">
                 Registers
                 <svg class="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6l6 6-6 6"/></svg>
               </span>
@@ -153,7 +153,7 @@ import {
               <div class="text-2xl sm:text-3xl font-black text-slate-900 mt-2">{{ stats?.stats?.totalClasses ?? 0 }} Classes</div>
               <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-slate-100">
                 <span class="text-blue-600 font-semibold">{{ modules?.academics?.totalSections ?? 0 }} Sections Active</span>
-                <span class="text-slate-400 group-hover:text-slate-900 font-bold text-[11px] transition-colors inline-flex items-center gap-1">
+                <span class="text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white font-bold text-[11px] transition-colors inline-flex items-center gap-1">
                   Manage
                   <svg class="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6l6 6-6 6"/></svg>
                 </span>
@@ -233,7 +233,7 @@ import {
                         </div>
                         <p class="text-xs text-slate-500 mt-0.5">Official announcements broadcast to teachers, parents & staff</p>
                       </div>
-                      <a routerLink="/communication" class="text-xs font-bold text-blue-700 hover:text-blue-900 px-3 py-1.5 rounded-xl bg-blue-50/80 border border-blue-200/60 hover:bg-blue-100 transition-colors">
+                      <a routerLink="/communication" class="text-xs font-bold text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 dark:bg-[#18181c] dark:hover:bg-[#222228] border border-slate-200/80 dark:border-[#2a2a30] transition-colors shadow-2xs">
                         View All →
                       </a>
                     </div>
@@ -270,7 +270,7 @@ import {
                       </div>
                       <p class="text-xs text-slate-500 mt-0.5">Scheduled assessments and term examinations</p>
                     </div>
-                    <a routerLink="/exams" class="text-xs font-bold text-indigo-700 hover:text-indigo-900 px-3 py-1.5 rounded-xl bg-indigo-50/80 border border-indigo-200/60 hover:bg-indigo-100 transition-colors">
+                    <a routerLink="/exams" class="text-xs font-bold text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 dark:bg-[#18181c] dark:hover:bg-[#222228] border border-slate-200/80 dark:border-[#2a2a30] transition-colors shadow-2xs">
                       Manage →
                     </a>
                   </div>
@@ -828,13 +828,12 @@ import {
             <!-- ========================================================== -->
             <!-- RIGHT SIDE: ALL ENABLED FEATURES IN VERTICAL LIST FORMAT   -->
             <!-- ========================================================== -->
-            <div class="lg:col-span-5 xl:col-span-4 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] flex flex-col">
-              <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-100 px-1">
+            <div class="lg:col-span-5 xl:col-span-4 bg-white dark:bg-[#121214] p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-[#222226] shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] dark:shadow-none flex flex-col">
+              <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-100 dark:border-[#222226] px-1">
                 <div>
-                  <h3 class="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider">Campus Features</h3>
-                  <p class="text-[11px] text-slate-400">Click any feature to preview in center</p>
+                  <h3 class="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Campus Features</h3>
                 </div>
-                <span class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-slate-100 text-slate-700">
+                <span class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-slate-100 dark:bg-[#18181c] text-slate-700 dark:text-slate-300 border border-transparent dark:border-[#282830]">
                   {{ enabledMatrixModules.length }} Active
                 </span>
               </div>
@@ -845,11 +844,11 @@ import {
                         (click)="selectMatrixModule(mod.id)"
                         class="w-full text-left p-3 rounded-2xl border transition-all duration-300 flex items-center justify-between gap-3 cursor-pointer group"
                         [ngClass]="activeMatrixModuleId === mod.id
-                          ? 'bg-blue-50/90 text-blue-950 border-blue-300 shadow-xs ring-1 ring-blue-500/20 translate-x-1'
-                          : 'bg-[#f8fafc] hover:bg-white text-slate-800 border-slate-200/80 hover:border-slate-300 hover:shadow-xs'">
+                          ? 'bg-slate-100 dark:bg-[#1e1e24] text-slate-900 dark:text-white border-slate-300 dark:border-[#383842] shadow-xs ring-1 ring-slate-400/20 dark:ring-white/10 translate-x-1'
+                          : 'bg-[#f8fafc] dark:bg-[#141417] hover:bg-white dark:hover:bg-[#1c1c22] text-slate-800 dark:text-slate-200 border-slate-200/80 dark:border-[#222226] hover:border-slate-300 dark:hover:border-[#303038] hover:shadow-xs'">
                   <div class="flex items-center gap-3 min-w-0">
                     <div class="w-9 h-9 rounded-xl flex items-center justify-center border shrink-0 transition-transform duration-300 group-hover:scale-105"
-                         [ngClass]="activeMatrixModuleId === mod.id ? 'bg-blue-600 border-blue-600 text-white shadow-xs' : mod.iconClass">
+                         [ngClass]="activeMatrixModuleId === mod.id ? 'bg-indigo-600 dark:bg-white/10 border-indigo-600 dark:border-white/20 text-white shadow-xs' : mod.iconClass">
                       <!-- Module Icons -->
                       <svg *ngIf="mod.id === 'ACADEMICS'" class="w-4 h-4" viewBox="0 0 24 24" fill="none">
                         <path d="M12 3L2 8L12 13L22 8L12 3Z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
@@ -889,25 +888,21 @@ import {
                       </svg>
                     </div>
 
-                    <div class="min-w-0">
-                      <div class="text-xs font-black truncate"
-                           [ngClass]="activeMatrixModuleId === mod.id ? 'text-blue-950' : 'text-slate-900'">
+                    <div class="min-w-0 flex-1">
+                      <div class="text-xs font-bold truncate"
+                           [ngClass]="activeMatrixModuleId === mod.id ? 'text-slate-900 dark:text-white' : 'text-slate-900 dark:text-slate-100'">
                         {{ mod.title }}
-                      </div>
-                      <div class="text-[10px] truncate mt-0.5"
-                           [ngClass]="activeMatrixModuleId === mod.id ? 'text-blue-700/80' : 'text-slate-500'">
-                        {{ mod.subtitle }}
                       </div>
                     </div>
                   </div>
 
                   <div class="flex items-center gap-2 shrink-0">
                     <span class="px-2 py-0.5 rounded-lg text-[10px] font-black border"
-                          [ngClass]="activeMatrixModuleId === mod.id ? 'bg-blue-100 text-blue-800 border-blue-200' : mod.badgeClass">
+                          [ngClass]="activeMatrixModuleId === mod.id ? 'bg-slate-200 dark:bg-[#282830] text-slate-800 dark:text-slate-200 border-slate-300 dark:border-[#383842]' : mod.badgeClass">
                       {{ mod.badge }}
                     </span>
                     <svg class="w-3.5 h-3.5 transition-transform duration-300"
-                         [ngClass]="activeMatrixModuleId === mod.id ? 'text-blue-600 translate-x-0.5' : 'text-slate-400 group-hover:translate-x-0.5'"
+                         [ngClass]="activeMatrixModuleId === mod.id ? 'text-slate-700 dark:text-slate-200 translate-x-0.5' : 'text-slate-400 group-hover:translate-x-0.5'"
                          fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                     </svg>
@@ -927,7 +922,7 @@ import {
                 <h2 class="text-base font-bold text-slate-900">Recent Campus Circulars</h2>
                 <p class="text-xs text-slate-500">Official announcements broadcast to teachers, parents & staff</p>
               </div>
-              <a routerLink="/communication" class="text-xs font-bold text-slate-700 hover:text-slate-900 px-3 py-1.5 rounded-xl bg-[#f8fafc] border border-slate-200/80">
+              <a routerLink="/communication" class="text-xs font-bold text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 dark:bg-[#18181c] dark:hover:bg-[#222228] border border-slate-200/80 dark:border-[#2a2a30] transition-colors shadow-2xs">
                 View All →
               </a>
             </div>
@@ -959,7 +954,7 @@ import {
                 <h2 class="text-base font-bold text-slate-900">Upcoming Exams</h2>
                 <p class="text-xs text-slate-500">Scheduled assessments</p>
               </div>
-              <a routerLink="/exams" class="text-xs font-bold text-slate-700 hover:text-slate-900 px-3 py-1.5 rounded-xl bg-[#f8fafc] border border-slate-200/80">
+              <a routerLink="/exams" class="text-xs font-bold text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 dark:bg-[#18181c] dark:hover:bg-[#222228] border border-slate-200/80 dark:border-[#2a2a30] transition-colors shadow-2xs">
                 Manage →
               </a>
             </div>
@@ -1152,7 +1147,7 @@ import {
                   <h2 class="text-base font-black text-slate-900">Today's Teaching Timetable</h2>
                   <p class="text-xs text-slate-500">Your scheduled periods & classrooms for {{ formattedToday }}</p>
                 </div>
-                <a routerLink="/timetable" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 px-3 py-1.5 rounded-xl bg-indigo-50/70 border border-indigo-100">
+                <a routerLink="/timetable" class="text-xs font-bold text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 dark:bg-[#18181c] dark:hover:bg-[#222228] border border-slate-200/80 dark:border-[#2a2a30] transition-colors shadow-2xs">
                   Full Routine →
                 </a>
               </div>
@@ -1280,7 +1275,7 @@ import {
                   <h2 class="text-sm font-black text-slate-900">Recent Homework</h2>
                   <p class="text-[11px] text-slate-500">Assignments posted for your classes</p>
                 </div>
-                <a routerLink="/homework" class="text-xs font-bold text-indigo-600 hover:text-indigo-800">Post New →</a>
+                <a routerLink="/homework" class="text-xs font-bold text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 dark:bg-[#18181c] dark:hover:bg-[#222228] border border-slate-200/80 dark:border-[#2a2a30] transition-colors shadow-2xs">Post New →</a>
               </div>
               <div class="space-y-2.5 mt-3">
                 <div *ngFor="let hw of (stats?.teacherData?.recentHomework || []).slice(0, 3)"
@@ -1304,7 +1299,7 @@ import {
                   <h2 class="text-sm font-black text-slate-900">Faculty Notices</h2>
                   <p class="text-[11px] text-slate-500">Circulars for teachers & staff</p>
                 </div>
-                <a routerLink="/communication" class="text-xs font-bold text-slate-600 hover:text-slate-900">View All →</a>
+                <a routerLink="/communication" class="text-xs font-bold text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 dark:bg-[#18181c] dark:hover:bg-[#222228] border border-slate-200/80 dark:border-[#2a2a30] transition-colors shadow-2xs">View All →</a>
               </div>
               <div class="divide-y divide-slate-100 mt-2">
                 <div *ngFor="let notice of stats?.recentNotices" class="py-3 first:pt-2 last:pb-0">
@@ -1651,7 +1646,7 @@ import {
                 <h3 class="text-sm font-black text-slate-900">School Circulars & Notices</h3>
                 <p class="text-[11px] text-slate-500">Announcements for parents & guardians</p>
               </div>
-              <a routerLink="/communication" class="text-xs font-bold text-indigo-600 hover:underline">All Notices →</a>
+              <a routerLink="/communication" class="text-xs font-bold text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 dark:bg-[#18181c] dark:hover:bg-[#222228] border border-slate-200/80 dark:border-[#2a2a30] transition-colors shadow-2xs">All Notices →</a>
             </div>
             <div class="divide-y divide-slate-100 mt-2">
               <div *ngFor="let n of stats?.recentNotices" class="py-3 first:pt-2 last:pb-0">

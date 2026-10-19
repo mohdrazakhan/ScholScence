@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { SchoolContextService } from '../../core/services/school-context.service';
+import { SchoolBrandingService } from '../../core/services/school-branding.service';
 
 export interface SchoolItem {
   id: string;
@@ -112,7 +113,7 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
       <!-- Back to Public Website Floating Link -->
       <a *ngIf="!subdomainForced"
          routerLink="/"
-         class="absolute top-4 left-4 z-50 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/90 hover:bg-white text-slate-700 hover:text-indigo-600 font-bold text-xs shadow-sm border border-slate-200 transition-all backdrop-blur-sm">
+         class="schoolsence-back-home absolute top-4 left-4 z-50 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/90 hover:bg-white text-slate-700 hover:text-indigo-600 font-bold text-xs shadow-sm border border-slate-200 transition-all backdrop-blur-sm">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
@@ -130,8 +131,8 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
 
         <div class="w-full max-w-lg my-auto space-y-7 relative z-10">
           
-          <!-- STEP 1 LEFT: SchoolSense Branding (Desktop Showcase) -->
-          <div *ngIf="step === 'SELECT_SCHOOL' || isRootLogin" class="space-y-6 animate-fadeIn flex flex-col items-center text-center">
+          <!-- STEP 1 LEFT: SchoolSense Branding (Desktop Showcase - ONLY when no school is selected and not on school portal) -->
+          <div *ngIf="((step === 'SELECT_SCHOOL' && !subdomainForced) || isRootLogin)" class="schoolsence-platform-showcase space-y-6 animate-fadeIn flex flex-col items-center text-center">
             
             <!-- SchoolSense Master Brand Hero Centered in Left Portion (Desktop Only) -->
             <div class="hidden lg:flex w-full justify-center py-2">
@@ -202,6 +203,19 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
             <!-- Footer indicator Centered -->
             <div class="pt-2 text-[11px] font-medium text-slate-400 flex items-center justify-center gap-2">
               <span>Official Institutional Portal • 256-bit SSL Encrypted</span>
+            </div>
+          </div>
+
+          <!-- STEP 2 LEFT (Loading State on Cold Cache Subdomain): Skeleton Pulse -->
+          <div *ngIf="subdomainForced && !selectedSchool && !isRootLogin" class="space-y-6 flex flex-col items-center text-center animate-pulse">
+            <div class="hidden lg:flex space-y-3 flex-col items-center">
+              <div class="w-16 h-16 rounded-2xl bg-slate-200 shadow-sm mx-auto"></div>
+              <div class="h-6 w-52 bg-slate-200 rounded-xl"></div>
+              <div class="h-3.5 w-36 bg-slate-100 rounded-lg"></div>
+            </div>
+            <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3 w-full">
+              <div class="h-4 w-3/4 bg-slate-100 rounded"></div>
+              <div class="h-4 w-1/2 bg-slate-100 rounded"></div>
             </div>
           </div>
 
@@ -304,7 +318,7 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
         <div class="w-full max-w-md mb-6 text-center flex flex-col items-center lg:hidden animate-fadeIn">
           
           <!-- Step 1 / Platform Mobile Header -->
-          <div *ngIf="step === 'SELECT_SCHOOL' || isRootLogin" class="space-y-3 flex flex-col items-center w-full">
+          <div *ngIf="((step === 'SELECT_SCHOOL' && !subdomainForced) || isRootLogin)" class="schoolsence-platform-showcase space-y-3 flex flex-col items-center w-full">
             <div (click)="onLogoClick()"
                  class="inline-flex items-center justify-center py-1 select-none cursor-default">
               <img src="/brand/top_icon_logo.png"
@@ -346,7 +360,7 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
         <div *ngIf="step === 'SELECT_SCHOOL' && subdomainNotFound" class="w-full max-w-md rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-xs font-medium text-amber-800 animate-fadeIn">
           We couldn't find a school at the address "{{ subdomainNotFound }}". Please select your school below, or check the address with your school office.
         </div>
-        <div *ngIf="step === 'SELECT_SCHOOL'" class="w-full max-w-md bg-white rounded-3xl border border-slate-200/90 shadow-[0_20px_50px_rgba(15,23,42,0.08),0_1px_3px_rgba(0,0,0,0.05)] p-7 sm:p-9 space-y-6">
+        <div *ngIf="step === 'SELECT_SCHOOL' && !subdomainForced" class="schoolsence-platform-select w-full max-w-md bg-white rounded-3xl border border-slate-200/90 shadow-[0_20px_50px_rgba(15,23,42,0.08),0_1px_3px_rgba(0,0,0,0.05)] p-7 sm:p-9 space-y-6">
             
             <div class="space-y-2 text-center flex flex-col items-center">
               <img src="/brand/icon.png" alt="SchoolSense Emblem" class="w-10 h-10 object-contain mx-auto" />
@@ -485,6 +499,13 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
                   <h2 class="text-xl font-black text-slate-900 tracking-tight">{{ selectedSchool.name }}</h2>
                   <p class="text-xs text-slate-500 mt-0.5">Enter your email or phone number and password.</p>
                 </div>
+              </div>
+
+              <!-- Cold cache loading placeholder on custom domain -->
+              <div *ngIf="!isRootLogin && !selectedSchool && subdomainForced" class="flex flex-col items-center text-center space-y-2.5 pt-2 pb-2 animate-pulse">
+                <div class="w-14 h-14 rounded-2xl bg-slate-200 mx-auto"></div>
+                <div class="h-6 w-44 bg-slate-200 rounded-lg mx-auto"></div>
+                <div class="h-3.5 w-56 bg-slate-100 rounded-lg mx-auto"></div>
               </div>
             </div>
 
@@ -710,6 +731,7 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
 export class LoginComponent implements OnInit {
   auth = inject(AuthService);
   private schoolContext = inject(SchoolContextService);
+  branding = inject(SchoolBrandingService);
   /** True when the portal address itself picked the school (dha.schoolsense.in / ?school=). */
   subdomainForced = false;
   subdomainNotFound: string | null = null;
@@ -718,12 +740,65 @@ export class LoginComponent implements OnInit {
   step: 'SELECT_SCHOOL' | 'LOGIN' | 'FORGOT_PASSWORD' = 'SELECT_SCHOOL';
   isRootLogin = false;
   schools: SchoolItem[] = [];
-  schoolsLoading = true;
+  schoolsLoading = false;
   schoolsError = false;
   selectedSchoolId = '';
   selectedSchool: SchoolItem | null = null;
   dropdownOpen = false;
   searchQuery = '';
+
+  constructor() {
+    this.initSyncContext();
+  }
+
+  private initSyncContext(): void {
+    const forcedSub = this.schoolContext.detectForcedSubdomain();
+    if (forcedSub) {
+      this.subdomainForced = true;
+      this.step = 'LOGIN';
+
+      if (typeof localStorage !== 'undefined') {
+        const cachedId = localStorage.getItem('schoolsense_selected_school_id');
+        const cachedName = localStorage.getItem('schoolsense_selected_school_name');
+        const cachedCode = localStorage.getItem('schoolsense_selected_school_code');
+        const cachedLogo = localStorage.getItem('schoolsense_selected_school_logo');
+
+        if (cachedName) {
+          this.selectedSchoolId = cachedId || '';
+          this.selectedSchool = {
+            id: cachedId || '',
+            name: cachedName,
+            code: cachedCode || '',
+            logo_url: cachedLogo || undefined,
+            logoUrl: cachedLogo || undefined,
+          };
+          this.searchQuery = cachedName;
+          this.branding.setSchoolBranding(this.selectedSchool);
+        }
+      }
+    } else {
+      if (typeof localStorage !== 'undefined') {
+        const storedSchoolId = localStorage.getItem('schoolsense_selected_school_id');
+        const storedSchoolName = localStorage.getItem('schoolsense_selected_school_name');
+        const storedSchoolCode = localStorage.getItem('schoolsense_selected_school_code');
+        const storedSchoolLogo = localStorage.getItem('schoolsense_selected_school_logo');
+
+        if (storedSchoolId && storedSchoolName) {
+          this.selectedSchoolId = storedSchoolId;
+          this.selectedSchool = {
+            id: storedSchoolId,
+            name: storedSchoolName,
+            code: storedSchoolCode || '',
+            logo_url: storedSchoolLogo || undefined,
+            logoUrl: storedSchoolLogo || undefined,
+          };
+          this.searchQuery = storedSchoolName;
+          this.step = 'LOGIN';
+          this.branding.setSchoolBranding(this.selectedSchool);
+        }
+      }
+    }
+  }
 
   identifier = '';
   password = '';
@@ -853,9 +928,13 @@ export class LoginComponent implements OnInit {
           this.searchQuery = profile.name;
           this.subdomainForced = true;
           this.step = 'LOGIN';
+          this.branding.setSchoolBranding(mergedSchool);
           localStorage.setItem('schoolsense_selected_school_id', profile.id);
           localStorage.setItem('schoolsense_selected_school_name', profile.name);
           localStorage.setItem('schoolsense_selected_school_code', profile.code || '');
+          if (mergedSchool.logo_url || mergedSchool.logoUrl) {
+            localStorage.setItem('schoolsense_selected_school_logo', mergedSchool.logo_url || mergedSchool.logoUrl);
+          }
           return;
         } else {
           this.subdomainNotFound = sub;
@@ -871,6 +950,7 @@ export class LoginComponent implements OnInit {
     const storedSchoolId = localStorage.getItem('schoolsense_selected_school_id');
     const storedSchoolName = localStorage.getItem('schoolsense_selected_school_name');
     const storedSchoolCode = localStorage.getItem('schoolsense_selected_school_code');
+    const storedSchoolLogo = localStorage.getItem('schoolsense_selected_school_logo');
     if (storedSchoolId && storedSchoolName) {
       this.selectedSchoolId = storedSchoolId;
       this.selectedSchool = {
@@ -878,13 +958,21 @@ export class LoginComponent implements OnInit {
         name: storedSchoolName,
         code: storedSchoolCode || '',
         city: '',
+        logo_url: storedSchoolLogo || undefined,
+        logoUrl: storedSchoolLogo || undefined,
       };
       this.searchQuery = storedSchoolName;
+      this.step = 'LOGIN';
+      this.branding.setSchoolBranding(this.selectedSchool);
 
       try {
         const fullProfile = await this.auth.getSchoolProfileById(storedSchoolId);
         if (fullProfile) {
           this.selectedSchool = { ...this.selectedSchool, ...fullProfile };
+          if (fullProfile.logo_url || fullProfile.logoUrl) {
+            localStorage.setItem('schoolsense_selected_school_logo', fullProfile.logo_url || fullProfile.logoUrl);
+          }
+          this.branding.setSchoolBranding(this.selectedSchool);
         }
       } catch (e) {}
     }
@@ -937,6 +1025,10 @@ export class LoginComponent implements OnInit {
     localStorage.removeItem('schoolsense_selected_school_id');
     localStorage.removeItem('schoolsense_selected_school_name');
     localStorage.removeItem('schoolsense_selected_school_code');
+    localStorage.removeItem('schoolsense_selected_school_logo');
+    if (!this.subdomainForced) {
+      this.branding.resetToDefault();
+    }
   }
 
   @HostListener('document:click')
@@ -965,14 +1057,24 @@ export class LoginComponent implements OnInit {
     this.searchQuery = school.name;
     this.isSearching = false;
     this.dropdownOpen = false;
+    this.errorMessage = '';
+    this.step = 'LOGIN';
     localStorage.setItem('schoolsense_selected_school_id', school.id);
     localStorage.setItem('schoolsense_selected_school_name', school.name);
-    localStorage.setItem('schoolsense_selected_school_code', school.code);
+    localStorage.setItem('schoolsense_selected_school_code', school.code || '');
+    const logoToStore = school.logoUrl || school.logo_url || this.branding.generateSchoolMonogramFavicon(school.name, school.code);
+    localStorage.setItem('schoolsense_selected_school_logo', logoToStore);
+
+    // Instantly update tab title and favicon when user picks a school
+    this.branding.setSchoolBranding(school);
 
     try {
       const fullProfile = await this.auth.getSchoolProfileById(school.id);
       if (fullProfile && this.selectedSchoolId === school.id) {
         this.selectedSchool = { ...this.selectedSchool, ...fullProfile };
+        const updatedLogo = fullProfile.logo_url || fullProfile.logoUrl || logoToStore;
+        localStorage.setItem('schoolsense_selected_school_logo', updatedLogo);
+        this.branding.setSchoolBranding(this.selectedSchool);
       }
     } catch (e) {}
   }
@@ -985,6 +1087,7 @@ export class LoginComponent implements OnInit {
     this.password = '';
     this.errorMessage = '';
     this.step = 'LOGIN';
+    this.branding.setSchoolBranding(null, true);
   }
 
   async proceedToLogin() {
@@ -996,11 +1099,13 @@ export class LoginComponent implements OnInit {
       this.isRootLogin = false;
       this.step = 'LOGIN';
       this.errorMessage = '';
+      this.branding.setSchoolBranding(this.selectedSchool);
 
       try {
         const fullProfile = await this.auth.getSchoolProfileById(this.selectedSchool.id);
         if (fullProfile) {
           this.selectedSchool = { ...this.selectedSchool, ...fullProfile };
+          this.branding.setSchoolBranding(this.selectedSchool);
         }
       } catch (e) {}
     }
@@ -1011,6 +1116,16 @@ export class LoginComponent implements OnInit {
     this.isRootLogin = false;
     this.step = 'SELECT_SCHOOL';
     this.errorMessage = '';
+    this.selectedSchool = null;
+    this.selectedSchoolId = '';
+    this.searchQuery = '';
+    this.schools = [];
+    this.dropdownOpen = false;
+    localStorage.removeItem('schoolsense_selected_school_id');
+    localStorage.removeItem('schoolsense_selected_school_name');
+    localStorage.removeItem('schoolsense_selected_school_code');
+    localStorage.removeItem('schoolsense_selected_school_logo');
+    this.branding.resetToDefault();
   }
 
   openForgotPassword() {

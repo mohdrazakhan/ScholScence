@@ -50,18 +50,6 @@ import {
             <span>Session: <strong class="text-slate-900">{{ auth.activeSessionName() }}</strong></span>
           </div>
 
-          <!-- Quick Setup Button -->
-          <button *ngIf="canManage"
-                  (click)="seedTransportData()"
-                  [disabled]="isSeeding"
-                  class="px-3.5 py-2 sm:px-4 sm:py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer disabled:opacity-50">
-            <svg *ngIf="!isSeeding" class="w-3.5 h-3.5 text-amber-700" viewBox="0 0 24 24" fill="none">
-              <path d="M13 2L4.5 13.5h6L9.5 22 19.5 10.5h-6L13 2z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-            <span *ngIf="isSeeding" class="w-3.5 h-3.5 border-2 border-amber-500 border-t-amber-800 rounded-full animate-spin"></span>
-            <span>{{ isSeeding ? 'Setting Up...' : 'Quick Test Setup' }}</span>
-          </button>
-
           <!-- Add Vehicle Button -->
           <button *ngIf="canManage && activeTab === 'FLEET'"
                   (click)="openAddVehicleModal()"
@@ -775,7 +763,6 @@ export class TransportComponent implements OnInit {
   loadingRoutes = false;
   loadingAssignments = false;
   loadingOverview = false;
-  isSeeding = false;
 
   passSearchQuery = '';
   selectedRouteFilter = 'ALL';
@@ -917,22 +904,6 @@ export class TransportComponent implements OnInit {
         this.loadingVehicles = false;
         this.loadingRoutes = false;
         this.loadingAssignments = false;
-      },
-    });
-  }
-
-  seedTransportData() {
-    this.isSeeding = true;
-    const sessionId = this.auth.activeAcademicSession()?.id;
-    this.api.post<any>('transport/seed-sample', { academicYearId: sessionId }).subscribe({
-      next: (res) => {
-        this.isSeeding = false;
-        this.toast.success(res?.message || 'Transport fleet, routes and student bus passes auto-provisioned!');
-        this.loadAllData();
-      },
-      error: (err: any) => {
-        this.isSeeding = false;
-        this.toast.error(err.message || 'Failed to auto-provision transport data.');
       },
     });
   }
