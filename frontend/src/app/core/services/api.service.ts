@@ -10225,7 +10225,18 @@ export class ApiService {
         console.warn('Error fetching fee_promocodes:', error);
         return [];
       }
-      return data || [];
+      if (!data || data.length === 0) return [];
+      return data.map((p: any) => ({
+        id: p.id,
+        code: p.code,
+        discountType: p.discount_type === 'FLAT_INR' ? 'FLAT_AMOUNT' : 'PERCENTAGE',
+        value: Number(p.discount_value),
+        description: p.description,
+        uses: p.used_count || 0,
+        maxUses: p.max_uses || 50,
+        expiry: p.valid_until ? new Date(p.valid_until).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '31 Mar 2027',
+        status: p.status || 'ACTIVE',
+      }));
     } catch (e) {
       console.warn('Exception fetching fee_promocodes:', e);
       return [];
@@ -10262,7 +10273,20 @@ export class ApiService {
       console.warn('Error creating fee_promocodes:', error);
       throw new Error(error.message || 'Failed to create fee promocode');
     }
-    return data;
+
+    const mapped = {
+      id: data.id,
+      code: data.code,
+      discountType: data.discount_type === 'FLAT_INR' ? 'FLAT_AMOUNT' : 'PERCENTAGE',
+      value: Number(data.discount_value),
+      description: data.description,
+      uses: data.used_count || 0,
+      maxUses: data.max_uses || 50,
+      expiry: data.valid_until ? new Date(data.valid_until).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '31 Mar 2027',
+      status: data.status || 'ACTIVE',
+    };
+
+    return { promocode: mapped, ...mapped };
   }
 
   public async deletePromocode(id: string): Promise<any> {
