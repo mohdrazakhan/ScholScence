@@ -829,6 +829,8 @@ export interface FeeStructure {
   class_name?: string;
   fee_category_id: string;
   fee_category_name?: string;
+  category_name?: string;
+  categoryName?: string;
   amount: number;
   frequency: 'MONTHLY' | 'QUARTERLY' | 'ANNUAL' | 'ONE_TIME';
   due_day?: number;
@@ -870,6 +872,96 @@ export interface StudentFeeInvoice {
   items?: { description: string; amount: number }[];
   payments?: FeePaymentRecord[];
   created_at?: string;
+}
+
+export interface DailyDayBookSummary {
+  date: string;
+  totalCollected: number;
+  cashAmount: number;
+  upiAmount: number;
+  bankAmount: number;
+  chequeAmount: number;
+  transactionCount: number;
+  transactions: {
+    receiptNumber: string;
+    studentName: string;
+    admissionNumber: string;
+    className: string;
+    amount: number;
+    paymentMode: string;
+    paymentTime?: string;
+    collectedBy?: string;
+    remarks?: string;
+  }[];
+}
+
+export interface Student80cCertificate {
+  certificateNumber: string;
+  financialYear: string;
+  assessmentYear: string;
+  generatedAt: string;
+  student: {
+    name: string;
+    admissionNumber: string;
+    className: string;
+    sectionName: string;
+    rollNumber?: string;
+  };
+  guardian: {
+    parentName: string;
+    panNumber?: string;
+    address?: string;
+    phone?: string;
+  };
+  school: {
+    name: string;
+    affiliationNumber?: string;
+    address?: string;
+    panNumber?: string;
+    logoUrl?: string;
+  };
+  eligibleTuitionFeePaid: number;
+  totalFeePaid: number;
+  paymentsBreakdown: {
+    receiptNumber: string;
+    date: string;
+    amount: number;
+    tuitionComponent: number;
+    paymentMode: string;
+  }[];
+}
+
+export interface PromocodeValidationResult {
+  success: boolean;
+  code: string;
+  discountAmount: number;
+  discountPercentage?: number;
+  finalAmount: number;
+  message: string;
+}
+
+export interface StudentSiblingInfo {
+  hasSiblings: boolean;
+  siblingsCount: number;
+  suggestedDiscountPct: number;
+  siblings: {
+    studentId: string;
+    name: string;
+    admissionNumber: string;
+    className: string;
+    sectionName: string;
+    relationship?: string;
+  }[];
+}
+
+export interface ClassFeeMatrixItem {
+  classId: string;
+  className?: string;
+  feeCategoryId: string;
+  feeCategoryName?: string;
+  amount: number;
+  frequency: 'MONTHLY' | 'QUARTERLY' | 'ANNUAL' | 'ONE_TIME';
+  dueDay?: number;
 }
 
 // ==============================================================

@@ -400,7 +400,7 @@ export interface RoleSectionItem {
         </div>
 
         <!-- Top Navigation Header -->
-        <header class="h-16 border-b flex items-center justify-between px-3 sm:px-6 lg:px-8 flex-shrink-0 shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-all duration-700"
+        <header class="min-h-16 h-auto sm:h-16 py-1.5 sm:py-0 border-b flex items-center justify-between px-3 sm:px-6 lg:px-8 flex-shrink-0 shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-all duration-700"
                 [ngClass]="headerWeatherClass"
                 [ngStyle]="headerWeatherStyle">
           <!-- Top Left for Root Super Admin (SchoolSense Brand Logo + Tagline + Admin Panel) -->
@@ -435,21 +435,21 @@ export interface RoleSectionItem {
               </svg>
             </button>
             <button type="button" (click)="toggleSidebar()" title="Open Sidebar"
-                    class="w-9 h-9 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer flex lg:hidden items-center justify-center border border-slate-200 shadow-2xs shrink-0">
-              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                    class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-[#222228] transition-colors cursor-pointer flex lg:hidden items-center justify-center border border-slate-200/80 dark:border-[#282830] shadow-2xs shrink-0">
+              <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
 
             <!-- Dynamic Real-Time Weather & Sun/Moon Intensity Claymorphic Vector Art Badge (Both Light & Dark Theme) -->
             <div class="shrink-0 flex items-center justify-center">
-              <span class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl border flex items-center justify-center shrink-0 transition-all duration-700 relative overflow-hidden"
+              <span class="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl border flex items-center justify-center shrink-0 transition-all duration-700 relative overflow-hidden"
                     [ngClass]="headerWeatherIconBoxClass"
                     [ngStyle]="headerWeatherIconStyle"
                     [title]="headerWeatherTooltip">
 
                 <!-- 1A. MORNING_SUN (Dawn & Early Morning 05:30–10:45): Gentle Rising Sun + Soft Horizon & Mild Rays -->
-                <svg *ngIf="activeWeatherVisual === 'MORNING_SUN'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                <svg *ngIf="activeWeatherVisual === 'MORNING_SUN'" class="w-4 h-4 sm:w-6 sm:h-6" viewBox="0 0 28 28" fill="none">
                   <!-- Soft morning halo scaled by solar intensity -->
                   <circle cx="14" cy="14.5" r="7.8" fill="currentColor" [attr.fill-opacity]="0.05 + celestialIntensity * 0.1" />
                   <!-- Upper arc rays (gentle morning rays) -->
@@ -464,7 +464,7 @@ export interface RoleSectionItem {
                 </svg>
 
                 <!-- 1B. CLEAR_DAY (Midday & Peak Afternoon 10:45–17:15): Radiant Sun Scaled by Solar Intensity -->
-                <svg *ngIf="activeWeatherVisual === 'CLEAR_DAY'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                <svg *ngIf="activeWeatherVisual === 'CLEAR_DAY'" class="w-4 h-4 sm:w-6 sm:h-6" viewBox="0 0 28 28" fill="none">
                   <circle cx="14" cy="14" [attr.r]="7.5 + celestialIntensity * 2.5" fill="currentColor" [attr.fill-opacity]="0.06 + celestialIntensity * 0.1" />
                   <circle cx="14" cy="14" r="5.4" fill="currentColor" [attr.fill-opacity]="0.18 + celestialIntensity * 0.2" stroke="currentColor" stroke-width="1.9" />
                   <path d="M14 2.5v2.5M14 23v2.5M25.5 14H23M5 14H2.5M22.13 5.87l-1.77 1.77M7.64 20.36l-1.77 1.77M22.13 22.13l-1.77-1.77M7.64 7.64L5.87 5.87"
@@ -474,7 +474,7 @@ export interface RoleSectionItem {
                 </svg>
 
                 <!-- 1C. SUNSET_DAY (Golden Dusk 17:15–18:45): Warm Setting Sun on Twilight Horizon -->
-                <svg *ngIf="activeWeatherVisual === 'SUNSET_DAY'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                <svg *ngIf="activeWeatherVisual === 'SUNSET_DAY'" class="w-4 h-4 sm:w-6 sm:h-6" viewBox="0 0 28 28" fill="none">
                   <circle cx="14" cy="15.5" r="7.5" fill="#fb923c" fill-opacity="0.12" />
                   <path d="M8.5 17a5.5 5.5 0 0111 0" fill="#f97316" fill-opacity="0.28" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                   <path d="M14 6.5v2M7.2 9.5l1.3 1.3M20.8 9.5l-1.3 1.3" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-opacity="0.65" />
@@ -483,7 +483,7 @@ export interface RoleSectionItem {
                 </svg>
 
                 <!-- 2A. RISING_MOON (Early Evening & Pre-Dawn): Soft Crescent Moon & Gentle Twilight Glow -->
-                <svg *ngIf="activeWeatherVisual === 'RISING_MOON'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                <svg *ngIf="activeWeatherVisual === 'RISING_MOON'" class="w-4 h-4 sm:w-6 sm:h-6" viewBox="0 0 28 28" fill="none">
                   <circle cx="14" cy="13.5" r="7.5" fill="currentColor" [attr.fill-opacity]="0.06 + celestialIntensity * 0.08" />
                   <path d="M19.8 15.8A6.8 6.8 0 0110.8 6.8a6.8 6.8 0 109 9z"
                         fill="currentColor" [attr.fill-opacity]="0.18 + celestialIntensity * 0.16"
@@ -493,7 +493,7 @@ export interface RoleSectionItem {
                 </svg>
 
                 <!-- 2B. CLEAR_NIGHT (Peak Night 21:30–02:30): Luminous Crescent Moon + Full Starfield -->
-                <svg *ngIf="activeWeatherVisual === 'CLEAR_NIGHT'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                <svg *ngIf="activeWeatherVisual === 'CLEAR_NIGHT'" class="w-4 h-4 sm:w-6 sm:h-6" viewBox="0 0 28 28" fill="none">
                   <circle cx="14" cy="14" [attr.r]="8 + celestialIntensity * 2" fill="currentColor" [attr.fill-opacity]="0.08 + celestialIntensity * 0.1" />
                   <path d="M20.8 16.6A7.8 7.8 0 0110.4 6.2a7.8 7.8 0 1010.4 10.4z"
                         fill="currentColor" [attr.fill-opacity]="0.22 + celestialIntensity * 0.2"
@@ -505,7 +505,7 @@ export interface RoleSectionItem {
                 </svg>
 
                 <!-- 3. PARTLY_CLOUDY_DAY: Golden Sun Behind Soft Claymorphic Cloud -->
-                <svg *ngIf="activeWeatherVisual === 'PARTLY_CLOUDY_DAY'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                <svg *ngIf="activeWeatherVisual === 'PARTLY_CLOUDY_DAY'" class="w-4 h-4 sm:w-6 sm:h-6" viewBox="0 0 28 28" fill="none">
                   <!-- Sun in top-left with intensity-scaled opacity -->
                   <circle cx="10.5" cy="10.5" r="4.2" fill="#f59e0b" [attr.fill-opacity]="0.16 + celestialIntensity * 0.24" stroke="#f59e0b" stroke-width="1.75" />
                   <path d="M10.5 3.5v1.8M3.5 10.5h1.8M5.55 5.55l1.27 1.27M15.45 5.55l-1.27 1.27"
@@ -517,7 +517,7 @@ export interface RoleSectionItem {
                 </svg>
 
                 <!-- 4. PARTLY_CLOUDY_NIGHT: Crescent Moon + Star Behind Soft Night Cloud -->
-                <svg *ngIf="activeWeatherVisual === 'PARTLY_CLOUDY_NIGHT'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                <svg *ngIf="activeWeatherVisual === 'PARTLY_CLOUDY_NIGHT'" class="w-4 h-4 sm:w-6 sm:h-6" viewBox="0 0 28 28" fill="none">
                   <!-- Crescent Moon in top-right -->
                   <path d="M22.2 12.2a4.8 4.8 0 01-6.4-6.4 4.8 4.8 0 106.4 6.4z" fill="#818cf8" [attr.fill-opacity]="0.2 + celestialIntensity * 0.25" stroke="#6366f1" stroke-width="1.7" stroke-linejoin="round" />
                   <circle cx="8" cy="7.5" r="1" fill="#fbbf24" [attr.fill-opacity]="0.4 + celestialIntensity * 0.55" />
@@ -527,7 +527,7 @@ export interface RoleSectionItem {
                 </svg>
 
                 <!-- 5. CLOUDY: Dual Layered Overcast Claymorphic Clouds -->
-                <svg *ngIf="activeWeatherVisual === 'CLOUDY'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                <svg *ngIf="activeWeatherVisual === 'CLOUDY'" class="w-4 h-4 sm:w-6 sm:h-6" viewBox="0 0 28 28" fill="none">
                   <!-- Back cloud -->
                   <path d="M22 15.5a3.2 3.2 0 00-2.6-3.14 4.2 4.2 0 00-7.9-1.1" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.7" stroke-linecap="round" />
                   <!-- Main front cloud -->
@@ -535,7 +535,7 @@ export interface RoleSectionItem {
                 </svg>
 
                 <!-- 6. RAIN_DAY: Sun Peek + Rain Cloud + Falling Raindrops -->
-                <svg *ngIf="activeWeatherVisual === 'RAIN_DAY'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                <svg *ngIf="activeWeatherVisual === 'RAIN_DAY'" class="w-4 h-4 sm:w-6 sm:h-6" viewBox="0 0 28 28" fill="none">
                   <circle cx="9.5" cy="8.5" r="3.2" fill="#f59e0b" fill-opacity="0.35" stroke="#f59e0b" stroke-width="1.6" />
                   <path d="M20.2 18.2H9.2a3.6 3.6 0 01-.4-7.18A4.8 4.8 0 0118.4 10a3.3 3.3 0 011.8 8.2z" fill="#ffffff" fill-opacity="0.92" />
                   <path d="M20.2 18.2H9.2a3.6 3.6 0 01-.4-7.18A4.8 4.8 0 0118.4 10a3.3 3.3 0 011.8 8.2z" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
@@ -543,7 +543,7 @@ export interface RoleSectionItem {
                 </svg>
 
                 <!-- 7. RAIN_NIGHT: Crescent Moon Peek + Night Rain Cloud + Raindrops -->
-                <svg *ngIf="activeWeatherVisual === 'RAIN_NIGHT'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                <svg *ngIf="activeWeatherVisual === 'RAIN_NIGHT'" class="w-4 h-4 sm:w-6 sm:h-6" viewBox="0 0 28 28" fill="none">
                   <path d="M22.2 10.2a3.8 3.8 0 01-5-5 3.8 3.8 0 105 5z" fill="#818cf8" fill-opacity="0.35" stroke="#6366f1" stroke-width="1.5" />
                   <path d="M19.8 18.2H8.8a3.6 3.6 0 01-.4-7.18A4.8 4.8 0 0118 10a3.3 3.3 0 011.8 8.2z" fill="#ffffff" fill-opacity="0.9" />
                   <path d="M19.8 18.2H8.8a3.6 3.6 0 01-.4-7.18A4.8 4.8 0 0118 10a3.3 3.3 0 011.8 8.2z" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
@@ -551,20 +551,20 @@ export interface RoleSectionItem {
                 </svg>
 
                 <!-- 8. STORM: Thundercloud + Golden Lightning Bolt + Rain -->
-                <svg *ngIf="activeWeatherVisual === 'STORM'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                <svg *ngIf="activeWeatherVisual === 'STORM'" class="w-4 h-4 sm:w-6 sm:h-6" viewBox="0 0 28 28" fill="none">
                   <path d="M20.2 17.5H8.8a3.8 3.8 0 01-.4-7.56A5.1 5.1 0 0118.6 9a3.5 3.5 0 011.6 8.5z" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
                   <path d="M15 14.5l-2.6 4.2h3.1l-1.6 4.5" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                   <path d="M9.5 20.2l-1 2M19.5 20.2l-1 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
                 </svg>
 
                 <!-- 9. MIST: Soft Cloud + Atmospheric Mist Waves -->
-                <svg *ngIf="activeWeatherVisual === 'MIST'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                <svg *ngIf="activeWeatherVisual === 'MIST'" class="w-4 h-4 sm:w-6 sm:h-6" viewBox="0 0 28 28" fill="none">
                   <path d="M19.5 16H9.5a3.5 3.5 0 01-.35-6.98A4.6 4.6 0 0118 8a3.2 3.2 0 011.5 8z" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
                   <path d="M6.5 19.5h15M8.5 22.5h11" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" />
                 </svg>
 
                 <!-- 10. COOL: Crisp Winter/Cool Breeze Cloud + Snowflake Crystal -->
-                <svg *ngIf="activeWeatherVisual === 'COOL'" class="w-6 h-6" viewBox="0 0 28 28" fill="none">
+                <svg *ngIf="activeWeatherVisual === 'COOL'" class="w-4 h-4 sm:w-6 sm:h-6" viewBox="0 0 28 28" fill="none">
                   <path d="M20 17.5H9a3.7 3.7 0 01-.4-7.38A4.9 4.9 0 0118.4 9a3.4 3.4 0 011.6 8.5z" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
                   <path d="M11 21.5v3M9.5 23h3M17 21.5v3M15.5 23h3" stroke="#0891b2" stroke-width="1.8" stroke-linecap="round" />
                 </svg>
@@ -575,7 +575,7 @@ export interface RoleSectionItem {
             <div class="min-w-0 flex-1 flex flex-col justify-center">
               <!-- Line 1: User Greeting, Date, Live Clock & Compact Weather Pill -->
               <div class="flex items-center gap-1.5 min-w-0">
-                <h2 class="text-sm sm:text-base md:text-lg font-black text-slate-900 tracking-tight leading-none truncate">
+                <h2 class="text-xs sm:text-base md:text-lg font-black text-slate-900 dark:text-white tracking-tight leading-snug break-words">
                   {{ timeGreeting }}, {{ auth.currentUser()?.firstName || 'User' }}
                 </h2>
 
@@ -589,10 +589,10 @@ export interface RoleSectionItem {
                   <span>{{ formattedClockTime }}</span>
                 </div>
 
-                <!-- Compact Automatic Live Weather Pill in Header -->
+                <!-- Compact Automatic Live Weather Pill in Header (shown on sm and up) -->
                 <ng-container *ngIf="headerWeather">
                   <span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700 hidden sm:inline-block shrink-0"></span>
-                  <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-extrabold border shrink-0 transition-all duration-700"
+                  <div class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-extrabold border shrink-0 transition-all duration-700"
                        [ngClass]="headerWeatherPillClass"
                        [title]="headerWeatherTooltip">
                     <span>{{ headerWeather.temperature }}°C</span>
@@ -678,15 +678,15 @@ export interface RoleSectionItem {
                 </div>
 
                 <span *ngIf="canManageSessions" class="w-1 h-1 rounded-full bg-slate-300 shrink-0"></span>
-                <p class="text-[11px] font-medium text-slate-500 truncate flex items-center gap-1.5">
-                  <span class="font-semibold text-slate-700 truncate">{{ auth.currentUser()?.school?.name || 'SchoolSense Campus' }}</span>
+                <p class="text-[11px] font-medium text-slate-500 flex items-center gap-1.5">
+                  <span class="font-semibold text-slate-700">{{ auth.currentUser()?.school?.name || 'SchoolSense Campus' }}</span>
                 </p>
               </div>
 
               <!-- Line 2: Tagline on Mobile View directly under User Greeting -->
               <div class="flex lg:hidden items-center gap-1 mt-0.5 min-w-0">
-                <p class="text-[10px] font-medium text-slate-500 truncate flex items-center gap-1">
-                  <span class="font-semibold text-slate-700 truncate">{{ auth.currentUser()?.school?.name || 'SchoolSense' }}</span>
+                <p class="text-[10px] font-medium text-slate-500 dark:text-slate-400 leading-snug break-words">
+                  <span class="font-semibold text-slate-700 dark:text-slate-300 leading-snug break-words">{{ auth.currentUser()?.school?.name || 'SchoolSense' }}</span>
                 </p>
               </div>
             </div>
@@ -698,18 +698,18 @@ export interface RoleSectionItem {
             <!-- ============================================================== -->
             <!-- MOBILE VIEW ONLY: Notification Bell & Profile Pic               -->
             <!-- ============================================================== -->
-            <div class="flex items-center gap-2 lg:hidden">
+            <div class="flex items-center gap-1 sm:gap-2 lg:hidden shrink-0">
               
               <!-- Mobile Notification Bell Icon Button with Dropdown -->
               <div class="relative shrink-0">
                 <button type="button"
                         (click)="toggleNotificationDropdown($event)"
                         title="Notifications & Circulars"
-                        class="relative w-8 h-8 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center">
+                        class="relative w-8 h-8 rounded-xl text-slate-600 hover:text-slate-900 dark:text-slate-200 bg-slate-100/70 hover:bg-slate-200/70 dark:bg-[#18181c] dark:hover:bg-[#222228] border border-slate-200/70 dark:border-[#282830] transition-colors cursor-pointer flex items-center justify-center shrink-0">
                   <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                   </svg>
-                  <span *ngIf="activeNotifications.length > 0" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white"></span>
+                  <span *ngIf="activeNotifications.length > 0" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-[#18181c]"></span>
                 </button>
 
                 <!-- Backdrop to close mobile notifications -->
@@ -768,11 +768,11 @@ export interface RoleSectionItem {
               <button type="button"
                       (click)="themeService.toggleTheme()"
                       [title]="themeService.isDark() ? 'Switch to Light Theme' : 'Switch to Dark Theme'"
-                      class="relative w-8 h-8 rounded-full text-slate-600 hover:text-amber-500 hover:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center">
+                      class="relative w-8 h-8 rounded-xl text-slate-600 hover:text-amber-500 dark:text-slate-200 bg-slate-100/70 hover:bg-slate-200/70 dark:bg-[#18181c] dark:hover:bg-[#222228] border border-slate-200/70 dark:border-[#282830] transition-colors cursor-pointer flex items-center justify-center shrink-0">
                 <svg *ngIf="themeService.isDark()" class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
-                <svg *ngIf="!themeService.isDark()" class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                <svg *ngIf="!themeService.isDark()" class="w-4 h-4 text-slate-600 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                 </svg>
               </button>
@@ -781,8 +781,8 @@ export interface RoleSectionItem {
               <button type="button"
                       (click)="openSupportModal()"
                       title="Help & Support Desk"
-                      class="relative w-8 h-8 rounded-full text-slate-600 hover:text-indigo-600 hover:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center">
-                <svg class="w-4 h-4 text-slate-600" viewBox="0 0 24 24" fill="none">
+                      class="relative w-8 h-8 rounded-xl text-slate-600 hover:text-indigo-600 dark:text-slate-200 bg-slate-100/70 hover:bg-slate-200/70 dark:bg-[#18181c] dark:hover:bg-[#222228] border border-slate-200/70 dark:border-[#282830] transition-colors cursor-pointer flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-slate-600 dark:text-slate-200" viewBox="3.5 2.5 17 18" fill="none">
                   <path d="M7 11.5V9C7 6.23858 9.23858 4 12 4C14.7614 4 17 6.23858 17 9V11.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                   <path d="M8.5 7.5C10 6 12 8 15.5 6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                   <path d="M6 10.5C5.17157 10.5 4.5 11.1716 4.5 12C4.5 12.8284 5.17157 13.5 6 13.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -796,20 +796,20 @@ export interface RoleSectionItem {
               </button>
 
               <!-- Profile Pic Capsule Button with Down Arrow (Transparent background) -->
-              <div class="relative">
+              <div class="relative shrink-0">
                 <button type="button"
                         (click)="toggleMobileUserMenu($event)"
                         title="User Profile & Quick Menu"
-                        class="flex items-center gap-1 p-0.5 rounded-full transition-all cursor-pointer active:scale-95">
+                        class="flex items-center gap-1 p-0.5 rounded-full transition-all cursor-pointer active:scale-95 shrink-0">
                   
                   <!-- Avatar Image -->
-                  <div class="relative w-8 h-8 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-xs ring-2 ring-slate-100 overflow-hidden shrink-0">
+                  <div class="relative w-8 h-8 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-xs ring-2 ring-slate-100 dark:ring-[#282830] overflow-hidden shrink-0">
                     <img [src]="userAvatarUrl" [alt]="userFullName" (error)="$any($event.target).style.display='none'" class="w-full h-full object-cover" />
                     <span class="sr-only">{{ userInitial }}</span>
                   </div>
 
                   <!-- Dropdown Arrow Icon -->
-                  <svg class="w-3.5 h-3.5 text-slate-600 transition-transform duration-200"
+                  <svg class="w-3.5 h-3.5 text-slate-600 dark:text-slate-400 transition-transform duration-200 shrink-0"
                        [class.rotate-180]="isMobileUserMenuOpen"
                        fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
@@ -1060,9 +1060,9 @@ export interface RoleSectionItem {
               <button type="button"
                       (click)="openSupportModal()"
                       title="Help & Support Desk (Connect with SchoolSense or Root Admin)"
-                      class="relative w-9 h-9 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center shrink-0">
-                <!-- Exact Customer Support Agent with Headset & Mic Icon from User Image -->
-                <svg class="w-4 h-4 text-slate-700" viewBox="0 0 24 24" fill="none">
+                      class="relative w-9 h-9 rounded-xl text-slate-600 hover:text-slate-900 dark:text-slate-200 bg-slate-100 hover:bg-slate-200/80 dark:bg-[#18181c] dark:hover:bg-[#222228] border border-slate-200 dark:border-[#282830] transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center shrink-0">
+                <!-- Exact Customer Support Agent with Headset & Mic Icon - Enlarged & Proportioned -->
+                <svg class="w-5 h-5 text-slate-700 dark:text-slate-200" viewBox="3.5 2.5 17 18" fill="none">
                   <!-- Head / Face Outline -->
                   <path d="M7 11.5V9C7 6.23858 9.23858 4 12 4C14.7614 4 17 6.23858 17 9V11.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                   <!-- Hair Fringe Detail -->

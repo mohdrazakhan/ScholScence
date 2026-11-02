@@ -62,7 +62,7 @@ import {
           </a>
 
           <!-- Card 2: Faculty & Departmental Staff -->
-          <a routerLink="/departmental-users"
+          <a routerLink="/academics" [queryParams]="{tab: 'staff'}"
              class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] hover:border-slate-400/80 transition-all flex flex-col justify-between group cursor-pointer">
             <div class="flex items-center justify-between">
               <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Faculty & Staff</span>
@@ -151,8 +151,8 @@ import {
                 </div>
               </div>
               <div class="text-2xl sm:text-3xl font-black text-slate-900 mt-2">{{ stats?.stats?.totalClasses ?? 0 }} Classes</div>
-              <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-slate-100">
-                <span class="text-blue-600 font-semibold">{{ modules?.academics?.totalSections ?? 0 }} Sections Active</span>
+              <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-slate-100 dark:border-[#282830]">
+                <span class="text-slate-600 dark:text-slate-400 font-semibold">{{ modules?.academics?.totalSections ?? 0 }} Sections Active</span>
                 <span class="text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white font-bold text-[11px] transition-colors inline-flex items-center gap-1">
                   Manage
                   <svg class="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6l6 6-6 6"/></svg>
@@ -172,7 +172,7 @@ import {
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-6 border-b border-slate-100">
               <div>
                 <div class="flex items-center gap-2">
-                  <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                  <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 dark:bg-indigo-400"></span>
                   <h2 class="text-sm sm:text-base font-black text-slate-900 tracking-tight">
                     Department &amp; Service Analytics Matrix
                   </h2>
@@ -228,7 +228,7 @@ import {
                     <div class="flex items-center justify-between pb-4 border-b border-slate-100">
                       <div>
                         <div class="flex items-center gap-2">
-                          <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                          <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 dark:bg-indigo-400"></span>
                           <h2 class="text-base font-bold text-slate-900">Recent Campus Circulars</h2>
                         </div>
                         <p class="text-xs text-slate-500 mt-0.5">Official announcements broadcast to teachers, parents & staff</p>
@@ -566,19 +566,19 @@ import {
                   <ng-container *ngTemplateOutlet="matrixSpotlightHeader"></ng-container>
                   <div class="flex items-start justify-between gap-4 flex-wrap">
                     <div class="flex items-center gap-4">
-                      <div class="matrix-icon-float w-14 h-14 rounded-2xl bg-blue-50/90 border border-blue-100 text-blue-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,3px_3px_8px_#dbe4f0] shrink-0">
+                      <div class="matrix-icon-float w-14 h-14 rounded-2xl bg-slate-100 dark:bg-[#18181c] border border-slate-200/80 dark:border-[#282830] text-slate-700 dark:text-slate-300 flex items-center justify-center shrink-0">
                         <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
                           <rect x="3" y="4" width="18" height="17" rx="2.5" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.8"/>
                           <path d="M8 2v4M16 2v4M3 9h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
                         </svg>
                       </div>
                       <div>
-                        <span class="text-[10px] font-black uppercase tracking-widest text-blue-600">Routine & Scheduling</span>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Routine & Scheduling</span>
                         <h3 class="text-lg sm:text-xl font-black text-slate-900 mt-0.5">Class Timetables</h3>
                         <p class="text-xs text-slate-500 mt-0.5">Weekly period grids, classroom allocations & faculty schedules</p>
                       </div>
                     </div>
-                    <span class="px-3 py-1 rounded-xl text-xs font-black bg-blue-50 text-blue-700 border border-blue-200 shadow-2xs">
+                    <span class="px-3 py-1 rounded-xl text-xs font-black bg-slate-100 dark:bg-[#18181c] text-slate-800 dark:text-slate-200 border border-slate-200/90 dark:border-[#282830] shadow-2xs">
                       {{ modules?.timetable?.totalPeriods ?? 0 }} Periods
                     </span>
                   </div>
@@ -589,7 +589,7 @@ import {
                       <div class="text-2xl sm:text-3xl font-black text-slate-900 mt-1">
                         {{ modules?.timetable?.configuredSectionsCount ?? 0 }} / {{ modules?.academics?.totalSections ?? 0 }}
                       </div>
-                      <div class="text-xs text-blue-600 font-bold mt-1">Active Class Routines</div>
+                      <div class="text-xs text-slate-600 dark:text-slate-400 font-bold mt-1">Active Class Routines</div>
                     </div>
                     <div class="matrix-tile-2 p-5 rounded-2xl bg-[#f8fafc] border border-slate-200/80">
                       <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Faculty Assigned</div>
@@ -601,7 +601,7 @@ import {
 
                 <div class="relative z-10 pt-4 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
                   <span class="text-xs font-semibold text-slate-500">Conflict-checked period matrix across all grades</span>
-                  <a routerLink="/timetable" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition-all">
+                  <a routerLink="/timetable" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition-all">
                     <span>View Schedule</span>
                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6l6 6-6 6"/></svg>
                   </a>
@@ -846,7 +846,7 @@ import {
                         [ngClass]="activeMatrixModuleId === mod.id
                           ? 'bg-slate-100 dark:bg-[#1e1e24] text-slate-900 dark:text-white border-slate-300 dark:border-[#383842] shadow-xs ring-1 ring-slate-400/20 dark:ring-white/10 translate-x-1'
                           : 'bg-[#f8fafc] dark:bg-[#141417] hover:bg-white dark:hover:bg-[#1c1c22] text-slate-800 dark:text-slate-200 border-slate-200/80 dark:border-[#222226] hover:border-slate-300 dark:hover:border-[#303038] hover:shadow-xs'">
-                  <div class="flex items-center gap-3 min-w-0">
+                  <div class="flex items-center gap-3 min-w-0 flex-1">
                     <div class="w-9 h-9 rounded-xl flex items-center justify-center border shrink-0 transition-transform duration-300 group-hover:scale-105"
                          [ngClass]="activeMatrixModuleId === mod.id ? 'bg-indigo-600 dark:bg-white/10 border-indigo-600 dark:border-white/20 text-white shadow-xs' : mod.iconClass">
                       <!-- Module Icons -->
@@ -889,15 +889,15 @@ import {
                     </div>
 
                     <div class="min-w-0 flex-1">
-                      <div class="text-xs font-bold truncate"
+                      <div class="text-xs font-bold leading-snug break-words"
                            [ngClass]="activeMatrixModuleId === mod.id ? 'text-slate-900 dark:text-white' : 'text-slate-900 dark:text-slate-100'">
                         {{ mod.title }}
                       </div>
                     </div>
                   </div>
 
-                  <div class="flex items-center gap-2 shrink-0">
-                    <span class="px-2 py-0.5 rounded-lg text-[10px] font-black border"
+                  <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                    <span class="px-2 py-0.5 rounded-lg text-[10px] font-black border whitespace-nowrap"
                           [ngClass]="activeMatrixModuleId === mod.id ? 'bg-slate-200 dark:bg-[#282830] text-slate-800 dark:text-slate-200 border-slate-300 dark:border-[#383842]' : mod.badgeClass">
                       {{ mod.badge }}
                     </span>
@@ -1095,7 +1095,7 @@ import {
              class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] hover:border-slate-400/80 transition-all flex flex-col justify-between group cursor-pointer">
             <div class="flex items-center justify-between">
               <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Today's Classes</span>
-              <div class="w-9 h-9 rounded-2xl bg-blue-50/90 border border-blue-100/80 text-blue-600 flex items-center justify-center shadow-[inset_1px_1px_2px_#ffffff,2px_2px_5px_#dbe4f0]">
+              <div class="w-9 h-9 rounded-2xl bg-slate-100 dark:bg-[#18181c] border border-slate-200/80 dark:border-[#282830] text-slate-700 dark:text-slate-300 flex items-center justify-center">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
                   <circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8"/>
                   <path d="M12 7.5V12L15 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
@@ -1105,8 +1105,8 @@ import {
             <div class="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
               {{ teacherTimetable.length }} Periods
             </div>
-            <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-slate-100">
-              <span class="text-blue-600 font-semibold truncate">
+            <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-slate-100 dark:border-[#282830]">
+              <span class="text-slate-600 dark:text-slate-400 font-semibold truncate">
                 {{ nextUpcomingPeriod ? ('Next: P' + nextUpcomingPeriod.periodNumber + ' ' + nextUpcomingPeriod.subjectName) : 'Scheduled Today' }}
               </span>
             </div>
@@ -1509,7 +1509,7 @@ import {
                  class="p-4 rounded-2xl bg-[#f8fafc] border border-slate-200/80 flex flex-col justify-between space-y-3">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-black text-slate-900">Today's Class Schedule</span>
-                <span class="text-[11px] font-bold text-blue-600">{{ (child.todayTimetable || []).length }} Periods</span>
+                <span class="text-[11px] font-bold text-slate-600 dark:text-slate-400">{{ (child.todayTimetable || []).length }} Periods</span>
               </div>
               <div class="space-y-1.5" *ngIf="(child.todayTimetable || []).length > 0; else noChildPeriods">
                 <div *ngFor="let p of (child.todayTimetable || []).slice(0, 3)"
@@ -1523,7 +1523,7 @@ import {
                   View full weekly class timetable
                 </div>
               </ng-template>
-              <a routerLink="/timetable" class="text-[11px] font-bold text-blue-600 hover:underline inline-flex items-center justify-between">
+              <a routerLink="/timetable" class="text-[11px] font-bold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:underline inline-flex items-center justify-between">
                 <span>Open class timetable</span>
                 <span>→</span>
               </a>
@@ -1853,7 +1853,7 @@ import {
             <div>
               <div class="flex items-center justify-between">
                 <h3 class="text-base font-black text-slate-900">Class Timetables</h3>
-                <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-blue-50 text-blue-700 border border-blue-200">
+                <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-slate-100 dark:bg-[#18181c] text-slate-800 dark:text-slate-200 border border-slate-200/90 dark:border-[#282830]">
                   {{ modules?.timetable?.totalPeriods ?? 0 }} Periods
                 </span>
               </div>
@@ -2005,8 +2005,8 @@ export class DashboardComponent implements OnInit {
     iconClass: string;
     badgeClass: string;
   }> {
-    const UNIFIED_ICON = 'bg-indigo-50/90 border-indigo-100/80 text-indigo-600';
-    const UNIFIED_BADGE = 'bg-indigo-50/80 text-indigo-700 border-indigo-200/70';
+    const UNIFIED_ICON = 'bg-slate-100 dark:bg-[#18181c] border-slate-200/80 dark:border-[#282830] text-slate-700 dark:text-slate-300';
+    const UNIFIED_BADGE = 'bg-slate-100 dark:bg-[#18181c] text-slate-800 dark:text-slate-200 border-slate-200/90 dark:border-[#282830]';
 
     const list: Array<{
       id: string;

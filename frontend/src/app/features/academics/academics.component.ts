@@ -638,7 +638,11 @@ interface StaffMember {
                  : 'neu-elevated'"
                class="p-3 sm:p-3.5 rounded-2xl cursor-pointer flex flex-col justify-between select-none">
             <div class="flex items-center justify-between gap-1">
-              <span class="text-xs font-black truncate" [class.text-slate-900]="selectedClass?.id === c.id" [class.text-slate-800]="selectedClass?.id !== c.id">
+              <span class="text-xs font-black truncate"
+                    [class.text-slate-900]="selectedClass?.id === c.id"
+                    [class.text-slate-800]="selectedClass?.id !== c.id"
+                    [class.dark:text-white]="selectedClass?.id === c.id"
+                    [class.dark:text-slate-200]="selectedClass?.id !== c.id">
                 {{ c.name }}
               </span>
               <span class="text-[10px] font-black px-1.5 py-0.5 rounded-md shrink-0"
@@ -650,7 +654,7 @@ interface StaffMember {
               </span>
             </div>
             <div class="flex items-center justify-between mt-2.5 pt-2 border-t text-[10px]"
-                 [ngClass]="selectedClass?.id === c.id ? 'border-slate-300/80 text-slate-600 font-bold' : 'border-slate-100 text-slate-400 font-medium'">
+                 [ngClass]="selectedClass?.id === c.id ? 'border-slate-300/80 dark:border-white/15 text-slate-600 dark:text-slate-300 font-bold' : 'border-slate-100 dark:border-white/5 text-slate-400 dark:text-slate-400 font-medium'">
               <span>{{ c.sections.length || 0 }} Sec</span>
               <span class="font-mono font-bold">{{ c.code }}</span>
             </div>
@@ -659,49 +663,52 @@ interface StaffMember {
 
         <!-- If 0 classes configured: prompt to go to Classes tab -->
         <div *ngIf="!loadingClasses && classes.length === 0"
-             class="p-8 bg-white rounded-3xl border border-slate-200/90 shadow-sm flex flex-col items-center justify-center text-center space-y-3">
-          <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-black">
-            <svg class="w-7 h-7 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+             class="p-8 bg-white dark:bg-[#121214] rounded-3xl border border-slate-200/90 dark:border-[#222226] shadow-sm flex flex-col items-center justify-center text-center space-y-3">
+          <div class="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-[#1a1a20] text-indigo-700 dark:text-indigo-400 flex items-center justify-center font-black border border-indigo-100 dark:border-white/10">
+            <svg class="w-7 h-7 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
           </div>
-          <h3 class="text-base font-black text-slate-900">No Academic Classes Configured Yet</h3>
-          <p class="text-xs text-slate-500 max-w-md">
+          <h3 class="text-base font-black text-slate-900 dark:text-white">No Academic Classes Configured Yet</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 max-w-md">
             Before enrolling students, please configure your school's classes and sections in the dedicated Classes & Sections management section.
           </p>
           <button (click)="setTab('CLASSES')"
-                  class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-xs font-bold shadow-md transition-all cursor-pointer flex items-center gap-2">
+                  class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 text-white rounded-2xl text-xs font-bold shadow-md transition-all cursor-pointer flex items-center gap-2">
             <span>Manage Classes & Sections</span>
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
           </button>
         </div>
 
         <!-- Enrolled Students Directory with Clay Table, Mobile Cards & Pagination -->
-        <div *ngIf="!loadingClasses && classes.length > 0" class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff]">
+        <div *ngIf="!loadingClasses && classes.length > 0" class="bg-white dark:bg-[#121214] rounded-3xl border border-slate-200/80 dark:border-[#222226] shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] dark:shadow-none">
           <!-- Top Section: Class Heading, Section Pills, Status Filters & Action Bar -->
-          <div class="p-3.5 sm:px-6 sm:py-4 border-b border-slate-100 bg-[#f8fafc]/90 rounded-t-3xl space-y-3.5">
+          <div class="p-3.5 sm:px-6 sm:py-4 border-b border-slate-100 dark:border-[#222226] bg-[#f8fafc]/90 dark:bg-[#121214] rounded-t-3xl space-y-3.5">
             <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
               
               <!-- Left: Class Title, Section Switcher Pills, Status Filter Pills -->
               <div class="flex items-center gap-2.5 sm:gap-3 flex-wrap">
                 <!-- Class & Section Name Header -->
                 <div class="flex items-center gap-2">
-                  <h3 class="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
+                  <h3 class="text-xs sm:text-sm font-black text-slate-900 dark:text-white tracking-tight">
                     {{ selectedClass?.name || 'Class' }} - {{ formatSection(selectedSection?.name) }} Roster
                   </h3>
-                  <span class="px-2 py-0.5 rounded-xl bg-slate-200/80 text-[10px] font-black text-slate-700">
+                  <span class="px-2 py-0.5 rounded-xl bg-slate-200/80 dark:bg-[#1c1c22] text-[10px] font-black text-slate-700 dark:text-slate-300">
                     {{ filteredStudents.length }}
                   </span>
                 </div>
 
                 <!-- Section switch pills -->
                 <div *ngIf="selectedClass && selectedClass.sections && selectedClass.sections.length > 0"
-                     class="flex items-center gap-1 bg-white border border-slate-200/90 p-1 rounded-2xl shadow-2xs overflow-x-auto max-w-full">
+                     class="flex items-center gap-1 bg-white dark:bg-[#18181c] border border-slate-200/90 dark:border-[#282830] p-1 rounded-2xl shadow-2xs overflow-x-auto max-w-full">
                   <button *ngFor="let sec of selectedClass.sections"
                           (click)="selectSection(sec)"
                           [class.bg-slate-900]="selectedSection?.id === sec.id"
                           [class.text-white]="selectedSection?.id === sec.id"
+                          [class.dark:bg-white]="selectedSection?.id === sec.id"
+                          [class.dark:text-slate-900]="selectedSection?.id === sec.id"
                           [class.text-slate-600]="selectedSection?.id !== sec.id"
+                          [class.dark:text-slate-300]="selectedSection?.id !== sec.id"
                           [class.shadow-xs]="selectedSection?.id === sec.id"
                           class="px-3 py-1 text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0">
                     {{ formatSection(sec.name) }}
@@ -709,11 +716,14 @@ interface StaffMember {
                 </div>
 
                 <!-- Status Filter Pills (All / Active / Inactive) -->
-                <div class="flex items-center gap-1 bg-white border border-slate-200/90 p-1 rounded-2xl shadow-2xs">
+                <div class="flex items-center gap-1 bg-white dark:bg-[#18181c] border border-slate-200/90 dark:border-[#282830] p-1 rounded-2xl shadow-2xs">
                   <button (click)="studentStatusFilter = 'ALL'; currentPage = 1"
                           [class.bg-slate-900]="studentStatusFilter === 'ALL'"
                           [class.text-white]="studentStatusFilter === 'ALL'"
+                          [class.dark:bg-white]="studentStatusFilter === 'ALL'"
+                          [class.dark:text-slate-900]="studentStatusFilter === 'ALL'"
                           [class.text-slate-600]="studentStatusFilter !== 'ALL'"
+                          [class.dark:text-slate-300]="studentStatusFilter !== 'ALL'"
                           class="px-2.5 py-1 text-[11px] font-bold rounded-xl transition-all cursor-pointer">
                     All
                   </button>
@@ -721,6 +731,7 @@ interface StaffMember {
                           [class.bg-emerald-600]="studentStatusFilter === 'ACTIVE'"
                           [class.text-white]="studentStatusFilter === 'ACTIVE'"
                           [class.text-slate-600]="studentStatusFilter !== 'ACTIVE'"
+                          [class.dark:text-slate-300]="studentStatusFilter !== 'ACTIVE'"
                           class="px-2.5 py-1 text-[11px] font-bold rounded-xl transition-all cursor-pointer">
                     Active
                   </button>
@@ -728,6 +739,7 @@ interface StaffMember {
                           [class.bg-rose-600]="studentStatusFilter === 'INACTIVE'"
                           [class.text-white]="studentStatusFilter === 'INACTIVE'"
                           [class.text-slate-600]="studentStatusFilter !== 'INACTIVE'"
+                          [class.dark:text-slate-300]="studentStatusFilter !== 'INACTIVE'"
                           class="px-2.5 py-1 text-[11px] font-bold rounded-xl transition-all cursor-pointer">
                     Inactive
                   </button>
@@ -735,6 +747,7 @@ interface StaffMember {
                           [class.bg-amber-600]="studentStatusFilter === 'SUSPENDED'"
                           [class.text-white]="studentStatusFilter === 'SUSPENDED'"
                           [class.text-slate-600]="studentStatusFilter !== 'SUSPENDED'"
+                          [class.dark:text-slate-300]="studentStatusFilter !== 'SUSPENDED'"
                           class="px-2.5 py-1 text-[11px] font-bold rounded-xl transition-all cursor-pointer">
                     Suspended
                   </button>
@@ -742,6 +755,7 @@ interface StaffMember {
                           [class.bg-purple-600]="studentStatusFilter === 'LEFTOUT'"
                           [class.text-white]="studentStatusFilter === 'LEFTOUT'"
                           [class.text-slate-600]="studentStatusFilter !== 'LEFTOUT'"
+                          [class.dark:text-slate-300]="studentStatusFilter !== 'LEFTOUT'"
                           class="px-2.5 py-1 text-[11px] font-bold rounded-xl transition-all cursor-pointer">
                     Leftout / TC
                   </button>
@@ -753,8 +767,8 @@ interface StaffMember {
                 <!-- Review Deactivation Requests Button (Clean Claymorphic Style matching UI theme) -->
                 <button *ngIf="canDirectlyDeactivateStudent" (click)="openDeactivationRequestsModal()"
                         title="Review Student Deactivation Requests"
-                        class="px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 rounded-2xl text-xs font-bold shadow-[2px_2px_5px_#e2e8f0,-2px_-2px_5px_#ffffff] flex items-center gap-1.5 transition-all cursor-pointer shrink-0 active:scale-95">
-                  <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        class="px-3 py-2 bg-white hover:bg-slate-50 dark:bg-[#18181c] dark:hover:bg-[#202026] text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-[#282830] rounded-2xl text-xs font-bold shadow-[2px_2px_5px_#e2e8f0,-2px_-2px_5px_#ffffff] dark:shadow-none flex items-center gap-1.5 transition-all cursor-pointer shrink-0 active:scale-95">
+                  <svg class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
                   <span>Deactivation Requests</span>
@@ -766,8 +780,8 @@ interface StaffMember {
 
                 <button *ngIf="!canDirectlyDeactivateStudent && canRequestStudentDeactivation" (click)="openDeactivationRequestsModal()"
                         title="My Student Deactivation Requests"
-                        class="px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 rounded-2xl text-xs font-bold shadow-[2px_2px_5px_#e2e8f0,-2px_-2px_5px_#ffffff] flex items-center gap-1.5 transition-all cursor-pointer shrink-0 active:scale-95">
-                  <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        class="px-3 py-2 bg-white hover:bg-slate-50 dark:bg-[#18181c] dark:hover:bg-[#202026] text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-[#282830] rounded-2xl text-xs font-bold shadow-[2px_2px_5px_#e2e8f0,-2px_-2px_5px_#ffffff] dark:shadow-none flex items-center gap-1.5 transition-all cursor-pointer shrink-0 active:scale-95">
+                  <svg class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
                   <span>My Requests</span>
@@ -785,24 +799,24 @@ interface StaffMember {
                     </svg>
                   </div>
                   <input type="text" [(ngModel)]="searchQuery" (input)="currentPage = 1" placeholder="Search student name/adm..."
-                         class="w-full pl-8 pr-8 py-2 bg-white border border-slate-300 rounded-2xl text-xs text-slate-900 focus:outline-none focus:border-slate-800 shadow-[inset_1px_1px_3px_#e2e8f0,inset_-1px_-1px_3px_#ffffff]" />
+                         class="w-full pl-8 pr-8 py-2 bg-white dark:bg-[#18181c] border border-slate-300 dark:border-[#282830] rounded-2xl text-xs text-slate-900 dark:text-white dark:placeholder-slate-500 focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 shadow-[inset_1px_1px_3px_#e2e8f0,inset_-1px_-1px_3px_#ffffff] dark:shadow-none" />
                   <button *ngIf="searchQuery" (click)="searchQuery = ''; currentPage = 1"
-                          class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs font-bold cursor-pointer">&times;</button>
+                          class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs font-bold cursor-pointer">&times;</button>
                 </div>
 
                 <!-- Export CSV & Print Buttons -->
                 <div class="flex items-center gap-1.5 shrink-0">
                   <button (click)="exportRosterCsv()" [disabled]="students.length === 0" title="Export CSV"
-                          class="px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300/90 rounded-2xl text-xs font-bold shadow-[2px_2px_5px_#e2e8f0,-2px_-2px_5px_#ffffff] flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 active:scale-95">
-                    <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          class="px-3 py-2 bg-white hover:bg-slate-50 dark:bg-[#18181c] dark:hover:bg-[#202026] text-slate-700 dark:text-slate-200 border border-slate-300/90 dark:border-[#282830] rounded-2xl text-xs font-bold shadow-[2px_2px_5px_#e2e8f0,-2px_-2px_5px_#ffffff] dark:shadow-none flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 active:scale-95">
+                    <svg class="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
                     <span>CSV</span>
                   </button>
                   
                   <button (click)="printRoster()" [disabled]="students.length === 0" title="Print Roster"
-                          class="px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300/90 rounded-2xl text-xs font-bold shadow-[2px_2px_5px_#e2e8f0,-2px_-2px_5px_#ffffff] flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 active:scale-95">
-                    <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          class="px-3 py-2 bg-white hover:bg-slate-50 dark:bg-[#18181c] dark:hover:bg-[#202026] text-slate-700 dark:text-slate-200 border border-slate-300/90 dark:border-[#282830] rounded-2xl text-xs font-bold shadow-[2px_2px_5px_#e2e8f0,-2px_-2px_5px_#ffffff] dark:shadow-none flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 active:scale-95">
+                    <svg class="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
                     <span>Print</span>
@@ -830,8 +844,8 @@ interface StaffMember {
 
           <!-- VIEW 1: DESKTOP CLAY TABLE (md:block) -->
           <div *ngIf="!loadingStudents && !loadingClasses" class="hidden md:block overflow-x-auto min-h-[380px] pb-32">
-            <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
-              <thead class="bg-[#f8fafc] text-slate-600 font-bold uppercase tracking-wider">
+            <table class="min-w-full divide-y divide-slate-200 dark:divide-[#222226] text-left text-xs">
+              <thead class="bg-[#f8fafc] dark:bg-[#141418] text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider">
                 <tr>
                   <th class="px-6 py-3.5">Roll No</th>
                   <th class="px-6 py-3.5">Admission No</th>
@@ -843,47 +857,47 @@ interface StaffMember {
                   <th class="px-6 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-100 font-medium">
+              <tbody class="divide-y divide-slate-100 dark:divide-[#222226] font-medium bg-white dark:bg-[#121214]">
                 <tr *ngFor="let st of paginatedStudents; let idx = index"
-                    class="hover:bg-slate-50/80 transition-colors"
+                    class="hover:bg-slate-50/80 dark:hover:bg-[#18181c] transition-colors"
                     [class.relative]="true"
                     [class.z-30]="activeStudentMenuId === (st.studentId || st.id)">
-                  <td class="px-6 py-3.5 font-bold font-mono text-slate-700">#{{ st.rollNumber || '—' }}</td>
-                  <td class="px-6 py-3.5 font-mono text-slate-500 font-semibold">{{ st.admissionNumber }}</td>
-                  <td class="px-6 py-3.5 font-bold text-slate-900">
-                    <div (click)="viewStudentDetails(st, $event)" class="flex items-center gap-2.5 cursor-pointer group hover:text-indigo-600 transition-colors">
-                      <div class="w-7 h-7 rounded-full bg-slate-900 text-white text-[10px] font-black flex items-center justify-center group-hover:bg-indigo-600 transition-colors shrink-0 overflow-hidden border border-slate-200">
+                  <td class="px-6 py-3.5 font-bold font-mono text-slate-700 dark:text-slate-300">#{{ st.rollNumber || '—' }}</td>
+                  <td class="px-6 py-3.5 font-mono text-slate-500 dark:text-slate-400 font-semibold">{{ st.admissionNumber }}</td>
+                  <td class="px-6 py-3.5 font-bold text-slate-900 dark:text-white">
+                    <div (click)="viewStudentDetails(st, $event)" class="flex items-center gap-2.5 cursor-pointer group hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                      <div class="w-7 h-7 rounded-full bg-slate-900 text-white text-[10px] font-black flex items-center justify-center group-hover:bg-indigo-600 transition-colors shrink-0 overflow-hidden border border-slate-200 dark:border-white/10">
                         <img *ngIf="st.photoUrl || st.photo_url" [src]="st.photoUrl || st.photo_url" class="w-full h-full object-cover" alt="Student" />
                         <span *ngIf="!st.photoUrl && !st.photo_url">{{ st.firstName.charAt(0) }}</span>
                       </div>
                       <span class="group-hover:underline underline-offset-2">{{ st.fullName }}</span>
                     </div>
                   </td>
-                  <td class="px-6 py-3.5 text-slate-500 capitalize">
-                    {{ st.gender?.toLowerCase() || '—' }} <span *ngIf="st.bloodGroup" class="font-bold text-slate-700">({{ st.bloodGroup }})</span>
+                  <td class="px-6 py-3.5 text-slate-500 dark:text-slate-400 capitalize">
+                    {{ st.gender?.toLowerCase() || '—' }} <span *ngIf="st.bloodGroup" class="font-bold text-slate-700 dark:text-slate-300">({{ st.bloodGroup }})</span>
                   </td>
                   <td class="px-6 py-3.5">
                     <div class="flex items-center gap-2">
-                      <div *ngIf="st.guardianPhotoUrl || st.primaryContact?.photo_url || st.primaryContact?.photoUrl" class="w-6 h-6 rounded-full overflow-hidden shrink-0 border border-slate-200">
+                      <div *ngIf="st.guardianPhotoUrl || st.primaryContact?.photo_url || st.primaryContact?.photoUrl" class="w-6 h-6 rounded-full overflow-hidden shrink-0 border border-slate-200 dark:border-white/10">
                         <img [src]="st.guardianPhotoUrl || st.primaryContact?.photo_url || st.primaryContact?.photoUrl" class="w-full h-full object-cover" alt="Guardian" />
                       </div>
                       <div>
-                        <div class="font-bold text-slate-800">{{ st.primaryContact?.first_name || '—' }} {{ st.primaryContact?.last_name || '' }}</div>
+                        <div class="font-bold text-slate-800 dark:text-slate-200">{{ st.primaryContact?.first_name || '—' }} {{ st.primaryContact?.last_name || '' }}</div>
                         <div class="text-[10px] font-mono text-slate-400">{{ st.primaryContact?.phone || '—' }}</div>
                       </div>
                     </div>
                   </td>
-                  <td class="px-6 py-3.5 text-slate-700 font-semibold">
+                  <td class="px-6 py-3.5 text-slate-700 dark:text-slate-300 font-semibold">
                     {{ st.className }} - {{ formatSection(st.sectionName) }}
                   </td>
                   <td class="px-6 py-3.5">
                     <span class="px-2.5 py-1 rounded-full text-[10px] font-bold border shadow-2xs"
                           [ngClass]="{
-                            'bg-emerald-50 text-emerald-700 border-emerald-200': (st.status || 'ACTIVE').toUpperCase() === 'ACTIVE',
-                            'bg-indigo-50 text-indigo-700 border-indigo-200': (st.status || 'ACTIVE').toUpperCase() === 'ALUMNI' || (st.status || 'ACTIVE').toUpperCase() === 'GRADUATED',
-                            'bg-rose-50 text-rose-700 border-rose-200': (st.status || 'ACTIVE').toUpperCase() === 'INACTIVE',
-                            'bg-amber-50 text-amber-800 border-amber-200': (st.status || 'ACTIVE').toUpperCase() === 'SUSPENDED',
-                            'bg-purple-50 text-purple-700 border-purple-200': (st.status || 'ACTIVE').toUpperCase() === 'LEFTOUT' || (st.status || 'ACTIVE').toUpperCase() === 'TRANSFERRED'
+                            'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40': (st.status || 'ACTIVE').toUpperCase() === 'ACTIVE',
+                            'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/40': (st.status || 'ACTIVE').toUpperCase() === 'ALUMNI' || (st.status || 'ACTIVE').toUpperCase() === 'GRADUATED',
+                            'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/40': (st.status || 'ACTIVE').toUpperCase() === 'INACTIVE',
+                            'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/40': (st.status || 'ACTIVE').toUpperCase() === 'SUSPENDED',
+                            'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/40': (st.status || 'ACTIVE').toUpperCase() === 'LEFTOUT' || (st.status || 'ACTIVE').toUpperCase() === 'TRANSFERRED'
                           }">
                       {{ (st.status || 'ACTIVE').toUpperCase() }}
                     </span>
@@ -892,7 +906,7 @@ interface StaffMember {
                     <div class="relative inline-block text-right">
                       <!-- 3-Dot Action Button -->
                       <button type="button" (click)="toggleStudentMenu(st.studentId || st.id, $event)" title="Student Actions"
-                              class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer shadow-2xs">
+                              class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-[#18181c] hover:bg-slate-200 dark:hover:bg-[#222228] text-slate-600 dark:text-slate-300 border border-transparent dark:border-[#282830] flex items-center justify-center transition-all cursor-pointer shadow-2xs dark:shadow-none">
                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                           <circle cx="12" cy="5" r="2"/>
                           <circle cx="12" cy="12" r="2"/>
@@ -903,7 +917,7 @@ interface StaffMember {
                       <!-- Student Dropdown Actions List (Directly Anchored to 3-Dot Button) -->
                       <div *ngIf="activeStudentMenuId === (st.studentId || st.id)"
                            [ngClass]="getStudentMenuPlacement(st)"
-                           class="absolute right-0 w-52 bg-white rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.22)] border border-slate-200/90 py-1.5 z-50 animate-fadeIn text-xs text-left">
+                           class="absolute right-0 w-52 bg-white dark:bg-[#18181c] rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.5)] border border-slate-200/90 dark:border-[#2e2e38] py-1.5 z-50 animate-fadeIn text-xs text-left">
                         
                         <!-- 0. View Details & Logs Option -->
                         <button type="button" (click)="viewStudentDetails(st, $event)"
@@ -1078,12 +1092,12 @@ interface StaffMember {
           <!-- VIEW 2: MOBILE CLAYMORPHIC CARDS VIEW (md:hidden) -->
           <div *ngIf="!loadingStudents && !loadingClasses" class="block md:hidden p-3.5 space-y-3">
             <div *ngFor="let st of paginatedStudents; let idx = index"
-                 class="p-4 rounded-2xl bg-[#f8fafc] border border-slate-200/90 shadow-xs space-y-2.5"
+                 class="p-4 rounded-2xl bg-[#f8fafc] dark:bg-[#141418] border border-slate-200/90 dark:border-[#222226] shadow-xs space-y-2.5"
                  [class.relative]="true"
                  [class.z-30]="activeStudentMenuId === (st.studentId || st.id)">
               <div class="flex items-start justify-between gap-2">
                 <div class="flex items-start gap-2.5">
-                  <div class="w-10 h-10 rounded-xl bg-slate-900 text-white font-black text-xs flex items-center justify-center shrink-0 overflow-hidden border border-slate-200 shadow-xs">
+                  <div class="w-10 h-10 rounded-xl bg-slate-900 text-white font-black text-xs flex items-center justify-center shrink-0 overflow-hidden border border-slate-200 dark:border-white/10 shadow-xs">
                     <img *ngIf="st.photoUrl || st.photo_url" [src]="st.photoUrl || st.photo_url" class="w-full h-full object-cover" alt="Student" />
                     <span *ngIf="!st.photoUrl && !st.photo_url">{{ st.firstName.charAt(0) }}</span>
                   </div>
@@ -1092,21 +1106,21 @@ interface StaffMember {
                       <span class="px-2 py-0.5 rounded-md bg-slate-900 text-white font-black text-[10px] font-mono">
                         #{{ st.rollNumber || '—' }}
                       </span>
-                      <span class="px-2 py-0.5 rounded-md bg-slate-200 text-slate-700 font-bold text-[10px] font-mono">
+                      <span class="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-[#222228] text-slate-700 dark:text-slate-300 font-bold text-[10px] font-mono">
                         {{ st.admissionNumber }}
                       </span>
                       <span class="px-2 py-0.5 rounded-md border font-bold text-[9px]"
                             [ngClass]="{
-                              'bg-emerald-50 text-emerald-700 border-emerald-200': (st.status || 'ACTIVE').toUpperCase() === 'ACTIVE',
-                              'bg-indigo-50 text-indigo-700 border-indigo-200': (st.status || 'ACTIVE').toUpperCase() === 'ALUMNI' || (st.status || 'ACTIVE').toUpperCase() === 'GRADUATED',
-                              'bg-rose-50 text-rose-700 border-rose-200': (st.status || 'ACTIVE').toUpperCase() === 'INACTIVE',
-                              'bg-amber-50 text-amber-800 border-amber-200': (st.status || 'ACTIVE').toUpperCase() === 'SUSPENDED',
-                              'bg-purple-50 text-purple-700 border-purple-200': (st.status || 'ACTIVE').toUpperCase() === 'LEFTOUT' || (st.status || 'ACTIVE').toUpperCase() === 'TRANSFERRED'
+                              'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40': (st.status || 'ACTIVE').toUpperCase() === 'ACTIVE',
+                              'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/40': (st.status || 'ACTIVE').toUpperCase() === 'ALUMNI' || (st.status || 'ACTIVE').toUpperCase() === 'GRADUATED',
+                              'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/40': (st.status || 'ACTIVE').toUpperCase() === 'INACTIVE',
+                              'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/40': (st.status || 'ACTIVE').toUpperCase() === 'SUSPENDED',
+                              'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/40': (st.status || 'ACTIVE').toUpperCase() === 'LEFTOUT' || (st.status || 'ACTIVE').toUpperCase() === 'TRANSFERRED'
                             }">
                         {{ (st.status || 'ACTIVE').toUpperCase() }}
                       </span>
                     </div>
-                    <h4 (click)="viewStudentDetails(st, $event)" class="text-sm font-black text-slate-900 mt-1 cursor-pointer hover:text-indigo-600 transition-colors hover:underline underline-offset-2">{{ st.fullName }}</h4>
+                    <h4 (click)="viewStudentDetails(st, $event)" class="text-sm font-black text-slate-900 dark:text-white mt-1 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors hover:underline underline-offset-2">{{ st.fullName }}</h4>
                   </div>
                 </div>
 
@@ -1316,27 +1330,27 @@ interface StaffMember {
           </div>
 
           <!-- Table Pagination Footer -->
-          <div class="px-4 sm:px-5 py-3.5 border-t border-slate-100 bg-[#f8fafc] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600">
+          <div class="px-4 sm:px-5 py-3.5 border-t border-slate-100 dark:border-[#222226] bg-[#f8fafc] dark:bg-[#121214] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-400">
             <div class="flex items-center gap-2 justify-between sm:justify-start w-full sm:w-auto">
               <span>Rows per page:</span>
               <select [(ngModel)]="pageSize" (change)="currentPage = 1"
-                      class="px-2.5 py-1 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none shadow-xs">
+                      class="px-2.5 py-1 bg-white dark:bg-[#18181c] border border-slate-300 dark:border-[#282830] rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none shadow-xs">
                 <option [value]="10">10</option>
                 <option [value]="25">25</option>
                 <option [value]="50">50</option>
                 <option [value]="100">100</option>
               </select>
-              <span class="text-slate-500 hidden sm:inline">Showing {{ startIndex + 1 }}-{{ endIndex }} of {{ filteredStudents.length }}</span>
+              <span class="text-slate-500 dark:text-slate-400 hidden sm:inline">Showing {{ startIndex + 1 }}-{{ endIndex }} of {{ filteredStudents.length }}</span>
             </div>
 
             <div class="flex items-center justify-between sm:justify-end gap-1.5 w-full sm:w-auto">
               <button (click)="currentPage = currentPage - 1" [disabled]="currentPage === 1"
-                      class="px-3.5 py-1.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-40 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95">
+                      class="px-3.5 py-1.5 bg-white dark:bg-[#18181c] border border-slate-200 dark:border-[#282830] rounded-xl hover:bg-slate-50 dark:hover:bg-[#222228] disabled:opacity-40 text-xs font-bold transition-all shadow-xs dark:shadow-none cursor-pointer active:scale-95 text-slate-800 dark:text-slate-200">
                 ‹ Prev
               </button>
-              <span class="px-3 py-1.5 font-bold text-slate-800 text-xs">Page {{ currentPage }} of {{ totalPages || 1 }}</span>
+              <span class="px-3 py-1.5 font-bold text-slate-800 dark:text-slate-200 text-xs">Page {{ currentPage }} of {{ totalPages || 1 }}</span>
               <button (click)="currentPage = currentPage + 1" [disabled]="currentPage >= totalPages"
-                      class="px-3.5 py-1.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-40 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95">
+                      class="px-3.5 py-1.5 bg-white dark:bg-[#18181c] border border-slate-200 dark:border-[#282830] rounded-xl hover:bg-slate-50 dark:hover:bg-[#222228] disabled:opacity-40 text-xs font-bold transition-all shadow-xs dark:shadow-none cursor-pointer active:scale-95 text-slate-800 dark:text-slate-200">
                 Next ›
               </button>
             </div>
@@ -2386,19 +2400,23 @@ interface StaffMember {
                [ngClass]="selectedSubjectClass === null ? 'neu-pushed' : 'neu-elevated'"
                class="p-3 sm:p-3.5 rounded-2xl cursor-pointer flex flex-col justify-between select-none">
             <div class="flex items-center justify-between gap-1">
-              <span class="text-xs font-black truncate" [class.text-slate-900]="selectedSubjectClass === null" [class.text-slate-800]="selectedSubjectClass !== null">
+              <span class="text-xs font-black truncate"
+                    [class.text-slate-900]="selectedSubjectClass === null"
+                    [class.text-slate-800]="selectedSubjectClass !== null"
+                    [class.dark:text-white]="selectedSubjectClass === null"
+                    [class.dark:text-slate-200]="selectedSubjectClass !== null">
                 All Classes
               </span>
               <span class="text-[10px] font-black px-1.5 py-0.5 rounded-md shrink-0"
                     [ngClass]="selectedSubjectClass === null 
-                      ? 'bg-slate-900 text-white shadow-2xs' 
-                      : 'bg-indigo-50 text-indigo-700 border border-indigo-100/80'"
+                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-2xs' 
+                      : 'bg-indigo-50 dark:bg-[#1a1a20] text-indigo-700 dark:text-indigo-400 border border-indigo-100/80 dark:border-white/10'"
                     title="Total Curriculum Subjects">
                 {{ subjects.length }} Sub
               </span>
             </div>
             <div class="flex items-center justify-between mt-2.5 pt-2 border-t text-[10px]"
-                 [ngClass]="selectedSubjectClass === null ? 'border-slate-300/80 text-slate-600 font-bold' : 'border-slate-100 text-slate-400 font-medium'">
+                 [ngClass]="selectedSubjectClass === null ? 'border-slate-300/80 dark:border-white/15 text-slate-600 dark:text-slate-300 font-bold' : 'border-slate-100 dark:border-white/5 text-slate-400 dark:text-slate-400 font-medium'">
               <span>{{ classes.length }} Classes</span>
               <span class="font-mono font-bold">ALL</span>
             </div>
@@ -2410,19 +2428,23 @@ interface StaffMember {
                [ngClass]="selectedSubjectClass?.id === c.id ? 'neu-pushed' : 'neu-elevated'"
                class="p-3 sm:p-3.5 rounded-2xl cursor-pointer flex flex-col justify-between select-none">
             <div class="flex items-center justify-between gap-1">
-              <span class="text-xs font-black truncate" [class.text-slate-900]="selectedSubjectClass?.id === c.id" [class.text-slate-800]="selectedSubjectClass?.id !== c.id">
+              <span class="text-xs font-black truncate"
+                    [class.text-slate-900]="selectedSubjectClass?.id === c.id"
+                    [class.text-slate-800]="selectedSubjectClass?.id !== c.id"
+                    [class.dark:text-white]="selectedSubjectClass?.id === c.id"
+                    [class.dark:text-slate-200]="selectedSubjectClass?.id !== c.id">
                 {{ c.name }}
               </span>
               <span class="text-[10px] font-black px-1.5 py-0.5 rounded-md shrink-0"
                     [ngClass]="selectedSubjectClass?.id === c.id 
-                      ? 'bg-slate-900 text-white shadow-2xs' 
-                      : 'bg-indigo-50 text-indigo-700 border border-indigo-100/80'"
+                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-2xs' 
+                      : 'bg-indigo-50 dark:bg-[#1a1a20] text-indigo-700 dark:text-indigo-400 border border-indigo-100/80 dark:border-white/10'"
                     title="Assigned Subjects">
                 {{ getClassSubjects(c).length }} Sub
               </span>
             </div>
             <div class="flex items-center justify-between mt-2.5 pt-2 border-t text-[10px]"
-                 [ngClass]="selectedSubjectClass?.id === c.id ? 'border-slate-300/80 text-slate-600 font-bold' : 'border-slate-100 text-slate-400 font-medium'">
+                 [ngClass]="selectedSubjectClass?.id === c.id ? 'border-slate-300/80 dark:border-white/15 text-slate-600 dark:text-slate-300 font-bold' : 'border-slate-100 dark:border-white/5 text-slate-400 dark:text-slate-400 font-medium'">
               <span>{{ c.sections.length || 0 }} Sec</span>
               <span class="font-mono font-bold">{{ c.code }}</span>
             </div>
@@ -2430,29 +2452,32 @@ interface StaffMember {
         </div>
 
         <!-- Subjects Workspace Container with Claymorphic Container -->
-        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff]">
+        <div class="bg-white dark:bg-[#121214] rounded-3xl border border-slate-200/80 dark:border-[#222226] shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] dark:shadow-none">
           <!-- Header Bar: Title, Section Filter Pills, Search & Actions -->
-          <div class="p-3.5 sm:px-6 sm:py-4 border-b border-slate-100 bg-[#f8fafc]/90 rounded-t-3xl space-y-3.5">
+          <div class="p-3.5 sm:px-6 sm:py-4 border-b border-slate-100 dark:border-[#222226] bg-[#f8fafc]/90 dark:bg-[#121214] rounded-t-3xl space-y-3.5">
             <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
               
               <!-- Left: Title & Section switch pills -->
               <div class="flex items-center gap-2.5 sm:gap-3 flex-wrap">
                 <div class="flex items-center gap-2">
-                  <h3 class="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
+                  <h3 class="text-xs sm:text-sm font-black text-slate-900 dark:text-white tracking-tight">
                     {{ selectedSubjectClass ? selectedSubjectClass.name + ' Curriculum Subjects' : 'All Curriculum Subjects Master' }}
                   </h3>
-                  <span class="px-2 py-0.5 rounded-xl bg-slate-200/80 text-[10px] font-black text-slate-700">
+                  <span class="px-2 py-0.5 rounded-xl bg-slate-200/80 dark:bg-[#1c1c22] text-[10px] font-black text-slate-700 dark:text-slate-300">
                     {{ filteredSubjects.length }}
                   </span>
                 </div>
 
                 <!-- Section switch pills for selected class -->
                 <div *ngIf="selectedSubjectClass && selectedSubjectClass.sections && selectedSubjectClass.sections.length > 0"
-                     class="flex items-center gap-1 bg-white border border-slate-200/90 p-1 rounded-2xl shadow-2xs overflow-x-auto max-w-full">
+                     class="flex items-center gap-1 bg-white dark:bg-[#18181c] border border-slate-200/90 dark:border-[#282830] p-1 rounded-2xl shadow-2xs overflow-x-auto max-w-full">
                   <button (click)="selectedSubjectSectionId = 'ALL'"
                           [class.bg-slate-900]="selectedSubjectSectionId === 'ALL'"
                           [class.text-white]="selectedSubjectSectionId === 'ALL'"
+                          [class.dark:bg-white]="selectedSubjectSectionId === 'ALL'"
+                          [class.dark:text-slate-900]="selectedSubjectSectionId === 'ALL'"
                           [class.text-slate-600]="selectedSubjectSectionId !== 'ALL'"
+                          [class.dark:text-slate-300]="selectedSubjectSectionId !== 'ALL'"
                           class="px-2.5 py-1 text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0">
                     All Sections
                   </button>
@@ -2460,7 +2485,10 @@ interface StaffMember {
                           (click)="selectedSubjectSectionId = sec.id"
                           [class.bg-slate-900]="selectedSubjectSectionId === sec.id"
                           [class.text-white]="selectedSubjectSectionId === sec.id"
+                          [class.dark:bg-white]="selectedSubjectSectionId === sec.id"
+                          [class.dark:text-slate-900]="selectedSubjectSectionId === sec.id"
                           [class.text-slate-600]="selectedSubjectSectionId !== sec.id"
+                          [class.dark:text-slate-300]="selectedSubjectSectionId !== sec.id"
                           class="px-2.5 py-1 text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0">
                     {{ formatSection(sec.name) }}
                   </button>
