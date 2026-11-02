@@ -1353,7 +1353,15 @@ export class FeesComponent implements OnInit {
     this.loadStoredPromocodes();
   }
 
-  loadStoredPromocodes() {
+  async loadStoredPromocodes() {
+    try {
+      const list = await this.api.getPromocodes();
+      if (Array.isArray(list) && list.length > 0) {
+        this.activePromocodes = list;
+        return;
+      }
+    } catch {}
+
     try {
       const key = 'schoolsense_fee_promocodes_' + this.currentSchoolId;
       const raw = localStorage.getItem(key);
@@ -1697,7 +1705,7 @@ export class FeesComponent implements OnInit {
     this.createPromoError = '';
   }
 
-  createPromocode() {
+  async createPromocode() {
     const code = this.promoForm.code.trim().toUpperCase();
     if (!code) {
       this.createPromoError = 'Please enter a valid promocode string.';
@@ -1734,6 +1742,12 @@ export class FeesComponent implements OnInit {
       status: 'ACTIVE',
     };
 
+    try {
+      await this.api.createPromocode(newPromo);
+    } catch (e) {
+      console.warn('api.createPromocode failed, local fallback used:', e);
+    }
+
     this.activePromocodes.unshift(newPromo);
     this.savePromocodesToStorage();
     this.creatingPromo = false;
@@ -1750,9 +1764,13 @@ export class FeesComponent implements OnInit {
     }
   }
 
-  removePromocode(index: number) {
+  async removePromocode(index: number) {
     const code = this.activePromocodes[index]?.code;
+    const id = (this.activePromocodes[index] as any)?.id;
     if (confirm(`Deactivate promocode "${code}"?`)) {
+      try {
+        await this.api.deletePromocode(id || code);
+      } catch {}
       this.activePromocodes.splice(index, 1);
       this.savePromocodesToStorage();
       this.toast.info(`Promocode "${code}" deactivated.`);
