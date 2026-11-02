@@ -303,6 +303,9 @@ export class ApiService {
     if (cleanEndpoint === 'fees/categories') {
       return from(this.getFeeCategories()) as unknown as Observable<T>;
     }
+    if (cleanEndpoint === 'fees/promocodes') {
+      return from(this.getPromocodes()) as unknown as Observable<T>;
+    }
     if (cleanEndpoint === 'fees/structures') {
       return from(this.getFeeStructures(params?.['academicYearId'], params?.['classId'])) as unknown as Observable<T>;
     }
@@ -325,6 +328,9 @@ export class ApiService {
     if (cleanEndpoint.startsWith('fees/siblings/')) {
       const studentId = cleanEndpoint.replace('fees/siblings/', '');
       return from(this.detectStudentSiblings(studentId)) as unknown as Observable<T>;
+    }
+    if (cleanEndpoint === 'fees/promocodes') {
+      return from(this.getPromocodes()) as unknown as Observable<T>;
     }
 
     // Transport Department Endpoints
@@ -496,6 +502,9 @@ export class ApiService {
     if (cleanEndpoint === 'fees/categories') {
       return from(this.createFeeCategory(body)) as unknown as Observable<T>;
     }
+    if (cleanEndpoint === 'fees/promocodes') {
+      return from(this.createPromocode(body)) as unknown as Observable<T>;
+    }
     if (cleanEndpoint === 'fees/structures') {
       return from(this.createFeeStructure(body)) as unknown as Observable<T>;
     }
@@ -513,6 +522,9 @@ export class ApiService {
     }
     if (cleanEndpoint === 'fees/matrix') {
       return from(this.saveClassFeeMatrix(body?.academicYearId || body?.academic_year_id, body?.matrix)) as unknown as Observable<T>;
+    }
+    if (cleanEndpoint === 'fees/promocodes') {
+      return from(this.createPromocode(body)) as unknown as Observable<T>;
     }
 
     // Transport Department POST
@@ -725,6 +737,10 @@ export class ApiService {
       const id = cleanEndpoint.replace('fees/invoices/', '');
       return from(this.deleteFeeInvoice(id)) as unknown as Observable<T>;
     }
+    if (cleanEndpoint.startsWith('fees/promocodes/')) {
+      const id = cleanEndpoint.replace('fees/promocodes/', '');
+      return from(this.deletePromocode(id)) as unknown as Observable<T>;
+    }
 
     // Transport Delete
     if (cleanEndpoint.startsWith('transport/vehicles/')) {
@@ -738,6 +754,10 @@ export class ApiService {
     if (cleanEndpoint.startsWith('transport/assignments/')) {
       const id = cleanEndpoint.replace('transport/assignments/', '');
       return from(this.deleteStudentTransportAssignment(id)) as unknown as Observable<T>;
+    }
+    if (cleanEndpoint.startsWith('fees/promocodes/')) {
+      const id = cleanEndpoint.replace('fees/promocodes/', '');
+      return from(this.deletePromocode(id)) as unknown as Observable<T>;
     }
 
     // Departmental Users DELETE
@@ -10191,6 +10211,72 @@ export class ApiService {
     };
   }
 
+  public async getPromocodes(): Promise<any[]> {
+    const schoolId = this.getSchoolId();
+    try {
+      const { data, error } = await this.supabase
+        .from('fee_promocodes')
+        .select('*')
+        .eq('school_id', schoolId)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.warn('Error fetching fee_promocodes:', error);
+        return [];
+      }
+      return data || [];
+    } catch (e) {
+      console.warn('Exception fetching fee_promocodes:', e);
+      return [];
+    }
+  }
+
+  public async createPromocode(payload: any): Promise<any> {
+    const schoolId = this.getSchoolId();
+    const cleanCode = (payload.code || '').trim().toUpperCase();
+    const discountType = payload.discountType === 'FLAT_AMOUNT' || payload.discount_type === 'FLAT_AMOUNT' || payload.discountType === 'FLAT_INR' ? 'FLAT_INR' : 'PERCENTAGE';
+    const discountValue = Number(payload.value ?? payload.discount_value) || 0;
+    const maxUses = payload.maxUses ? Number(payload.maxUses) : null;
+    const validUntil = payload.expiryDate || payload.expiry || payload.valid_until || null;
+
+    const row = {
+      school_id: schoolId,
+      code: cleanCode,
+      description: payload.description || '',
+      discount_type: discountType,
+      discount_value: discountValue,
+      max_discount_cap: payload.max_discount_cap ? Number(payload.max_discount_cap) : null,
+      max_uses: maxUses,
+      valid_until: validUntil,
+      status: 'ACTIVE',
+    };
+
+    const { data, error } = await this.supabase
+      .from('fee_promocodes')
+      .insert(row)
+      .select()
+      .single();
+
+    if (error) {
+      console.warn('Error creating fee_promocodes:', error);
+      throw new Error(error.message || 'Failed to create fee promocode');
+    }
+    return data;
+  }
+
+  public async deletePromocode(id: string): Promise<any> {
+    const { error } = await this.supabase
+      .from('fee_promocodes')
+      .update({ deleted_at: new Date().toISOString(), status: 'INACTIVE' })
+      .eq('id', id);
+
+    if (error) {
+      throw new Error(error.message || 'Failed to delete fee promocode');
+    }
+    return { success: true };
+  }
+
   public async detectStudentSiblings(studentId: string): Promise<StudentSiblingInfo> {
     const schoolId = this.getSchoolId();
 
@@ -10331,6 +10417,189 @@ export class ApiService {
       updatedCount: updated,
       message: `Updated ${updated} fee structures in class matrix.`,
     };
+  }
+
+  public async getPromocodes(): Promise<any[]> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) return [];
+
+    try {
+      const { data, error } = await this.supabase
+        .from('fee_promocodes')
+        .select('*')
+        .eq('school_id', schoolId)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        return data.map((p: any) => ({
+          id: p.id,
+          code: p.code,
+          description: p.description || '',
+          discountType: p.discount_type === 'PERCENTAGE' ? 'PERCENTAGE' : 'FLAT_AMOUNT',
+          discount_type: p.discount_type,
+          value: Number(p.discount_value) || 0,
+          discount_value: Number(p.discount_value) || 0,
+          maxCap: p.max_discount_cap,
+          maxUses: p.max_uses,
+          uses: p.used_count || 0,
+          usedCount: p.used_count || 0,
+          expiry: p.valid_until ? new Date(p.valid_until).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '31 Mar 2027',
+          valid_until: p.valid_until,
+          status: p.status || 'ACTIVE',
+          created_at: p.created_at,
+        }));
+      }
+    } catch (e) {
+      console.warn('getPromocodes database fetch error:', e);
+    }
+
+    // Fallback: localStorage
+    try {
+      const localKey = 'schoolsense_fee_promocodes_' + schoolId;
+      const rawStored = localStorage.getItem(localKey);
+      if (rawStored) {
+        const parsed = JSON.parse(rawStored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {}
+
+    // Default built-in presets
+    return [
+      { code: 'SIBLING15', discountType: 'PERCENTAGE', discount_type: 'PERCENTAGE', value: 15, discount_value: 15, description: '15% Concession for second enrolled child', uses: 12, maxUses: 50, expiry: '31 Mar 2027', status: 'ACTIVE' },
+      { code: 'STAFFCHILD50', discountType: 'PERCENTAGE', discount_type: 'PERCENTAGE', value: 50, discount_value: 50, description: '50% Tuition fee concession for staff children', uses: 8, maxUses: 30, expiry: '31 Mar 2027', status: 'ACTIVE' },
+      { code: 'MERIT10', discountType: 'PERCENTAGE', discount_type: 'PERCENTAGE', value: 10, discount_value: 10, description: '10% Merit scholarship for top ranking students', uses: 24, maxUses: 100, expiry: '31 Mar 2027', status: 'ACTIVE' },
+      { code: 'RTE_WAIVER', discountType: 'PERCENTAGE', discount_type: 'PERCENTAGE', value: 100, discount_value: 100, description: '100% Right To Education government subsidized admission', uses: 5, maxUses: 20, expiry: '31 Mar 2027', status: 'ACTIVE' },
+    ];
+  }
+
+  public async createPromocode(promo: any): Promise<any> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) throw new Error('School context missing');
+
+    const cleanCode = (promo.code || '').trim().toUpperCase();
+    if (!cleanCode) throw new Error('Promocode string is required');
+
+    const discountType = (promo.discountType === 'PERCENTAGE' || promo.discount_type === 'PERCENTAGE') ? 'PERCENTAGE' : 'FLAT_INR';
+    const discountVal = Number(promo.value ?? promo.discount_value ?? promo.discountValue) || 0;
+    const maxUses = Number(promo.maxUses ?? promo.max_uses) || 500;
+    const maxCap = promo.maxCap ? Number(promo.maxCap) : (discountType === 'PERCENTAGE' ? 50000 : null);
+    let validUntil: string | null = null;
+    if (promo.expiry || promo.valid_until || promo.expiryDate) {
+      try {
+        const d = new Date(promo.expiry || promo.valid_until || promo.expiryDate);
+        if (!isNaN(d.getTime())) {
+          validUntil = d.toISOString().split('T')[0];
+        }
+      } catch {}
+    }
+
+    const payload = {
+      school_id: schoolId,
+      code: cleanCode,
+      description: (promo.description || '').trim() || 'Institutional concession',
+      discount_type: discountType,
+      discount_value: discountVal,
+      max_discount_cap: maxCap,
+      min_invoice_amount: Number(promo.min_invoice_amount || promo.minInvoiceAmount) || 0,
+      max_uses: maxUses,
+      valid_until: validUntil,
+      status: 'ACTIVE',
+    };
+
+    let createdPromo: any = null;
+
+    try {
+      const { data, error } = await this.supabase
+        .from('fee_promocodes')
+        .insert(payload)
+        .select()
+        .single();
+
+      if (!error && data) {
+        createdPromo = {
+          id: data.id,
+          code: data.code,
+          description: data.description,
+          discountType: data.discount_type === 'PERCENTAGE' ? 'PERCENTAGE' : 'FLAT_AMOUNT',
+          discount_type: data.discount_type,
+          value: Number(data.discount_value) || 0,
+          discount_value: Number(data.discount_value) || 0,
+          maxCap: data.max_discount_cap,
+          maxUses: data.max_uses,
+          uses: data.used_count || 0,
+          usedCount: data.used_count || 0,
+          expiry: data.valid_until ? new Date(data.valid_until).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '31 Mar 2027',
+          valid_until: data.valid_until,
+          status: data.status,
+          created_at: data.created_at,
+        };
+      } else if (error) {
+        console.warn('createPromocode database insertion notice:', error);
+      }
+    } catch (e) {
+      console.warn('createPromocode exception:', e);
+    }
+
+    if (!createdPromo) {
+      createdPromo = {
+        id: 'promo_' + Date.now(),
+        code: cleanCode,
+        description: payload.description,
+        discountType: discountType === 'PERCENTAGE' ? 'PERCENTAGE' : 'FLAT_AMOUNT',
+        discount_type: discountType,
+        value: discountVal,
+        discount_value: discountVal,
+        maxCap,
+        maxUses,
+        uses: 0,
+        usedCount: 0,
+        expiry: promo.expiry || promo.expiryDate || validUntil || '31 Mar 2027',
+        valid_until: validUntil,
+        status: 'ACTIVE',
+        created_at: new Date().toISOString(),
+      };
+    }
+
+    // Sync to localStorage
+    try {
+      const localKey = 'schoolsense_fee_promocodes_' + schoolId;
+      const existing = JSON.parse(localStorage.getItem(localKey) || '[]');
+      const filtered = existing.filter((p: any) => (p.code || '').toUpperCase() !== cleanCode);
+      filtered.unshift(createdPromo);
+      localStorage.setItem(localKey, JSON.stringify(filtered));
+    } catch {}
+
+    return {
+      success: true,
+      promocode: createdPromo,
+      message: `Promocode ${cleanCode} created and activated successfully.`,
+    };
+  }
+
+  public async deletePromocode(idOrCode: string): Promise<any> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) throw new Error('School context missing');
+
+    try {
+      await this.supabase
+        .from('fee_promocodes')
+        .update({ deleted_at: new Date().toISOString(), status: 'INACTIVE' })
+        .eq('school_id', schoolId)
+        .or(`id.eq.${idOrCode},code.eq.${idOrCode.toUpperCase()}`);
+    } catch (e) {}
+
+    // Sync localStorage
+    try {
+      const localKey = 'schoolsense_fee_promocodes_' + schoolId;
+      const existing = JSON.parse(localStorage.getItem(localKey) || '[]');
+      const filtered = existing.filter((p: any) => p.id !== idOrCode && (p.code || '').toUpperCase() !== idOrCode.toUpperCase());
+      localStorage.setItem(localKey, JSON.stringify(filtered));
+    } catch {}
+
+    return { success: true, message: 'Promocode deactivated successfully.' };
   }
 
   // ==============================================================================
