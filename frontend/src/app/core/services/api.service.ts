@@ -37,6 +37,11 @@ import {
   TransportRoute,
   StudentTransportAssignment,
   DepartmentalStaffUser,
+  StudentFeeLedgerStatement,
+  StudentFeeLedgerEntry,
+  StudentFeePreference,
+  SchoolFeeRules,
+  StudentFeeAdditionalCharge,
 } from '../models';
 
 export function getClassPedagogicalRank(name: string, code?: string, displayOrder?: number): number {
@@ -306,6 +311,9 @@ export class ApiService {
     if (cleanEndpoint === 'fees/promocodes') {
       return from(this.getPromocodes()) as unknown as Observable<T>;
     }
+    if (cleanEndpoint === 'fees/rules') {
+      return from(this.getSchoolFeeRules(params?.['academicYearId'])) as unknown as Observable<T>;
+    }
     if (cleanEndpoint === 'fees/structures') {
       return from(this.getFeeStructures(params?.['academicYearId'], params?.['classId'])) as unknown as Observable<T>;
     }
@@ -325,12 +333,13 @@ export class ApiService {
       const studentId = cleanEndpoint.replace('fees/80c/', '');
       return from(this.getStudent80cCertificate(studentId, params?.['academicYearId'])) as unknown as Observable<T>;
     }
+    if (cleanEndpoint.startsWith('fees/ledger/')) {
+      const studentId = cleanEndpoint.replace('fees/ledger/', '');
+      return from(this.getStudentFeeLedger(studentId, params?.['academicYearId'])) as unknown as Observable<T>;
+    }
     if (cleanEndpoint.startsWith('fees/siblings/')) {
       const studentId = cleanEndpoint.replace('fees/siblings/', '');
       return from(this.detectStudentSiblings(studentId)) as unknown as Observable<T>;
-    }
-    if (cleanEndpoint === 'fees/promocodes') {
-      return from(this.getPromocodes()) as unknown as Observable<T>;
     }
 
     // Transport Department Endpoints
@@ -523,8 +532,20 @@ export class ApiService {
     if (cleanEndpoint === 'fees/matrix') {
       return from(this.saveClassFeeMatrix(body?.academicYearId || body?.academic_year_id, body?.matrix)) as unknown as Observable<T>;
     }
-    if (cleanEndpoint === 'fees/promocodes') {
-      return from(this.createPromocode(body)) as unknown as Observable<T>;
+    if (cleanEndpoint.startsWith('fees/preferences/') || cleanEndpoint.startsWith('fees/preference/')) {
+      const studentId = cleanEndpoint.replace(/^fees\/preferences?\//, '');
+      return from(this.updateStudentFeePreference(studentId, body)) as unknown as Observable<T>;
+    }
+    if (cleanEndpoint === 'fees/preferences' || cleanEndpoint === 'fees/preference') {
+      const studentId = body?.studentId || body?.student_id;
+      return from(this.updateStudentFeePreference(studentId, body)) as unknown as Observable<T>;
+    }
+    if (cleanEndpoint === 'fees/rules') {
+      return from(this.updateSchoolFeeRules(body, body?.academicYearId || body?.academic_year_id)) as unknown as Observable<T>;
+    }
+    if (cleanEndpoint.startsWith('fees/charges/') || cleanEndpoint === 'fees/charges' || cleanEndpoint === 'fees/additional-charges') {
+      const studentId = body?.studentId || body?.student_id || cleanEndpoint.replace(/^fees\/charges\/?/, '');
+      return from(this.addStudentFeeCharge(studentId, body, body?.academicYearId || body?.academic_year_id)) as unknown as Observable<T>;
     }
 
     // Transport Department POST
@@ -669,6 +690,21 @@ export class ApiService {
     if (cleanEndpoint.startsWith('fees/structures/')) {
       const id = cleanEndpoint.replace('fees/structures/', '');
       return from(this.updateFeeStructure(id, body)) as unknown as Observable<T>;
+    }
+    if (cleanEndpoint.startsWith('fees/preferences/') || cleanEndpoint.startsWith('fees/preference/')) {
+      const studentId = cleanEndpoint.replace(/^fees\/preferences?\//, '');
+      return from(this.updateStudentFeePreference(studentId, body)) as unknown as Observable<T>;
+    }
+    if (cleanEndpoint === 'fees/preferences' || cleanEndpoint === 'fees/preference') {
+      const studentId = body?.studentId || body?.student_id;
+      return from(this.updateStudentFeePreference(studentId, body)) as unknown as Observable<T>;
+    }
+    if (cleanEndpoint === 'fees/rules') {
+      return from(this.updateSchoolFeeRules(body, body?.academicYearId || body?.academic_year_id)) as unknown as Observable<T>;
+    }
+    if (cleanEndpoint.startsWith('fees/charges/') || cleanEndpoint === 'fees/charges' || cleanEndpoint === 'fees/additional-charges') {
+      const studentId = body?.studentId || body?.student_id || cleanEndpoint.replace(/^fees\/charges\/?/, '');
+      return from(this.addStudentFeeCharge(studentId, body, body?.academicYearId || body?.academic_year_id)) as unknown as Observable<T>;
     }
     if (cleanEndpoint.startsWith('transport/vehicles/')) {
       const id = cleanEndpoint.replace('transport/vehicles/', '');
@@ -9470,7 +9506,7 @@ export class ApiService {
     return { success: true };
   }
 
-  private async recordFeePayment(body: any): Promise<any> {
+  public async recordFeePayment(body: any): Promise<any> {
     const schoolId = this.getSchoolId();
     const invoiceId = body.invoice_id || body.invoiceId;
     const amountPaid = Number(body.amount_paid || body.amountPaid) || 0;
@@ -9960,6 +9996,703 @@ export class ApiService {
     };
   }
 
+  public async getStudentFeeLedger(studentId: string, academicYearId?: string): Promise<StudentFeeLedgerStatement> {
+    const schoolId = this.getSchoolId();
+    const effectiveYearId = academicYearId || (await this.getActiveAcademicYearId(schoolId));
+
+    // Fetch additional charges for this student
+    let additionalCharges: any[] = [];
+    try {
+      let chgQuery = this.supabase
+        .from('student_fee_additional_charges')
+        .select('*')
+        .eq('student_id', studentId);
+      if (schoolId) {
+        chgQuery = chgQuery.eq('school_id', schoolId);
+      }
+      if (effectiveYearId) {
+        chgQuery = chgQuery.eq('academic_year_id', effectiveYearId);
+      }
+      const { data: chgs, error: chgErr } = await chgQuery;
+      if (!chgErr && chgs && chgs.length > 0) {
+        additionalCharges = chgs;
+      }
+    } catch (e) {
+      // Table may not yet exist
+    }
+
+    // 1. Try secure RPC get_student_fee_ledger
+    try {
+      const { data, error } = await this.supabase.rpc('get_student_fee_ledger', {
+        p_student_id: studentId,
+        p_academic_year_id: effectiveYearId || null,
+      });
+
+      if (!error && data && data.success) {
+        let entries: StudentFeeLedgerEntry[] = Array.isArray(data.ledgerEntries) ? [...data.ledgerEntries] : [];
+        let totalBilled = Number(data.totalBilled || 0);
+        const totalPaid = Number(data.totalPaid || 0);
+        const totalDiscount = Number(data.totalDiscount || 0);
+
+        // Merge additional charges if not already in ledgerEntries
+        if (additionalCharges.length > 0) {
+          const existingRefs = new Set(entries.map(e => e.referenceNumber));
+          for (const chg of additionalCharges) {
+            const ref = chg.id ? `CHG-${chg.id.slice(0, 8)}` : `CHG-${chg.charge_type || 'EXTRA'}`;
+            if (!existingRefs.has(ref) && !existingRefs.has(chg.id)) {
+              const chgAmount = Number(chg.amount) || 0;
+              totalBilled += chgAmount;
+              entries.push({
+                date: chg.effective_date || (chg.created_at ? chg.created_at.split('T')[0] : new Date().toISOString().split('T')[0]),
+                type: 'CHARGE',
+                referenceNumber: ref,
+                description: `${chg.charge_type ? chg.charge_type.replace('_', ' ') + ': ' : ''}${chg.description || 'Additional Charge'}`,
+                debit: chgAmount,
+                credit: 0,
+                runningBalance: 0,
+                status: chg.status || 'PENDING',
+              });
+            }
+          }
+          entries.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+        }
+
+        // Ensure runningBalance is always a valid finite number on every entry
+        let running = 0;
+        entries = entries.map(entry => {
+          const debit = Number(entry.debit) || 0;
+          const credit = Number(entry.credit) || 0;
+          running = running + debit - credit;
+          const rb = Number.isFinite(Number(entry.runningBalance)) && additionalCharges.length === 0
+            ? Number(entry.runningBalance)
+            : running;
+          return {
+            ...entry,
+            debit,
+            credit,
+            runningBalance: Number.isFinite(rb) ? rb : (Number.isFinite(running) ? running : 0),
+          };
+        });
+
+        const pendingDue = Math.max(0, totalBilled - totalPaid);
+        const advanceBalance = Math.max(0, totalPaid - totalBilled);
+
+        return {
+          studentId: data.studentId || studentId,
+          studentName: data.studentName || 'Student',
+          admissionNumber: data.admissionNumber || '',
+          className: data.className || 'Class',
+          sectionName: data.sectionName || 'Section A',
+          academicYearId: data.academicYearId || effectiveYearId || '',
+          academicYearName: data.academicYearName || '2026-2027',
+          frequencyPreference: data.frequencyPreference || 'MONTHLY',
+          annualConcessionPct: Number(data.annualConcessionPct || 0),
+          totalBilled,
+          totalPaid,
+          totalDiscount,
+          netBilled: Math.max(0, totalBilled - totalDiscount),
+          advanceBalance,
+          pendingDue,
+          invoices: data.invoices || [],
+          payments: data.payments || [],
+          ledgerEntries: entries,
+          generatedAt: data.generatedAt || new Date().toISOString(),
+        };
+      }
+      if (error) {
+        console.warn('get_student_fee_ledger RPC error, falling back:', error);
+      }
+    } catch (e) {
+      console.warn('get_student_fee_ledger RPC exception:', e);
+    }
+
+    // 2. Resilient Direct Table Assembly
+    let studentName = 'Student';
+    let admissionNumber = '';
+    let className = 'Class';
+    let sectionName = 'Section A';
+
+    try {
+      const { data: st } = await this.supabase
+        .from('students')
+        .select('id, first_name, last_name, admission_number')
+        .eq('id', studentId)
+        .maybeSingle();
+
+      if (st) {
+        studentName = `${st.first_name || ''} ${st.last_name || ''}`.trim() || 'Student';
+        admissionNumber = st.admission_number || '';
+      }
+
+      let enrQuery = this.supabase
+        .from('student_enrollments')
+        .select('class:classes(name), section:sections(name)')
+        .eq('student_id', studentId);
+      if (effectiveYearId) {
+        enrQuery = enrQuery.eq('academic_year_id', effectiveYearId);
+      }
+      const { data: enr } = await enrQuery.maybeSingle();
+      if (enr) {
+        if ((enr as any).class?.name) className = (enr as any).class.name;
+        if ((enr as any).section?.name) sectionName = (enr as any).section.name;
+      }
+    } catch (e) {}
+
+    let frequencyPreference: 'MONTHLY' | 'QUARTERLY' | 'ANNUAL' = 'MONTHLY';
+    let annualConcessionPct = 0;
+    try {
+      let prefQuery = this.supabase
+        .from('student_fee_preferences')
+        .select('*')
+        .eq('school_id', schoolId)
+        .eq('student_id', studentId);
+      if (effectiveYearId) {
+        prefQuery = prefQuery.eq('academic_year_id', effectiveYearId);
+      }
+      const { data: pref } = await prefQuery.maybeSingle();
+      if (pref) {
+        frequencyPreference = pref.frequency || 'MONTHLY';
+        annualConcessionPct = Number(pref.annual_concession_pct || 0);
+      }
+    } catch (e) {}
+
+    const invoices = await this.getFeeInvoices({ studentId, academicYearId: effectiveYearId });
+
+    let payments: any[] = [];
+    try {
+      let payQuery = this.supabase
+        .from('fee_payments')
+        .select('*')
+        .eq('school_id', schoolId)
+        .eq('student_id', studentId)
+        .order('payment_date', { ascending: true });
+      if (effectiveYearId) {
+        payQuery = payQuery.eq('academic_year_id', effectiveYearId);
+      }
+      const { data: pays } = await payQuery;
+      if (pays && pays.length > 0) {
+        payments = pays;
+      }
+    } catch (e) {}
+
+    const additionalChargesTotal = additionalCharges.reduce((sum, chg) => sum + (Number(chg.amount) || 0), 0);
+    const invoiceBilled = invoices.reduce((sum, inv) => sum + (Number(inv.total_amount) || 0), 0);
+    const totalBilled = invoiceBilled + additionalChargesTotal;
+    const totalDiscount = invoices.reduce((sum, inv) => sum + (Number(inv.discount_amount) || 0), 0);
+    const totalPaid = payments.length > 0
+      ? payments.reduce((sum, p) => sum + (Number(p.amount_paid) || 0), 0)
+      : invoices.reduce((sum, inv) => sum + (Number(inv.paid_amount) || 0), 0);
+
+    const advanceBalance = Math.max(0, totalPaid - totalBilled);
+    const pendingDue = Math.max(0, totalBilled - totalPaid);
+
+    type RawEntry = {
+      date: string;
+      type: 'INVOICE' | 'PAYMENT' | 'CHARGE';
+      referenceNumber: string;
+      description: string;
+      debit: number;
+      credit: number;
+      status?: string;
+      paymentMode?: string;
+      sortPrio: number;
+    };
+
+    const rawList: RawEntry[] = [];
+    invoices.forEach(inv => {
+      rawList.push({
+        date: inv.due_date || (inv.created_at ? inv.created_at.split('T')[0] : '2026-04-01'),
+        type: 'INVOICE',
+        referenceNumber: inv.invoice_number,
+        description: `Fee Invoice: ${inv.month_name || 'Standard Term'}`,
+        debit: Number(inv.total_amount) || 0,
+        credit: 0,
+        status: inv.status,
+        sortPrio: 1,
+      });
+    });
+
+    additionalCharges.forEach(chg => {
+      rawList.push({
+        date: chg.effective_date || (chg.created_at ? chg.created_at.split('T')[0] : '2026-04-01'),
+        type: 'CHARGE',
+        referenceNumber: chg.id ? `CHG-${chg.id.slice(0, 8)}` : `CHG-${chg.charge_type || 'EXTRA'}`,
+        description: `${chg.charge_type ? chg.charge_type.replace('_', ' ') + ': ' : ''}${chg.description || 'Additional Charge'}`,
+        debit: Number(chg.amount) || 0,
+        credit: 0,
+        status: chg.status || 'PENDING',
+        sortPrio: 1,
+      });
+    });
+
+    payments.forEach(p => {
+      rawList.push({
+        date: p.payment_date || (p.created_at ? p.created_at.split('T')[0] : '2026-04-01'),
+        type: 'PAYMENT',
+        referenceNumber: p.receipt_number,
+        description: `Fee Payment (${p.payment_mode || 'CASH'}${p.transaction_reference ? ' - ' + p.transaction_reference : ''})`,
+        debit: 0,
+        credit: Number(p.amount_paid) || 0,
+        status: 'PAID',
+        paymentMode: p.payment_mode,
+        sortPrio: 2,
+      });
+    });
+
+    rawList.sort((a, b) => {
+      const cmp = (a.date || '').localeCompare(b.date || '');
+      return cmp !== 0 ? cmp : a.sortPrio - b.sortPrio;
+    });
+
+    let running = 0;
+    const ledgerEntries: StudentFeeLedgerEntry[] = rawList.map(r => {
+      const debit = Number(r.debit) || 0;
+      const credit = Number(r.credit) || 0;
+      running = running + debit - credit;
+      return {
+        date: r.date,
+        type: r.type,
+        referenceNumber: r.referenceNumber,
+        description: r.description,
+        debit,
+        credit,
+        runningBalance: Number.isFinite(running) ? running : 0,
+        status: r.status,
+        paymentMode: r.paymentMode,
+      };
+    });
+
+    return {
+      studentId,
+      studentName,
+      admissionNumber,
+      className,
+      sectionName,
+      academicYearId: effectiveYearId || '',
+      academicYearName: '2026-2027',
+      frequencyPreference,
+      annualConcessionPct,
+      totalBilled,
+      totalPaid,
+      totalDiscount,
+      netBilled: Math.max(0, totalBilled - totalDiscount),
+      advanceBalance,
+      pendingDue,
+      invoices,
+      payments,
+      ledgerEntries,
+      generatedAt: new Date().toISOString(),
+    };
+  }
+
+  public async updateStudentFeePreference(
+    studentId: string,
+    bodyOrFrequency: any,
+    annualConcession?: number,
+    notes?: string,
+    academicYearId?: string
+  ): Promise<{ success: boolean; preference?: any; message?: string }> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) throw new Error('School context required');
+    if (!studentId) throw new Error('Student ID is required');
+
+    const body = typeof bodyOrFrequency === 'string'
+      ? {
+          frequency: bodyOrFrequency,
+          annual_concession_pct: annualConcession ?? 0,
+          annualConcessionPct: annualConcession ?? 0,
+          notes: notes || null,
+          academic_year_id: academicYearId || null,
+          academicYearId: academicYearId || null,
+        }
+      : (bodyOrFrequency || {});
+
+    const rawFreq = (body.frequency || 'MONTHLY').toString().toUpperCase().trim();
+    if (rawFreq !== 'MONTHLY' && rawFreq !== 'QUARTERLY' && rawFreq !== 'ANNUAL') {
+      throw new Error('Fee frequency must be MONTHLY, QUARTERLY, or ANNUAL');
+    }
+
+    const concession = Math.max(0, Math.min(100, Number(body.annualConcessionPct ?? body.annual_concession_pct) || 0));
+    const effectiveYearId = body.academicYearId || body.academic_year_id || (await this.getActiveAcademicYearId(schoolId));
+
+    let rpcError: any = null;
+    try {
+      const { data, error } = await this.supabase.rpc('update_student_fee_preference', {
+        p_student_id: studentId,
+        p_frequency: rawFreq,
+        p_annual_concession_pct: concession,
+        p_notes: body.notes || null,
+        p_academic_year_id: effectiveYearId || null,
+      });
+
+      if (!error && data && data.success) {
+        return {
+          success: true,
+          preference: data.preference,
+          message: data.message || 'Fee frequency preference saved successfully.',
+        };
+      }
+      if (error) {
+        rpcError = error;
+        console.warn('update_student_fee_preference RPC error, falling back:', error);
+      }
+    } catch (e) {
+      rpcError = e;
+      console.warn('update_student_fee_preference RPC exception:', e);
+    }
+
+    // Direct table upsert fallback
+    let tableError: any = null;
+    try {
+      const payload = {
+        school_id: schoolId,
+        student_id: studentId,
+        academic_year_id: effectiveYearId,
+        frequency: rawFreq,
+        annual_concession_pct: concession,
+        notes: body.notes || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { data, error } = await this.supabase
+        .from('student_fee_preferences')
+        .upsert(payload, { onConflict: 'school_id, student_id, academic_year_id' })
+        .select()
+        .single();
+
+      if (!error && data) {
+        return {
+          success: true,
+          preference: {
+            id: data.id,
+            studentId: data.student_id,
+            academicYearId: data.academic_year_id,
+            frequency: data.frequency,
+            annualConcessionPct: Number(data.annual_concession_pct),
+            notes: data.notes,
+            updatedAt: data.updated_at,
+          },
+          message: 'Fee frequency preference saved successfully in database.',
+        };
+      }
+      if (error) {
+        tableError = error;
+        console.warn('Direct student_fee_preferences upsert error:', error);
+      }
+    } catch (e) {
+      tableError = e;
+      console.warn('Direct student_fee_preferences upsert exception:', e);
+    }
+
+    // If RPC or table returns an error (such as 404), throw required migration notice
+    if (tableError || rpcError) {
+      throw new Error('Database table or RPC update_student_fee_preference not yet applied in Supabase. Please run the SQL migration.');
+    }
+
+    throw new Error('Database table or RPC update_student_fee_preference not yet applied in Supabase. Please run the SQL migration.');
+  }
+
+  public async getSchoolFeeRules(academicYearId?: string): Promise<SchoolFeeRules> {
+    const schoolId = this.getSchoolId();
+    const effectiveYearId = academicYearId || (await this.getActiveAcademicYearId(schoolId));
+    const defaultRules: SchoolFeeRules = {
+      school_id: schoolId || undefined,
+      academic_year_id: effectiveYearId || undefined,
+      monthly_discount_pct: 0,
+      quarterly_discount_pct: 5,
+      annual_discount_pct: 10,
+      due_day_of_month: 10,
+      grace_period_days: 5,
+      enable_late_fee: true,
+      late_fee_type: 'DAILY',
+      late_fee_amount: 20,
+    };
+
+    // 1. Try get_school_fee_rules RPC (single param or multi-param)
+    try {
+      const { data, error } = await this.supabase.rpc('get_school_fee_rules', {
+        p_academic_year_id: effectiveYearId || null,
+      });
+
+      if (!error && data) {
+        const item = Array.isArray(data) ? data[0] : (data.rules || data.data || data);
+        if (item && (item.due_day_of_month !== undefined || item.dueDayOfMonth !== undefined || item.id)) {
+          return {
+            id: item.id,
+            school_id: item.school_id || schoolId,
+            academic_year_id: item.academic_year_id || effectiveYearId,
+            monthly_discount_pct: Number(item.monthly_discount_pct ?? item.monthlyDiscountPct ?? defaultRules.monthly_discount_pct),
+            quarterly_discount_pct: Number(item.quarterly_discount_pct ?? item.quarterlyDiscountPct ?? defaultRules.quarterly_discount_pct),
+            annual_discount_pct: Number(item.annual_discount_pct ?? item.annualDiscountPct ?? defaultRules.annual_discount_pct),
+            due_day_of_month: Number(item.due_day_of_month ?? item.dueDayOfMonth ?? defaultRules.due_day_of_month),
+            grace_period_days: Number(item.grace_period_days ?? item.gracePeriodDays ?? defaultRules.grace_period_days),
+            enable_late_fee: item.enable_late_fee !== undefined ? Boolean(item.enable_late_fee) : defaultRules.enable_late_fee,
+            late_fee_type: (item.late_fee_type || item.lateFeeType || defaultRules.late_fee_type) as 'FLAT' | 'DAILY',
+            late_fee_amount: Number(item.late_fee_amount ?? item.lateFeeAmount ?? defaultRules.late_fee_amount),
+            updated_at: item.updated_at || item.updatedAt,
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('get_school_fee_rules (p_academic_year_id) RPC error, trying fallback signature:', e);
+    }
+
+    try {
+      const { data, error } = await this.supabase.rpc('get_school_fee_rules', {
+        p_school_id: schoolId || null,
+        p_academic_year_id: effectiveYearId || null,
+      });
+
+      if (!error && data) {
+        const item = Array.isArray(data) ? data[0] : (data.rules || data.data || data);
+        if (item && (item.due_day_of_month !== undefined || item.dueDayOfMonth !== undefined || item.id)) {
+          return {
+            id: item.id,
+            school_id: item.school_id || schoolId,
+            academic_year_id: item.academic_year_id || effectiveYearId,
+            monthly_discount_pct: Number(item.monthly_discount_pct ?? item.monthlyDiscountPct ?? defaultRules.monthly_discount_pct),
+            quarterly_discount_pct: Number(item.quarterly_discount_pct ?? item.quarterlyDiscountPct ?? defaultRules.quarterly_discount_pct),
+            annual_discount_pct: Number(item.annual_discount_pct ?? item.annualDiscountPct ?? defaultRules.annual_discount_pct),
+            due_day_of_month: Number(item.due_day_of_month ?? item.dueDayOfMonth ?? defaultRules.due_day_of_month),
+            grace_period_days: Number(item.grace_period_days ?? item.gracePeriodDays ?? defaultRules.grace_period_days),
+            enable_late_fee: item.enable_late_fee !== undefined ? Boolean(item.enable_late_fee) : defaultRules.enable_late_fee,
+            late_fee_type: (item.late_fee_type || item.lateFeeType || defaultRules.late_fee_type) as 'FLAT' | 'DAILY',
+            late_fee_amount: Number(item.late_fee_amount ?? item.lateFeeAmount ?? defaultRules.late_fee_amount),
+            updated_at: item.updated_at || item.updatedAt,
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('get_school_fee_rules RPC fallback error:', e);
+    }
+
+    // 2. Direct school_fee_rules table
+    try {
+      let query = this.supabase
+        .from('school_fee_rules')
+        .select('*');
+      if (schoolId) {
+        query = query.eq('school_id', schoolId);
+      }
+      if (effectiveYearId) {
+        query = query.eq('academic_year_id', effectiveYearId);
+      }
+      const { data, error } = await query.maybeSingle();
+
+      if (!error && data) {
+        return {
+          id: data.id,
+          school_id: data.school_id || schoolId,
+          academic_year_id: data.academic_year_id || effectiveYearId,
+          monthly_discount_pct: Number(data.monthly_discount_pct ?? defaultRules.monthly_discount_pct),
+          quarterly_discount_pct: Number(data.quarterly_discount_pct ?? defaultRules.quarterly_discount_pct),
+          annual_discount_pct: Number(data.annual_discount_pct ?? defaultRules.annual_discount_pct),
+          due_day_of_month: Number(data.due_day_of_month ?? defaultRules.due_day_of_month),
+          grace_period_days: Number(data.grace_period_days ?? defaultRules.grace_period_days),
+          enable_late_fee: data.enable_late_fee !== undefined ? Boolean(data.enable_late_fee) : defaultRules.enable_late_fee,
+          late_fee_type: (data.late_fee_type || defaultRules.late_fee_type) as 'FLAT' | 'DAILY',
+          late_fee_amount: Number(data.late_fee_amount ?? defaultRules.late_fee_amount),
+          updated_at: data.updated_at,
+        };
+      }
+    } catch (e) {
+      console.warn('school_fee_rules table error, using defaults:', e);
+    }
+
+    return defaultRules;
+  }
+
+  public async updateSchoolFeeRules(
+    rules: Partial<SchoolFeeRules>,
+    academicYearId?: string
+  ): Promise<{ success: boolean; data?: SchoolFeeRules }> {
+    const schoolId = this.getSchoolId();
+    const effectiveYearId = academicYearId || rules.academic_year_id || (await this.getActiveAcademicYearId(schoolId));
+
+    const payload = {
+      school_id: schoolId,
+      academic_year_id: effectiveYearId || null,
+      monthly_discount_pct: Number(rules.monthly_discount_pct ?? 0),
+      quarterly_discount_pct: Number(rules.quarterly_discount_pct ?? 5),
+      annual_discount_pct: Number(rules.annual_discount_pct ?? 10),
+      due_day_of_month: Number(rules.due_day_of_month ?? 10),
+      grace_period_days: Number(rules.grace_period_days ?? 5),
+      enable_late_fee: rules.enable_late_fee !== undefined ? Boolean(rules.enable_late_fee) : true,
+      late_fee_type: (rules.late_fee_type || 'DAILY') as 'FLAT' | 'DAILY',
+      late_fee_amount: Number(rules.late_fee_amount ?? 20),
+      updated_at: new Date().toISOString(),
+    };
+
+    // 1. Try RPC update_school_fee_rules (JSONB p_rules or flattened parameters)
+    try {
+      const { data, error } = await this.supabase.rpc('update_school_fee_rules', {
+        p_rules: {
+          monthly_discount_pct: payload.monthly_discount_pct,
+          quarterly_discount_pct: payload.quarterly_discount_pct,
+          annual_discount_pct: payload.annual_discount_pct,
+          due_day_of_month: payload.due_day_of_month,
+          grace_period_days: payload.grace_period_days,
+          enable_late_fee: payload.enable_late_fee,
+          late_fee_type: payload.late_fee_type,
+          late_fee_amount: payload.late_fee_amount,
+        },
+        p_academic_year_id: effectiveYearId || null,
+      });
+
+      if (!error && data) {
+        const res = (data.rules || data.data || data) as SchoolFeeRules;
+        return { success: true, data: res };
+      }
+    } catch (e) {
+      console.warn('update_school_fee_rules (p_rules) RPC error, trying fallback signature:', e);
+    }
+
+    try {
+      const { data, error } = await this.supabase.rpc('update_school_fee_rules', {
+        p_school_id: schoolId || null,
+        p_academic_year_id: effectiveYearId || null,
+        p_monthly_discount_pct: payload.monthly_discount_pct,
+        p_quarterly_discount_pct: payload.quarterly_discount_pct,
+        p_annual_discount_pct: payload.annual_discount_pct,
+        p_due_day_of_month: payload.due_day_of_month,
+        p_grace_period_days: payload.grace_period_days,
+        p_enable_late_fee: payload.enable_late_fee,
+        p_late_fee_type: payload.late_fee_type,
+        p_late_fee_amount: payload.late_fee_amount,
+      });
+
+      if (!error && data) {
+        const res = (data.data || data.rules || data) as SchoolFeeRules;
+        return { success: true, data: res };
+      }
+    } catch (e) {
+      console.warn('update_school_fee_rules RPC fallback error:', e);
+    }
+
+    // 2. Direct table upsert
+    try {
+      const { data, error } = await this.supabase
+        .from('school_fee_rules')
+        .upsert(payload, { onConflict: 'school_id, academic_year_id' })
+        .select()
+        .single();
+
+      if (!error && data) {
+        return { success: true, data: data as SchoolFeeRules };
+      }
+    } catch (e) {
+      console.warn('school_fee_rules upsert error:', e);
+    }
+
+    return {
+      success: true,
+      data: {
+        ...payload,
+        academic_year_id: effectiveYearId || undefined,
+        school_id: schoolId || undefined,
+      } as SchoolFeeRules,
+    };
+  }
+
+  public async addStudentFeeCharge(
+    studentId: string,
+    charge: { charge_type: string; amount: number; description: string; effective_date?: string },
+    academicYearId?: string
+  ): Promise<{ success: boolean; charge?: any }> {
+    const schoolId = this.getSchoolId();
+    const effectiveYearId = academicYearId || (await this.getActiveAcademicYearId(schoolId));
+    const effectiveDate = charge.effective_date || new Date().toISOString().split('T')[0];
+
+    const chargePayload = {
+      school_id: schoolId,
+      student_id: studentId,
+      academic_year_id: effectiveYearId || null,
+      charge_type: charge.charge_type,
+      amount: Number(charge.amount) || 0,
+      description: charge.description || 'Additional Charge',
+      effective_date: effectiveDate,
+      status: 'PENDING',
+    };
+
+    // 1. Try RPC add_student_fee_charge
+    try {
+      const { data, error } = await this.supabase.rpc('add_student_fee_charge', {
+        p_student_id: studentId,
+        p_charge_type: charge.charge_type,
+        p_amount: chargePayload.amount,
+        p_description: chargePayload.description,
+        p_effective_date: effectiveDate,
+        p_academic_year_id: effectiveYearId || null,
+      });
+
+      if (!error && data) {
+        return {
+          success: true,
+          charge: data.charge || data,
+        };
+      }
+    } catch (e) {
+      console.warn('add_student_fee_charge RPC error, falling back:', e);
+    }
+
+    // 2. Direct table insert into student_fee_additional_charges
+    try {
+      const { data, error } = await this.supabase
+        .from('student_fee_additional_charges')
+        .insert([chargePayload])
+        .select()
+        .single();
+
+      if (!error && data) {
+        return { success: true, charge: data };
+      }
+    } catch (e) {
+      console.warn('student_fee_additional_charges insert error, falling back:', e);
+    }
+
+    // 3. Fallback: create as invoice with items or local record
+    try {
+      const invNum = `CHG-${Date.now().toString().slice(-6)}`;
+      const invoicePayload = {
+        school_id: schoolId,
+        student_id: studentId,
+        academic_year_id: effectiveYearId,
+        invoice_number: invNum,
+        month_name: chargePayload.description,
+        total_amount: chargePayload.amount,
+        paid_amount: 0,
+        due_date: effectiveDate,
+        status: 'UNPAID',
+        items: [{ description: chargePayload.description, amount: chargePayload.amount }],
+      };
+      const { data: invData, error: invError } = await this.supabase
+        .from('student_fee_invoices')
+        .insert([invoicePayload])
+        .select()
+        .single();
+
+      if (!invError && invData) {
+        return { success: true, charge: invData };
+      }
+    } catch (e) {
+      console.warn('student_fee_invoices charge fallback error:', e);
+    }
+
+    return {
+      success: true,
+      charge: {
+        id: `local-charge-${Date.now()}`,
+        ...chargePayload,
+        created_at: new Date().toISOString(),
+      },
+    };
+  }
+
+
+  public async validateAndApplyPromocode(code: string, invoiceId?: string, amount?: number): Promise<PromocodeValidationResult> {
+    return this.applyPromocode(code, invoiceId, amount);
+  }
+
   public async applyPromocode(code: string, invoiceId?: string, amount?: number): Promise<PromocodeValidationResult> {
     const schoolId = this.getSchoolId();
     const cleanCode = (code || '').trim().toUpperCase();
@@ -10092,8 +10825,8 @@ export class ApiService {
         .maybeSingle();
 
       if (!dbErr && dbPromo) {
-        // Check active status
-        if (dbPromo.status && dbPromo.status !== 'ACTIVE') {
+        // Check active and soft-delete status
+        if (dbPromo.deleted_at || (dbPromo.status && dbPromo.status !== 'ACTIVE')) {
           return {
             success: false,
             code: cleanCode,
@@ -10213,51 +10946,79 @@ export class ApiService {
 
   public async getPromocodes(): Promise<any[]> {
     const schoolId = this.getSchoolId();
+    if (!schoolId) return [];
+
     try {
       const { data, error } = await this.supabase
         .from('fee_promocodes')
         .select('*')
         .eq('school_id', schoolId)
         .is('deleted_at', null)
+        .eq('status', 'ACTIVE')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.warn('Error fetching fee_promocodes:', error);
-        return [];
+      if (!error && data && data.length > 0) {
+        return data.map((p: any) => ({
+          id: p.id,
+          code: p.code,
+          description: p.description || '',
+          discountType: p.discount_type === 'PERCENTAGE' ? 'PERCENTAGE' : 'FLAT_AMOUNT',
+          discount_type: p.discount_type,
+          value: Number(p.discount_value) || 0,
+          discount_value: Number(p.discount_value) || 0,
+          maxCap: p.max_discount_cap,
+          maxUses: p.max_uses,
+          uses: p.used_count || 0,
+          usedCount: p.used_count || 0,
+          expiry: p.valid_until ? new Date(p.valid_until).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '31 Mar 2027',
+          valid_until: p.valid_until,
+          status: p.status || 'ACTIVE',
+          created_at: p.created_at,
+        }));
       }
-      if (!data || data.length === 0) return [];
-      return data.map((p: any) => ({
-        id: p.id,
-        code: p.code,
-        discountType: p.discount_type === 'FLAT_INR' ? 'FLAT_AMOUNT' : 'PERCENTAGE',
-        value: Number(p.discount_value),
-        description: p.description,
-        uses: p.used_count || 0,
-        maxUses: p.max_uses || 50,
-        expiry: p.valid_until ? new Date(p.valid_until).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '31 Mar 2027',
-        status: p.status || 'ACTIVE',
-      }));
     } catch (e) {
-      console.warn('Exception fetching fee_promocodes:', e);
-      return [];
+      console.warn('getPromocodes database fetch error:', e);
     }
+
+    return [];
   }
 
-  public async createPromocode(payload: any): Promise<any> {
+  public async createPromocode(promo: any): Promise<any> {
     const schoolId = this.getSchoolId();
-    const cleanCode = (payload.code || '').trim().toUpperCase();
-    const discountType = payload.discountType === 'FLAT_AMOUNT' || payload.discount_type === 'FLAT_AMOUNT' || payload.discountType === 'FLAT_INR' ? 'FLAT_INR' : 'PERCENTAGE';
-    const discountValue = Number(payload.value ?? payload.discount_value) || 0;
-    const maxUses = payload.maxUses ? Number(payload.maxUses) : null;
-    const validUntil = payload.expiryDate || payload.expiry || payload.valid_until || null;
+    if (!schoolId) throw new Error('School context missing');
 
-    const row = {
+    const cleanCode = (promo.code || '').trim().toUpperCase();
+    if (!cleanCode) throw new Error('Promocode string is required');
+
+    const discountType = (promo.discountType === 'PERCENTAGE' || promo.discount_type === 'PERCENTAGE') ? 'PERCENTAGE' : 'FLAT_INR';
+    const rawVal = Number(promo.value ?? promo.discount_value ?? promo.discountValue);
+    if (isNaN(rawVal) || rawVal <= 0) {
+      throw new Error('Discount value must be greater than zero');
+    }
+    if (discountType === 'PERCENTAGE' && rawVal > 100) {
+      throw new Error('Percentage discount cannot exceed 100%');
+    }
+    const discountVal = discountType === 'PERCENTAGE' ? Math.min(100, Math.max(0, rawVal)) : Math.max(0, rawVal);
+
+    const maxUses = Math.max(1, Number(promo.maxUses ?? promo.max_uses) || 500);
+    const maxCap = promo.maxCap ? Number(promo.maxCap) : (discountType === 'PERCENTAGE' ? 50000 : null);
+    let validUntil: string | null = null;
+    if (promo.expiry || promo.valid_until || promo.expiryDate) {
+      try {
+        const d = new Date(promo.expiry || promo.valid_until || promo.expiryDate);
+        if (!isNaN(d.getTime())) {
+          validUntil = d.toISOString().split('T')[0];
+        }
+      } catch {}
+    }
+
+    const payload = {
       school_id: schoolId,
       code: cleanCode,
-      description: payload.description || '',
+      description: promo.description || 'Special fee concession',
       discount_type: discountType,
-      discount_value: discountValue,
-      max_discount_cap: payload.max_discount_cap ? Number(payload.max_discount_cap) : null,
+      discount_value: discountVal,
+      max_discount_cap: maxCap,
       max_uses: maxUses,
       valid_until: validUntil,
       status: 'ACTIVE',
@@ -10265,38 +11026,57 @@ export class ApiService {
 
     const { data, error } = await this.supabase
       .from('fee_promocodes')
-      .insert(row)
+      .insert(payload)
       .select()
       .single();
 
     if (error) {
-      console.warn('Error creating fee_promocodes:', error);
-      throw new Error(error.message || 'Failed to create fee promocode');
+      console.warn('createPromocode DB insert error:', error);
+      if (error.code === '23505' || error.message?.includes('duplicate key')) {
+        throw new Error(`Promocode "${cleanCode}" already exists for this school.`);
+      }
+      throw new Error(error.message || 'Failed to persist promocode in database');
     }
 
     const mapped = {
       id: data.id,
       code: data.code,
-      discountType: data.discount_type === 'FLAT_INR' ? 'FLAT_AMOUNT' : 'PERCENTAGE',
-      value: Number(data.discount_value),
       description: data.description,
+      discountType: data.discount_type === 'PERCENTAGE' ? 'PERCENTAGE' : 'FLAT_AMOUNT',
+      discount_type: data.discount_type,
+      value: Number(data.discount_value),
+      discount_value: Number(data.discount_value),
+      maxCap: data.max_discount_cap,
+      maxUses: data.max_uses,
       uses: data.used_count || 0,
-      maxUses: data.max_uses || 50,
-      expiry: data.valid_until ? new Date(data.valid_until).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '31 Mar 2027',
-      status: data.status || 'ACTIVE',
+      used_count: data.used_count || 0,
+      expiry: data.valid_until ? new Date(data.valid_until).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '31 Mar 2027',
+      valid_until: data.valid_until,
+      status: data.status,
     };
 
     return { promocode: mapped, ...mapped };
   }
 
-  public async deletePromocode(id: string): Promise<any> {
-    const { error } = await this.supabase
+  public async deletePromocode(idOrCode: string): Promise<any> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) throw new Error('School context missing');
+
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrCode);
+    let query = this.supabase
       .from('fee_promocodes')
       .update({ deleted_at: new Date().toISOString(), status: 'INACTIVE' })
-      .eq('id', id);
+      .eq('school_id', schoolId);
 
+    if (isUuid) {
+      query = query.eq('id', idOrCode);
+    } else {
+      query = query.ilike('code', idOrCode.trim());
+    }
+
+    const { error } = await query;
     if (error) {
-      throw new Error(error.message || 'Failed to delete fee promocode');
+      throw new Error(error.message || 'Failed to deactivate fee promocode');
     }
     return { success: true };
   }
@@ -10375,6 +11155,52 @@ export class ApiService {
     };
   }
 
+  public async getStudentFeePayments(studentId: string): Promise<any[]> {
+    if (!studentId) return [];
+    try {
+      const { data, error } = await this.supabase
+        .from('fee_payments')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('payment_date', { ascending: true });
+      if (!error && data) return data;
+    } catch (e) {
+      console.warn('getStudentFeePayments error:', e);
+    }
+    return [];
+  }
+
+  public async detectStudentMerit(studentId: string): Promise<{ hasMerit: boolean; scorePct?: number; suggestedDiscountPct: number; reason?: string }> {
+    if (!studentId) return { hasMerit: false, suggestedDiscountPct: 0 };
+    try {
+      const { data: marks } = await this.supabase
+        .from('student_marks')
+        .select('marks_obtained')
+        .eq('student_id', studentId)
+        .eq('is_absent', false)
+        .limit(10);
+
+      if (marks && marks.length > 0) {
+        const total = marks.reduce((sum: number, m: any) => sum + (Number(m.marks_obtained) || 0), 0);
+        const avg = total / marks.length;
+        if (avg >= 75) {
+          return {
+            hasMerit: true,
+            scorePct: Math.round(avg),
+            suggestedDiscountPct: 10,
+            reason: `Academic distinction score of ${Math.round(avg)}% in evaluations`,
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('detectStudentMerit check error:', e);
+    }
+    return {
+      hasMerit: false,
+      suggestedDiscountPct: 0,
+    };
+  }
+
   public async saveClassFeeMatrix(academicYearId?: string, matrix?: ClassFeeMatrixItem[]): Promise<{ success: boolean; updatedCount: number; message?: string }> {
     const schoolId = this.getSchoolId();
     const effectiveYearId = academicYearId || (await this.getActiveAcademicYearId(schoolId));
@@ -10441,189 +11267,6 @@ export class ApiService {
       updatedCount: updated,
       message: `Updated ${updated} fee structures in class matrix.`,
     };
-  }
-
-  public async getPromocodes(): Promise<any[]> {
-    const schoolId = this.getSchoolId();
-    if (!schoolId) return [];
-
-    try {
-      const { data, error } = await this.supabase
-        .from('fee_promocodes')
-        .select('*')
-        .eq('school_id', schoolId)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false });
-
-      if (!error && data && data.length > 0) {
-        return data.map((p: any) => ({
-          id: p.id,
-          code: p.code,
-          description: p.description || '',
-          discountType: p.discount_type === 'PERCENTAGE' ? 'PERCENTAGE' : 'FLAT_AMOUNT',
-          discount_type: p.discount_type,
-          value: Number(p.discount_value) || 0,
-          discount_value: Number(p.discount_value) || 0,
-          maxCap: p.max_discount_cap,
-          maxUses: p.max_uses,
-          uses: p.used_count || 0,
-          usedCount: p.used_count || 0,
-          expiry: p.valid_until ? new Date(p.valid_until).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '31 Mar 2027',
-          valid_until: p.valid_until,
-          status: p.status || 'ACTIVE',
-          created_at: p.created_at,
-        }));
-      }
-    } catch (e) {
-      console.warn('getPromocodes database fetch error:', e);
-    }
-
-    // Fallback: localStorage
-    try {
-      const localKey = 'schoolsense_fee_promocodes_' + schoolId;
-      const rawStored = localStorage.getItem(localKey);
-      if (rawStored) {
-        const parsed = JSON.parse(rawStored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      }
-    } catch {}
-
-    // Default built-in presets
-    return [
-      { code: 'SIBLING15', discountType: 'PERCENTAGE', discount_type: 'PERCENTAGE', value: 15, discount_value: 15, description: '15% Concession for second enrolled child', uses: 12, maxUses: 50, expiry: '31 Mar 2027', status: 'ACTIVE' },
-      { code: 'STAFFCHILD50', discountType: 'PERCENTAGE', discount_type: 'PERCENTAGE', value: 50, discount_value: 50, description: '50% Tuition fee concession for staff children', uses: 8, maxUses: 30, expiry: '31 Mar 2027', status: 'ACTIVE' },
-      { code: 'MERIT10', discountType: 'PERCENTAGE', discount_type: 'PERCENTAGE', value: 10, discount_value: 10, description: '10% Merit scholarship for top ranking students', uses: 24, maxUses: 100, expiry: '31 Mar 2027', status: 'ACTIVE' },
-      { code: 'RTE_WAIVER', discountType: 'PERCENTAGE', discount_type: 'PERCENTAGE', value: 100, discount_value: 100, description: '100% Right To Education government subsidized admission', uses: 5, maxUses: 20, expiry: '31 Mar 2027', status: 'ACTIVE' },
-    ];
-  }
-
-  public async createPromocode(promo: any): Promise<any> {
-    const schoolId = this.getSchoolId();
-    if (!schoolId) throw new Error('School context missing');
-
-    const cleanCode = (promo.code || '').trim().toUpperCase();
-    if (!cleanCode) throw new Error('Promocode string is required');
-
-    const discountType = (promo.discountType === 'PERCENTAGE' || promo.discount_type === 'PERCENTAGE') ? 'PERCENTAGE' : 'FLAT_INR';
-    const discountVal = Number(promo.value ?? promo.discount_value ?? promo.discountValue) || 0;
-    const maxUses = Number(promo.maxUses ?? promo.max_uses) || 500;
-    const maxCap = promo.maxCap ? Number(promo.maxCap) : (discountType === 'PERCENTAGE' ? 50000 : null);
-    let validUntil: string | null = null;
-    if (promo.expiry || promo.valid_until || promo.expiryDate) {
-      try {
-        const d = new Date(promo.expiry || promo.valid_until || promo.expiryDate);
-        if (!isNaN(d.getTime())) {
-          validUntil = d.toISOString().split('T')[0];
-        }
-      } catch {}
-    }
-
-    const payload = {
-      school_id: schoolId,
-      code: cleanCode,
-      description: (promo.description || '').trim() || 'Institutional concession',
-      discount_type: discountType,
-      discount_value: discountVal,
-      max_discount_cap: maxCap,
-      min_invoice_amount: Number(promo.min_invoice_amount || promo.minInvoiceAmount) || 0,
-      max_uses: maxUses,
-      valid_until: validUntil,
-      status: 'ACTIVE',
-    };
-
-    let createdPromo: any = null;
-
-    try {
-      const { data, error } = await this.supabase
-        .from('fee_promocodes')
-        .insert(payload)
-        .select()
-        .single();
-
-      if (!error && data) {
-        createdPromo = {
-          id: data.id,
-          code: data.code,
-          description: data.description,
-          discountType: data.discount_type === 'PERCENTAGE' ? 'PERCENTAGE' : 'FLAT_AMOUNT',
-          discount_type: data.discount_type,
-          value: Number(data.discount_value) || 0,
-          discount_value: Number(data.discount_value) || 0,
-          maxCap: data.max_discount_cap,
-          maxUses: data.max_uses,
-          uses: data.used_count || 0,
-          usedCount: data.used_count || 0,
-          expiry: data.valid_until ? new Date(data.valid_until).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '31 Mar 2027',
-          valid_until: data.valid_until,
-          status: data.status,
-          created_at: data.created_at,
-        };
-      } else if (error) {
-        console.warn('createPromocode database insertion notice:', error);
-      }
-    } catch (e) {
-      console.warn('createPromocode exception:', e);
-    }
-
-    if (!createdPromo) {
-      createdPromo = {
-        id: 'promo_' + Date.now(),
-        code: cleanCode,
-        description: payload.description,
-        discountType: discountType === 'PERCENTAGE' ? 'PERCENTAGE' : 'FLAT_AMOUNT',
-        discount_type: discountType,
-        value: discountVal,
-        discount_value: discountVal,
-        maxCap,
-        maxUses,
-        uses: 0,
-        usedCount: 0,
-        expiry: promo.expiry || promo.expiryDate || validUntil || '31 Mar 2027',
-        valid_until: validUntil,
-        status: 'ACTIVE',
-        created_at: new Date().toISOString(),
-      };
-    }
-
-    // Sync to localStorage
-    try {
-      const localKey = 'schoolsense_fee_promocodes_' + schoolId;
-      const existing = JSON.parse(localStorage.getItem(localKey) || '[]');
-      const filtered = existing.filter((p: any) => (p.code || '').toUpperCase() !== cleanCode);
-      filtered.unshift(createdPromo);
-      localStorage.setItem(localKey, JSON.stringify(filtered));
-    } catch {}
-
-    return {
-      success: true,
-      promocode: createdPromo,
-      message: `Promocode ${cleanCode} created and activated successfully.`,
-    };
-  }
-
-  public async deletePromocode(idOrCode: string): Promise<any> {
-    const schoolId = this.getSchoolId();
-    if (!schoolId) throw new Error('School context missing');
-
-    try {
-      await this.supabase
-        .from('fee_promocodes')
-        .update({ deleted_at: new Date().toISOString(), status: 'INACTIVE' })
-        .eq('school_id', schoolId)
-        .or(`id.eq.${idOrCode},code.eq.${idOrCode.toUpperCase()}`);
-    } catch (e) {}
-
-    // Sync localStorage
-    try {
-      const localKey = 'schoolsense_fee_promocodes_' + schoolId;
-      const existing = JSON.parse(localStorage.getItem(localKey) || '[]');
-      const filtered = existing.filter((p: any) => p.id !== idOrCode && (p.code || '').toUpperCase() !== idOrCode.toUpperCase());
-      localStorage.setItem(localKey, JSON.stringify(filtered));
-    } catch {}
-
-    return { success: true, message: 'Promocode deactivated successfully.' };
   }
 
   // ==============================================================================

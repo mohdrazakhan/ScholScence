@@ -236,10 +236,8 @@ set search_path = public, extensions
 as $$
 begin
   perform set_config('response.status', '403', true);
-  perform set_config('response.headers', '[{"Content-Encoding": "deflate"}]', true);
   return jsonb_build_object(
-    'hint', 'This API can only be accessed through the official SchoolSense application.',
-    'message', 'Access denied: Unauthorized API client or replayed request signature.'
+    'message', 'Access denied. This API can only be accessed through the official SchoolSense application.'
   );
 end;
 $$;
@@ -275,9 +273,8 @@ begin
 
   if not public.verify_request_signature(null, null, null) then
     perform set_config('response.status', '403', true);
-    raise exception 'Access denied: Unauthorized API client or replayed request signature.'
-      using errcode = '42501',
-            hint = 'This API can only be accessed through the official SchoolSense application.';
+    raise exception 'Access denied. This API can only be accessed through the official SchoolSense application.'
+      using errcode = '42501';
   end if;
 
   v_token := coalesce(current_setting('request.headers', true), '{}')::jsonb ->> 'x-schoolsense-token';
@@ -303,9 +300,8 @@ begin
 
   if not public.verify_request_signature(v_sess.id, v_sess.signing_secret, v_token) then
     perform set_config('response.status', '403', true);
-    raise exception 'Access denied: Unauthorized API client or replayed request signature.'
-      using errcode = '42501',
-            hint = 'This API can only be accessed through the official SchoolSense application.';
+    raise exception 'Access denied. This API can only be accessed through the official SchoolSense application.'
+      using errcode = '42501';
   end if;
 
   v_out := jsonb_build_object(
@@ -895,6 +891,7 @@ end;
 $$;
 grant execute on function public.get_class_details(text, text) to anon, authenticated, service_role;
 
+drop function if exists public.search_schools(text);
 create or replace function public.search_schools(p_query text)
 returns table (
   id uuid,
@@ -912,9 +909,9 @@ declare
   v_cleaned text;
 begin
   if not public.verify_request_signature(null, null, null) then
-    raise exception 'Access denied: Unauthorized API client or replayed request signature.'
-      using errcode = '42501',
-            hint = 'This API can only be accessed through the official SchoolSense application.';
+    perform set_config('response.status', '403', true);
+    raise exception 'Access denied. This API can only be accessed through the official SchoolSense application.'
+      using errcode = '42501';
   end if;
 
   v_cleaned := trim(coalesce(p_query, ''));
@@ -1755,6 +1752,7 @@ $$;
 revoke all on function public.is_valid_uuid_text(text) from public, anon, authenticated;
 
 -- 12c. Harden search_schools() against SQLi and LIKE wildcard (% / _) scraping
+drop function if exists public.search_schools(text);
 create or replace function public.search_schools(p_query text)
 returns table (
   id uuid,
@@ -1773,9 +1771,8 @@ declare
 begin
   if not public.verify_request_signature(null, null, null) or public.is_sql_injection_attempt(p_query) then
     perform set_config('response.status', '403', true);
-    raise exception 'Access denied: Unauthorized API client or replayed request signature.'
-      using errcode = '42501',
-            hint = 'This API can only be accessed through the official SchoolSense application.';
+    raise exception 'Access denied. This API can only be accessed through the official SchoolSense application.'
+      using errcode = '42501';
   end if;
 
   -- Strip SQL wildcards (%, _, \) and quotes/semicolons so '%' cannot dump all schools
@@ -2018,17 +2015,15 @@ begin
   -- Block any SQL injection payload in URL path immediately
   if public.is_sql_injection_attempt(v_req_path) then
     perform set_config('response.status', '403', true);
-    raise exception 'Access denied: Unauthorized API client or replayed request signature.'
-      using errcode = '42501',
-            hint = 'This API can only be accessed through the official SchoolSense application.';
+    raise exception 'Access denied. This API can only be accessed through the official SchoolSense application.'
+      using errcode = '42501';
   end if;
 
   -- Enforce signature + single-use nonce at the PostgREST gateway for ALL endpoints (both /table and /rpc/*)
   if not public.verify_request_signature(null, null, null) then
     perform set_config('response.status', '403', true);
-    raise exception 'Access denied: Unauthorized API client or replayed request signature.'
-      using errcode = '42501',
-            hint = 'This API can only be accessed through the official SchoolSense application.';
+    raise exception 'Access denied. This API can only be accessed through the official SchoolSense application.'
+      using errcode = '42501';
   end if;
 end;
 $$;

@@ -370,7 +370,9 @@ declare
 begin
   -- 0. Enforce Anti-Postman / Request Signature Verification on Login
   if not public.verify_request_signature(null, null, null) then
-    raise exception 'Access denied: Invalid or expired client security signature.';
+    perform set_config('response.status', '403', true);
+    raise exception 'Access denied. This API can only be accessed through the official SchoolSense application.'
+      using errcode = '42501';
   end if;
 
   -- 1. Input Validation

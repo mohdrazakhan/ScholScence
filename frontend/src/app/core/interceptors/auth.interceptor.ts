@@ -43,11 +43,13 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       error: (err: HttpErrorResponse) => {
         console.error(`❌ [API Error ${err.status}] ${authReq.method} ${authReq.urlWithParams}`, err);
         if (err.status === 403) {
-          const msg = err.error?.message || '';
+          const msg = err.error?.message || err.error?.hint || 'Access denied. This API can only be accessed through the official SchoolSense application.';
           if (typeof msg === 'string' && msg.includes('disabled for this institution')) {
             toast.error(msg);
             authService.fetchProfile().subscribe();
             router.navigate(['/dashboard']);
+          } else {
+            toast.error(typeof msg === 'string' ? msg : 'Access denied. This API can only be accessed through the official SchoolSense application.');
           }
         }
       },

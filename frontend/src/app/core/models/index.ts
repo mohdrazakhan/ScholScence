@@ -858,7 +858,9 @@ export interface StudentFeeInvoice {
   student_id: string;
   student_name?: string;
   admission_number?: string;
+  class_id?: string;
   class_name?: string;
+  section_id?: string;
   section_name?: string;
   academic_year_id?: string;
   invoice_number: string;
@@ -1068,5 +1070,85 @@ export interface DepartmentalStaffUser {
   created_at?: string;
   updated_at?: string;
 }
+
+export interface StudentFeeLedgerEntry {
+  date: string;
+  type: 'INVOICE' | 'PAYMENT' | 'CONCESSION' | 'OPENING_BALANCE' | 'CHARGE' | 'ADDITIONAL_CHARGE';
+  referenceNumber: string;
+  description: string;
+  debit: number;
+  credit: number;
+  runningBalance: number;
+  status?: string;
+  paymentMode?: string;
+}
+
+export interface StudentFeeLedgerStatement {
+  studentId: string;
+  studentName: string;
+  admissionNumber: string;
+  className: string;
+  sectionName: string;
+  academicYearId: string;
+  academicYearName: string;
+  frequencyPreference: 'MONTHLY' | 'QUARTERLY' | 'ANNUAL';
+  annualConcessionPct?: number;
+  totalBilled: number;
+  totalPaid: number;
+  totalDiscount: number;
+  netBilled: number;
+  advanceBalance: number;
+  pendingDue: number;
+  invoices: StudentFeeInvoice[];
+  payments: any[];
+  ledgerEntries: StudentFeeLedgerEntry[];
+  generatedAt: string;
+}
+
+export interface StudentFeePreference {
+  id?: string;
+  schoolId?: string;
+  school_id?: string;
+  studentId: string;
+  student_id?: string;
+  academicYearId?: string;
+  academic_year_id?: string;
+  frequency: 'MONTHLY' | 'QUARTERLY' | 'ANNUAL';
+  annualConcessionPct?: number;
+  annual_concession_pct?: number;
+  notes?: string;
+  updatedAt?: string;
+  updated_at?: string;
+}
+
+export interface SchoolFeeRules {
+  id?: string;
+  school_id?: string;
+  academic_year_id?: string;
+  monthly_discount_pct: number;
+  quarterly_discount_pct: number;
+  annual_discount_pct: number;
+  due_day_of_month: number;
+  grace_period_days: number;
+  enable_late_fee: boolean;
+  late_fee_type: 'FLAT' | 'DAILY';
+  late_fee_amount: number;
+  updated_at?: string;
+}
+
+export interface StudentFeeAdditionalCharge {
+  id?: string;
+  school_id?: string;
+  student_id: string;
+  academic_year_id?: string;
+  charge_type: 'ADMISSION' | 'FINE_PENALTY' | 'EXAM' | 'ANNUAL' | 'OTHER';
+  amount: number;
+  description: string;
+  effective_date: string;
+  status?: 'PENDING' | 'PAID';
+  created_at?: string;
+}
+
+
 
 

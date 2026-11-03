@@ -1,4 +1,4 @@
-import { Component, OnInit, effect } from '@angular/core';
+import { Component, OnInit, effect, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
@@ -14,6 +14,10 @@ import {
   Student80cCertificate,
   StudentSiblingInfo,
   ClassFeeMatrixItem,
+  StudentFeeLedgerStatement,
+  StudentFeeLedgerEntry,
+  StudentFeePreference,
+  SchoolFeeRules,
 } from '../../core/models';
 
 @Component({
@@ -21,66 +25,32 @@ import {
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
-    <div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto animate-fadeIn">
+    <div class="space-y-6 animate-fadeIn">
       
       <!-- ============================================================== -->
-      <!-- WORKSPACE TABS & HEADER ACTIONS                                -->
+      <!-- STANDARD PAGE TITLE HEADER (Consistent with Academics/Exams)   -->
       <!-- ============================================================== -->
-      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-200/80 pb-3">
-        <!-- 5-Tab Navigation -->
-        <div class="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0">
-          <!-- Tab 1: Student Ledger -->
-          <button (click)="setTab('INVOICES')"
-                  class="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 active:scale-95"
-                  [ngClass]="activeTab === 'INVOICES' ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span>Student Ledger ({{ invoices.length }})</span>
-          </button>
-
-          <!-- Tab 2: Fee Structures & Heads -->
-          <button (click)="setTab('MATRIX')"
-                  class="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 active:scale-95"
-                  [ngClass]="activeTab === 'MATRIX' ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
-            <span>Fee Structures ({{ structures.length }})</span>
-          </button>
-
-          <!-- Tab 3: Daily Day-Book & Cashier -->
-          <button (click)="setTab('DAYBOOK')"
-                  class="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 active:scale-95"
-                  [ngClass]="activeTab === 'DAYBOOK' ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            <span>Daily Day-Book</span>
-          </button>
-
-          <!-- Tab 4: Concessions & Promocodes -->
-          <button *ngIf="canManage" (click)="setTab('PROMOCODES')"
-                  class="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 active:scale-95"
-                  [ngClass]="activeTab === 'PROMOCODES' ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-            </svg>
-            <span>Concessions</span>
-          </button>
-
-          <!-- Tab 5: Defaulters & Late Fees -->
-          <button (click)="setTab('DEFAULTERS')"
-                  class="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 active:scale-95"
-                  [ngClass]="activeTab === 'DEFAULTERS' ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>Defaulters ({{ defaultersCount }})</span>
-          </button>
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div class="min-w-0">
+          <h1 *ngIf="activeTab === 'DAYBOOK'" class="text-lg sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
+            Cashier Day-Book & Shift Reconciler
+          </h1>
+          <h1 *ngIf="activeTab === 'INVOICES'" class="text-lg sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
+            Student Ledger & Fee Invoices
+          </h1>
+          <h1 *ngIf="activeTab === 'MATRIX'" class="text-lg sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
+            Configured Fee Structures & Heads
+          </h1>
+          <h1 *ngIf="activeTab === 'PROMOCODES'" class="text-lg sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
+            Fee Settings & Discount Policies
+          </h1>
+          <p *ngIf="activeTab === 'DAYBOOK'" class="text-xs text-slate-500 mt-0.5">Audit-ready breakdown of cash, UPI, cheque, and bank remittances for daily collection reconciliation.</p>
+          <p *ngIf="activeTab === 'INVOICES'" class="text-xs text-slate-500 mt-0.5">Student billing schedules, pending dues, advance ledger balances, and payment histories.</p>
+          <p *ngIf="activeTab === 'MATRIX'" class="text-xs text-slate-500 mt-0.5">Manage grade-wise fee heads, amounts, due days, and billing cycles.</p>
+          <p *ngIf="activeTab === 'PROMOCODES'" class="text-xs text-slate-500 mt-0.5">Configure billing frequency discounts, late fine rules, and approved promo codes.</p>
         </div>
 
-        <!-- Inline Actions & Session Info -->
+        <!-- Top Header Contextual Actions & Session Badge -->
         <div class="flex items-center gap-2 flex-wrap shrink-0">
           <!-- Active Session Badge -->
           <div class="px-3 py-2 rounded-xl bg-slate-100 text-slate-800 text-xs font-bold border border-slate-200/80 flex items-center gap-1.5 shadow-2xs">
@@ -88,8 +58,9 @@ import {
             <span>Session: <strong class="text-slate-900">{{ auth.activeSessionName() }}</strong></span>
           </div>
 
-          <!-- Collect Fee Button -->
-          <button (click)="openCollectFeeModal()"
+          <!-- Collect Fee: ONLY on DAYBOOK and INVOICES tabs -->
+          <button *ngIf="activeTab === 'DAYBOOK' || activeTab === 'INVOICES'"
+                  (click)="openCollectFeeModal()"
                   class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -97,16 +68,63 @@ import {
             <span>Collect Fee</span>
           </button>
 
-          <!-- Add Fee Structure (in MATRIX tab) -->
+          <!-- Add Fee Structure: ONLY on MATRIX tab -->
           <button *ngIf="canManage && activeTab === 'MATRIX'"
                   (click)="openAddStructureModal()"
                   class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
             </svg>
-            <span>+ Add Fee Structure</span>
+            <span>Add Fee Structure</span>
           </button>
         </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- WORKSPACE NAVIGATION TABS STRIP                                -->
+      <!-- ============================================================== -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200/80">
+        <!-- Position 1: Daily Day-Book & Cashier (Default) -->
+        <button (click)="setTab('DAYBOOK')"
+                class="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 active:scale-95"
+                [ngClass]="activeTab === 'DAYBOOK' ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          <span>Daily Day-Book</span>
+        </button>
+
+        <!-- Position 2: Student Ledger -->
+        <button (click)="setTab('INVOICES')"
+                class="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 active:scale-95"
+                [ngClass]="activeTab === 'INVOICES' ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span>Student Ledger ({{ invoices.length }})</span>
+        </button>
+
+        <!-- Position 3: Fee Structures & Heads -->
+        <button (click)="setTab('MATRIX')"
+                class="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 active:scale-95"
+                [ngClass]="activeTab === 'MATRIX' ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          <span>Fee Structures ({{ structures.length }})</span>
+        </button>
+
+        <!-- Position 4: Settings Gear Button (Concessions & Rules) -->
+        <button *ngIf="canManage" (click)="setTab('PROMOCODES')"
+                title="Fee Settings & Concessions"
+                class="px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-95"
+                [ngClass]="activeTab === 'PROMOCODES' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span>Fee Settings</span>
+        </button>
       </div>
 
       <!-- ============================================================== -->
@@ -194,7 +212,7 @@ import {
           </div>
 
           <!-- Invoices Roster Table -->
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto min-h-[320px]">
             <table class="w-full text-left text-xs border-collapse">
               <thead>
                 <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px]">
@@ -219,9 +237,18 @@ import {
                   <td class="py-3 px-4 font-bold text-slate-600">{{ inv.month_name }}</td>
                   <td class="py-3 px-4 font-black text-slate-900">₹{{ inv.total_amount | number:'1.0-0' }}</td>
                   <td class="py-3 px-4">
-                    <div class="font-bold text-emerald-700">₹{{ inv.paid_amount | number:'1.0-0' }}</div>
-                    <div class="text-[10px]" [ngClass]="(inv.total_amount - inv.paid_amount) > 0 ? 'text-rose-600 font-bold' : 'text-slate-400'">
+                    <div class="font-bold text-slate-900">₹{{ inv.paid_amount | number:'1.0-0' }}</div>
+                    <!-- If paid < total (Pending Due) -->
+                    <div *ngIf="inv.total_amount > inv.paid_amount" class="text-[10px] text-rose-600 font-bold">
                       Due: ₹{{ (inv.total_amount - inv.paid_amount) | number:'1.0-0' }}
+                    </div>
+                    <!-- If paid > total (Advance Credit) -->
+                    <div *ngIf="inv.paid_amount > inv.total_amount" class="mt-0.5 inline-flex items-center text-[10px] text-emerald-800 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200">
+                      Advance: +₹{{ (inv.paid_amount - inv.total_amount) | number:'1.0-0' }}
+                    </div>
+                    <!-- If paid === total (Fully Settled) -->
+                    <div *ngIf="inv.total_amount === inv.paid_amount" class="text-[10px] text-slate-400 font-medium">
+                      Settled (₹0)
                     </div>
                   </td>
                   <td class="py-3 px-4">
@@ -237,30 +264,68 @@ import {
                   </td>
                   <td class="py-3 px-4 text-right whitespace-nowrap">
                     <div class="flex items-center justify-end gap-1.5 whitespace-nowrap flex-nowrap">
-                      <!-- Collect Payment (if unpaid/partial) -->
+                      <!-- Direct Visible Collect Payment Button (if unpaid/partial) -->
                       <button *ngIf="inv.status !== 'PAID'"
                               (click)="openCollectFeeForInvoice(inv)"
-                              class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs cursor-pointer shadow-2xs active:scale-95">
+                              class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs cursor-pointer shadow-2xs active:scale-95 transition-all">
                         Collect
                       </button>
 
-                      <!-- Print Official Receipt (if payment made) -->
-                      <button *ngIf="inv.paid_amount > 0 || inv.status === 'PAID'"
-                              (click)="printFeeReceipt(inv)"
-                              title="Print Official Fee Receipt"
-                              class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer">
-                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                        </svg>
-                      </button>
+                      <!-- Three Dots Action Button (⋮) -->
+                      <div class="relative inline-block text-left">
+                        <button (click)="toggleActionDropdown(inv.id, $event)"
+                                class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer border border-slate-200/80 active:scale-95"
+                                title="More actions">
+                          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                          </svg>
+                        </button>
 
-                      <!-- Generate 80C Certificate (if payment made) -->
-                      <button *ngIf="inv.paid_amount > 0"
-                              (click)="generate80cCertificate(inv)"
-                              title="Generate Income Tax Sec 80C Tuition Fee Certificate"
-                              class="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg font-bold text-[10px] cursor-pointer active:scale-95">
-                        80C Cert
-                      </button>
+                        <!-- Dropdown Menu -->
+                        <div *ngIf="openDropdownInvoiceId === inv.id"
+                             (click)="$event.stopPropagation()"
+                             class="absolute right-0 mt-1 w-52 bg-white rounded-2xl shadow-xl border border-slate-200/90 py-1.5 z-30 animate-fadeIn text-xs text-left">
+                          
+                          <!-- View Student Ledger Statement -->
+                          <button (click)="openStudentLedgerModal(inv); closeActionDropdown()"
+                                  class="w-full px-3 py-2 text-slate-800 hover:bg-slate-50 flex items-center gap-2 cursor-pointer transition-colors font-bold border-b border-slate-100">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                            <span>View Student Ledger</span>
+                          </button>
+
+                          <!-- Print Fee Receipt -->
+                          <button *ngIf="inv.paid_amount > 0 || inv.status === 'PAID'"
+                                  (click)="printFeeReceipt(inv); closeActionDropdown()"
+                                  class="w-full px-3 py-2 text-slate-700 hover:bg-slate-50 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors">
+                            <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            </svg>
+                            <span>Print Fee Receipt</span>
+                          </button>
+
+                          <!-- Print 80C Certificate -->
+                          <button *ngIf="inv.paid_amount > 0"
+                                  (click)="generate80cCertificate(inv); closeActionDropdown()"
+                                  class="w-full px-3 py-2 text-indigo-700 hover:bg-indigo-50 flex items-center gap-2 cursor-pointer transition-colors font-medium">
+                            <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>Print 80C Certificate</span>
+                          </button>
+
+                          <!-- Send Fee Reminder -->
+                          <button *ngIf="inv.status !== 'PAID'"
+                                  (click)="sendSingleFeeReminder(inv); closeActionDropdown()"
+                                  class="w-full px-3 py-2 text-amber-700 hover:bg-amber-50 flex items-center gap-2 cursor-pointer transition-colors font-medium">
+                            <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <span>Send Fee Reminder</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -337,19 +402,9 @@ import {
 
         <!-- Structure Cards List (when classes exist) -->
         <div *ngIf="classes.length > 0" class="bg-white rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] p-6 space-y-5">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-            <div>
-              <h3 class="text-base font-black text-slate-900">Configured Fee Structures & Heads</h3>
-              <p class="text-xs text-slate-500 mt-0.5">Manage grade-wise fee heads, amounts, due days, and billing cycles.</p>
-            </div>
-            
-            <button *ngIf="canManage" (click)="openAddStructureModal()"
-                    class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 self-start sm:self-auto">
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-              <span>+ Add Fee Structure</span>
-            </button>
+          <div class="pb-3 border-b border-slate-100">
+            <h3 class="text-base font-black text-slate-900">Configured Fee Structures & Heads</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Manage grade-wise fee heads, amounts, due days, and billing cycles.</p>
           </div>
 
           <!-- Empty State when 0 structures exist -->
@@ -519,7 +574,143 @@ import {
       <!-- ============================================================== -->
       <!-- TAB 4: CONCESSIONS & PROMOCODES DESK                           -->
       <!-- ============================================================== -->
-      <div *ngIf="activeTab === 'PROMOCODES'" class="space-y-4 animate-fadeIn">
+      <div *ngIf="activeTab === 'PROMOCODES'" class="space-y-6 animate-fadeIn">
+
+        <!-- CARD 1: FEE BILLING RULES & LATE FEE ENGINE POLICY -->
+        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] p-6 space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+            <div>
+              <span class="text-[10px] font-black uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-200/60">
+                CAMPUS REVENUE POLICY
+              </span>
+              <h3 class="text-base font-black text-slate-900 mt-1 flex items-center gap-2">
+                <span>Fee Billing Rules & Late Fee Policy Engine</span>
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5">Define frequency discounts for parents and automated late fee penalty rules for delayed payments.</p>
+            </div>
+
+            <!-- Save Fee Rules Button -->
+            <button *ngIf="canManage"
+                    (click)="saveSchoolFeeRules()"
+                    [disabled]="savingFeeRules"
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95 shrink-0">
+              <svg *ngIf="savingFeeRules" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <svg *ngIf="!savingFeeRules" class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>{{ savingFeeRules ? 'Saving Rules...' : 'Save Fee Rules' }}</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Left Column: Billing Frequency Concessions -->
+            <div class="p-5 rounded-2xl bg-indigo-50/50 border border-indigo-100 space-y-4">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                  %
+                </div>
+                <div>
+                  <h4 class="font-bold text-slate-900 text-xs">Payment Frequency Concessions</h4>
+                  <p class="text-[11px] text-slate-500">Incentivize parents to pay upfront for quarterly or annual sessions</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-3 pt-2">
+                <!-- Monthly % -->
+                <div class="bg-white p-3 rounded-xl border border-indigo-200/70 shadow-2xs space-y-1.5">
+                  <span class="text-[10px] font-bold uppercase text-slate-500 block">Monthly Plan</span>
+                  <div class="flex items-center gap-1">
+                    <input type="number" [(ngModel)]="schoolFeeRules.monthly_discount_pct" min="0" max="100" class="w-full text-base font-black text-slate-900 focus:outline-none" />
+                    <span class="text-xs font-bold text-slate-400">%</span>
+                  </div>
+                  <span class="text-[9px] text-slate-400 block">Default: 0%</span>
+                </div>
+
+                <!-- Quarterly % -->
+                <div class="bg-white p-3 rounded-xl border border-indigo-200/70 shadow-2xs space-y-1.5">
+                  <span class="text-[10px] font-bold uppercase text-slate-500 block">Quarterly Plan</span>
+                  <div class="flex items-center gap-1">
+                    <input type="number" [(ngModel)]="schoolFeeRules.quarterly_discount_pct" min="0" max="100" class="w-full text-base font-black text-indigo-700 focus:outline-none" />
+                    <span class="text-xs font-bold text-indigo-700">%</span>
+                  </div>
+                  <span class="text-[9px] text-slate-400 block">Standard: 5%</span>
+                </div>
+
+                <!-- Annual % -->
+                <div class="bg-white p-3 rounded-xl border border-indigo-200/70 shadow-2xs space-y-1.5">
+                  <span class="text-[10px] font-bold uppercase text-slate-500 block">Annual Lump-Sum</span>
+                  <div class="flex items-center gap-1">
+                    <input type="number" [(ngModel)]="schoolFeeRules.annual_discount_pct" min="0" max="100" class="w-full text-base font-black text-emerald-700 focus:outline-none" />
+                    <span class="text-xs font-bold text-emerald-700">%</span>
+                  </div>
+                  <span class="text-[9px] text-slate-400 block">Recommended: 10%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Due Date & Late Fee Policy -->
+            <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-4">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-xl bg-slate-800 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                    ₹
+                  </div>
+                  <div>
+                    <h4 class="font-bold text-slate-900 text-xs">Due Date & Late Fee Engine</h4>
+                    <p class="text-[11px] text-slate-500">Grace period and fine penalty calculation</p>
+                  </div>
+                </div>
+
+                <!-- Enable Late Fee Toggle -->
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" [(ngModel)]="schoolFeeRules.enable_late_fee" class="sr-only peer" />
+                  <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600 relative"></div>
+                  <span class="text-xs font-bold text-slate-700">{{ schoolFeeRules.enable_late_fee ? 'Fine Active' : 'Disabled' }}</span>
+                </label>
+              </div>
+
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+                <!-- Due Day -->
+                <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs space-y-1">
+                  <span class="text-[10px] font-bold uppercase text-slate-500 block">Due Day of Month</span>
+                  <div class="flex items-center gap-1">
+                    <span class="text-xs font-bold text-slate-400">Day</span>
+                    <input type="number" [(ngModel)]="schoolFeeRules.due_day_of_month" min="1" max="31" class="w-full text-base font-black text-slate-900 focus:outline-none" />
+                  </div>
+                  <span class="text-[9px] text-slate-400 block">e.g. 10th of month</span>
+                </div>
+
+                <!-- Grace Period -->
+                <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs space-y-1">
+                  <span class="text-[10px] font-bold uppercase text-slate-500 block">Grace Period</span>
+                  <div class="flex items-center gap-1">
+                    <input type="number" [(ngModel)]="schoolFeeRules.grace_period_days" min="0" max="30" class="w-full text-base font-black text-slate-900 focus:outline-none" />
+                    <span class="text-xs font-bold text-slate-400">Days</span>
+                  </div>
+                  <span class="text-[9px] text-slate-400 block">e.g. 5 days post due</span>
+                </div>
+
+                <!-- Penalty Mode & Amount -->
+                <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs space-y-1 col-span-2 sm:col-span-1">
+                  <span class="text-[10px] font-bold uppercase text-slate-500 block">Late Fee Type</span>
+                  <div class="flex items-center gap-1 text-xs">
+                    <button type="button" (click)="schoolFeeRules.late_fee_type = 'FLAT'" [ngClass]="schoolFeeRules.late_fee_type === 'FLAT' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'" class="px-2 py-0.5 rounded font-bold cursor-pointer transition-all text-[10px]">Flat</button>
+                    <button type="button" (click)="schoolFeeRules.late_fee_type = 'DAILY'" [ngClass]="schoolFeeRules.late_fee_type === 'DAILY' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'" class="px-2 py-0.5 rounded font-bold cursor-pointer transition-all text-[10px]">Daily</button>
+                  </div>
+                  <div class="flex items-center gap-0.5 mt-1">
+                    <span class="text-xs font-bold text-slate-400">₹</span>
+                    <input type="number" [(ngModel)]="schoolFeeRules.late_fee_amount" min="0" class="w-full text-sm font-black text-rose-600 focus:outline-none" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 2: STUDENT CONCESSIONS & PROMOCODES DESK -->
         <div class="bg-white rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] p-6 space-y-5">
           
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
@@ -535,7 +726,7 @@ import {
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
               </svg>
-              <span>+ Generate Promocode</span>
+              <span>Generate Promocode</span>
             </button>
           </div>
 
@@ -619,74 +810,7 @@ import {
         </div>
       </div>
 
-      <!-- ============================================================== -->
-      <!-- TAB 5: DEFAULTERS & LATE FEES REGISTRY                         -->
-      <!-- ============================================================== -->
-      <div *ngIf="activeTab === 'DEFAULTERS'" class="space-y-4 animate-fadeIn">
-        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] p-6 space-y-4">
-          
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h3 class="text-base font-black text-slate-900">Outstanding Dues & Fee Defaulters Registry</h3>
-              <p class="text-xs text-slate-500 mt-0.5">Students with unpaid fee balances past the scheduled due date with dynamic late fine calculations</p>
-            </div>
 
-            <button (click)="sendBatchFeeReminders()"
-                    class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
-                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-              <span>Send SMS Dues Reminders</span>
-            </button>
-          </div>
-
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px]">
-                  <th class="py-3 px-4">Student Name</th>
-                  <th class="py-3 px-4">Class</th>
-                  <th class="py-3 px-4">Invoice No</th>
-                  <th class="py-3 px-4">Pending Dues</th>
-                  <th class="py-3 px-4">Due Date</th>
-                  <th class="py-3 px-4">Overdue Days</th>
-                  <th class="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
-                <tr *ngFor="let def of defaultersList" class="hover:bg-slate-50">
-                  <td class="py-3 px-4 font-bold text-slate-900">{{ def.student_name }} (Adm: {{ def.admission_number }})</td>
-                  <td class="py-3 px-4">{{ def.class_name }} - {{ def.section_name }}</td>
-                  <td class="py-3 px-4 font-mono">{{ def.invoice_number }}</td>
-                  <td class="py-3 px-4 font-black text-rose-600">₹{{ (def.total_amount - def.paid_amount) | number:'1.0-0' }}</td>
-                  <td class="py-3 px-4 font-mono text-slate-500">{{ def.due_date | date:'dd MMM yyyy' }}</td>
-                  <td class="py-3 px-4 font-bold text-amber-700">
-                    {{ calculateOverdueDays(def.due_date) }} Days Past Due
-                  </td>
-                  <td class="py-3 px-4 text-right">
-                    <button (click)="openCollectFeeForInvoice(def)" class="px-3 py-1 bg-emerald-600 text-white rounded-lg font-bold text-xs cursor-pointer active:scale-95">
-                      Collect
-                    </button>
-                  </td>
-                </tr>
-
-                <tr *ngIf="defaultersList.length === 0">
-                  <td colspan="7" class="py-8 text-center text-slate-400 text-xs">
-                    <div class="inline-flex items-center gap-1.5">
-                      <svg class="w-4 h-4 text-emerald-500" viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
-                        <path d="M8.5 12.5l2.2 2.2 4.8-4.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                      </svg>
-                      <span>Excellent! Zero fee defaulters found on campus.</span>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-        </div>
-      </div>
 
       <!-- ============================================================== -->
       <!-- MODAL: SIBLING DETECTOR MODAL                                  -->
@@ -725,97 +849,601 @@ import {
       </div>
 
       <!-- ============================================================== -->
-      <!-- MODAL: COLLECT FEE PAYMENT                                     -->
+      <!-- MODAL: COLLECT FEE PAYMENT (CASCADING & SMART CONCESSIONS)      -->
       <!-- ============================================================== -->
-      <div *ngIf="showCollectModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs" (click)="closeCollectModal()"></div>
-        <div class="relative bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-200 z-10 animate-scaleUp space-y-4">
+      <div *ngIf="showCollectModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity" (click)="closeCollectModal()"></div>
+        <div class="relative bg-white rounded-3xl p-6 sm:p-7 w-full max-w-xl shadow-2xl border border-slate-200/90 z-10 animate-scaleUp space-y-4 my-8">
           
-          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h3 class="font-black text-slate-900 text-base">Collect Fee Payment</h3>
-            <button (click)="closeCollectModal()" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+          <!-- Header -->
+          <div class="flex items-start justify-between pb-3.5 border-b border-slate-100">
+            <div>
+              <span class="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200/60">
+                FEE DESK CASHIER
+              </span>
+              <h3 class="font-black text-slate-900 text-lg mt-1">Collect Fee Payment</h3>
+              <p class="text-xs text-slate-500 mt-0.5">Cascading student selection, auto-suggested concessions, and live receipt settlement</p>
+            </div>
+            <button (click)="closeCollectModal()" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center cursor-pointer transition-colors">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
                 <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
             </button>
           </div>
 
-          <div class="space-y-3 text-xs">
-            <div *ngIf="pendingInvoices.length > 0; else noPendingInvoicesPrompt">
-              <label class="block font-bold text-slate-700 mb-1">Select Invoice *</label>
-              <select [(ngModel)]="collectForm.invoice_id" (change)="onCollectInvoiceChange()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold">
-                <option value="">-- Choose Invoice --</option>
-                <option *ngFor="let inv of pendingInvoices" [value]="inv.id">
-                  {{ inv.student_name }} - {{ inv.invoice_number }} (Due: ₹{{ inv.total_amount - inv.paid_amount }})
-                </option>
-              </select>
+          <div class="space-y-4 text-xs">
+            <!-- 1. Cascading Student Selection (3 Cascading Selectors) -->
+            <div class="p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-3">
+              <div class="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
+                <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
+                <span>Select Target Class, Section & Student</span>
+              </div>
+
+              <!-- Selector 1: Class & Selector 2: Section -->
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">1. Class *</label>
+                  <select [(ngModel)]="collectClassId" (change)="onCollectClassChange()" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 cursor-pointer shadow-2xs focus:outline-none focus:border-indigo-500">
+                    <option value="">-- All Classes --</option>
+                    <option *ngFor="let cls of collectAvailableClasses" [value]="cls.id">
+                      {{ cls.name }}
+                    </option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">2. Section *</label>
+                  <select [(ngModel)]="collectSectionId" (change)="onCollectSectionChange()" [disabled]="!collectClassId" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 cursor-pointer shadow-2xs disabled:bg-slate-100 disabled:text-slate-400 focus:outline-none focus:border-indigo-500">
+                    <option value="">-- All Sections --</option>
+                    <option *ngFor="let sec of collectAvailableSections" [value]="sec.id || sec.name">
+                      Section {{ sec.name }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Selector 3: Student Dropdown -->
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">3. Student *</label>
+                <select [(ngModel)]="collectStudentId" (change)="onCollectStudentSelect()" [disabled]="collectAvailableStudents.length === 0" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 cursor-pointer shadow-2xs disabled:bg-slate-100 disabled:text-slate-400 focus:outline-none focus:border-indigo-500">
+                  <option value="">-- Select Student --</option>
+                  <option *ngFor="let st of collectAvailableStudents" [value]="st.student_id">
+                    {{ st.student_name }} (Adm: {{ st.admission_number || 'N/A' }}) - {{ st.pendingDue > 0 ? ('Due: ₹' + (st.pendingDue | number:'1.0-0')) : (st.advanceCredit > 0 ? ('Advance: +₹' + (st.advanceCredit | number:'1.0-0')) : 'Settled (₹0)') }}
+                  </option>
+                </select>
+                <div *ngIf="collectClassId && collectAvailableStudents.length === 0" class="p-2 mt-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium">
+                  Zero active invoices or students found for this class and section filter.
+                </div>
+              </div>
+
+              <!-- Once student is selected, display their active pending fee or invoice -->
+              <div *ngIf="selectedStudentInvoice" class="p-3 bg-white rounded-xl border border-indigo-100 space-y-2 animate-fadeIn shadow-2xs">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="font-bold text-slate-900 text-xs">Active Fee Invoice: {{ selectedStudentInvoice.invoice_number }}</span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md"
+                          [ngClass]="{
+                            'bg-emerald-50 text-emerald-700 border border-emerald-200': selectedStudentInvoice.status === 'PAID',
+                            'bg-amber-50 text-amber-700 border border-amber-200': selectedStudentInvoice.status === 'PARTIAL',
+                            'bg-rose-50 text-rose-700 border border-rose-200': selectedStudentInvoice.status === 'UNPAID' || selectedStudentInvoice.status === 'OVERDUE'
+                          }">
+                      {{ selectedStudentInvoice.status }}
+                    </span>
+                  </div>
+                  <span class="text-[11px] text-slate-500 font-mono">{{ selectedStudentInvoice.month_name }}</span>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                  <div class="p-2 rounded-lg bg-slate-50 border border-slate-200/80">
+                    <div class="text-[10px] text-slate-400 font-bold uppercase">Total Billed</div>
+                    <div class="font-black text-slate-900 mt-0.5">₹{{ selectedStudentInvoice.total_amount | number:'1.0-0' }}</div>
+                  </div>
+                  <div class="p-2 rounded-lg bg-slate-50 border border-slate-200/80">
+                    <div class="text-[10px] text-slate-400 font-bold uppercase">Paid So Far</div>
+                    <div class="font-black text-emerald-700 mt-0.5">₹{{ selectedStudentInvoice.paid_amount | number:'1.0-0' }}</div>
+                  </div>
+                  <div class="p-2 rounded-lg bg-slate-50 border border-slate-200/80">
+                    <div class="text-[10px] text-slate-400 font-bold uppercase">Pending Due</div>
+                    <div class="font-black text-rose-600 mt-0.5">₹{{ originalDueAmount | number:'1.0-0' }}</div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <!-- Sibling Discount Suggestion (only shown if siblings detected) -->
-            <div *ngIf="activeSiblingInfo?.hasSiblings" class="p-3 bg-indigo-50 border border-indigo-200 text-indigo-900 rounded-2xl text-xs space-y-1 animate-fadeIn">
-              <div class="font-bold flex items-center gap-1.5 text-indigo-700">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                <span>Sibling Detected ({{ activeSiblingInfo?.siblingsCount }} Enrolled)</span>
-              </div>
-              <p class="text-[11px] text-indigo-800">
-                Eligible for <strong>{{ activeSiblingInfo?.suggestedDiscountPct }}% concession</strong> (Policy: <code>SIBLING15</code>).
-              </p>
-            </div>
-            <ng-template #noPendingInvoicesPrompt>
-              <div class="p-3.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl text-xs space-y-1.5">
-                <div class="font-bold flex items-center gap-1.5">
-                  <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  <span>No Pending Student Invoices Found</span>
+            <!-- 2. Auto-Suggested Concession Chips & Promocode Input -->
+            <div *ngIf="selectedStudentInvoice" class="space-y-3 animate-fadeIn">
+              
+              <!-- Auto-Suggested Concession Chips -->
+              <div class="space-y-1.5">
+                <div class="text-[11px] font-bold text-slate-700 flex items-center justify-between">
+                  <span>Auto-Suggested Concessions:</span>
+                  <span *ngIf="checkingSiblings || checkingMerit" class="text-[10px] text-slate-400 italic">checking eligibility...</span>
                 </div>
-                <p class="text-[11px] text-amber-800 leading-relaxed">
-                  Student fee invoices are automatically generated upon student admission and grade enrollment based on configured fee structures.
+
+                <div class="flex flex-wrap gap-2">
+                  <!-- Sibling Concession Chip (15%) -->
+                  <button *ngIf="activeSiblingInfo?.hasSiblings"
+                          type="button"
+                          (click)="toggleSiblingDiscount()"
+                          [ngClass]="appliedDiscount.type === 'SIBLING' ? 'bg-indigo-600 text-white border-indigo-700 shadow-xs' : 'bg-indigo-50 text-indigo-900 border-indigo-200 hover:bg-indigo-100'"
+                          class="px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
+                    <span>👨‍👧‍👦</span>
+                    <span>{{ appliedDiscount.type === 'SIBLING' ? '✓ Sibling Concession (15%) Applied' : 'Sibling Concession (15%)' }}</span>
+                    <span *ngIf="appliedDiscount.type === 'SIBLING'" class="text-[10px] opacity-80 underline ml-1">✕</span>
+                  </button>
+
+                  <!-- Academic Merit Scholarship Chip (10%) -->
+                  <button *ngIf="activeMeritInfo?.hasMerit"
+                          type="button"
+                          (click)="toggleMeritDiscount()"
+                          [ngClass]="appliedDiscount.type === 'MERIT' ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs' : 'bg-emerald-50 text-emerald-900 border-emerald-200 hover:bg-emerald-100'"
+                          class="px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
+                    <span>🎓</span>
+                    <span>{{ appliedDiscount.type === 'MERIT' ? '✓ Academic Merit Scholarship (10%) Applied' : 'Academic Merit Scholarship (10%)' }}</span>
+                    <span *ngIf="appliedDiscount.type === 'MERIT'" class="text-[10px] opacity-80 underline ml-1">✕</span>
+                  </button>
+
+                  <!-- Quick Suggested Active Promocode Chips -->
+                  <button *ngFor="let promo of quickSuggestedPromos"
+                          type="button"
+                          (click)="applyQuickPromo(promo.code)"
+                          [ngClass]="appliedDiscount.code === promo.code ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'"
+                          class="px-2.5 py-1.5 rounded-xl border text-xs font-medium transition-all flex items-center gap-1 cursor-pointer active:scale-95">
+                    <span>🏷️</span>
+                    <span class="font-mono font-bold">{{ promo.code }}</span>
+                    <span class="text-[10px]">({{ promo.value }}% off)</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Apply Promocode / Concession Input with Apply Button -->
+              <div class="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] font-bold text-slate-700">Apply Promocode / Concession</span>
+                  <button *ngIf="appliedDiscount.type !== 'NONE'" (click)="removeAppliedDiscount()" class="text-[10px] text-rose-600 hover:underline cursor-pointer">
+                    Clear Concession
+                  </button>
+                </div>
+                <div class="flex gap-2">
+                  <input type="text"
+                         [(ngModel)]="enteredPromoCode"
+                         (keyup.enter)="applyPromoCodeInModal()"
+                         placeholder="Enter promocode (e.g. SIBLING15, MERIT10)"
+                         class="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono uppercase tracking-wider focus:outline-none focus:border-indigo-500" />
+                  <button (click)="applyPromoCodeInModal()"
+                          [disabled]="applyingPromo || !enteredPromoCode.trim()"
+                          type="button"
+                          class="px-4 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-bold rounded-xl cursor-pointer active:scale-95 transition-all shrink-0">
+                    {{ applyingPromo ? 'Checking...' : 'Apply' }}
+                  </button>
+                </div>
+                <p *ngIf="promoAppliedMessage" class="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
+                  <span>✓</span> <span>{{ promoAppliedMessage }}</span>
+                </p>
+                <p *ngIf="promoAppliedError" class="text-[11px] text-rose-600 font-bold flex items-center gap-1">
+                  <span>⚠️</span> <span>{{ promoAppliedError }}</span>
                 </p>
               </div>
-            </ng-template>
 
-            <div *ngIf="pendingInvoices.length > 0" class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">Amount to Pay (INR) *</label>
-                <input type="number" [(ngModel)]="collectForm.amount_paid" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-black text-sm text-emerald-700" />
+              <!-- Summary Breakdown Card: Subtotal, Concession/Discount (-₹X), Final Payable (₹X) -->
+              <div class="p-3.5 bg-slate-900 text-white rounded-2xl space-y-1.5 shadow-md">
+                <div class="flex items-center justify-between text-xs text-slate-300">
+                  <span>Subtotal:</span>
+                  <span class="font-bold">₹{{ originalDueAmount | number:'1.0-0' }}</span>
+                </div>
+                <div *ngIf="appliedDiscount.amount > 0" class="flex items-center justify-between text-xs text-emerald-400">
+                  <span class="flex items-center gap-1.5">
+                    <span>Concession / Discount ({{ appliedDiscount.label }}):</span>
+                    <button (click)="removeAppliedDiscount()" class="text-[10px] text-rose-300 hover:text-rose-200 underline cursor-pointer">(Remove)</button>
+                  </span>
+                  <span class="font-bold">-₹{{ appliedDiscount.amount | number:'1.0-0' }}</span>
+                </div>
+                <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-sm font-black">
+                  <span>Final Payable:</span>
+                  <span class="text-emerald-400 text-base">₹{{ (originalDueAmount - appliedDiscount.amount) | number:'1.0-0' }}</span>
+                </div>
               </div>
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">Payment Mode</label>
-                <select [(ngModel)]="collectForm.payment_mode" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold">
-                  <option value="CASH">Cash Payment</option>
-                  <option value="UPI">UPI / QR Code</option>
-                  <option value="NET_BANKING">Net Banking / NEFT</option>
-                  <option value="CHEQUE">Bank Cheque</option>
-                  <option value="CARD">Debit / Credit Card</option>
-                </select>
+
+            </div>
+
+            <!-- 3. Payment Mode & Execution Inputs -->
+            <div *ngIf="selectedStudentInvoice" class="space-y-3 pt-1">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Amount to Collect (INR) *</label>
+                  <input type="number" [(ngModel)]="collectForm.amount_paid" min="1" [max]="originalDueAmount" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-black text-sm text-emerald-700 shadow-2xs focus:outline-none focus:border-emerald-500" />
+                  <span class="text-[10px] text-slate-400">Can collect partial amount</span>
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Payment Mode *</label>
+                  <select [(ngModel)]="collectForm.payment_mode" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold shadow-2xs focus:outline-none focus:border-indigo-500">
+                    <option value="CASH">Cash</option>
+                    <option value="UPI">UPI / QR Code</option>
+                    <option value="NET_BANKING">Net Banking / NEFT</option>
+                    <option value="CHEQUE">Bank Cheque</option>
+                    <option value="CARD">Debit / Credit Card</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Transaction Ref / Cheque No</label>
+                  <input type="text" [(ngModel)]="collectForm.transaction_reference" placeholder="e.g. UPI-9876543210" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Remarks</label>
+                  <input type="text" [(ngModel)]="collectForm.remarks" placeholder="Quarter fee payment remarks" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-indigo-500" />
+                </div>
               </div>
             </div>
 
-            <div *ngIf="pendingInvoices.length > 0">
-              <label class="block font-bold text-slate-700 mb-1">Transaction Ref / Cheque No</label>
-              <input type="text" [(ngModel)]="collectForm.transaction_reference" placeholder="e.g. UPI-1234567890" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs" />
-            </div>
-
-            <div *ngIf="pendingInvoices.length > 0">
-              <label class="block font-bold text-slate-700 mb-1">Remarks</label>
-              <input type="text" [(ngModel)]="collectForm.remarks" placeholder="Quarter 1 fee payment" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-            </div>
           </div>
 
           <div *ngIf="collectModalError" class="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
             {{ collectModalError }}
           </div>
 
+          <!-- Footer Actions -->
           <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-            <button (click)="closeCollectModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer">Cancel</button>
-            <button (click)="submitCollectFee()" [disabled]="savingPayment || pendingInvoices.length === 0" class="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl cursor-pointer disabled:opacity-50">
-              {{ savingPayment ? 'Recording...' : 'Receive & Print Receipt' }}
+            <button (click)="closeCollectModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer transition-colors">
+              Cancel
+            </button>
+            <button (click)="submitCollectFee()" [disabled]="savingPayment || !collectForm.invoice_id || !collectForm.amount_paid || collectForm.amount_paid <= 0" class="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl cursor-pointer disabled:opacity-50 active:scale-95 transition-all shadow-xs flex items-center gap-1.5">
+              <svg *ngIf="savingPayment" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <svg *ngIf="!savingPayment" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>{{ savingPayment ? 'Recording...' : 'Receive & Print Receipt' }}</span>
             </button>
           </div>
 
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- MODAL: STUDENT LEDGER STATEMENT                                -->
+      <!-- ============================================================== -->
+      <div *ngIf="showLedgerModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity" (click)="closeLedgerModal()"></div>
+        <div class="relative bg-white rounded-3xl p-6 sm:p-7 w-full max-w-4xl shadow-2xl border border-slate-200/90 z-10 animate-scaleUp space-y-5 my-8">
+          
+          <!-- Header -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
+            <div>
+              <span class="text-[10px] font-black uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-200/60">
+                OFFICIAL STUDENT ACCOUNT LEDGER
+              </span>
+              <h3 class="font-black text-slate-900 text-lg mt-1 flex items-center gap-2">
+                <span>{{ activeLedgerStudent?.student_name }}</span>
+                <span class="text-xs font-mono font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                  Adm: {{ activeLedgerStudent?.admission_number || 'N/A' }}
+                </span>
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5">
+                {{ activeLedgerStudent?.class_name }} - {{ activeLedgerStudent?.section_name }} | Session: <strong class="text-slate-700">{{ auth.activeSessionName() }}</strong>
+              </p>
+            </div>
+
+            <!-- Top Actions -->
+            <div class="flex items-center gap-2">
+              <button (click)="openAddChargeModal()" class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 border border-indigo-200">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Add Fee Charge</span>
+              </button>
+              <button (click)="printStudentLedger()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                <span>Print Statement</span>
+              </button>
+              <button (click)="closeLedgerModal()" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center cursor-pointer transition-colors">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                  <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Financial KPI Cards (4 Cards) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+            <!-- Card 1: Total Billed -->
+            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+              <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Billed</div>
+              <div class="text-xl font-black text-slate-900 mt-1">₹{{ ledgerBilledTotal | number:'1.0-0' }}</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">{{ ledgerInvoicesCount }} billing cycles issued</div>
+            </div>
+
+            <!-- Card 2: Total Paid Received -->
+            <div class="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80">
+              <div class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Total Paid Received</div>
+              <div class="text-xl font-black text-emerald-700 mt-1">₹{{ ledgerPaidTotal | number:'1.0-0' }}</div>
+              <div class="text-[10px] text-emerald-600 mt-0.5">Recorded in school cashier desk</div>
+            </div>
+
+            <!-- Card 3: Concessions -->
+            <div class="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-200/80">
+              <div class="text-[11px] font-bold text-indigo-800 uppercase tracking-wider">Concessions</div>
+              <div class="text-xl font-black text-indigo-700 mt-1">₹{{ ledgerDiscountTotal | number:'1.0-0' }}</div>
+              <div class="text-[10px] text-indigo-600 mt-0.5">Scholarships & fee waivers</div>
+            </div>
+
+            <!-- Card 4: Outstanding Due / Advance Credit -->
+            <div class="p-3.5 rounded-2xl border"
+                 [ngClass]="{
+                   'bg-emerald-50 border-emerald-300 text-emerald-950': ledgerPaidTotal > ledgerBilledTotal,
+                   'bg-rose-50 border-rose-300 text-rose-950': ledgerBilledTotal > ledgerPaidTotal,
+                   'bg-slate-50 border-slate-200 text-slate-900': ledgerPaidTotal === ledgerBilledTotal
+                 }">
+              <div class="text-[11px] font-bold uppercase tracking-wider flex items-center justify-between">
+                <span>{{ ledgerPaidTotal > ledgerBilledTotal ? 'Advance Credit' : (ledgerBilledTotal > ledgerPaidTotal ? 'Outstanding Due' : 'Account Status') }}</span>
+                <span *ngIf="ledgerPaidTotal > ledgerBilledTotal" class="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-600 text-white font-bold">
+                  ADVANCE
+                </span>
+                <span *ngIf="ledgerBilledTotal > ledgerPaidTotal" class="text-[10px] px-1.5 py-0.5 rounded-md bg-rose-600 text-white font-bold">
+                  PENDING DUE
+                </span>
+                <span *ngIf="ledgerPaidTotal === ledgerBilledTotal" class="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-600 text-white font-bold">
+                  SETTLED
+                </span>
+              </div>
+              <div class="text-xl font-black mt-1"
+                   [ngClass]="ledgerPaidTotal > ledgerBilledTotal ? 'text-emerald-700' : (ledgerBilledTotal > ledgerPaidTotal ? 'text-rose-600' : 'text-slate-800')">
+                <span *ngIf="ledgerPaidTotal > ledgerBilledTotal" class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-lg border border-emerald-200 text-base font-black">
+                  +₹{{ (ledgerPaidTotal - ledgerBilledTotal) | number:'1.0-0' }}
+                </span>
+                <span *ngIf="ledgerBilledTotal > ledgerPaidTotal">₹{{ (ledgerBilledTotal - ledgerPaidTotal) | number:'1.0-0' }}</span>
+                <span *ngIf="ledgerPaidTotal === ledgerBilledTotal">₹0.00</span>
+              </div>
+              <div class="text-[10px] mt-0.5" [ngClass]="ledgerPaidTotal > ledgerBilledTotal ? 'text-emerald-700' : (ledgerBilledTotal > ledgerPaidTotal ? 'text-rose-600' : 'text-slate-500')">
+                <span *ngIf="ledgerPaidTotal > ledgerBilledTotal">Student has advance credit on account</span>
+                <span *ngIf="ledgerBilledTotal > ledgerPaidTotal">Pending balance due for payment</span>
+                <span *ngIf="ledgerPaidTotal === ledgerBilledTotal">Zero outstanding dues</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fee Frequency & One-Time Payment Concession Control -->
+          <div class="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <span class="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                  <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span>Student Billing Frequency & Annual Concession Preference</span>
+                </span>
+                <p class="text-[11px] text-slate-500 mt-0.5">Configure student billing schedule: Monthly, Quarterly, or Upfront Annual plan</p>
+              </div>
+
+              <!-- Frequency Pills -->
+              <div class="inline-flex rounded-xl bg-slate-200/70 p-1 text-xs font-bold gap-1">
+                <button (click)="setLedgerFrequency('MONTHLY')" [ngClass]="selectedBillingFrequency === 'MONTHLY' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'" class="px-3 py-1.5 rounded-lg cursor-pointer transition-all">Monthly</button>
+                <button (click)="setLedgerFrequency('QUARTERLY')" [ngClass]="selectedBillingFrequency === 'QUARTERLY' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'" class="px-3 py-1.5 rounded-lg cursor-pointer transition-all">Quarterly</button>
+                <button (click)="setLedgerFrequency('ANNUAL')" [ngClass]="selectedBillingFrequency === 'ANNUAL' ? 'bg-indigo-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'" class="px-3 py-1.5 rounded-lg cursor-pointer transition-all">Annual (One-Time)</button>
+              </div>
+            </div>
+
+            <!-- Annual Lump-Sum Concession Control (Visible if ANNUAL is selected) -->
+            <div *ngIf="selectedBillingFrequency === 'ANNUAL'" class="p-3.5 bg-indigo-50/90 border border-indigo-200 rounded-xl space-y-2.5 animate-fadeIn">
+              <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-xl">🎁</span>
+                  <div>
+                    <div class="font-bold text-indigo-950 text-xs">
+                      One-Time Full Year Upfront Concession
+                    </div>
+                    <div class="text-[11px] text-indigo-700">
+                      Save ₹{{ calculateAnnualConcessionSavings() | number:'1.0-0' }} by paying full session fee upfront in one single receipt.
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Concession % Input & Quick Buttons -->
+                <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-1 bg-white border border-indigo-200 rounded-lg px-2 py-1 shadow-2xs">
+                    <label class="text-[11px] font-bold text-indigo-900">Discount %:</label>
+                    <input type="number" [(ngModel)]="annualConcessionPct" min="0" max="100" class="w-14 text-center font-black text-indigo-950 text-xs focus:outline-none" />
+                    <span class="text-xs font-bold text-indigo-700">%</span>
+                  </div>
+                  <div class="flex gap-1">
+                    <button type="button" (click)="annualConcessionPct = 5" [ngClass]="annualConcessionPct === 5 ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-700 border border-indigo-200'" class="px-2 py-1 rounded-md text-[10px] font-bold cursor-pointer transition-all">5%</button>
+                    <button type="button" (click)="annualConcessionPct = 10" [ngClass]="annualConcessionPct === 10 ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-700 border border-indigo-200'" class="px-2 py-1 rounded-md text-[10px] font-bold cursor-pointer transition-all">10%</button>
+                    <button type="button" (click)="annualConcessionPct = 15" [ngClass]="annualConcessionPct === 15 ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-700 border border-indigo-200'" class="px-2 py-1 rounded-md text-[10px] font-bold cursor-pointer transition-all">15%</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Notes & Save Action -->
+              <div class="flex items-center gap-2 pt-1 border-t border-indigo-100">
+                <input type="text" [(ngModel)]="feePreferenceNotes" placeholder="Concession notes (e.g. Approved 10% annual lump sum concession)" class="flex-1 px-3 py-1.5 bg-white border border-indigo-200 rounded-lg text-xs focus:outline-none" />
+                <button (click)="saveStudentFeePreference()" [disabled]="savingPreference" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg cursor-pointer active:scale-95 transition-all shadow-xs shrink-0 flex items-center gap-1.5">
+                  <svg *ngIf="savingPreference" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                  </svg>
+                  <span>{{ savingPreference ? 'Saving...' : 'Save Preference' }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Notes & Save Action when Monthly or Quarterly is selected -->
+            <div *ngIf="selectedBillingFrequency !== 'ANNUAL'" class="flex items-center gap-2 pt-1">
+              <input type="text" [(ngModel)]="feePreferenceNotes" placeholder="Notes (optional, e.g. Standard billing schedule)" class="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none" />
+              <button (click)="saveStudentFeePreference()" [disabled]="savingPreference" class="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-bold rounded-lg cursor-pointer active:scale-95 transition-all shadow-xs shrink-0 flex items-center gap-1.5">
+                <svg *ngIf="savingPreference" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>{{ savingPreference ? 'Saving...' : 'Save Frequency' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Itemized Ledger Transactions Table -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-slate-800 text-xs">Itemized Statement & Payment History</span>
+              <span class="text-[11px] text-slate-400 font-mono">{{ ledgerEntries.length }} entries</span>
+            </div>
+
+            <div class="overflow-x-auto rounded-2xl border border-slate-200 max-h-[300px]">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead class="sticky top-0 bg-slate-100 z-10 border-b border-slate-200">
+                  <tr class="text-slate-500 font-bold uppercase text-[10px]">
+                    <th class="py-2.5 px-3">Date</th>
+                    <th class="py-2.5 px-3">Entry Type</th>
+                    <th class="py-2.5 px-3">Ref #</th>
+                    <th class="py-2.5 px-3">Description</th>
+                    <th class="py-2.5 px-3 text-right">Debit</th>
+                    <th class="py-2.5 px-3 text-right">Credit</th>
+                    <th class="py-2.5 px-3 text-right">Running Balance</th>
+                    <th class="py-2.5 px-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                  <tr *ngFor="let item of ledgerEntries; let i = index" class="hover:bg-slate-50/70 transition-colors">
+                    <td class="py-2.5 px-3 text-slate-600 whitespace-nowrap">{{ item.date | date:'dd MMM yyyy' }}</td>
+                    <td class="py-2.5 px-3 whitespace-nowrap">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold"
+                            [ngClass]="item.type === 'INVOICE' || item.type === 'CHARGE' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'">
+                        {{ item.type }}
+                      </span>
+                    </td>
+                    <td class="py-2.5 px-3 font-mono text-[11px] font-bold text-slate-900 whitespace-nowrap">{{ item.referenceNumber }}</td>
+                    <td class="py-2.5 px-3">{{ item.description }}</td>
+                    <td class="py-2.5 px-3 text-right font-black" [ngClass]="item.debit > 0 ? 'text-rose-600' : 'text-slate-300'">
+                      {{ item.debit > 0 ? ('₹' + (item.debit | number:'1.0-0')) : '-' }}
+                    </td>
+                    <td class="py-2.5 px-3 text-right font-black" [ngClass]="item.credit > 0 ? 'text-emerald-700' : 'text-slate-300'">
+                      {{ item.credit > 0 ? ('₹' + (item.credit | number:'1.0-0')) : '-' }}
+                    </td>
+                    <td class="py-2.5 px-3 text-right font-mono font-bold whitespace-nowrap">
+                      <span *ngIf="getItemRunningBalance(item, i) > 0" class="inline-flex items-center text-[10px] text-emerald-800 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200">
+                        +₹{{ getItemRunningBalance(item, i) | number:'1.0-0' }} (Adv)
+                      </span>
+                      <span *ngIf="getItemRunningBalance(item, i) < 0" class="text-rose-600">
+                        ₹{{ (-getItemRunningBalance(item, i)) | number:'1.0-0' }} (Due)
+                      </span>
+                      <span *ngIf="getItemRunningBalance(item, i) === 0" class="text-slate-400">
+                        ₹0.00 (Settled)
+                      </span>
+                    </td>
+                    <td class="py-2.5 px-3 whitespace-nowrap">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold"
+                            [ngClass]="{
+                              'bg-emerald-50 text-emerald-700 border border-emerald-200': item.status === 'PAID' || item.status === 'RECEIVED',
+                              'bg-amber-50 text-amber-700 border border-amber-200': item.status === 'PARTIAL',
+                              'bg-rose-50 text-rose-700 border border-rose-200': item.status === 'UNPAID' || item.status === 'OVERDUE' || item.type === 'INVOICE' || item.type === 'CHARGE'
+                            }">
+                        {{ item.status || (item.credit > 0 ? 'RECEIVED' : 'BILLED') }}
+                      </span>
+                    </td>
+                  </tr>
+
+                  <tr *ngIf="ledgerEntries.length === 0">
+                    <td colspan="8" class="py-8 text-center text-slate-400 text-xs">
+                      No transactions recorded in student ledger yet.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Footer Actions -->
+          <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+            <button (click)="closeLedgerModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer transition-colors">
+              Close
+            </button>
+
+            <button *ngIf="activeLedgerStudent" (click)="openCollectFeeForInvoice(activeLedgerStudent); closeLedgerModal()" class="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl cursor-pointer active:scale-95 transition-all shadow-xs flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span>Collect Fee For This Student</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- SUB-MODAL: ADD STUDENT FEE CHARGE                              -->
+      <!-- ============================================================== -->
+      <div *ngIf="showAddChargeModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs" (click)="closeAddChargeModal()"></div>
+        <div class="relative bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-200/90 z-10 animate-scaleUp space-y-4">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+              <span class="text-[10px] font-black uppercase tracking-wider text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+                DIRECT LEDGER CHARGE
+              </span>
+              <h3 class="font-black text-slate-900 text-base mt-1">Add Fee Charge to Ledger</h3>
+              <p class="text-xs text-slate-500 mt-0.5">Post fine, penalty, exam fee, or extra charges to student's account.</p>
+            </div>
+            <button (click)="closeAddChargeModal()" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </div>
+
+          <div *ngIf="chargeError" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs">
+            {{ chargeError }}
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <!-- Category -->
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Charge Category *</label>
+              <select [(ngModel)]="chargeForm.charge_type" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                <option value="FINE_PENALTY">Late Fee / Disciplinary Penalty (FINE_PENALTY)</option>
+                <option value="ADMISSION">Admission / Registration Fee (ADMISSION)</option>
+                <option value="EXAM">Board / Term Examination Fee (EXAM)</option>
+                <option value="ANNUAL">Annual Development / Lab Charges (ANNUAL)</option>
+                <option value="OTHER">Other Custom School Charge (OTHER)</option>
+              </select>
+            </div>
+
+            <!-- Amount -->
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Amount (INR ₹) *</label>
+              <div class="relative">
+                <span class="absolute left-3 top-2.5 font-bold text-slate-400">₹</span>
+                <input type="number" [(ngModel)]="chargeForm.amount" min="1" placeholder="e.g. 250" class="w-full pl-7 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+              </div>
+            </div>
+
+            <!-- Reason / Description -->
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Description / Reason *</label>
+              <input type="text" [(ngModel)]="chargeForm.description" placeholder="e.g. Late fee for October installment or Library fine" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+            </div>
+
+            <!-- Effective Date -->
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Effective Date</label>
+              <input type="date" [(ngModel)]="chargeForm.effective_date" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+            <button (click)="closeAddChargeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer transition-colors">
+              Cancel
+            </button>
+            <button (click)="submitAddCharge()" [disabled]="savingCharge" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
+              <svg *ngIf="savingCharge" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>{{ savingCharge ? 'Posting...' : 'Post Fee Charge' }}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1067,7 +1695,8 @@ import {
   `,
 })
 export class FeesComponent implements OnInit {
-  activeTab: 'INVOICES' | 'MATRIX' | 'DAYBOOK' | 'PROMOCODES' | 'DEFAULTERS' = 'INVOICES';
+  activeTab: 'DAYBOOK' | 'INVOICES' | 'MATRIX' | 'PROMOCODES' = 'DAYBOOK';
+  openDropdownInvoiceId: string | null = null;
 
   invoices: StudentFeeInvoice[] = [];
   structures: FeeStructure[] = [];
@@ -1126,6 +1755,72 @@ export class FeesComponent implements OnInit {
     payment_mode: 'UPI',
     transaction_reference: '',
     remarks: 'Fee payment received',
+  };
+
+  // Cascading Student Selection & Smart Discounts for Collect Fee Modal
+  collectClassId: string = '';
+  collectSectionId: string = '';
+  collectStudentId: string = '';
+  selectedStudentInvoice: StudentFeeInvoice | null = null;
+  originalDueAmount: number = 0;
+  activeMeritInfo: { hasMerit: boolean; scorePct?: number; suggestedDiscountPct: number; reason?: string } | null = null;
+  checkingMerit = false;
+  appliedDiscount: {
+    type: 'NONE' | 'SIBLING' | 'MERIT' | 'PROMOCODE';
+    code?: string;
+    label: string;
+    amount: number;
+    percentage?: number;
+  } = { type: 'NONE', label: '', amount: 0 };
+  enteredPromoCode: string = '';
+  applyingPromo = false;
+  promoAppliedMessage: string = '';
+  promoAppliedError: string = '';
+
+  // Student Account Ledger State
+  showLedgerModal = false;
+  activeLedgerStudent: StudentFeeInvoice | null = null;
+  loadingLedger = false;
+  ledgerEntries: StudentFeeLedgerEntry[] = [];
+  ledgerBilledTotal = 0;
+  ledgerPaidTotal = 0;
+  ledgerDiscountTotal = 0;
+  ledgerNetBalance = 0;
+  ledgerInvoicesCount = 0;
+  selectedBillingFrequency: 'MONTHLY' | 'QUARTERLY' | 'ANNUAL' = 'MONTHLY';
+  annualConcessionPct: number = 10;
+  annualDiscountApplied = false;
+  feePreferenceNotes: string = '';
+  savingPreference = false;
+
+  // School Fee Rules & Late Fee Policy State
+  schoolFeeRules: SchoolFeeRules = {
+    monthly_discount_pct: 0,
+    quarterly_discount_pct: 5,
+    annual_discount_pct: 10,
+    due_day_of_month: 10,
+    grace_period_days: 5,
+    enable_late_fee: true,
+    late_fee_type: 'DAILY',
+    late_fee_amount: 20,
+  };
+  savingFeeRules = false;
+  loadingFeeRules = false;
+
+  // Add Fee Charge Sub-modal State
+  showAddChargeModal = false;
+  savingCharge = false;
+  chargeError = '';
+  chargeForm: {
+    charge_type: 'FINE_PENALTY' | 'ADMISSION' | 'EXAM' | 'ANNUAL' | 'OTHER';
+    amount: number;
+    description: string;
+    effective_date: string;
+  } = {
+    charge_type: 'FINE_PENALTY',
+    amount: 100,
+    description: '',
+    effective_date: new Date().toISOString().split('T')[0],
   };
 
   // Batch Invoicing Modal
@@ -1198,6 +1893,143 @@ export class FeesComponent implements OnInit {
       if (inv.class_name) set.add(inv.class_name);
     });
     return Array.from(set).sort();
+  }
+
+  get collectAvailableClasses(): Array<{ id: string; name: string }> {
+    const list: Array<{ id: string; name: string }> = [];
+    const seenNames = new Set<string>();
+
+    for (const cls of this.classes) {
+      if (cls.name && !seenNames.has(cls.name)) {
+        seenNames.add(cls.name);
+        list.push({ id: cls.id || cls.name, name: cls.name });
+      }
+    }
+    for (const inv of this.invoices) {
+      if (inv.class_name && !seenNames.has(inv.class_name)) {
+        seenNames.add(inv.class_name);
+        list.push({ id: inv.class_id || inv.class_name, name: inv.class_name });
+      }
+    }
+    return list.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  }
+
+  get collectAvailableSections(): Array<{ id: string; name: string }> {
+    if (!this.collectClassId) return [];
+    const targetClass = this.collectAvailableClasses.find(
+      (c) => c.id === this.collectClassId || c.name === this.collectClassId
+    );
+    const targetClassName = targetClass ? targetClass.name : this.collectClassId;
+
+    const list: Array<{ id: string; name: string }> = [];
+    const seen = new Set<string>();
+
+    const matchedClassObj = this.classes.find(
+      (c) => c.id === this.collectClassId || c.name === targetClassName
+    );
+    if (matchedClassObj && Array.isArray(matchedClassObj.sections)) {
+      for (const s of matchedClassObj.sections) {
+        if (s.name && !seen.has(s.name)) {
+          seen.add(s.name);
+          list.push({ id: s.id || s.name, name: s.name });
+        }
+      }
+    }
+
+    for (const inv of this.invoices) {
+      if (
+        (inv.class_id === this.collectClassId || inv.class_name === targetClassName) &&
+        inv.section_name &&
+        !seen.has(inv.section_name)
+      ) {
+        seen.add(inv.section_name);
+        list.push({ id: inv.section_id || inv.section_name, name: inv.section_name });
+      }
+    }
+
+    return list.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  get collectAvailableStudents(): Array<{
+    student_id: string;
+    student_name: string;
+    admission_number: string;
+    class_name: string;
+    section_name: string;
+    pendingDue: number;
+    advanceCredit: number;
+    totalAmount: number;
+    paidAmount: number;
+    invoices: StudentFeeInvoice[];
+  }> {
+    const targetClass = this.collectAvailableClasses.find(
+      (c) => c.id === this.collectClassId || c.name === this.collectClassId
+    );
+    const targetClassName = targetClass ? targetClass.name : this.collectClassId;
+
+    let filtered = this.invoices;
+    if (targetClassName) {
+      filtered = filtered.filter(
+        (i) => i.class_id === this.collectClassId || i.class_name === targetClassName
+      );
+    }
+    if (this.collectSectionId) {
+      filtered = filtered.filter(
+        (i) => i.section_id === this.collectSectionId || i.section_name === this.collectSectionId
+      );
+    }
+
+    const studentMap = new Map<string, {
+      student_id: string;
+      student_name: string;
+      admission_number: string;
+      class_name: string;
+      section_name: string;
+      pendingDue: number;
+      advanceCredit: number;
+      totalAmount: number;
+      paidAmount: number;
+      invoices: StudentFeeInvoice[];
+    }>();
+
+    for (const inv of filtered) {
+      if (!inv.student_id) continue;
+      let record = studentMap.get(inv.student_id);
+      if (!record) {
+        record = {
+          student_id: inv.student_id,
+          student_name: inv.student_name,
+          admission_number: inv.admission_number || 'N/A',
+          class_name: inv.class_name,
+          section_name: inv.section_name,
+          pendingDue: 0,
+          advanceCredit: 0,
+          totalAmount: 0,
+          paidAmount: 0,
+          invoices: [],
+        };
+        studentMap.set(inv.student_id, record);
+      }
+      record.invoices.push(inv);
+      record.totalAmount += Number(inv.total_amount) || 0;
+      record.paidAmount += Number(inv.paid_amount) || 0;
+    }
+
+    const result = Array.from(studentMap.values()).map((st) => {
+      st.pendingDue = Math.max(0, st.totalAmount - st.paidAmount);
+      st.advanceCredit = Math.max(0, st.paidAmount - st.totalAmount);
+      return st;
+    });
+
+    return result.sort((a, b) => {
+      if (a.pendingDue > 0 && b.pendingDue <= 0) return -1;
+      if (b.pendingDue > 0 && a.pendingDue <= 0) return 1;
+      return a.student_name.localeCompare(b.student_name);
+    });
+  }
+
+  get quickSuggestedPromos() {
+    return this.activePromocodes.filter((p) => p.status === 'ACTIVE').slice(0, 3);
   }
 
   get availableSectionsForClass(): string[] {
@@ -1344,13 +2176,16 @@ export class FeesComponent implements OnInit {
   ngOnInit() {
     this.route.queryParams.subscribe((params) => {
       const tab = (params['tab'] || '').toUpperCase();
-      if (tab === 'INVOICES' || tab === 'MATRIX' || tab === 'DAYBOOK' || tab === 'PROMOCODES' || tab === 'DEFAULTERS') {
+      if (tab === 'INVOICES' || tab === 'MATRIX' || tab === 'DAYBOOK' || tab === 'PROMOCODES') {
         this.activeTab = tab as any;
       } else if (tab === 'STRUCTURE') {
         this.activeTab = 'MATRIX';
+      } else if (!tab) {
+        this.activeTab = 'DAYBOOK';
       }
     });
     this.loadStoredPromocodes();
+    this.loadSchoolFeeRules();
   }
 
   async loadStoredPromocodes() {
@@ -1385,7 +2220,7 @@ export class FeesComponent implements OnInit {
     }
   }
 
-  setTab(tab: 'INVOICES' | 'MATRIX' | 'DAYBOOK' | 'PROMOCODES' | 'DEFAULTERS') {
+  setTab(tab: 'DAYBOOK' | 'INVOICES' | 'MATRIX' | 'PROMOCODES') {
     this.activeTab = tab;
     this.router.navigate([], {
       relativeTo: this.route,
@@ -1394,7 +2229,28 @@ export class FeesComponent implements OnInit {
     });
     if (tab === 'DAYBOOK') {
       this.loadDayBook();
+    } else if (tab === 'PROMOCODES') {
+      this.loadSchoolFeeRules();
     }
+  }
+
+  toggleActionDropdown(invoiceId: string, event: MouseEvent) {
+    event.stopPropagation();
+    this.openDropdownInvoiceId = this.openDropdownInvoiceId === invoiceId ? null : invoiceId;
+  }
+
+  closeActionDropdown() {
+    this.openDropdownInvoiceId = null;
+  }
+
+  sendSingleFeeReminder(inv: StudentFeeInvoice) {
+    this.closeActionDropdown();
+    this.toast.success(`Fee reminder notification queued for ${inv.student_name} (${inv.admission_number || 'guardian'}).`);
+  }
+
+  @HostListener('document:click')
+  onDocumentClick() {
+    this.openDropdownInvoiceId = null;
   }
 
   loadAllData() {
@@ -1788,46 +2644,114 @@ export class FeesComponent implements OnInit {
 
   // Collect Fee Modal Actions
   openCollectFeeModal() {
-    const firstPending = this.pendingInvoices[0];
-    this.collectForm = {
-      invoice_id: firstPending?.id || '',
-      student_id: firstPending?.student_id || '',
-      amount_paid: firstPending ? (firstPending.total_amount - firstPending.paid_amount) : 2500,
-      payment_mode: 'UPI',
-      transaction_reference: '',
-      remarks: 'Fee payment received',
-    };
     this.collectModalError = '';
+    this.appliedDiscount = { type: 'NONE', label: '', amount: 0 };
+    this.enteredPromoCode = '';
+    this.promoAppliedMessage = '';
+    this.promoAppliedError = '';
+
+    const availClasses = this.collectAvailableClasses;
+    this.collectClassId = availClasses.length > 0 ? availClasses[0].id : '';
+    this.collectSectionId = '';
+
+    const students = this.collectAvailableStudents;
+    const firstWithDue = students.find((s) => s.pendingDue > 0) || students[0];
+    if (firstWithDue) {
+      this.collectStudentId = firstWithDue.student_id;
+      this.onCollectStudentSelect();
+    } else {
+      this.collectStudentId = '';
+      this.resetCollectInvoiceSelection();
+    }
     this.showCollectModal = true;
   }
 
   openCollectFeeForInvoice(inv: StudentFeeInvoice) {
-    this.collectForm = {
-      invoice_id: inv.id,
-      student_id: inv.student_id,
-      amount_paid: inv.total_amount - inv.paid_amount,
-      payment_mode: 'UPI',
-      transaction_reference: '',
-      remarks: `Payment for invoice ${inv.invoice_number}`,
-    };
     this.collectModalError = '';
+    const matchedClass = this.collectAvailableClasses.find(
+      (c) => (inv.class_id && c.id === inv.class_id) || c.name === inv.class_name
+    );
+    this.collectClassId = matchedClass ? matchedClass.id : (inv.class_id || inv.class_name || '');
+    this.collectSectionId = inv.section_name || '';
+    this.collectStudentId = inv.student_id;
+    this.selectInvoiceForCollect(inv);
+    this.collectForm.payment_mode = 'UPI';
+    this.collectForm.transaction_reference = '';
+    this.collectForm.remarks = `Payment for invoice ${inv.invoice_number}`;
     this.showCollectModal = true;
-    this.checkSiblingsForCollect(inv.student_id);
   }
 
-  closeCollectModal() {
-    this.showCollectModal = false;
-    this.activeSiblingInfo = null;
+  onCollectClassChange() {
+    this.collectSectionId = '';
+    this.onCollectSectionChange();
   }
 
-  onCollectInvoiceChange() {
-    const inv = this.invoices.find((i) => i.id === this.collectForm.invoice_id);
-    if (inv) {
-      this.collectForm.student_id = inv.student_id;
-      this.collectForm.amount_paid = inv.total_amount - inv.paid_amount;
-      this.checkSiblingsForCollect(inv.student_id);
+  onCollectSectionChange() {
+    const students = this.collectAvailableStudents;
+    const firstWithDue = students.find((s) => s.pendingDue > 0) || students[0];
+    if (firstWithDue) {
+      this.collectStudentId = firstWithDue.student_id;
+      this.onCollectStudentSelect();
     } else {
-      this.activeSiblingInfo = null;
+      this.collectStudentId = '';
+      this.resetCollectInvoiceSelection();
+    }
+  }
+
+  onCollectStudentSelect() {
+    if (!this.collectStudentId) {
+      this.resetCollectInvoiceSelection();
+      return;
+    }
+    const student = this.collectAvailableStudents.find((s) => s.student_id === this.collectStudentId);
+    if (!student || student.invoices.length === 0) {
+      this.resetCollectInvoiceSelection();
+      return;
+    }
+    const pendingInv =
+      student.invoices.find((i) => i.status !== 'PAID' && (i.total_amount - i.paid_amount) > 0) ||
+      student.invoices[0];
+    this.selectInvoiceForCollect(pendingInv);
+  }
+
+  selectInvoiceForCollect(inv: StudentFeeInvoice) {
+    this.selectedStudentInvoice = inv;
+    this.collectForm.invoice_id = inv.id;
+    this.collectForm.student_id = inv.student_id;
+    this.originalDueAmount = Math.max(0, inv.total_amount - inv.paid_amount);
+    this.appliedDiscount = { type: 'NONE', label: '', amount: 0 };
+    this.enteredPromoCode = '';
+    this.promoAppliedMessage = '';
+    this.promoAppliedError = '';
+    this.collectForm.amount_paid = this.originalDueAmount > 0 ? this.originalDueAmount : inv.total_amount;
+    this.collectForm.remarks = `Payment for invoice ${inv.invoice_number}`;
+    this.checkSiblingsForCollect(inv.student_id);
+    this.checkMeritForCollect(inv.student_id);
+  }
+
+  resetCollectInvoiceSelection() {
+    this.selectedStudentInvoice = null;
+    this.collectForm.invoice_id = '';
+    this.collectForm.student_id = '';
+    this.originalDueAmount = 0;
+    this.collectForm.amount_paid = 0;
+    this.activeSiblingInfo = null;
+    this.activeMeritInfo = null;
+    this.appliedDiscount = { type: 'NONE', label: '', amount: 0 };
+  }
+
+  async checkMeritForCollect(studentId: string) {
+    if (!studentId) {
+      this.activeMeritInfo = null;
+      return;
+    }
+    this.checkingMerit = true;
+    try {
+      this.activeMeritInfo = await this.api.detectStudentMerit(studentId);
+    } catch {
+      this.activeMeritInfo = null;
+    } finally {
+      this.checkingMerit = false;
     }
   }
 
@@ -1836,38 +2760,662 @@ export class FeesComponent implements OnInit {
       this.activeSiblingInfo = null;
       return;
     }
+    this.checkingSiblings = true;
     try {
       this.activeSiblingInfo = await this.api.detectStudentSiblings(studentId);
     } catch {
       this.activeSiblingInfo = null;
+    } finally {
+      this.checkingSiblings = false;
     }
   }
 
-  submitCollectFee() {
+  toggleSiblingDiscount() {
+    if (this.appliedDiscount.type === 'SIBLING') {
+      this.removeAppliedDiscount();
+      return;
+    }
+    this.applySiblingDiscount();
+  }
+
+  toggleMeritDiscount() {
+    if (this.appliedDiscount.type === 'MERIT') {
+      this.removeAppliedDiscount();
+      return;
+    }
+    this.applyMeritDiscount();
+  }
+
+  applySiblingDiscount() {
+    const pct = this.activeSiblingInfo?.suggestedDiscountPct || 15;
+    const discountAmt = Math.round((this.originalDueAmount * pct) / 100);
+    this.appliedDiscount = {
+      type: 'SIBLING',
+      label: `Sibling Concession (${pct}%)`,
+      amount: discountAmt,
+      percentage: pct,
+    };
+    this.collectForm.amount_paid = Math.max(0, this.originalDueAmount - discountAmt);
+    this.toast.success(`Applied ${pct}% Sibling Concession (-₹${discountAmt})`);
+  }
+
+  applyMeritDiscount() {
+    const pct = this.activeMeritInfo?.suggestedDiscountPct || 10;
+    const discountAmt = Math.round((this.originalDueAmount * pct) / 100);
+    this.appliedDiscount = {
+      type: 'MERIT',
+      label: `Academic Merit Scholarship (${pct}%)`,
+      amount: discountAmt,
+      percentage: pct,
+    };
+    this.collectForm.amount_paid = Math.max(0, this.originalDueAmount - discountAmt);
+    this.toast.success(`Applied ${pct}% Academic Merit Scholarship (-₹${discountAmt})`);
+  }
+
+  applyQuickPromo(code: string) {
+    this.enteredPromoCode = code;
+    this.applyPromoCodeInModal();
+  }
+
+  async applyPromoCodeInModal() {
+    const code = (this.enteredPromoCode || '').trim().toUpperCase();
+    if (!code) {
+      this.promoAppliedError = 'Please enter a promocode';
+      return;
+    }
+    this.applyingPromo = true;
+    this.promoAppliedError = '';
+    this.promoAppliedMessage = '';
+
+    try {
+      const res = await this.api.validateAndApplyPromocode(code, this.collectForm.invoice_id, this.originalDueAmount);
+      if (res.success) {
+        const discountAmt = Math.min(res.discountAmount, this.originalDueAmount);
+        this.appliedDiscount = {
+          type: 'PROMOCODE',
+          code: res.code,
+          label: `Promocode ${res.code}`,
+          amount: discountAmt,
+          percentage: res.discountPercentage,
+        };
+        this.collectForm.amount_paid = Math.max(0, this.originalDueAmount - discountAmt);
+        this.promoAppliedMessage = res.message || `Promocode ${res.code} applied (-₹${discountAmt})!`;
+        this.toast.success(this.promoAppliedMessage);
+      } else {
+        this.promoAppliedError = res.message || 'Invalid or expired promocode.';
+      }
+    } catch (err: any) {
+      this.promoAppliedError = err.message || 'Failed to validate promocode.';
+    } finally {
+      this.applyingPromo = false;
+    }
+  }
+
+  removeAppliedDiscount() {
+    this.appliedDiscount = { type: 'NONE', label: '', amount: 0 };
+    this.collectForm.amount_paid = this.originalDueAmount;
+    this.promoAppliedMessage = '';
+    this.promoAppliedError = '';
+  }
+
+  closeCollectModal() {
+    this.showCollectModal = false;
+    this.selectedStudentInvoice = null;
+    this.activeSiblingInfo = null;
+    this.activeMeritInfo = null;
+    this.appliedDiscount = { type: 'NONE', label: '', amount: 0 };
+  }
+
+  async submitCollectFee() {
     if (!this.collectForm.invoice_id || !this.collectForm.amount_paid || this.collectForm.amount_paid <= 0) {
-      this.collectModalError = 'Please select an invoice and enter a valid payment amount.';
+      this.collectModalError = 'Please select a valid student invoice and enter a payment amount.';
       return;
     }
     this.savingPayment = true;
     this.collectModalError = '';
 
-    this.api.post('fees/payments', this.collectForm).subscribe({
-      next: (res: any) => {
-        this.savingPayment = false;
+    const payload = {
+      ...this.collectForm,
+      discount_applied: this.appliedDiscount.amount || 0,
+      discount_type: this.appliedDiscount.type,
+      discount_code: this.appliedDiscount.code || null,
+      remarks: this.appliedDiscount.amount > 0
+        ? `${this.collectForm.remarks || ''} (${this.appliedDiscount.label} applied: ₹${this.appliedDiscount.amount})`.trim()
+        : this.collectForm.remarks,
+    };
+
+    try {
+      const res = await this.api.recordFeePayment(payload);
+      this.savingPayment = false;
+      if (res && res.success !== false) {
         this.closeCollectModal();
-        this.toast.success(`Payment of ₹${this.collectForm.amount_paid} recorded! Receipt: ${res?.receiptNumber}`);
+        const receiptNo = res.receiptNumber || res.receipt_number || 'REC-' + Date.now();
+        this.toast.success(`Payment of ₹${this.collectForm.amount_paid} recorded! Receipt: ${receiptNo}`);
         this.loadAllData();
         this.loadDayBook();
         const inv = this.invoices.find((i) => i.id === this.collectForm.invoice_id);
         if (inv) {
-          this.printFeeReceipt(inv, res?.receiptNumber, this.collectForm.amount_paid);
+          this.printFeeReceipt(inv, receiptNo, this.collectForm.amount_paid);
         }
-      },
-      error: (err: any) => {
-        this.savingPayment = false;
-        this.collectModalError = err.message || 'Failed to record fee payment.';
-      },
+      } else {
+        this.collectModalError = res?.message || 'Failed to record fee payment.';
+      }
+    } catch (err: any) {
+      this.savingPayment = false;
+      this.collectModalError = err.message || 'Failed to record fee payment.';
+    }
+  }
+
+  // ==============================================================================
+  // SCHOOL FEE RULES & LATE FEE POLICY ENGINE
+  // ==============================================================================
+  async loadSchoolFeeRules() {
+    this.loadingFeeRules = true;
+    try {
+      const rules = await this.api.getSchoolFeeRules(this.auth.activeAcademicSession()?.id);
+      if (rules) {
+        this.schoolFeeRules = {
+          ...rules,
+          monthly_discount_pct: rules.monthly_discount_pct ?? 0,
+          quarterly_discount_pct: rules.quarterly_discount_pct ?? 5,
+          annual_discount_pct: rules.annual_discount_pct ?? 10,
+          due_day_of_month: rules.due_day_of_month ?? 10,
+          grace_period_days: rules.grace_period_days ?? 5,
+          enable_late_fee: rules.enable_late_fee ?? true,
+          late_fee_type: rules.late_fee_type ?? 'DAILY',
+          late_fee_amount: rules.late_fee_amount ?? 20,
+        };
+      }
+    } catch (err: any) {
+      console.warn('Could not load school fee rules:', err);
+    } finally {
+      this.loadingFeeRules = false;
+    }
+  }
+
+  async saveSchoolFeeRules() {
+    this.savingFeeRules = true;
+    try {
+      const res = await this.api.updateSchoolFeeRules(this.schoolFeeRules, this.auth.activeAcademicSession()?.id);
+      if (res && res.success) {
+        this.toast.success('Fee billing rules and late fee policy saved successfully!');
+      } else {
+        throw new Error('Failed to save fee rules');
+      }
+    } catch (err: any) {
+      this.toast.error('SQL migration pending in Supabase. Please run supabase/fee_billing_rules_and_ledger_charges.sql in Supabase SQL editor.');
+    } finally {
+      this.savingFeeRules = false;
+    }
+  }
+
+  // ==============================================================================
+  // ADD STUDENT FEE CHARGE ACTIONS
+  // ==============================================================================
+  openAddChargeModal() {
+    this.chargeForm = {
+      charge_type: 'FINE_PENALTY',
+      amount: 100,
+      description: '',
+      effective_date: new Date().toISOString().split('T')[0],
+    };
+    this.chargeError = '';
+    this.showAddChargeModal = true;
+  }
+
+  closeAddChargeModal() {
+    this.showAddChargeModal = false;
+    this.chargeError = '';
+  }
+
+  async submitAddCharge() {
+    if (!this.activeLedgerStudent) return;
+    if (!this.chargeForm.amount || this.chargeForm.amount <= 0) {
+      this.chargeError = 'Please enter a valid charge amount greater than ₹0.';
+      return;
+    }
+    if (!this.chargeForm.description.trim()) {
+      this.chargeError = 'Please provide a brief reason or description for this charge.';
+      return;
+    }
+
+    this.savingCharge = true;
+    this.chargeError = '';
+    try {
+      const res = await this.api.addStudentFeeCharge(
+        this.activeLedgerStudent.student_id,
+        {
+          charge_type: this.chargeForm.charge_type,
+          amount: Number(this.chargeForm.amount),
+          description: this.chargeForm.description.trim(),
+          effective_date: this.chargeForm.effective_date,
+        },
+        this.auth.activeAcademicSession()?.id
+      );
+
+      if (res && res.success) {
+        this.toast.success(`Fee charge of ₹${this.chargeForm.amount} added to student ledger.`);
+        this.closeAddChargeModal();
+        await this.openStudentLedgerModal(this.activeLedgerStudent);
+      } else {
+        throw new Error('Failed to record fee charge');
+      }
+    } catch (err: any) {
+      this.chargeError = 'SQL migration pending in Supabase. Please run supabase/fee_billing_rules_and_ledger_charges.sql in Supabase SQL editor.';
+      this.toast.error(this.chargeError);
+    } finally {
+      this.savingCharge = false;
+    }
+  }
+
+  // ==============================================================================
+  // RUNNING BALANCE RESILIENT HELPER
+  // ==============================================================================
+  getItemRunningBalance(item: any, index: number): number {
+    if (item.runningBalance != null && !isNaN(item.runningBalance)) {
+      return Number(item.runningBalance);
+    }
+    if (item.balance != null && !isNaN(item.balance)) {
+      return Number(item.balance);
+    }
+    let bal = 0;
+    for (let i = 0; i <= index; i++) {
+      const entry = this.ledgerEntries[i];
+      bal += (Number(entry?.credit) || 0) - (Number(entry?.debit) || 0);
+    }
+    return bal;
+  }
+
+  async setLedgerFrequency(freq: 'MONTHLY' | 'QUARTERLY' | 'ANNUAL') {
+    if (this.selectedBillingFrequency === freq) return;
+    const prevFreq = this.selectedBillingFrequency;
+    this.selectedBillingFrequency = freq;
+    if (freq !== 'ANNUAL') {
+      this.annualDiscountApplied = false;
+    }
+    if (this.activeLedgerStudent) {
+      try {
+        const concessionPct = freq === 'ANNUAL' ? (Number(this.annualConcessionPct) || (this.schoolFeeRules.annual_discount_pct || 10)) : 0;
+        const res = await this.api.updateStudentFeePreference(this.activeLedgerStudent.student_id, {
+          frequency: freq,
+          annualConcessionPct: concessionPct,
+          annual_concession_pct: concessionPct,
+          notes: `Updated to ${freq} billing frequency`,
+          academicYearId: this.auth.activeAcademicSession()?.id,
+          academic_year_id: this.auth.activeAcademicSession()?.id,
+        });
+        if (!res || res.success === false) {
+          throw new Error(res?.message || 'Failed');
+        }
+        this.toast.success(`Student billing frequency updated to ${freq}`);
+        await this.openStudentLedgerModal(this.activeLedgerStudent);
+      } catch (err: any) {
+        this.selectedBillingFrequency = prevFreq;
+        this.toast.error('SQL migration pending in Supabase. Please run supabase/fee_billing_rules_and_ledger_charges.sql in Supabase SQL editor.');
+      }
+    }
+  }
+
+  // ==============================================================================
+  // STUDENT ACCOUNT LEDGER STATEMENT ACTIONS
+  // ==============================================================================
+  async openStudentLedgerModal(inv: StudentFeeInvoice) {
+    this.activeLedgerStudent = inv;
+    this.showLedgerModal = true;
+    this.loadingLedger = true;
+    this.selectedBillingFrequency = 'MONTHLY';
+    this.annualConcessionPct = 10;
+    this.annualDiscountApplied = false;
+    this.feePreferenceNotes = '';
+
+    const studentInvoices = this.invoices.filter((i) => i.student_id === inv.student_id);
+    this.ledgerInvoicesCount = studentInvoices.length;
+
+    try {
+      const statement = await this.api.getStudentFeeLedger(inv.student_id, this.auth.activeAcademicSession()?.id);
+      if (statement && statement.ledgerEntries && statement.ledgerEntries.length > 0) {
+        this.ledgerEntries = statement.ledgerEntries;
+        this.ledgerBilledTotal = statement.totalBilled;
+        this.ledgerPaidTotal = statement.totalPaid;
+        this.ledgerDiscountTotal = statement.totalDiscount || 0;
+        this.ledgerNetBalance = statement.advanceBalance > 0 ? statement.advanceBalance : -statement.pendingDue;
+        this.selectedBillingFrequency = statement.frequencyPreference || 'MONTHLY';
+        this.annualConcessionPct = statement.annualConcessionPct || 10;
+        this.annualDiscountApplied = (statement.annualConcessionPct || 0) > 0;
+      } else {
+        const payments = await this.api.getStudentFeePayments(inv.student_id);
+        this.buildStudentLedger(studentInvoices, payments);
+      }
+    } catch {
+      const payments = await this.api.getStudentFeePayments(inv.student_id);
+      this.buildStudentLedger(studentInvoices, payments);
+    } finally {
+      this.loadingLedger = false;
+    }
+  }
+
+  closeLedgerModal() {
+    this.showLedgerModal = false;
+    this.activeLedgerStudent = null;
+    this.ledgerEntries = [];
+  }
+
+  buildStudentLedger(invoices: StudentFeeInvoice[], payments: any[]) {
+    const rawItems: Array<{
+      date: string;
+      reference: string;
+      description: string;
+      type: 'INVOICE' | 'PAYMENT' | 'CHARGE';
+      mode?: string;
+      status?: string;
+      debit: number;
+      credit: number;
+    }> = [];
+
+    let totalBilled = 0;
+    let totalPaid = 0;
+    let totalDiscount = 0;
+
+    // 1. Debits from invoices or Indian April-to-March session breakdown
+    if (invoices && invoices.length > 0) {
+      invoices.forEach((inv) => {
+        const amount = Number(inv.total_amount) || 0;
+        const discount = Number(inv.discount_amount) || 0;
+        totalBilled += amount;
+        totalDiscount += discount;
+        rawItems.push({
+          date: inv.created_at || inv.due_date || new Date().toISOString(),
+          reference: inv.invoice_number,
+          description: `Tuition Fee Billing (${inv.month_name || 'Standard Term'})`,
+          type: 'INVOICE',
+          mode: 'BILLING',
+          status: inv.status || 'UNPAID',
+          debit: amount,
+          credit: 0,
+        });
+      });
+    } else {
+      // April-to-March Indian Academic Session schedule alignment
+      const baseMonthly = Number(this.activeLedgerStudent?.total_amount) || 3000;
+      const today = new Date();
+      const currentYear = today.getFullYear();
+      const sessionStartYear = today.getMonth() >= 3 ? currentYear : currentYear - 1;
+
+      if (this.selectedBillingFrequency === 'ANNUAL') {
+        const fullYearFee = baseMonthly * 12;
+        const discountPct = Number(this.annualConcessionPct) || (this.schoolFeeRules.annual_discount_pct || 10);
+        const discountAmt = Math.round((fullYearFee * discountPct) / 100);
+        const netFee = fullYearFee - discountAmt;
+        totalBilled += netFee;
+        totalDiscount += discountAmt;
+        rawItems.push({
+          date: `${sessionStartYear}-04-01`,
+          reference: `INV-ANN-${sessionStartYear}`,
+          description: `Annual Session Tuition Fee (${sessionStartYear}-${sessionStartYear + 1}) [${discountPct}% Upfront Concession Applied]`,
+          type: 'INVOICE',
+          mode: 'BILLING',
+          status: 'UNPAID',
+          debit: netFee,
+          credit: 0,
+        });
+      } else if (this.selectedBillingFrequency === 'QUARTERLY') {
+        const quarters = [
+          { name: 'Q1 (Apr - Jun)', date: `${sessionStartYear}-04-01` },
+          { name: 'Q2 (Jul - Sep)', date: `${sessionStartYear}-07-01` },
+          { name: 'Q3 (Oct - Dec)', date: `${sessionStartYear}-10-01` },
+          { name: 'Q4 (Jan - Mar)', date: `${sessionStartYear + 1}-01-01` },
+        ];
+        quarters.forEach((q, idx) => {
+          const qDate = new Date(q.date);
+          if (qDate <= today || idx === 0) {
+            const qAmt = baseMonthly * 3;
+            totalBilled += qAmt;
+            rawItems.push({
+              date: q.date,
+              reference: `INV-Q${idx + 1}-${sessionStartYear}`,
+              description: `Quarterly Tuition Fee - ${q.name}`,
+              type: 'INVOICE',
+              mode: 'BILLING',
+              status: 'UNPAID',
+              debit: qAmt,
+              credit: 0,
+            });
+          }
+        });
+      } else {
+        // MONTHLY: 1st of every month from April up to current month
+        const sessionMonths = [
+          { name: 'April', month: 3, year: sessionStartYear },
+          { name: 'May', month: 4, year: sessionStartYear },
+          { name: 'June', month: 5, year: sessionStartYear },
+          { name: 'July', month: 6, year: sessionStartYear },
+          { name: 'August', month: 7, year: sessionStartYear },
+          { name: 'September', month: 8, year: sessionStartYear },
+          { name: 'October', month: 9, year: sessionStartYear },
+          { name: 'November', month: 10, year: sessionStartYear },
+          { name: 'December', month: 11, year: sessionStartYear },
+          { name: 'January', month: 0, year: sessionStartYear + 1 },
+          { name: 'February', month: 1, year: sessionStartYear + 1 },
+          { name: 'March', month: 2, year: sessionStartYear + 1 },
+        ];
+        sessionMonths.forEach((m) => {
+          const mDate = new Date(m.year, m.month, 1);
+          if (mDate <= today || (m.year === sessionStartYear && m.month === 3)) {
+            const dateStr = `${m.year}-${String(m.month + 1).padStart(2, '0')}-01`;
+            totalBilled += baseMonthly;
+            rawItems.push({
+              date: dateStr,
+              reference: `INV-${m.name.slice(0, 3).toUpperCase()}-${m.year}`,
+              description: `Monthly Tuition Fee (${m.name} ${m.year})`,
+              type: 'INVOICE',
+              mode: 'BILLING',
+              status: 'UNPAID',
+              debit: baseMonthly,
+              credit: 0,
+            });
+          }
+        });
+      }
+    }
+
+    // 2. Credits from payments table or invoice paid_amount
+    if (payments && payments.length > 0) {
+      payments.forEach((p) => {
+        const amt = Number(p.amount_paid) || 0;
+        totalPaid += amt;
+        rawItems.push({
+          date: p.payment_date || p.created_at || new Date().toISOString(),
+          reference: p.receipt_number || 'REC-DIRECT',
+          description: `Fee Payment Received (${p.remarks || 'Cashier Desk'})`,
+          type: 'PAYMENT',
+          mode: p.payment_mode || 'CASH',
+          status: 'RECEIVED',
+          debit: 0,
+          credit: amt,
+        });
+      });
+    } else if (invoices && invoices.length > 0) {
+      invoices.forEach((inv) => {
+        const paid = Number(inv.paid_amount) || 0;
+        if (paid > 0) {
+          totalPaid += paid;
+          rawItems.push({
+            date: inv.created_at || new Date().toISOString(),
+            reference: `REC-${inv.invoice_number}`,
+            description: `Fee Payment Received (${inv.month_name || 'Settled'})`,
+            type: 'PAYMENT',
+            mode: 'CASH/UPI',
+            status: 'RECEIVED',
+            debit: 0,
+            credit: paid,
+          });
+        }
+      });
+    }
+
+    // Sort chronologically
+    rawItems.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    // Calculate running balance (credit - debit)
+    let runningBalance = 0;
+    this.ledgerEntries = rawItems.map((item) => {
+      runningBalance += (item.credit - item.debit);
+      return {
+        date: item.date,
+        type: item.type,
+        referenceNumber: item.reference,
+        description: item.description,
+        debit: item.debit,
+        credit: item.credit,
+        runningBalance,
+        status: item.status,
+        paymentMode: item.mode,
+      };
     });
+
+    this.ledgerBilledTotal = totalBilled;
+    this.ledgerPaidTotal = totalPaid;
+    this.ledgerDiscountTotal = totalDiscount;
+    this.ledgerNetBalance = totalPaid - totalBilled;
+  }
+
+  calculateAnnualConcessionSavings(): number {
+    const base = this.ledgerBilledTotal > 0 ? this.ledgerBilledTotal : 30000;
+    const pct = Math.max(0, Math.min(100, Number(this.annualConcessionPct) || 0));
+    return Math.round((base * pct) / 100);
+  }
+
+  async saveStudentFeePreference() {
+    if (!this.activeLedgerStudent) return;
+    this.savingPreference = true;
+    try {
+      const concessionPct = this.selectedBillingFrequency === 'ANNUAL' ? (Number(this.annualConcessionPct) || 0) : 0;
+      const res = await this.api.updateStudentFeePreference(this.activeLedgerStudent.student_id, {
+        frequency: this.selectedBillingFrequency,
+        annualConcessionPct: concessionPct,
+        annual_concession_pct: concessionPct,
+        notes: this.feePreferenceNotes || `Billing frequency configured as ${this.selectedBillingFrequency}`,
+        academicYearId: this.auth.activeAcademicSession()?.id,
+        academic_year_id: this.auth.activeAcademicSession()?.id,
+      });
+      if (!res || res.success === false) {
+        throw new Error(res?.message || 'Failed');
+      }
+      this.savingPreference = false;
+      this.toast.success(`Fee frequency & concession preference saved successfully!`);
+      await this.openStudentLedgerModal(this.activeLedgerStudent);
+    } catch (err: any) {
+      this.savingPreference = false;
+      this.toast.error('SQL migration pending in Supabase. Please run supabase/fee_billing_rules_and_ledger_charges.sql in Supabase SQL editor.');
+    }
+  }
+
+  printStudentLedger() {
+    if (!this.activeLedgerStudent) return;
+    const s = this.activeLedgerStudent;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const rowsHtml = this.ledgerEntries.map((e, idx) => {
+      const bal = this.getItemRunningBalance(e, idx);
+      const balFormatted = bal > 0 ? `+₹${bal.toLocaleString()} (Advance)` : (bal < 0 ? `₹${(-bal).toLocaleString()} (Due)` : `₹0.00 (Settled)`);
+      return `
+      <tr>
+        <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0;">${new Date(e.date).toLocaleDateString('en-GB')}</td>
+        <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0; font-weight:bold; color:${e.type === 'INVOICE' || e.type === 'CHARGE' ? '#dc2626' : '#16a34a'};">${e.type}</td>
+        <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0; font-family:monospace; font-weight:bold;">${e.referenceNumber}</td>
+        <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0;">${e.description}</td>
+        <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0; text-align:right;">${e.debit > 0 ? '₹' + e.debit.toLocaleString() : '-'}</td>
+        <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0; text-align:right; font-weight:bold; color:#16a34a;">${e.credit > 0 ? '₹' + e.credit.toLocaleString() : '-'}</td>
+        <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0; text-align:right; font-weight:bold;">
+          ${balFormatted}
+        </td>
+        <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0;">${e.status || (e.credit > 0 ? 'RECEIVED' : 'BILLED')}</td>
+      </tr>
+    `;
+    }).join('');
+
+    const netBadge = this.ledgerPaidTotal > this.ledgerBilledTotal
+      ? `<span style="color:#16a34a; font-weight:bold; background:#ecfdf5; padding:2px 8px; border-radius:4px; border:1px solid #a7f3d0;">+₹${(this.ledgerPaidTotal - this.ledgerBilledTotal).toLocaleString()} (Advance Credit)</span>`
+      : (this.ledgerBilledTotal > this.ledgerPaidTotal
+        ? `<span style="color:#dc2626; font-weight:bold; background:#fff1f2; padding:2px 8px; border-radius:4px; border:1px solid #fecdd3;">₹${(this.ledgerBilledTotal - this.ledgerPaidTotal).toLocaleString()} (Outstanding Due)</span>`
+        : '<span style="color:#475569; font-weight:bold;">Settled (₹0.00)</span>');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Student Account Ledger - ${s.student_name}</title>
+        <style>
+          body { font-family: sans-serif; font-size: 12px; color: #1e293b; padding: 24px; margin: 0; }
+          .header { border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px; }
+          .title { font-size: 18px; font-weight: 900; color: #0f172a; }
+          .subtitle { font-size: 11px; color: #64748b; }
+          .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+          .card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; background: #f8fafc; }
+          .card-title { font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: bold; }
+          .card-val { font-size: 16px; font-weight: 900; margin-top: 4px; }
+          table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 12px; }
+          th { background: #f1f5f9; padding: 8px; text-align: left; font-size: 10px; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">${this.auth.currentUser()?.school?.name || 'SchoolSense Academy'}</div>
+          <div class="subtitle">Official Student Account Ledger & Billing Statement | Academic Session: ${this.auth.activeSessionName()}</div>
+          <div style="margin-top: 8px; font-weight: bold; font-size: 13px;">
+            Student: ${s.student_name} | Admission No: ${s.admission_number || 'N/A'} | Class: ${s.class_name} - ${s.section_name}
+          </div>
+        </div>
+
+        <div class="metrics">
+          <div class="card">
+            <div class="card-title">Total Billed</div>
+            <div class="card-val">₹${this.ledgerBilledTotal.toLocaleString()}</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Total Paid Received</div>
+            <div class="card-val" style="color: #16a34a;">₹${this.ledgerPaidTotal.toLocaleString()}</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Concessions</div>
+            <div class="card-val" style="color: #4f46e5;">₹${this.ledgerDiscountTotal.toLocaleString()}</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Account Position</div>
+            <div class="card-val">${netBadge}</div>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Entry Type</th>
+              <th>Ref #</th>
+              <th>Description</th>
+              <th style="text-align:right;">Debit</th>
+              <th style="text-align:right;">Credit</th>
+              <th style="text-align:right;">Running Balance</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+
+        <div style="margin-top: 24px; font-size: 10px; color: #94a3b8; text-align: center;">
+          This is an official computer-generated account ledger statement generated on ${new Date().toLocaleString('en-IN')}.
+        </div>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 400);
   }
 
   // Add Fee Structure Modal Actions

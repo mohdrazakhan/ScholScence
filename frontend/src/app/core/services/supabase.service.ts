@@ -1,7 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { createClient, SupabaseClient, User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { ToastService } from './toast.service';
 
 /** localStorage key shared with AuthService — the login session token. */
 const SESSION_TOKEN_KEY = 'schoolsense_token';
@@ -172,9 +173,25 @@ installLocalStorageFirewall();
   providedIn: 'root',
 })
 export class SupabaseService {
+  private toast = inject(ToastService, { optional: true });
   private supabase: SupabaseClient;
   private currentUserSubject = new BehaviorSubject<SupabaseUser | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
+
+  private lastToastTime = 0;
+  private lastToastMessage = '';
+
+  private notifyAccessDenied(msg: string): void {
+    const now = Date.now();
+    if (now - this.lastToastTime < 3000 && this.lastToastMessage === msg) {
+      return;
+    }
+    this.lastToastTime = now;
+    this.lastToastMessage = msg;
+    try {
+      this.toast?.error(msg, 'Security Policy');
+    } catch {}
+  }
 
   constructor() {
     installLocalStorageFirewall();
@@ -247,10 +264,11 @@ export class SupabaseService {
       try {
         const parsedUrl = new URL(urlStr);
         if (containsSqlInjectionPayload(parsedUrl.search)) {
+          this.notifyAccessDenied('Access denied: Potentially unsafe query payload blocked.');
           return new Response(
             JSON.stringify({
               hint: 'This API can only be accessed through the official SchoolSense application.',
-              message: 'Access denied: Potentially unsafe query payload blocked.',
+              message: 'Access denied. This API can only be accessed through the official SchoolSense application.',
             }),
             { status: 403, headers: { 'Content-Type': 'application/json' } }
           );
@@ -278,7 +296,22 @@ export class SupabaseService {
         // Fallback if URL parsing fails in non-standard environment
       }
 
-      return fetch(input, { ...init, headers });
+      const res = await fetch(input, { ...init, headers });
+      if (res.status === 403) {
+        try {
+          const cloned = res.clone();
+          const body = await cloned.json();
+          const errorMsg =
+            body?.message ||
+            body?.hint ||
+            body?.error ||
+            'Access denied. This API can only be accessed through the official SchoolSense application.';
+          this.notifyAccessDenied(typeof errorMsg === 'string' ? errorMsg : 'Access denied.');
+        } catch {
+          this.notifyAccessDenied('Access denied. This API can only be accessed through the official SchoolSense application.');
+        }
+      }
+      return res;
     };
 
     return createClient(environment.supabaseUrl, environment.supabaseKey, {
@@ -326,12 +359,13 @@ export class SupabaseService {
 
   rpc(fn: string, params?: any) {
     if (params && containsSqlInjectionPayload(params)) {
+      this.notifyAccessDenied('Access denied. Potentially unsafe input blocked.');
       return Promise.resolve({
         data: null,
         error: {
-          message: 'Access denied: Potentially unsafe input blocked.',
+          message: 'Access denied. This API can only be accessed through the official SchoolSense application.',
           details: '',
-          hint: 'Please remove special SQL characters and try again.',
+          hint: 'This API can only be accessed through the official SchoolSense application.',
           code: '42501',
         },
         count: null,
