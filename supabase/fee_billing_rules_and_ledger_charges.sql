@@ -425,6 +425,58 @@ BEGIN
     updated_at = NOW()
   RETURNING * INTO v_rec;
 
+  -- 1. Automatically realign due dates on all unpaid/partially paid session invoices to match the configured due_day_of_month
+  UPDATE public.student_fee_invoices inv
+     SET due_date = make_date(
+           EXTRACT(YEAR FROM inv.due_date)::INT,
+           EXTRACT(MONTH FROM inv.due_date)::INT,
+           LEAST(v_due_day, 28)
+         ),
+         updated_at = NOW()
+   WHERE inv.school_id = v_school_id
+     AND inv.academic_year_id = v_year.id
+     AND inv.deleted_at IS NULL
+     AND inv.status <> 'PAID'
+     AND COALESCE(inv.paid_amount, 0.00) < inv.total_amount;
+
+  -- 2. Immediately re-evaluate late fee fines and overdue status on unpaid invoices
+  IF v_enable_late AND v_late_amount > 0 THEN
+    UPDATE public.student_fee_invoices inv
+       SET fine_amount = CASE
+             WHEN CURRENT_DATE > (inv.due_date + v_grace_days) THEN
+               CASE
+                 WHEN v_late_type = 'DAILY' THEN (CURRENT_DATE - (inv.due_date + v_grace_days)) * v_late_amount
+                 ELSE v_late_amount
+               END
+             ELSE 0.00
+           END,
+           status = CASE
+             WHEN CURRENT_DATE > (inv.due_date + v_grace_days) THEN 'OVERDUE'
+             WHEN COALESCE(inv.paid_amount, 0.00) > 0 THEN 'PARTIAL'
+             ELSE 'UNPAID'
+           END,
+           updated_at = NOW()
+     WHERE inv.school_id = v_school_id
+       AND inv.academic_year_id = v_year.id
+       AND inv.deleted_at IS NULL
+       AND inv.status <> 'PAID'
+       AND COALESCE(inv.paid_amount, 0.00) < inv.total_amount;
+  ELSE
+    UPDATE public.student_fee_invoices inv
+       SET fine_amount = 0.00,
+           status = CASE
+             WHEN CURRENT_DATE > inv.due_date THEN 'OVERDUE'
+             WHEN COALESCE(inv.paid_amount, 0.00) > 0 THEN 'PARTIAL'
+             ELSE 'UNPAID'
+           END,
+           updated_at = NOW()
+     WHERE inv.school_id = v_school_id
+       AND inv.academic_year_id = v_year.id
+       AND inv.deleted_at IS NULL
+       AND inv.status <> 'PAID'
+       AND COALESCE(inv.paid_amount, 0.00) < inv.total_amount;
+  END IF;
+
   RETURN jsonb_build_object(
     'success', true,
     'message', 'Fee billing rules saved successfully',
@@ -1018,6 +1070,9 @@ DECLARE
   v_running_balance NUMERIC(10, 2) := 0.00;
   v_invoice_count INT := 0;
   r RECORD;
+  inv_rec RECORD;
+  v_days_overdue INT := 0;
+  v_fine_calc NUMERIC(10, 2) := 0.00;
 BEGIN
   IF public.current_session() IS NULL THEN
     RETURN jsonb_build_object('success', false, 'error', 'session_required', 'message', 'Valid school session required');
@@ -1095,6 +1150,37 @@ BEGIN
      AND academic_year_id = v_year.id
    LIMIT 1;
 
+  -- Real-Time Dynamic Late Fee Re-evaluation for Overdue Invoices
+  IF COALESCE(v_rules.enable_late_fee, FALSE) = TRUE AND COALESCE(v_rules.late_fee_amount, 0.00) > 0 THEN
+    FOR inv_rec IN (
+      SELECT id, due_date, total_amount, paid_amount, fine_amount, status
+        FROM public.student_fee_invoices
+       WHERE school_id = v_school_id
+         AND student_id = p_student_id
+         AND academic_year_id = v_year.id
+         AND deleted_at IS NULL
+         AND status <> 'PAID'
+         AND COALESCE(paid_amount, 0.00) < total_amount
+    ) LOOP
+      IF CURRENT_DATE > (inv_rec.due_date + COALESCE(v_rules.grace_period_days, 5)) THEN
+        v_days_overdue := CURRENT_DATE - (inv_rec.due_date + COALESCE(v_rules.grace_period_days, 5));
+        IF UPPER(COALESCE(v_rules.late_fee_type, 'FLAT')) = 'DAILY' THEN
+          v_fine_calc := v_days_overdue * v_rules.late_fee_amount;
+        ELSE
+          v_fine_calc := v_rules.late_fee_amount;
+        END IF;
+
+        IF COALESCE(inv_rec.fine_amount, 0.00) <> v_fine_calc OR inv_rec.status <> 'OVERDUE' THEN
+          UPDATE public.student_fee_invoices
+             SET fine_amount = v_fine_calc,
+                 status = 'OVERDUE',
+                 updated_at = NOW()
+           WHERE id = inv_rec.id;
+        END IF;
+      END IF;
+    END LOOP;
+  END IF;
+
   -- Load Invoices
   SELECT COALESCE(jsonb_agg(jsonb_build_object(
            'id', inv.id,
@@ -1158,13 +1244,15 @@ BEGIN
   -- Charges with linked invoice are represented as CHARGE entries (invoices tied to charges are excluded to prevent double debit)
   v_total_billed := 0.00;
   v_total_paid := 0.00;
+  v_running_balance := 0.00;
 
   FOR r IN (
-    SELECT inv.due_date AS entry_date,
+    -- 1. Base Tuition Invoices (Net tuition fee debit on configured due date of month)
+    SELECT COALESCE(inv.due_date, inv.created_at::DATE, CURRENT_DATE) AS entry_date,
            'INVOICE' AS entry_type,
            inv.invoice_number AS ref_no,
            'Fee Invoice: ' || COALESCE(inv.month_name, to_char(inv.due_date, 'Mon YYYY')) AS descr,
-           (inv.total_amount + COALESCE(inv.fine_amount, 0.00)) AS debit_amt,
+           inv.total_amount AS debit_amt,
            0.00 AS credit_amt,
            inv.status AS item_status,
            NULL::VARCHAR AS pay_mode,
@@ -1180,6 +1268,30 @@ BEGIN
           WHERE c.invoice_id IS NOT NULL AND c.school_id = v_school_id AND c.deleted_at IS NULL
        )
     UNION ALL
+    -- 2. Late Fee Fines (Dedicated debit row on the day overdue fine begins)
+    SELECT (inv.due_date + COALESCE(v_rules.grace_period_days, 5) + 1)::DATE AS entry_date,
+           'CHARGE' AS entry_type,
+           'FINE-' || inv.invoice_number AS ref_no,
+           CASE
+             WHEN UPPER(COALESCE(v_rules.late_fee_type, 'FLAT')) = 'DAILY' THEN
+               'Late Fee Fine (' || GREATEST(1, CURRENT_DATE - (inv.due_date + COALESCE(v_rules.grace_period_days, 5))) || ' days overdue @ ₹' || COALESCE(v_rules.late_fee_amount, 0.00) || '/day)'
+             ELSE
+               'Late Fee Fine (Flat overdue penalty for ' || COALESCE(inv.month_name, to_char(inv.due_date, 'Mon YYYY')) || ')'
+           END AS descr,
+           inv.fine_amount AS debit_amt,
+           0.00 AS credit_amt,
+           'OVERDUE' AS item_status,
+           NULL::VARCHAR AS pay_mode,
+           1 AS sort_prio,
+           inv.created_at + INTERVAL '1 second' AS created_at
+      FROM public.student_fee_invoices inv
+     WHERE inv.school_id = v_school_id
+       AND inv.student_id = p_student_id
+       AND inv.academic_year_id = v_year.id
+       AND inv.deleted_at IS NULL
+       AND COALESCE(inv.fine_amount, 0.00) > 0
+    UNION ALL
+    -- 3. Additional Charges
     SELECT chg.effective_date AS entry_date,
            'CHARGE' AS entry_type,
            chg.charge_type AS ref_no,
@@ -1196,6 +1308,7 @@ BEGIN
        AND chg.academic_year_id = v_year.id
        AND chg.deleted_at IS NULL
     UNION ALL
+    -- 4. Fee Payments
     SELECT p.payment_date AS entry_date,
            'PAYMENT' AS entry_type,
            p.receipt_number AS ref_no,
@@ -1271,6 +1384,82 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.get_student_fee_ledger(UUID, UUID) TO anon, authenticated, service_role;
+
+
+-- ------------------------------------------------------------------------------
+-- 2.7 AUTOMATED DAILY MIDNIGHT LATE FEE & OVERDUE ENGINE
+-- ------------------------------------------------------------------------------
+-- Evaluates all active schools with late fee enabled and updates overdue invoices daily after 12 AM.
+CREATE OR REPLACE FUNCTION public.apply_daily_midnight_late_fee_engine()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_updated_count INT := 0;
+  v_school_count INT := 0;
+  v_rule RECORD;
+  v_inv RECORD;
+  v_days_overdue INT;
+  v_fine_amt NUMERIC(10, 2);
+BEGIN
+  -- Iterate through all active schools that have enabled late fees for their session
+  FOR v_rule IN (
+    SELECT r.school_id, r.academic_year_id, r.due_day_of_month, r.grace_period_days,
+           r.enable_late_fee, r.late_fee_type, r.late_fee_amount
+      FROM public.school_fee_rules r
+      JOIN public.schools s ON s.id = r.school_id
+     WHERE s.status = 'ACTIVE'
+       AND s.deleted_at IS NULL
+       AND r.enable_late_fee = TRUE
+       AND r.late_fee_amount > 0
+  ) LOOP
+    v_school_count := v_school_count + 1;
+
+    FOR v_inv IN (
+      SELECT id, student_id, due_date, total_amount, paid_amount, fine_amount, status
+        FROM public.student_fee_invoices
+       WHERE school_id = v_rule.school_id
+         AND academic_year_id = v_rule.academic_year_id
+         AND deleted_at IS NULL
+         AND status <> 'PAID'
+         AND COALESCE(paid_amount, 0.00) < total_amount
+    ) LOOP
+      IF CURRENT_DATE > (v_inv.due_date + COALESCE(v_rule.grace_period_days, 5)) THEN
+        v_days_overdue := CURRENT_DATE - (v_inv.due_date + COALESCE(v_rule.grace_period_days, 5));
+        
+        IF UPPER(COALESCE(v_rule.late_fee_type, 'FLAT')) = 'DAILY' THEN
+          v_fine_amt := v_days_overdue * v_rule.late_fee_amount;
+        ELSE
+          v_fine_amt := v_rule.late_fee_amount;
+        END IF;
+
+        IF COALESCE(v_inv.fine_amount, 0.00) <> v_fine_amt OR v_inv.status <> 'OVERDUE' THEN
+          UPDATE public.student_fee_invoices
+             SET fine_amount = v_fine_amt,
+                 status = 'OVERDUE',
+                 updated_at = NOW()
+           WHERE id = v_inv.id;
+
+          v_updated_count := v_updated_count + 1;
+        END IF;
+      END IF;
+    END LOOP;
+  END LOOP;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'message', 'Daily midnight late fee engine executed successfully',
+    'schoolsProcessed', v_school_count,
+    'invoicesUpdated', v_updated_count,
+    'executionDate', to_char(CURRENT_DATE, 'YYYY-MM-DD'),
+    'executedAt', to_char(NOW(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.apply_daily_midnight_late_fee_engine() TO anon, authenticated, service_role;
 
 NOTIFY pgrst, 'reload schema';
 

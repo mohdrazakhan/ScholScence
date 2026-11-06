@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
+import { ImageUploadService } from '../../core/services/image-upload.service';
 import { DepartmentalStaffUser } from '../../core/models';
 
 interface FeatureSectionDef {
@@ -71,14 +72,31 @@ interface FeatureSectionDef {
       <!-- Campus Metrics Ribbon (Unified Minimalist Theme) -->
       <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
         <div class="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs flex flex-col justify-between">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Staff Accounts</span>
-            <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-[#18181c] border border-indigo-100/80 dark:border-white/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-2xs">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
-                <circle cx="9" cy="8" r="3.2" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
-                <path d="M3.5 19c0-2.8 2.5-5 5.5-5s5.5 2.2 5.5 5" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                <path d="M15.5 7.5a2.8 2.8 0 010 5.2M17 14.5c2 .5 3.5 2 3.5 4.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
-              </svg>
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0 pr-1">
+              <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider leading-snug break-words">Total Staff Accounts</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0 mt-0.5">
+              <div class="relative group/info inline-flex items-center">
+                <button type="button" aria-label="Info" class="w-4 h-4 rounded-full text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors flex items-center justify-center cursor-help">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </button>
+                <div class="absolute bottom-full right-0 mb-1.5 hidden group-hover/info:block z-50 w-48 p-2 rounded-lg bg-slate-900/95 dark:bg-slate-800 text-slate-100 text-[10px] font-normal leading-relaxed shadow-xl border border-slate-700/50 backdrop-blur-sm pointer-events-none">
+                  <span>Total departmental staff logins provisioned across all campus operational divisions.</span>
+                </div>
+              </div>
+              <div class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-[#18181c] border border-slate-200/80 dark:border-[#27272e] text-slate-600 dark:text-slate-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </div>
             </div>
           </div>
           <div class="mt-2 text-2xl font-black text-slate-900 dark:text-white">{{ usersList.length }}</div>
@@ -86,13 +104,30 @@ interface FeatureSectionDef {
         </div>
 
         <div class="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs flex flex-col justify-between">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Active Logins</span>
-            <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-[#18181c] border border-indigo-100/80 dark:border-white/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-2xs">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="8" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
-                <path d="M8.5 12.5l2.2 2.2 4.8-4.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0 pr-1">
+              <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider leading-snug break-words">Active Logins</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0 mt-0.5">
+              <div class="relative group/info inline-flex items-center">
+                <button type="button" aria-label="Info" class="w-4 h-4 rounded-full text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors flex items-center justify-center cursor-help">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </button>
+                <div class="absolute bottom-full right-0 mb-1.5 hidden group-hover/info:block z-50 w-48 p-2 rounded-lg bg-slate-900/95 dark:bg-slate-800 text-slate-100 text-[10px] font-normal leading-relaxed shadow-xl border border-slate-700/50 backdrop-blur-sm pointer-events-none">
+                  <span>Staff accounts with live authentication access enabled to log into the portal.</span>
+                </div>
+              </div>
+              <div class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-[#18181c] border border-slate-200/80 dark:border-[#27272e] text-slate-600 dark:text-slate-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <polyline points="16 11 18 13 22 9"></polyline>
+                </svg>
+              </div>
             </div>
           </div>
           <div class="mt-2 text-2xl font-black text-slate-900 dark:text-white">{{ activeUsersCount }}</div>
@@ -100,13 +135,29 @@ interface FeatureSectionDef {
         </div>
 
         <div class="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs flex flex-col justify-between">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Fee & Accounts</span>
-            <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-[#18181c] border border-indigo-100/80 dark:border-white/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-2xs">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
-                <rect x="3" y="5" width="18" height="14" rx="3" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
-                <path d="M3 10h18M7 15h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-              </svg>
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0 pr-1">
+              <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider leading-snug break-words">Fee & Accounts</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0 mt-0.5">
+              <div class="relative group/info inline-flex items-center">
+                <button type="button" aria-label="Info" class="w-4 h-4 rounded-full text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors flex items-center justify-center cursor-help">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </button>
+                <div class="absolute bottom-full right-0 mb-1.5 hidden group-hover/info:block z-50 w-48 p-2 rounded-lg bg-slate-900/95 dark:bg-slate-800 text-slate-100 text-[10px] font-normal leading-relaxed shadow-xl border border-slate-700/50 backdrop-blur-sm pointer-events-none">
+                  <span>Staff assigned to fee collection, cash day-books, invoices, and accounting ledger.</span>
+                </div>
+              </div>
+              <div class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-[#18181c] border border-slate-200/80 dark:border-[#27272e] text-slate-600 dark:text-slate-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                  <line x1="2" y1="10" x2="22" y2="10"></line>
+                </svg>
+              </div>
             </div>
           </div>
           <div class="mt-2 text-2xl font-black text-slate-900 dark:text-white">{{ feeDeptCount }}</div>
@@ -114,15 +165,31 @@ interface FeatureSectionDef {
         </div>
 
         <div class="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs flex flex-col justify-between">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Transport & Fleet</span>
-            <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-[#18181c] border border-indigo-100/80 dark:border-white/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-2xs">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
-                <rect x="4" y="4" width="16" height="13" rx="3" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
-                <path d="M4 11h16M7.5 17v2.5M16.5 17v2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                <circle cx="8" cy="14" r="1" fill="currentColor" />
-                <circle cx="16" cy="14" r="1" fill="currentColor" />
-              </svg>
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0 pr-1">
+              <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider leading-snug break-words">Transport & Fleet</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0 mt-0.5">
+              <div class="relative group/info inline-flex items-center">
+                <button type="button" aria-label="Info" class="w-4 h-4 rounded-full text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors flex items-center justify-center cursor-help">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </button>
+                <div class="absolute bottom-full right-0 mb-1.5 hidden group-hover/info:block z-50 w-48 p-2 rounded-lg bg-slate-900/95 dark:bg-slate-800 text-slate-100 text-[10px] font-normal leading-relaxed shadow-xl border border-slate-700/50 backdrop-blur-sm pointer-events-none">
+                  <span>Staff managing bus routes, vehicle fleet, pick-up points, and student bus passes.</span>
+                </div>
+              </div>
+              <div class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-[#18181c] border border-slate-200/80 dark:border-[#27272e] text-slate-600 dark:text-slate-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="1" y="3" width="15" height="13"></rect>
+                  <polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon>
+                  <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                  <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                </svg>
+              </div>
             </div>
           </div>
           <div class="mt-2 text-2xl font-black text-slate-900 dark:text-white">{{ transportDeptCount }}</div>
@@ -130,13 +197,38 @@ interface FeatureSectionDef {
         </div>
 
         <div class="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs flex flex-col justify-between">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Specialized Depts</span>
-            <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-[#18181c] border border-indigo-100/80 dark:border-white/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-2xs">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
-                <path d="M12 3L4 8h16L12 3z" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-                <path d="M6 8v9M10 8v9M14 8v9M18 8v9M4 17h16M3 20h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-              </svg>
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0 pr-1">
+              <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider leading-snug break-words">Specialized Depts</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0 mt-0.5">
+              <div class="relative group/info inline-flex items-center">
+                <button type="button" aria-label="Info" class="w-4 h-4 rounded-full text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors flex items-center justify-center cursor-help">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </button>
+                <div class="absolute bottom-full right-0 mb-1.5 hidden group-hover/info:block z-50 w-48 p-2 rounded-lg bg-slate-900/95 dark:bg-slate-800 text-slate-100 text-[10px] font-normal leading-relaxed shadow-xl border border-slate-700/50 backdrop-blur-sm pointer-events-none">
+                  <span>Staff managing Library, Physical Education / Sports, Security, and Admissions.</span>
+                </div>
+              </div>
+              <div class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-[#18181c] border border-slate-200/80 dark:border-[#27272e] text-slate-600 dark:text-slate-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+                  <line x1="9" y1="22" x2="9" y2="22.01"></line>
+                  <line x1="15" y1="22" x2="15" y2="22.01"></line>
+                  <line x1="9" y1="6" x2="9" y2="6.01"></line>
+                  <line x1="15" y1="6" x2="15" y2="6.01"></line>
+                  <line x1="9" y1="10" x2="9" y2="10.01"></line>
+                  <line x1="15" y1="10" x2="15" y2="10.01"></line>
+                  <line x1="9" y1="14" x2="9" y2="14.01"></line>
+                  <line x1="15" y1="14" x2="15" y2="14.01"></line>
+                  <line x1="9" y1="18" x2="9" y2="18.01"></line>
+                  <line x1="15" y1="18" x2="15" y2="18.01"></line>
+                </svg>
+              </div>
             </div>
           </div>
           <div class="mt-2 text-2xl font-black text-slate-900 dark:text-white">{{ specializedDeptCount }}</div>
@@ -238,7 +330,12 @@ interface FeatureSectionDef {
               <div class="flex items-center gap-3 min-w-0 flex-1">
                 <!-- Avatar with Live Status Dot -->
                 <div class="relative shrink-0">
-                  <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm tracking-wider shadow-2xs"
+                  <img *ngIf="u.avatar_url || u.profile_image"
+                       [src]="u.avatar_url || u.profile_image"
+                       [alt]="u.name || u.first_name"
+                       class="w-10 h-10 rounded-xl object-cover border border-slate-200/80 dark:border-[#27272e] shadow-2xs" />
+                  <div *ngIf="!u.avatar_url && !u.profile_image"
+                       class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm tracking-wider shadow-2xs"
                        [ngClass]="isPrimaryAdmin(u) ? 'bg-indigo-600 text-white' : 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/60'">
                     {{ u.first_name ? u.first_name.charAt(0).toUpperCase() : 'U' }}
                   </div>
@@ -447,29 +544,23 @@ interface FeatureSectionDef {
       <div class="bg-white dark:bg-[#121214] rounded-3xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.2)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)] border border-slate-200/90 dark:border-[#222226] w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden animate-scaleUp">
         
         <!-- Modal Header -->
-        <div class="px-6 py-4.5 border-b border-slate-100 dark:border-[#222226] flex items-center justify-between bg-white dark:bg-[#121214] shrink-0">
+        <div class="px-7 pt-7 pb-5 sm:px-8 sm:pt-8 sm:pb-5 border-b border-slate-100 dark:border-[#222226] flex items-start justify-between gap-4 bg-white dark:bg-[#121214] shrink-0">
           <div>
             <div class="flex items-center gap-2.5">
-              <span class="clay-badge-indigo text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5">
-                {{ isEditing ? 'MODIFY PERMISSIONS' : 'NEW LOGIN' }}
-              </span>
-              <h3 class="text-base font-black text-slate-900 dark:text-white tracking-tight">
-                {{ isEditing ? 'Edit Departmental User & Access' : 'Create New Departmental User' }}
-              </h3>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-md">{{ isEditing ? 'MODIFY PERMISSIONS' : 'NEW LOGIN' }}</span>
+              <h3 class="text-base font-bold text-slate-900 dark:text-white">{{ isEditing ? 'Edit Departmental User & Access' : 'Create New Departmental User' }}</h3>
             </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Specify user identity and toggle exact module permissions allowed for this person.
-            </p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Specify user details and module access permissions.</p>
           </div>
 
           <button type="button" (click)="closeUserModal()"
-                  class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#18181c] dark:hover:bg-[#222228] text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer text-lg font-bold shadow-2xs active:scale-95">
+                  class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#18181c] dark:hover:bg-[#222228] text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer text-lg font-semibold active:scale-95 shrink-0 mt-0.5">
             &times;
           </button>
         </div>
 
         <!-- Modal Body (Scrollable) -->
-        <div class="p-6 overflow-y-auto custom-clay-scroll space-y-6 flex-1">
+        <div class="px-7 py-6 sm:px-8 overflow-y-auto custom-clay-scroll space-y-6 flex-1">
           
           <!-- Section 1: User Profile & Identity -->
           <div>
@@ -477,245 +568,141 @@ interface FeatureSectionDef {
               <span>1. Profile & Login Credentials</span>
             </h4>
 
+            <!-- Profile Photo Upload -->
+            <div class="flex items-center gap-4 mb-4 pb-4 border-b border-slate-100 dark:border-[#222226]">
+              <div class="relative w-14 h-14 rounded-2xl bg-slate-100 dark:bg-[#18181c] border border-slate-200/90 dark:border-[#27272e] flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
+                <img *ngIf="formData.avatar_url" [src]="formData.avatar_url" alt="Profile preview" class="w-full h-full object-cover" />
+                <svg *ngIf="!formData.avatar_url && !uploadingAvatar" class="w-6 h-6 text-slate-400 dark:text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <div *ngIf="uploadingAvatar" class="absolute inset-0 bg-white/80 dark:bg-[#121214]/80 flex items-center justify-center">
+                  <div class="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <input type="file" #avatarInput accept="image/*" (change)="onAvatarFileChange($event)" class="hidden" />
+                  <button type="button" (click)="avatarInput.click()" [disabled]="uploadingAvatar"
+                          class="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1c1c22] dark:hover:bg-[#25252e] text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-[#2e2e38] transition-colors cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                    {{ formData.avatar_url ? 'Change Photo' : 'Upload Photo' }}
+                  </button>
+                  <button *ngIf="formData.avatar_url" type="button" (click)="removeAvatar()" [disabled]="uploadingAvatar"
+                          class="px-2.5 py-1.5 text-xs font-semibold rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer active:scale-95">
+                    Remove
+                  </button>
+                </div>
+                <p class="text-[11px] text-slate-400 dark:text-slate-500">JPG, PNG or WEBP (Max 5MB)</p>
+              </div>
+            </div>
+
             <!-- Core Profile Fields Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
               <div>
                 <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">First Name *</label>
                 <input type="text" [(ngModel)]="formData.first_name" placeholder="e.g. Ramesh"
-                       class="clay-input w-full px-3.5 py-2.5 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400" />
+                       class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-[#16161c] border border-slate-200 dark:border-[#27272e] text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white focus:border-indigo-600 focus:outline-none transition-all" />
               </div>
 
               <div>
                 <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">Last Name</label>
                 <input type="text" [(ngModel)]="formData.last_name" placeholder="e.g. Sharma"
-                       class="clay-input w-full px-3.5 py-2.5 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400" />
+                       class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-[#16161c] border border-slate-200 dark:border-[#27272e] text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white focus:border-indigo-600 focus:outline-none transition-all" />
               </div>
 
               <div>
                 <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">Email (Login ID) *</label>
                 <input type="email" [(ngModel)]="formData.email" placeholder="e.g. accounts@school.in"
-                       class="clay-input w-full px-3.5 py-2.5 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400" />
+                       class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-[#16161c] border border-slate-200 dark:border-[#27272e] text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white focus:border-indigo-600 focus:outline-none transition-all" />
               </div>
 
               <div>
                 <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">Phone Number</label>
                 <input type="text" [(ngModel)]="formData.phone" placeholder="e.g. +91 98765 43210"
-                       class="clay-input w-full px-3.5 py-2.5 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400" />
+                       class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-[#16161c] border border-slate-200 dark:border-[#27272e] text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white focus:border-indigo-600 focus:outline-none transition-all" />
               </div>
 
               <div>
                 <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">Department *</label>
-                <select [(ngModel)]="formData.department" (change)="onDepartmentChange()"
-                        class="clay-input w-full px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white cursor-pointer">
-                  <option value="Fee & Accounts">Fee & Accounts Department</option>
-                  <option value="Transport & Fleet">Transport & Fleet Department</option>
-                  <option value="Administration">School Administration (Sub-Admin)</option>
-                  <option value="Library & Resources">Library & Resource Center</option>
-                  <option value="Sports & Physical Education">Sports & Physical Education</option>
-                  <option value="Front Desk & Reception">Front Desk / Admissions Desk</option>
-                  <option value="Security & Safety">Security & Campus Safety</option>
-                  <option value="General Operations">General Staff & Operations</option>
-                </select>
+                <div class="relative">
+                  <select [(ngModel)]="formData.department" (change)="onDepartmentChange()"
+                          class="w-full appearance-none px-3.5 pr-10 py-2.5 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-[#16161c] border border-slate-200 dark:border-[#27272e] text-slate-900 dark:text-white cursor-pointer focus:bg-white focus:border-indigo-600 focus:outline-none transition-all">
+                    <option value="Fee & Accounts">Fee & Accounts Department</option>
+                    <option value="Transport & Fleet">Transport & Fleet Department</option>
+                    <option value="Administration">School Administration (Sub-Admin)</option>
+                    <option value="Library & Resources">Library & Resource Center</option>
+                    <option value="Sports & Physical Education">Sports & Physical Education</option>
+                    <option value="Front Desk & Reception">Front Desk / Admissions Desk</option>
+                    <option value="Security & Safety">Security & Campus Safety</option>
+                    <option value="General Operations">General Staff & Operations</option>
+                  </select>
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400">
+                    <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
               <div>
                 <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">Designation / Title</label>
                 <input type="text" [(ngModel)]="formData.designation" placeholder="e.g. Senior Bursar"
-                       class="clay-input w-full px-3.5 py-2.5 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400" />
+                       class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-[#16161c] border border-slate-200 dark:border-[#27272e] text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white focus:border-indigo-600 focus:outline-none transition-all" />
               </div>
             </div>
 
-            <!-- Password & Activation Card (Only when creating new user) -->
-            <div *ngIf="!isEditing" class="mt-4 p-4 rounded-2xl bg-slate-50/80 dark:bg-[#16161c] border border-slate-200/80 dark:border-[#222226] shadow-2xs">
-              <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-                
-                <!-- Password input, strength bar & live checklist (Spans 2 columns) -->
-                <div class="lg:col-span-2 space-y-2.5">
-                  <div class="flex items-center justify-between">
-                    <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300">Login Password *</label>
-                    <span *ngIf="formData.password" class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md"
-                          [ngClass]="{
-                            'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50': createPasswordStrength.score === 1,
-                            'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50': createPasswordStrength.score === 2,
-                            'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50': createPasswordStrength.score === 3
-                          }">
-                      {{ createPasswordStrength.label }} Password
-                    </span>
-                  </div>
-
-                  <div class="relative flex items-center">
-                    <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="formData.password" placeholder="Enter secure password"
-                           class="clay-input w-full pl-3.5 pr-24 py-2.5 text-xs font-mono font-bold text-slate-900 dark:text-white outline-none" />
-                    <div class="absolute right-1.5 flex items-center gap-1">
-                      <button type="button" (click)="generateStrongPassword()"
-                              class="clay-button-secondary px-2.5 py-1 text-[10px] font-bold rounded-lg cursor-pointer flex items-center gap-1 active:scale-95">
-                        <svg class="w-3 h-3 text-indigo-600 dark:text-indigo-400" viewBox="0 0 24 24" fill="none">
-                          <path d="M13 2L4.5 13.5h6L9.5 22 19.5 10.5h-6L13 2z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>
-                        <span>Auto</span>
-                      </button>
-                      <button type="button" (click)="showPassword = !showPassword"
-                              class="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer">
-                        <svg *ngIf="!showPassword" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
-                          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" />
-                          <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8" />
-                        </svg>
-                        <svg *ngIf="showPassword" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
-                          <path d="M17.94 17.94A10.07 10.07 0 0112 20c-6.5 0-10-8-10-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c6.5 0 10 8 10 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Strength Progress Bar -->
-                  <div class="h-1.5 w-full bg-slate-200/70 dark:bg-[#18181c] rounded-full overflow-hidden flex gap-1 p-0.5 border border-slate-200/50 dark:border-[#27272e]">
-                    <div class="h-full rounded-full flex-1 transition-all duration-300"
-                         [ngClass]="createPasswordStrength.score >= 1 ? (createPasswordStrength.score === 1 ? 'bg-rose-500' : (createPasswordStrength.score === 2 ? 'bg-amber-500' : 'bg-emerald-500')) : 'bg-slate-200 dark:bg-[#25252c]'"></div>
-                    <div class="h-full rounded-full flex-1 transition-all duration-300"
-                         [ngClass]="createPasswordStrength.score >= 2 ? (createPasswordStrength.score === 2 ? 'bg-amber-500' : 'bg-emerald-500') : 'bg-slate-200 dark:bg-[#25252c]'"></div>
-                    <div class="h-full rounded-full flex-1 transition-all duration-300"
-                         [ngClass]="createPasswordStrength.score >= 3 ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-[#25252c]'"></div>
-                  </div>
-
-                  <!-- Live Checklist -->
-                  <div class="p-3 rounded-xl bg-white dark:bg-[#141418] border border-slate-200/80 dark:border-[#24242c] space-y-1.5 shadow-2xs">
-                    <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Password Requirements:</div>
-                    <div class="grid grid-cols-2 gap-1.5 text-[11px]">
-                      <div class="flex items-center gap-1.5" [ngClass]="createPasswordValidation.hasLower ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-slate-400 dark:text-slate-500 font-medium'">
-                        <span>{{ createPasswordValidation.hasLower ? '✓' : '✕' }}</span> Lowercase (a-z)
-                      </div>
-                      <div class="flex items-center gap-1.5" [ngClass]="createPasswordValidation.hasUpper ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-slate-400 dark:text-slate-500 font-medium'">
-                        <span>{{ createPasswordValidation.hasUpper ? '✓' : '✕' }}</span> Uppercase (A-Z)
-                      </div>
-                      <div class="flex items-center gap-1.5" [ngClass]="createPasswordValidation.hasNumber ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-slate-400 dark:text-slate-500 font-medium'">
-                        <span>{{ createPasswordValidation.hasNumber ? '✓' : '✕' }}</span> Number (0-9)
-                      </div>
-                      <div class="flex items-center gap-1.5" [ngClass]="createPasswordValidation.hasSpecial ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-slate-400 dark:text-slate-500 font-medium'">
-                        <span>{{ createPasswordValidation.hasSpecial ? '✓' : '✕' }}</span> Special (!&#64;#$...)
-                      </div>
-                      <div class="col-span-2 flex items-center gap-1.5" [ngClass]="createPasswordValidation.hasMinLength ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-slate-400 dark:text-slate-500 font-medium'">
-                        <span>{{ createPasswordValidation.hasMinLength ? '✓' : '✕' }}</span> Minimum 6 characters
-                      </div>
-                    </div>
+            <!-- Login Password & Login Status Subgrid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-3.5 pt-3.5 border-t border-slate-100 dark:border-[#222226]">
+              <div *ngIf="!isEditing">
+                <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">Login Password *</label>
+                <div class="relative flex items-center">
+                  <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="formData.password" placeholder="Enter secure password"
+                         class="w-full px-3.5 pr-24 py-2.5 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-[#16161c] border border-slate-200 dark:border-[#27272e] text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white focus:border-indigo-600 focus:outline-none transition-all" />
+                  <div class="absolute right-1.5 flex items-center gap-1">
+                    <button type="button" (click)="generateStrongPassword()"
+                            class="px-2 py-1 text-[10px] font-bold rounded-lg bg-slate-200/70 hover:bg-slate-300/80 dark:bg-[#25252c] dark:hover:bg-[#2f2f38] text-slate-700 dark:text-slate-200 cursor-pointer transition-colors active:scale-95">
+                      Generate
+                    </button>
+                    <button type="button" (click)="showPassword = !showPassword"
+                            class="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer">
+                      <svg *ngIf="!showPassword" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      <svg *ngIf="showPassword" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
+                <p class="text-[11px] text-slate-400 mt-1">Minimum 6 characters with mixed characters.</p>
+              </div>
 
-                <!-- Account Initial Status (Spans 1 column on desktop, balanced height) -->
-                <div class="space-y-2.5">
-                  <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300">Login Status</label>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">Login Status</label>
+                <div class="relative">
                   <select [(ngModel)]="formData.status"
-                          class="clay-input w-full px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white cursor-pointer">
+                          class="w-full appearance-none px-3.5 pr-10 py-2.5 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-[#16161c] border border-slate-200 dark:border-[#27272e] text-slate-900 dark:text-white cursor-pointer focus:bg-white focus:border-indigo-600 focus:outline-none transition-all">
                     <option value="ACTIVE">Active (Immediate Login)</option>
                     <option value="INACTIVE">Inactive (Suspended)</option>
                   </select>
-                  <div class="p-3.5 rounded-xl bg-white dark:bg-[#141418] border border-slate-200/80 dark:border-[#24242c] text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed shadow-2xs">
-                    <span class="font-bold text-slate-700 dark:text-slate-200 block mb-1">Live Authentication</span>
-                    Active status allows this staff member to immediately authenticate with this password upon account creation.
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400">
+                    <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                    </svg>
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
 
-          <!-- Section 2: Quick Permission Presets (Unified Claymorphism Pills, No Rainbow Clutter) -->
-          <div class="pt-4 border-t border-slate-100 dark:border-[#222226]">
-            <div class="flex items-center justify-between mb-2.5">
-              <h4 class="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                <span>2. 1-Click Permission Presets</span>
-              </h4>
-              <span class="text-[10px] text-slate-400 dark:text-slate-500">Clicking a preset autofills the exact feature switches</span>
-            </div>
-
-            <div class="flex items-center gap-2 flex-wrap">
-              <button type="button" (click)="applyPreset('FEE')"
-                      class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer active:scale-98"
-                      [ngClass]="isPresetActive('FEE') 
-                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 shadow-2xs' 
-                        : 'bg-white dark:bg-[#18181c] text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-[#27272e] shadow-2xs hover:bg-slate-50 dark:hover:bg-[#222228] hover:border-slate-300'">
-                <svg class="w-3.5 h-3.5" [ngClass]="isPresetActive('FEE') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'" viewBox="0 0 24 24" fill="none">
-                  <rect x="3" y="5" width="18" height="14" rx="3" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
-                  <path d="M3 10h18M7 15h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                </svg>
-                <span>Fee Manager</span>
-              </button>
-
-              <button type="button" (click)="applyPreset('TRANSPORT')"
-                      class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer active:scale-98"
-                      [ngClass]="isPresetActive('TRANSPORT') 
-                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 shadow-2xs' 
-                        : 'bg-white dark:bg-[#18181c] text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-[#27272e] shadow-2xs hover:bg-slate-50 dark:hover:bg-[#222228] hover:border-slate-300'">
-                <svg class="w-3.5 h-3.5" [ngClass]="isPresetActive('TRANSPORT') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'" viewBox="0 0 24 24" fill="none">
-                  <rect x="4" y="4" width="16" height="13" rx="3" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
-                  <path d="M4 11h16M7.5 17v2.5M16.5 17v2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                </svg>
-                <span>Transport Dept</span>
-              </button>
-
-              <button type="button" (click)="applyPreset('ADMIN')"
-                      class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer active:scale-98"
-                      [ngClass]="isPresetActive('ADMIN') 
-                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 shadow-2xs' 
-                        : 'bg-white dark:bg-[#18181c] text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-[#27272e] shadow-2xs hover:bg-slate-50 dark:hover:bg-[#222228] hover:border-slate-300'">
-                <svg class="w-3.5 h-3.5" [ngClass]="isPresetActive('ADMIN') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'" viewBox="0 0 24 24" fill="none">
-                  <path d="M3 18h18M4 15l2-9 6 4 6-4 2 9H4z" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <span>Full Co-Admin</span>
-              </button>
-
-              <button type="button" (click)="applyPreset('LIBRARY')"
-                      class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer active:scale-98"
-                      [ngClass]="isPresetActive('LIBRARY') 
-                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 shadow-2xs' 
-                        : 'bg-white dark:bg-[#18181c] text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-[#27272e] shadow-2xs hover:bg-slate-50 dark:hover:bg-[#222228] hover:border-slate-300'">
-                <svg class="w-3.5 h-3.5" [ngClass]="isPresetActive('LIBRARY') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <span>Librarian</span>
-              </button>
-
-              <button type="button" (click)="applyPreset('SPORTS')"
-                      class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer active:scale-98"
-                      [ngClass]="isPresetActive('SPORTS') 
-                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 shadow-2xs' 
-                        : 'bg-white dark:bg-[#18181c] text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-[#27272e] shadow-2xs hover:bg-slate-50 dark:hover:bg-[#222228] hover:border-slate-300'">
-                <svg class="w-3.5 h-3.5" [ngClass]="isPresetActive('SPORTS') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
-                  <path d="M12 7l3 2.2-1.1 3.5H10.1L9 9.2 12 7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                </svg>
-                <span>Sports & PE</span>
-              </button>
-
-              <button type="button" (click)="applyPreset('RECEPTION')"
-                      class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer active:scale-98"
-                      [ngClass]="isPresetActive('RECEPTION') 
-                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 shadow-2xs' 
-                        : 'bg-white dark:bg-[#18181c] text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-[#27272e] shadow-2xs hover:bg-slate-50 dark:hover:bg-[#222228] hover:border-slate-300'">
-                <svg class="w-3.5 h-3.5" [ngClass]="isPresetActive('RECEPTION') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'" viewBox="0 0 24 24" fill="none">
-                  <path d="M4 17h16M6 17v-2a6 6 0 0112 0v2M12 7v2m-2-2h4" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <span>Front Desk</span>
-              </button>
-
-              <button type="button" (click)="applyPreset('SECURITY')"
-                      class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer active:scale-98"
-                      [ngClass]="isPresetActive('SECURITY') 
-                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 shadow-2xs' 
-                        : 'bg-white dark:bg-[#18181c] text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-[#27272e] shadow-2xs hover:bg-slate-50 dark:hover:bg-[#222228] hover:border-slate-300'">
-                <svg class="w-3.5 h-3.5" [ngClass]="isPresetActive('SECURITY') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 3l7 3v5c0 5-3.5 9.2-7 10-3.5-.8-7-5-7-10V6l7-3z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-                </svg>
-                <span>Security Warden</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Section 3: Granular Feature Access Checkboxes / Switches -->
+          <!-- Section 2: Module & Feature Permissions -->
           <div class="pt-4 border-t border-slate-100 dark:border-[#222226]">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3.5">
               <div>
                 <h4 class="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                  <span>3. Granular Feature Switches ({{ selectedPermissionsCount }}/{{ allSections.length }} Selected)</span>
+                  <span>2. Module & Feature Permissions ({{ selectedPermissionsCount }}/{{ allSections.length }} Selected)</span>
                 </h4>
                 <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Only enabled features will appear in this staff member's navigation sidebar upon login.</p>
               </div>
@@ -723,11 +710,11 @@ interface FeatureSectionDef {
               <!-- Batch Toggles -->
               <div class="flex items-center gap-2 shrink-0">
                 <button type="button" (click)="selectAllPermissions()"
-                        class="clay-button-secondary px-3 py-1.5 text-[11px] font-bold rounded-xl active:scale-95">
+                        class="px-3 py-1.5 text-[11px] font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#18181c] dark:hover:bg-[#222228] text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-[#27272e] transition-colors cursor-pointer active:scale-95">
                   Select All
                 </button>
                 <button type="button" (click)="deselectAllPermissions()"
-                        class="clay-button-secondary px-3 py-1.5 text-[11px] font-bold rounded-xl active:scale-95">
+                        class="px-3 py-1.5 text-[11px] font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#18181c] dark:hover:bg-[#222228] text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-[#27272e] transition-colors cursor-pointer active:scale-95">
                   Deselect All
                 </button>
               </div>
@@ -773,28 +760,19 @@ interface FeatureSectionDef {
         </div>
 
         <!-- Modal Footer -->
-        <div class="px-6 py-4 border-t border-slate-100 dark:border-[#222226] bg-slate-50/90 dark:bg-[#121214] flex items-center justify-between gap-3 shrink-0">
-          <div class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2">
-            <svg class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" viewBox="0 0 24 24" fill="none">
-              <path d="M13 2L4.5 13.5h6L9.5 22 19.5 10.5h-6L13 2z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        <div class="px-7 py-4 sm:px-8 border-t border-slate-100 dark:border-[#222226] bg-slate-50/90 dark:bg-[#121214] flex items-center justify-end gap-3 shrink-0">
+          <button type="button" (click)="closeUserModal()"
+                  class="px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#1e1e24] rounded-xl transition-colors cursor-pointer active:scale-98">
+            Cancel
+          </button>
+          <button type="button" (click)="saveUser()" [disabled]="saving"
+                  class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer active:scale-98 flex items-center gap-2 disabled:opacity-50">
+            <svg *ngIf="saving" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
             </svg>
-            <span>Changes take effect immediately upon next user login.</span>
-          </div>
-
-          <div class="flex items-center gap-2.5">
-            <button type="button" (click)="closeUserModal()"
-                    class="clay-button-secondary px-5 py-2.5 text-xs font-bold rounded-xl active:scale-98">
-              Cancel
-            </button>
-            <button type="button" (click)="saveUser()" [disabled]="saving"
-                    class="clay-button-primary px-6 py-2.5 text-xs font-bold rounded-xl flex items-center gap-2 disabled:opacity-50 active:scale-98">
-              <svg *ngIf="saving" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-              </svg>
-              <span>{{ saving ? 'Saving Access...' : (isEditing ? 'Save Changes' : 'Create User Login') }}</span>
-            </button>
-          </div>
+            <span>{{ saving ? 'Saving Access...' : (isEditing ? 'Save Changes' : 'Create User Login') }}</span>
+          </button>
         </div>
 
       </div>
@@ -991,6 +969,7 @@ export class StaffUsersComponent implements OnInit {
   auth = inject(AuthService);
   private toast = inject(ToastService);
   private router = inject(Router);
+  private imageUploadService = inject(ImageUploadService);
 
   get canAccess(): boolean {
     return this.auth.canManageStaffUsers();
@@ -1000,6 +979,7 @@ export class StaffUsersComponent implements OnInit {
   seeding = false;
   saving = false;
   resettingPass = false;
+  uploadingAvatar = false;
 
   usersList: DepartmentalStaffUser[] = [];
   searchQuery = '';
@@ -1068,6 +1048,7 @@ export class StaffUsersComponent implements OnInit {
     password?: string;
     status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
     custom_permissions: string[];
+    avatar_url?: string;
   } = {
     first_name: '',
     last_name: '',
@@ -1079,6 +1060,7 @@ export class StaffUsersComponent implements OnInit {
     password: 'School@123',
     status: 'ACTIVE',
     custom_permissions: [],
+    avatar_url: '',
   };
 
   // Password Reset Modal
@@ -1461,6 +1443,7 @@ export class StaffUsersComponent implements OnInit {
       role: 'FEE_MANAGER',
       password: 'School@123',
       status: 'ACTIVE',
+      avatar_url: '',
       custom_permissions: [
         'dashboard',
         'fees',
@@ -1488,9 +1471,31 @@ export class StaffUsersComponent implements OnInit {
       designation: u.designation || u.role_name || u.role,
       role: u.role || 'STAFF',
       status: u.status || 'ACTIVE',
+      avatar_url: u.avatar_url || u.profile_image || '',
       custom_permissions: [...(u.custom_permissions || [])],
     };
     this.isUserModalOpen = true;
+  }
+
+  async onAvatarFileChange(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    this.uploadingAvatar = true;
+    try {
+      const uploadedUrl = await this.imageUploadService.processAndUploadImage(file, 'staff');
+      this.formData.avatar_url = uploadedUrl;
+      this.toast.success('Profile photo uploaded.');
+    } catch (err: any) {
+      this.toast.error(err.message || 'Failed to upload image.');
+    } finally {
+      this.uploadingAvatar = false;
+      input.value = '';
+    }
+  }
+
+  removeAvatar(): void {
+    this.formData.avatar_url = '';
   }
 
   closeUserModal(): void {

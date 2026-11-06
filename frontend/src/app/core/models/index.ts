@@ -878,6 +878,9 @@ export interface StudentFeeInvoice {
 
 export interface DailyDayBookSummary {
   date: string;
+  startDate?: string;
+  endDate?: string;
+  isRecentFallback?: boolean;
   totalCollected: number;
   cashAmount: number;
   upiAmount: number;
@@ -891,6 +894,7 @@ export interface DailyDayBookSummary {
     className: string;
     amount: number;
     paymentMode: string;
+    paymentDate?: string;
     paymentTime?: string;
     collectedBy?: string;
     remarks?: string;
@@ -1060,6 +1064,8 @@ export interface DepartmentalStaffUser {
   name?: string;
   email: string;
   phone?: string;
+  avatar_url?: string;
+  profile_image?: string;
   role: string;
   role_name?: string;
   department: string;

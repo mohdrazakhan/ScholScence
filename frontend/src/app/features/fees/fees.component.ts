@@ -41,13 +41,13 @@ import {
           <h1 *ngIf="activeTab === 'MATRIX'" class="text-lg sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
             Configured Fee Structures & Heads
           </h1>
-          <h1 *ngIf="activeTab === 'PROMOCODES'" class="text-lg sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
+          <h1 *ngIf="isAdmin && activeTab === 'PROMOCODES'" class="text-lg sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
             Fee Settings & Discount Policies
           </h1>
           <p *ngIf="activeTab === 'DAYBOOK'" class="text-xs text-slate-500 mt-0.5">Audit-ready breakdown of cash, UPI, cheque, and bank remittances for daily collection reconciliation.</p>
           <p *ngIf="activeTab === 'INVOICES'" class="text-xs text-slate-500 mt-0.5">Student billing schedules, pending dues, advance ledger balances, and payment histories.</p>
           <p *ngIf="activeTab === 'MATRIX'" class="text-xs text-slate-500 mt-0.5">Manage grade-wise fee heads, amounts, due days, and billing cycles.</p>
-          <p *ngIf="activeTab === 'PROMOCODES'" class="text-xs text-slate-500 mt-0.5">Configure billing frequency discounts, late fine rules, and approved promo codes.</p>
+          <p *ngIf="isAdmin && activeTab === 'PROMOCODES'" class="text-xs text-slate-500 mt-0.5">Configure billing frequency discounts, late fine rules, and approved promo codes.</p>
         </div>
 
         <!-- Top Header Contextual Actions & Session Badge -->
@@ -114,8 +114,8 @@ import {
           <span>Fee Structures ({{ structures.length }})</span>
         </button>
 
-        <!-- Position 4: Settings Gear Button (Concessions & Rules) -->
-        <button *ngIf="canManage" (click)="setTab('PROMOCODES')"
+        <!-- Position 4: Settings Gear Button (Concessions & Rules) (Admin Only) -->
+        <button *ngIf="isAdmin" (click)="setTab('PROMOCODES')"
                 title="Fee Settings & Concessions"
                 class="px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-95"
                 [ngClass]="activeTab === 'PROMOCODES' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'">
@@ -472,30 +472,116 @@ import {
       <div *ngIf="activeTab === 'DAYBOOK'" class="space-y-4 animate-fadeIn">
         <div class="bg-white rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] p-6 space-y-4">
           
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-100">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
             <div>
-              <h3 class="text-base font-black text-slate-900">Cashier Day-Book & Shift Reconciler</h3>
-              <p class="text-xs text-slate-500 mt-0.5">Audit-ready breakdown of cash, UPI, cheque, and bank remittances for daily collection reconciliation.</p>
+              <div class="flex items-center gap-2 flex-wrap">
+                <h3 class="text-base font-black text-slate-900">Cashier Day-Book & Shift Reconciler</h3>
+                <span *ngIf="dayBookStartDate === dayBookEndDate" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono">
+                  Single Day: {{ dayBookStartDate | date:'dd MMM yyyy' }}
+                </span>
+                <span *ngIf="dayBookStartDate !== dayBookEndDate" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono">
+                  Range: {{ dayBookStartDate | date:'dd MMM' }} – {{ dayBookEndDate | date:'dd MMM yyyy' }}
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Audit-ready breakdown of cash, UPI, cheque, and bank remittances for collection reconciliation.</p>
             </div>
 
-            <!-- Date Selector -->
-            <div class="flex items-center gap-2">
-              <label class="text-xs font-bold text-slate-600">Day-Book Date:</label>
-              <input type="date"
-                     [(ngModel)]="dayBookDate"
-                     (change)="loadDayBook()"
-                     class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800" />
-              <button (click)="loadDayBook()"
-                      class="px-3 py-1.5 bg-slate-900 text-white rounded-xl text-xs font-bold cursor-pointer">
-                Refresh
+            <!-- Header Quick Action: Print Day-Book Statement -->
+            <div class="flex items-center gap-2 shrink-0">
+              <button (click)="printDayBookSummary()"
+                      class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs active:scale-95">
+                <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                <span>Print Day-Book Summary</span>
               </button>
             </div>
+          </div>
+
+          <!-- DEDICATED FULL-WIDTH FILTER TOOLBAR STRIP (Horizontal Orientation) -->
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50/90 p-3 rounded-2xl border border-slate-200/80">
+            <!-- Left: Quick Filter Presets in a clean horizontal group -->
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Period:</span>
+              <div class="inline-flex rounded-xl bg-slate-200/70 p-1 text-xs font-bold gap-1 shrink-0 overflow-x-auto">
+                <button type="button"
+                        (click)="setDayBookPreset('TODAY')"
+                        [ngClass]="dayBookPreset === 'TODAY' ? 'bg-white text-indigo-950 shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+                        class="px-3 py-1 rounded-lg cursor-pointer transition-all whitespace-nowrap">
+                  Today
+                </button>
+                <button type="button"
+                        (click)="setDayBookPreset('YESTERDAY')"
+                        [ngClass]="dayBookPreset === 'YESTERDAY' ? 'bg-white text-indigo-950 shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+                        class="px-3 py-1 rounded-lg cursor-pointer transition-all whitespace-nowrap">
+                  Yesterday
+                </button>
+                <button type="button"
+                        (click)="setDayBookPreset('LAST_7_DAYS')"
+                        [ngClass]="dayBookPreset === 'LAST_7_DAYS' ? 'bg-white text-indigo-950 shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+                        class="px-3 py-1 rounded-lg cursor-pointer transition-all whitespace-nowrap">
+                  Last 7 Days
+                </button>
+                <button type="button"
+                        (click)="setDayBookPreset('THIS_MONTH')"
+                        [ngClass]="dayBookPreset === 'THIS_MONTH' ? 'bg-white text-indigo-950 shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+                        class="px-3 py-1 rounded-lg cursor-pointer transition-all whitespace-nowrap">
+                  This Month
+                </button>
+                <button type="button"
+                        (click)="setDayBookPreset('CUSTOM')"
+                        [ngClass]="dayBookPreset === 'CUSTOM' ? 'bg-white text-indigo-950 shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+                        class="px-3 py-1 rounded-lg cursor-pointer transition-all whitespace-nowrap">
+                  Custom
+                </button>
+              </div>
+            </div>
+
+            <!-- Right: Date Range Selector (Horizontal) -->
+            <div class="flex items-center gap-2 flex-wrap">
+              <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-2xs text-xs">
+                <span class="text-[10px] font-bold text-slate-400 uppercase">From:</span>
+                <input type="date"
+                       [(ngModel)]="dayBookStartDate"
+                       (change)="onDayBookDateChange()"
+                       class="bg-transparent font-bold text-slate-800 text-xs focus:outline-none" />
+                <span class="text-slate-300 font-bold">→</span>
+                <span class="text-[10px] font-bold text-slate-400 uppercase">To:</span>
+                <input type="date"
+                       [(ngModel)]="dayBookEndDate"
+                       (change)="onDayBookDateChange()"
+                       class="bg-transparent font-bold text-slate-800 text-xs focus:outline-none" />
+              </div>
+              <button (click)="loadDayBook()"
+                      class="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-2xs active:scale-95">
+                <svg class="w-3.5 h-3.5" [ngClass]="loadingDayBook ? 'animate-spin' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Refresh</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Status Banner: Auto-loaded Recent Transactions Fallback -->
+          <div *ngIf="dayBookSummary?.isRecentFallback" class="p-3 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-900 animate-fadeIn">
+            <div class="flex items-center gap-2">
+              <span class="text-base">ℹ️</span>
+              <div>
+                <strong>No collections recorded yet for Today ({{ dayBookStartDate | date:'dd MMM yyyy' }}).</strong>
+                <span class="text-amber-800"> Showing recent collections from previous days for cashier auditing.</span>
+              </div>
+            </div>
+            <button (click)="setDayBookPreset('LAST_7_DAYS')" class="px-2.5 py-1 bg-amber-200/80 hover:bg-amber-300 text-amber-950 rounded-lg text-[11px] font-bold cursor-pointer transition-all shrink-0">
+              Show Last 7 Days
+            </button>
           </div>
 
           <!-- Tally Chips Grid -->
           <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
             <div class="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100 text-indigo-900">
-              <div class="text-[10px] uppercase font-bold text-indigo-600">Gross Daily Total</div>
+              <div class="text-[10px] uppercase font-bold text-indigo-600">
+                {{ dayBookStartDate === dayBookEndDate ? 'Gross Daily Total' : 'Gross Period Total' }}
+              </div>
               <div class="text-lg font-black mt-1">₹{{ (dayBookSummary?.totalCollected ?? 0) | number:'1.0-0' }}</div>
               <div class="text-[10px] text-indigo-500">{{ dayBookSummary?.transactionCount ?? 0 }} receipts</div>
             </div>
@@ -528,15 +614,23 @@ import {
           <!-- Transactions Timeline Table -->
           <div class="overflow-x-auto pt-2">
             <div class="flex items-center justify-between pb-2">
-              <div class="text-xs font-bold text-slate-800">Day Receipts Ledger ({{ dayBookSummary?.transactions?.length || 0 }})</div>
-              <button (click)="printDayBookSummary()" class="text-xs font-bold text-indigo-600 hover:underline cursor-pointer">
-                Print Day-Book Summary
+              <div class="text-xs font-bold text-slate-800">
+                Receipts Ledger ({{ dayBookSummary?.transactions?.length || 0 }} transactions
+                <span *ngIf="dayBookStartDate === dayBookEndDate">— {{ dayBookStartDate | date:'dd MMM yyyy' }}</span>
+                <span *ngIf="dayBookStartDate !== dayBookEndDate">— {{ dayBookStartDate | date:'dd MMM' }} to {{ dayBookEndDate | date:'dd MMM yyyy' }}</span>)
+              </div>
+              <button (click)="printDayBookSummary()" class="text-xs font-bold text-indigo-600 hover:underline cursor-pointer flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                <span>Print Day-Book Summary</span>
               </button>
             </div>
 
             <table class="w-full text-left text-xs border-collapse">
               <thead>
                 <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px]">
+                  <th class="py-2.5 px-3">Date</th>
                   <th class="py-2.5 px-3">Receipt No</th>
                   <th class="py-2.5 px-3">Student Name</th>
                   <th class="py-2.5 px-3">Class</th>
@@ -547,21 +641,28 @@ import {
               </thead>
               <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
                 <tr *ngFor="let tx of dayBookSummary?.transactions" class="hover:bg-slate-50">
-                  <td class="py-2.5 px-3 font-mono font-bold text-slate-900">{{ tx.receiptNumber }}</td>
+                  <td class="py-2.5 px-3 text-slate-600 whitespace-nowrap">{{ (tx.paymentDate || tx.paymentTime || dayBookStartDate) | date:'dd MMM yyyy' }}</td>
+                  <td class="py-2.5 px-3 font-mono font-bold text-slate-900 whitespace-nowrap">{{ tx.receiptNumber }}</td>
                   <td class="py-2.5 px-3 font-bold">{{ tx.studentName }}</td>
                   <td class="py-2.5 px-3">{{ tx.className }}</td>
                   <td class="py-2.5 px-3">
-                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold"
+                          [ngClass]="{
+                            'bg-emerald-50 text-emerald-800 border border-emerald-200': tx.paymentMode === 'CASH',
+                            'bg-purple-50 text-purple-800 border border-purple-200': tx.paymentMode === 'UPI' || tx.paymentMode === 'QR',
+                            'bg-amber-50 text-amber-800 border border-amber-200': tx.paymentMode === 'CHEQUE',
+                            'bg-sky-50 text-sky-800 border border-sky-200': tx.paymentMode !== 'CASH' && tx.paymentMode !== 'UPI' && tx.paymentMode !== 'QR' && tx.paymentMode !== 'CHEQUE'
+                          }">
                       {{ tx.paymentMode }}
                     </span>
                   </td>
                   <td class="py-2.5 px-3 text-slate-500">{{ tx.collectedBy }}</td>
-                  <td class="py-2.5 px-3 text-right font-black text-emerald-700">₹{{ tx.amount | number:'1.0-0' }}</td>
+                  <td class="py-2.5 px-3 text-right font-black text-emerald-700 whitespace-nowrap">₹{{ tx.amount | number:'1.0-0' }}</td>
                 </tr>
 
                 <tr *ngIf="!dayBookSummary || dayBookSummary.transactions.length === 0">
-                  <td colspan="6" class="py-8 text-center text-slate-400 text-xs">
-                    No transactions recorded on {{ dayBookDate }}.
+                  <td colspan="7" class="py-8 text-center text-slate-400 text-xs">
+                    No transactions recorded for {{ dayBookStartDate === dayBookEndDate ? (dayBookStartDate | date:'dd MMM yyyy') : ((dayBookStartDate | date:'dd MMM yyyy') + ' to ' + (dayBookEndDate | date:'dd MMM yyyy')) }}.
                   </td>
                 </tr>
               </tbody>
@@ -572,9 +673,9 @@ import {
       </div>
 
       <!-- ============================================================== -->
-      <!-- TAB 4: CONCESSIONS & PROMOCODES DESK                           -->
+      <!-- TAB 4: CONCESSIONS & PROMOCODES DESK (Admin Only)              -->
       <!-- ============================================================== -->
-      <div *ngIf="activeTab === 'PROMOCODES'" class="space-y-6 animate-fadeIn">
+      <div *ngIf="isAdmin && activeTab === 'PROMOCODES'" class="space-y-6 animate-fadeIn">
 
         <!-- CARD 1: FEE BILLING RULES & LATE FEE ENGINE POLICY -->
         <div class="bg-white rounded-3xl border border-slate-200/80 shadow-[4px_4px_12px_#d9e2ec,-4px_-4px_12px_#ffffff] p-6 space-y-6">
@@ -815,35 +916,37 @@ import {
       <!-- ============================================================== -->
       <!-- MODAL: SIBLING DETECTOR MODAL                                  -->
       <!-- ============================================================== -->
-      <div *ngIf="showSiblingModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs" (click)="showSiblingModal = false"></div>
-        <div class="relative bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-200 z-10 animate-scaleUp space-y-4">
-          <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-            <h3 class="font-black text-slate-900 text-base">Detected Family Siblings</h3>
-            <button (click)="showSiblingModal = false" class="text-slate-400 hover:text-slate-600 text-base font-bold cursor-pointer">&times;</button>
-          </div>
-
-          <div *ngIf="activeSiblingInfo?.hasSiblings" class="space-y-3 text-xs">
-            <p class="text-slate-500">
-              Found <strong>{{ activeSiblingInfo?.siblingsCount }}</strong> sibling(s) sharing the same parent contact records:
-            </p>
-            <div *ngFor="let sib of activeSiblingInfo?.siblings" class="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
-              <div class="font-black text-slate-900">{{ sib.name }}</div>
-              <div class="text-[11px] text-slate-500">Class: {{ sib.className }} ({{ sib.sectionName }}) • Adm: {{ sib.admissionNumber }}</div>
+      <div *ngIf="showSiblingModal" class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity" (click)="showSiblingModal = false"></div>
+        <div class="min-h-full flex items-start justify-center p-3 sm:p-6">
+          <div class="relative bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-200 z-10 animate-scaleUp space-y-4 my-4 sm:my-8">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+              <h3 class="font-black text-slate-900 text-base">Detected Family Siblings</h3>
+              <button (click)="showSiblingModal = false" class="text-slate-400 hover:text-slate-600 text-base font-bold cursor-pointer">&times;</button>
             </div>
-            <div class="p-3 bg-indigo-50 rounded-2xl border border-indigo-200 text-indigo-900 text-xs">
-              Suggested Concession: <strong>{{ activeSiblingInfo?.suggestedDiscountPct }}% Sibling Discount</strong> (Use code <code>SIBLING15</code>).
+
+            <div *ngIf="activeSiblingInfo?.hasSiblings" class="space-y-3 text-xs">
+              <p class="text-slate-500">
+                Found <strong>{{ activeSiblingInfo?.siblingsCount }}</strong> sibling(s) sharing the same parent contact records:
+              </p>
+              <div *ngFor="let sib of activeSiblingInfo?.siblings" class="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
+                <div class="font-black text-slate-900">{{ sib.name }}</div>
+                <div class="text-[11px] text-slate-500">Class: {{ sib.className }} ({{ sib.sectionName }}) • Adm: {{ sib.admissionNumber }}</div>
+              </div>
+              <div class="p-3 bg-indigo-50 rounded-2xl border border-indigo-200 text-indigo-900 text-xs">
+                Suggested Concession: <strong>{{ activeSiblingInfo?.suggestedDiscountPct }}% Sibling Discount</strong> (Use code <code>SIBLING15</code>).
+              </div>
             </div>
-          </div>
 
-          <div *ngIf="!activeSiblingInfo?.hasSiblings" class="text-center py-6 text-slate-400 text-xs">
-            No enrolled siblings found for this student.
-          </div>
+            <div *ngIf="!activeSiblingInfo?.hasSiblings" class="text-center py-6 text-slate-400 text-xs">
+              No enrolled siblings found for this student.
+            </div>
 
-          <div class="pt-2 flex justify-end">
-            <button (click)="showSiblingModal = false" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl cursor-pointer">
-              Close
-            </button>
+            <div class="pt-2 flex justify-end">
+              <button (click)="showSiblingModal = false" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl cursor-pointer">
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -851,9 +954,10 @@ import {
       <!-- ============================================================== -->
       <!-- MODAL: COLLECT FEE PAYMENT (CASCADING & SMART CONCESSIONS)      -->
       <!-- ============================================================== -->
-      <div *ngIf="showCollectModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div *ngIf="showCollectModal" class="fixed inset-0 z-50 overflow-y-auto">
         <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity" (click)="closeCollectModal()"></div>
-        <div class="relative bg-white rounded-3xl p-6 sm:p-7 w-full max-w-xl shadow-2xl border border-slate-200/90 z-10 animate-scaleUp space-y-4 my-8">
+        <div class="min-h-full flex items-start justify-center p-3 sm:p-6">
+          <div class="relative bg-white rounded-3xl p-6 sm:p-7 w-full max-w-xl shadow-2xl border border-slate-200/90 z-10 animate-scaleUp space-y-4 my-4 sm:my-8">
           
           <!-- Header -->
           <div class="flex items-start justify-between pb-3.5 border-b border-slate-100">
@@ -1101,14 +1205,16 @@ import {
           </div>
 
         </div>
+        </div>
       </div>
 
       <!-- ============================================================== -->
       <!-- MODAL: STUDENT LEDGER STATEMENT                                -->
       <!-- ============================================================== -->
-      <div *ngIf="showLedgerModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div *ngIf="showLedgerModal" class="fixed inset-0 z-50 overflow-y-auto">
         <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity" (click)="closeLedgerModal()"></div>
-        <div class="relative bg-white rounded-3xl p-6 sm:p-7 w-full max-w-4xl shadow-2xl border border-slate-200/90 z-10 animate-scaleUp space-y-5 my-8">
+        <div class="min-h-full flex items-start justify-center p-3 sm:p-6">
+          <div class="relative bg-white rounded-3xl p-6 sm:p-7 w-full max-w-4xl shadow-2xl border border-slate-200/90 z-10 animate-scaleUp space-y-5 my-4 sm:my-8">
           
           <!-- Header -->
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
@@ -1287,7 +1393,7 @@ import {
           <!-- Itemized Ledger Transactions Table -->
           <div class="space-y-2">
             <div class="flex items-center justify-between">
-              <span class="font-bold text-slate-800 text-xs">Itemized Statement & Payment History</span>
+              <span class="font-bold text-slate-800 text-xs">Student Account Passbook & Ledger Statement</span>
               <span class="text-[11px] text-slate-400 font-mono">{{ ledgerEntries.length }} entries</span>
             </div>
 
@@ -1296,26 +1402,26 @@ import {
                 <thead class="sticky top-0 bg-slate-100 z-10 border-b border-slate-200">
                   <tr class="text-slate-500 font-bold uppercase text-[10px]">
                     <th class="py-2.5 px-3">Date</th>
-                    <th class="py-2.5 px-3">Entry Type</th>
-                    <th class="py-2.5 px-3">Ref #</th>
-                    <th class="py-2.5 px-3">Description</th>
-                    <th class="py-2.5 px-3 text-right">Debit</th>
-                    <th class="py-2.5 px-3 text-right">Credit</th>
-                    <th class="py-2.5 px-3 text-right">Running Balance</th>
-                    <th class="py-2.5 px-3">Status</th>
+                    <th class="py-2.5 px-3">Particulars / Description</th>
+                    <th class="py-2.5 px-3">Ref / Voucher #</th>
+                    <th class="py-2.5 px-3 text-right">Debit (Dr)</th>
+                    <th class="py-2.5 px-3 text-right">Credit (Cr)</th>
+                    <th class="py-2.5 px-3 text-right">Balance</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
                   <tr *ngFor="let item of ledgerEntries; let i = index" class="hover:bg-slate-50/70 transition-colors">
                     <td class="py-2.5 px-3 text-slate-600 whitespace-nowrap">{{ item.date | date:'dd MMM yyyy' }}</td>
-                    <td class="py-2.5 px-3 whitespace-nowrap">
-                      <span class="px-2 py-0.5 rounded text-[10px] font-bold"
-                            [ngClass]="item.type === 'INVOICE' || item.type === 'CHARGE' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'">
-                        {{ item.type }}
-                      </span>
+                    <td class="py-2.5 px-3">
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0"
+                              [ngClass]="item.referenceNumber?.startsWith('FINE-') ? 'bg-amber-50 text-amber-800 border border-amber-300' : (item.type === 'INVOICE' || item.type === 'CHARGE' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200')">
+                          {{ item.referenceNumber?.startsWith('FINE-') ? 'LATE FINE' : item.type }}
+                        </span>
+                        <span>{{ item.description }}</span>
+                      </div>
                     </td>
                     <td class="py-2.5 px-3 font-mono text-[11px] font-bold text-slate-900 whitespace-nowrap">{{ item.referenceNumber }}</td>
-                    <td class="py-2.5 px-3">{{ item.description }}</td>
                     <td class="py-2.5 px-3 text-right font-black" [ngClass]="item.debit > 0 ? 'text-rose-600' : 'text-slate-300'">
                       {{ item.debit > 0 ? ('₹' + (item.debit | number:'1.0-0')) : '-' }}
                     </td>
@@ -1323,34 +1429,48 @@ import {
                       {{ item.credit > 0 ? ('₹' + (item.credit | number:'1.0-0')) : '-' }}
                     </td>
                     <td class="py-2.5 px-3 text-right font-mono font-bold whitespace-nowrap">
-                      <span *ngIf="getItemRunningBalance(item, i) > 0" class="inline-flex items-center text-[10px] text-emerald-800 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200">
-                        +₹{{ getItemRunningBalance(item, i) | number:'1.0-0' }} (Adv)
+                      <span *ngIf="getItemRunningBalance(item, i) > 0" class="text-rose-600 font-bold">
+                        ₹{{ getItemRunningBalance(item, i) | number:'1.0-0' }} (Due)
                       </span>
-                      <span *ngIf="getItemRunningBalance(item, i) < 0" class="text-rose-600">
-                        ₹{{ (-getItemRunningBalance(item, i)) | number:'1.0-0' }} (Due)
+                      <span *ngIf="getItemRunningBalance(item, i) < 0" class="inline-flex items-center text-[10px] text-emerald-800 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200">
+                        +₹{{ (-getItemRunningBalance(item, i)) | number:'1.0-0' }} (Adv)
                       </span>
                       <span *ngIf="getItemRunningBalance(item, i) === 0" class="text-slate-400">
                         ₹0.00 (Settled)
                       </span>
                     </td>
-                    <td class="py-2.5 px-3 whitespace-nowrap">
-                      <span class="px-2 py-0.5 rounded text-[10px] font-bold"
-                            [ngClass]="{
-                              'bg-emerald-50 text-emerald-700 border border-emerald-200': item.status === 'PAID' || item.status === 'RECEIVED',
-                              'bg-amber-50 text-amber-700 border border-amber-200': item.status === 'PARTIAL',
-                              'bg-rose-50 text-rose-700 border border-rose-200': item.status === 'UNPAID' || item.status === 'OVERDUE' || item.type === 'INVOICE' || item.type === 'CHARGE'
-                            }">
-                        {{ item.status || (item.credit > 0 ? 'RECEIVED' : 'BILLED') }}
-                      </span>
-                    </td>
                   </tr>
 
                   <tr *ngIf="ledgerEntries.length === 0">
-                    <td colspan="8" class="py-8 text-center text-slate-400 text-xs">
+                    <td colspan="6" class="py-8 text-center text-slate-400 text-xs">
                       No transactions recorded in student ledger yet.
                     </td>
                   </tr>
                 </tbody>
+                <tfoot *ngIf="ledgerEntries.length > 0" class="bg-slate-50 border-t-2 border-slate-300 font-bold text-xs sticky bottom-0 z-10">
+                  <tr>
+                    <td colspan="3" class="py-2.5 px-3 text-slate-700 uppercase tracking-wider text-[11px] font-black">
+                      Passbook Closing Totals
+                    </td>
+                    <td class="py-2.5 px-3 text-right font-black text-rose-600 whitespace-nowrap">
+                      ₹{{ ledgerBilledTotal | number:'1.0-0' }}
+                    </td>
+                    <td class="py-2.5 px-3 text-right font-black text-emerald-700 whitespace-nowrap">
+                      ₹{{ ledgerPaidTotal | number:'1.0-0' }}
+                    </td>
+                    <td class="py-2.5 px-3 text-right font-mono font-black whitespace-nowrap">
+                      <span *ngIf="ledgerBilledTotal > ledgerPaidTotal" class="text-rose-600">
+                        ₹{{ (ledgerBilledTotal - ledgerPaidTotal) | number:'1.0-0' }} (Due)
+                      </span>
+                      <span *ngIf="ledgerPaidTotal > ledgerBilledTotal" class="inline-flex items-center text-[11px] text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">
+                        +₹{{ (ledgerPaidTotal - ledgerBilledTotal) | number:'1.0-0' }} (Adv)
+                      </span>
+                      <span *ngIf="ledgerBilledTotal === ledgerPaidTotal" class="text-slate-500">
+                        ₹0.00 (Settled)
+                      </span>
+                    </td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </div>
@@ -1370,79 +1490,82 @@ import {
           </div>
 
         </div>
+        </div>
       </div>
 
       <!-- ============================================================== -->
       <!-- SUB-MODAL: ADD STUDENT FEE CHARGE                              -->
       <!-- ============================================================== -->
-      <div *ngIf="showAddChargeModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-        <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs" (click)="closeAddChargeModal()"></div>
-        <div class="relative bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-200/90 z-10 animate-scaleUp space-y-4">
-          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div>
-              <span class="text-[10px] font-black uppercase tracking-wider text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
-                DIRECT LEDGER CHARGE
-              </span>
-              <h3 class="font-black text-slate-900 text-base mt-1">Add Fee Charge to Ledger</h3>
-              <p class="text-xs text-slate-500 mt-0.5">Post fine, penalty, exam fee, or extra charges to student's account.</p>
-            </div>
-            <button (click)="closeAddChargeModal()" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
-                <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </button>
-          </div>
-
-          <div *ngIf="chargeError" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs">
-            {{ chargeError }}
-          </div>
-
-          <div class="space-y-3 text-xs">
-            <!-- Category -->
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Charge Category *</label>
-              <select [(ngModel)]="chargeForm.charge_type" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
-                <option value="FINE_PENALTY">Late Fee / Disciplinary Penalty (FINE_PENALTY)</option>
-                <option value="ADMISSION">Admission / Registration Fee (ADMISSION)</option>
-                <option value="EXAM">Board / Term Examination Fee (EXAM)</option>
-                <option value="ANNUAL">Annual Development / Lab Charges (ANNUAL)</option>
-                <option value="OTHER">Other Custom School Charge (OTHER)</option>
-              </select>
+      <div *ngIf="showAddChargeModal" class="fixed inset-0 z-[60] overflow-y-auto">
+        <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity" (click)="closeAddChargeModal()"></div>
+        <div class="min-h-full flex items-start justify-center p-3 sm:p-6">
+          <div class="relative bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-200/90 z-10 animate-scaleUp space-y-4 my-4 sm:my-8">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <span class="text-[10px] font-black uppercase tracking-wider text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+                  DIRECT LEDGER CHARGE
+                </span>
+                <h3 class="font-black text-slate-900 text-base mt-1">Add Fee Charge to Ledger</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Post fine, penalty, exam fee, or extra charges to student's account.</p>
+              </div>
+              <button (click)="closeAddChargeModal()" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                  <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
             </div>
 
-            <!-- Amount -->
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Amount (INR ₹) *</label>
-              <div class="relative">
-                <span class="absolute left-3 top-2.5 font-bold text-slate-400">₹</span>
-                <input type="number" [(ngModel)]="chargeForm.amount" min="1" placeholder="e.g. 250" class="w-full pl-7 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+            <div *ngIf="chargeError" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs">
+              {{ chargeError }}
+            </div>
+
+            <div class="space-y-3 text-xs">
+              <!-- Category -->
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Charge Category *</label>
+                <select [(ngModel)]="chargeForm.charge_type" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                  <option value="FINE_PENALTY">Late Fee / Disciplinary Penalty (FINE_PENALTY)</option>
+                  <option value="ADMISSION">Admission / Registration Fee (ADMISSION)</option>
+                  <option value="EXAM">Board / Term Examination Fee (EXAM)</option>
+                  <option value="ANNUAL">Annual Development / Lab Charges (ANNUAL)</option>
+                  <option value="OTHER">Other Custom School Charge (OTHER)</option>
+                </select>
+              </div>
+
+              <!-- Amount -->
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Amount (INR ₹) *</label>
+                <div class="relative">
+                  <span class="absolute left-3 top-2.5 font-bold text-slate-400">₹</span>
+                  <input type="number" [(ngModel)]="chargeForm.amount" min="1" placeholder="e.g. 250" class="w-full pl-7 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+                </div>
+              </div>
+
+              <!-- Reason / Description -->
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Description / Reason *</label>
+                <input type="text" [(ngModel)]="chargeForm.description" placeholder="e.g. Late fee for October installment or Library fine" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+              </div>
+
+              <!-- Effective Date -->
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Effective Date</label>
+                <input type="date" [(ngModel)]="chargeForm.effective_date" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
               </div>
             </div>
 
-            <!-- Reason / Description -->
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Description / Reason *</label>
-              <input type="text" [(ngModel)]="chargeForm.description" placeholder="e.g. Late fee for October installment or Library fine" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+              <button (click)="closeAddChargeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer transition-colors">
+                Cancel
+              </button>
+              <button (click)="submitAddCharge()" [disabled]="savingCharge" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
+                <svg *ngIf="savingCharge" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>{{ savingCharge ? 'Posting...' : 'Post Fee Charge' }}</span>
+              </button>
             </div>
-
-            <!-- Effective Date -->
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Effective Date</label>
-              <input type="date" [(ngModel)]="chargeForm.effective_date" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
-            </div>
-          </div>
-
-          <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-            <button (click)="closeAddChargeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer transition-colors">
-              Cancel
-            </button>
-            <button (click)="submitAddCharge()" [disabled]="savingCharge" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
-              <svg *ngIf="savingCharge" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-              </svg>
-              <span>{{ savingCharge ? 'Posting...' : 'Post Fee Charge' }}</span>
-            </button>
           </div>
         </div>
       </div>
@@ -1450,9 +1573,10 @@ import {
       <!-- ============================================================== -->
       <!-- MODAL: ADD FEE STRUCTURE                                       -->
       <!-- ============================================================== -->
-      <div *ngIf="showAddStructureModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs" (click)="closeAddStructureModal()"></div>
-        <div class="relative bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-200 z-10 animate-scaleUp space-y-4">
+      <div *ngIf="showAddStructureModal" class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity" (click)="closeAddStructureModal()"></div>
+        <div class="min-h-full flex items-start justify-center p-3 sm:p-6">
+          <div class="relative bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-200 z-10 animate-scaleUp space-y-4 my-4 sm:my-8">
           
           <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
@@ -1521,15 +1645,17 @@ import {
             </button>
           </div>
 
+          </div>
         </div>
       </div>
 
       <!-- ============================================================== -->
       <!-- MODAL: EDIT FEE STRUCTURE                                      -->
       <!-- ============================================================== -->
-      <div *ngIf="showEditStructureModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs" (click)="closeEditStructureModal()"></div>
-        <div class="relative bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-200 z-10 animate-scaleUp space-y-4">
+      <div *ngIf="showEditStructureModal" class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity" (click)="closeEditStructureModal()"></div>
+        <div class="min-h-full flex items-start justify-center p-3 sm:p-6">
+          <div class="relative bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-200 z-10 animate-scaleUp space-y-4 my-4 sm:my-8">
           
           <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
@@ -1598,15 +1724,17 @@ import {
             </button>
           </div>
 
+          </div>
         </div>
       </div>
 
       <!-- ============================================================== -->
       <!-- MODAL: GENERATE PROMOCODE (ADMIN ONLY)                         -->
       <!-- ============================================================== -->
-      <div *ngIf="showCreatePromoModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs" (click)="closeCreatePromoModal()"></div>
-        <div class="relative bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-200 z-10 animate-scaleUp space-y-4">
+      <div *ngIf="showCreatePromoModal" class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity" (click)="closeCreatePromoModal()"></div>
+        <div class="min-h-full flex items-start justify-center p-3 sm:p-6">
+          <div class="relative bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-200 z-10 animate-scaleUp space-y-4 my-4 sm:my-8">
           
           <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
@@ -1688,6 +1816,7 @@ import {
             </button>
           </div>
 
+          </div>
         </div>
       </div>
 
@@ -1830,7 +1959,10 @@ export class FeesComponent implements OnInit {
   batchDueDate = new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0];
 
   // Day-Book Cashier Desk State
+  dayBookPreset: 'TODAY' | 'YESTERDAY' | 'LAST_7_DAYS' | 'THIS_MONTH' | 'CUSTOM' = 'TODAY';
   dayBookDate: string = new Date().toISOString().split('T')[0];
+  dayBookStartDate: string = new Date().toISOString().split('T')[0];
+  dayBookEndDate: string = new Date().toISOString().split('T')[0];
   dayBookSummary: DailyDayBookSummary | null = null;
   loadingDayBook = false;
 
@@ -1878,6 +2010,10 @@ export class FeesComponent implements OnInit {
       this.loadAllData();
       this.loadDayBook();
     });
+  }
+
+  get isAdmin(): boolean {
+    return this.auth.isAdmin() || this.auth.isSuperAdmin();
   }
 
   get canManage(): boolean {
@@ -2176,7 +2312,9 @@ export class FeesComponent implements OnInit {
   ngOnInit() {
     this.route.queryParams.subscribe((params) => {
       const tab = (params['tab'] || '').toUpperCase();
-      if (tab === 'INVOICES' || tab === 'MATRIX' || tab === 'DAYBOOK' || tab === 'PROMOCODES') {
+      if (tab === 'PROMOCODES') {
+        this.activeTab = this.isAdmin ? 'PROMOCODES' : 'DAYBOOK';
+      } else if (tab === 'INVOICES' || tab === 'MATRIX' || tab === 'DAYBOOK') {
         this.activeTab = tab as any;
       } else if (tab === 'STRUCTURE') {
         this.activeTab = 'MATRIX';
@@ -2185,7 +2323,9 @@ export class FeesComponent implements OnInit {
       }
     });
     this.loadStoredPromocodes();
-    this.loadSchoolFeeRules();
+    if (this.isAdmin) {
+      this.loadSchoolFeeRules();
+    }
   }
 
   async loadStoredPromocodes() {
@@ -2221,6 +2361,9 @@ export class FeesComponent implements OnInit {
   }
 
   setTab(tab: 'DAYBOOK' | 'INVOICES' | 'MATRIX' | 'PROMOCODES') {
+    if (tab === 'PROMOCODES' && !this.isAdmin) {
+      tab = 'DAYBOOK';
+    }
     this.activeTab = tab;
     this.router.navigate([], {
       relativeTo: this.route,
@@ -2229,7 +2372,7 @@ export class FeesComponent implements OnInit {
     });
     if (tab === 'DAYBOOK') {
       this.loadDayBook();
-    } else if (tab === 'PROMOCODES') {
+    } else if (tab === 'PROMOCODES' && this.isAdmin) {
       this.loadSchoolFeeRules();
     }
   }
@@ -2333,9 +2476,47 @@ export class FeesComponent implements OnInit {
   }
 
   // Day-Book Cashier Desk
+  setDayBookPreset(preset: 'TODAY' | 'YESTERDAY' | 'LAST_7_DAYS' | 'THIS_MONTH' | 'CUSTOM') {
+    this.dayBookPreset = preset;
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    if (preset === 'TODAY') {
+      this.dayBookStartDate = todayStr;
+      this.dayBookEndDate = todayStr;
+    } else if (preset === 'YESTERDAY') {
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+      const yStr = yesterday.toISOString().split('T')[0];
+      this.dayBookStartDate = yStr;
+      this.dayBookEndDate = yStr;
+    } else if (preset === 'LAST_7_DAYS') {
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(today.getDate() - 6);
+      this.dayBookStartDate = sevenDaysAgo.toISOString().split('T')[0];
+      this.dayBookEndDate = todayStr;
+    } else if (preset === 'THIS_MONTH') {
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      this.dayBookStartDate = startOfMonth.toISOString().split('T')[0];
+      this.dayBookEndDate = todayStr;
+    }
+    this.dayBookDate = this.dayBookStartDate;
+    this.loadDayBook();
+  }
+
+  onDayBookDateChange() {
+    this.dayBookPreset = 'CUSTOM';
+    if (this.dayBookStartDate && this.dayBookEndDate && this.dayBookStartDate > this.dayBookEndDate) {
+      this.dayBookEndDate = this.dayBookStartDate;
+    }
+    this.dayBookDate = this.dayBookStartDate;
+    this.loadDayBook();
+  }
+
   loadDayBook() {
     this.loadingDayBook = true;
-    this.api.getDailyDayBook(this.dayBookDate).then((summary) => {
+    const isSingleToday = (this.dayBookPreset === 'TODAY') || (!this.dayBookEndDate && this.dayBookStartDate === new Date().toISOString().split('T')[0]);
+    this.api.getDailyDayBook(this.dayBookStartDate, this.dayBookEndDate, isSingleToday).then((summary) => {
       this.dayBookSummary = summary;
       this.loadingDayBook = false;
     }).catch(() => {
@@ -2349,11 +2530,15 @@ export class FeesComponent implements OnInit {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
+    const dateRangeLabel = this.dayBookStartDate === this.dayBookEndDate
+      ? new Date(this.dayBookStartDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+      : `${new Date(this.dayBookStartDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} to ${new Date(this.dayBookEndDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+
     const html = `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Daily Day-Book Summary - ${this.dayBookDate}</title>
+        <title>Daily Day-Book Summary - ${dateRangeLabel}</title>
         <style>
           body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 25px; color: #0f172a; }
           .header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px; }
@@ -2370,22 +2555,38 @@ export class FeesComponent implements OnInit {
       <body>
         <div class="header">
           <div class="title">${schoolName}</div>
-          <div class="sub">DAILY CASHIER DAY-BOOK & COLLECTION RECONCILIATION • ${this.dayBookDate}</div>
+          <div class="sub">CASHIER DAY-BOOK & COLLECTION RECONCILIATION • ${dateRangeLabel}</div>
         </div>
         <div class="chips">
-          <div class="chip"><div>TOTAL GROSS</div><div class="chip-val">₹${this.dayBookSummary.totalCollected}</div></div>
-          <div class="chip"><div>CASH</div><div class="chip-val">₹${this.dayBookSummary.cashAmount}</div></div>
-          <div class="chip"><div>UPI / QR</div><div class="chip-val">₹${this.dayBookSummary.upiAmount}</div></div>
-          <div class="chip"><div>BANK / NEFT</div><div class="chip-val">₹${this.dayBookSummary.bankAmount}</div></div>
-          <div class="chip"><div>CHEQUES</div><div class="chip-val">₹${this.dayBookSummary.chequeAmount}</div></div>
+          <div class="chip"><div>TOTAL GROSS</div><div class="chip-val">₹${this.dayBookSummary.totalCollected.toLocaleString()}</div></div>
+          <div class="chip"><div>CASH</div><div class="chip-val">₹${this.dayBookSummary.cashAmount.toLocaleString()}</div></div>
+          <div class="chip"><div>UPI / QR</div><div class="chip-val">₹${this.dayBookSummary.upiAmount.toLocaleString()}</div></div>
+          <div class="chip"><div>BANK / NEFT</div><div class="chip-val">₹${this.dayBookSummary.bankAmount.toLocaleString()}</div></div>
+          <div class="chip"><div>CHEQUES</div><div class="chip-val">₹${this.dayBookSummary.chequeAmount.toLocaleString()}</div></div>
         </div>
         <table>
           <thead>
-            <tr><th>Receipt No</th><th>Student</th><th>Class</th><th>Mode</th><th>Cashier</th><th style="text-align: right;">Amount (INR)</th></tr>
+            <tr>
+              <th>Date</th>
+              <th>Receipt No</th>
+              <th>Student</th>
+              <th>Class</th>
+              <th>Mode</th>
+              <th>Cashier</th>
+              <th style="text-align: right;">Amount (INR)</th>
+            </tr>
           </thead>
           <tbody>
             ${this.dayBookSummary.transactions.map(t => `
-              <tr><td>${t.receiptNumber}</td><td>${t.studentName}</td><td>${t.className}</td><td>${t.paymentMode}</td><td>${t.collectedBy}</td><td style="text-align: right;">₹${t.amount}</td></tr>
+              <tr>
+                <td>${new Date(t.paymentDate || t.paymentTime || this.dayBookStartDate).toLocaleDateString('en-GB')}</td>
+                <td>${t.receiptNumber}</td>
+                <td>${t.studentName}</td>
+                <td>${t.className}</td>
+                <td>${t.paymentMode}</td>
+                <td>${t.collectedBy}</td>
+                <td style="text-align: right;">₹${t.amount.toLocaleString()}</td>
+              </tr>
             `).join('')}
           </tbody>
         </table>
@@ -3021,7 +3222,7 @@ export class FeesComponent implements OnInit {
     let bal = 0;
     for (let i = 0; i <= index; i++) {
       const entry = this.ledgerEntries[i];
-      bal += (Number(entry?.credit) || 0) - (Number(entry?.debit) || 0);
+      bal += (Number(entry?.debit) || 0) - (Number(entry?.credit) || 0);
     }
     return bal;
   }
@@ -3103,6 +3304,7 @@ export class FeesComponent implements OnInit {
   buildStudentLedger(invoices: StudentFeeInvoice[], payments: any[]) {
     const rawItems: Array<{
       date: string;
+      sortPrio?: number;
       reference: string;
       description: string;
       type: 'INVOICE' | 'PAYMENT' | 'CHARGE';
@@ -3123,8 +3325,12 @@ export class FeesComponent implements OnInit {
         const discount = Number(inv.discount_amount) || 0;
         totalBilled += amount;
         totalDiscount += discount;
+        const invDate = (inv.created_at ? inv.created_at.split('T')[0] : '') ||
+          inv.due_date ||
+          new Date().toISOString().split('T')[0];
         rawItems.push({
-          date: inv.created_at || inv.due_date || new Date().toISOString(),
+          date: invDate,
+          sortPrio: 1,
           reference: inv.invoice_number,
           description: `Tuition Fee Billing (${inv.month_name || 'Standard Term'})`,
           type: 'INVOICE',
@@ -3223,8 +3429,10 @@ export class FeesComponent implements OnInit {
       payments.forEach((p) => {
         const amt = Number(p.amount_paid) || 0;
         totalPaid += amt;
+        const pDate = (p.payment_date || p.created_at || new Date().toISOString()).split('T')[0];
         rawItems.push({
-          date: p.payment_date || p.created_at || new Date().toISOString(),
+          date: pDate,
+          sortPrio: 2,
           reference: p.receipt_number || 'REC-DIRECT',
           description: `Fee Payment Received (${p.remarks || 'Cashier Desk'})`,
           type: 'PAYMENT',
@@ -3239,8 +3447,10 @@ export class FeesComponent implements OnInit {
         const paid = Number(inv.paid_amount) || 0;
         if (paid > 0) {
           totalPaid += paid;
+          const pDate = (inv.created_at || new Date().toISOString()).split('T')[0];
           rawItems.push({
-            date: inv.created_at || new Date().toISOString(),
+            date: pDate,
+            sortPrio: 2,
             reference: `REC-${inv.invoice_number}`,
             description: `Fee Payment Received (${inv.month_name || 'Settled'})`,
             type: 'PAYMENT',
@@ -3253,13 +3463,16 @@ export class FeesComponent implements OnInit {
       });
     }
 
-    // Sort chronologically
-    rawItems.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    // Sort chronologically ascending (oldest first, newest last; debits before credits on same day)
+    rawItems.sort((a, b) => {
+      const cmp = (a.date || '').localeCompare(b.date || '');
+      return cmp !== 0 ? cmp : ((a.sortPrio || 1) - (b.sortPrio || 2));
+    });
 
-    // Calculate running balance (credit - debit)
+    // Calculate running balance (debit - credit: positive = student due, negative = student advance)
     let runningBalance = 0;
     this.ledgerEntries = rawItems.map((item) => {
-      runningBalance += (item.credit - item.debit);
+      runningBalance += (item.debit - item.credit);
       return {
         date: item.date,
         type: item.type,
@@ -3276,7 +3489,7 @@ export class FeesComponent implements OnInit {
     this.ledgerBilledTotal = totalBilled;
     this.ledgerPaidTotal = totalPaid;
     this.ledgerDiscountTotal = totalDiscount;
-    this.ledgerNetBalance = totalPaid - totalBilled;
+    this.ledgerNetBalance = totalBilled - totalPaid;
   }
 
   calculateAnnualConcessionSavings(): number {
@@ -3318,22 +3531,30 @@ export class FeesComponent implements OnInit {
 
     const rowsHtml = this.ledgerEntries.map((e, idx) => {
       const bal = this.getItemRunningBalance(e, idx);
-      const balFormatted = bal > 0 ? `+₹${bal.toLocaleString()} (Advance)` : (bal < 0 ? `₹${(-bal).toLocaleString()} (Due)` : `₹0.00 (Settled)`);
+      const balFormatted = bal > 0 ? `₹${bal.toLocaleString()} (Due)` : (bal < 0 ? `+₹${(-bal).toLocaleString()} (Adv)` : `₹0.00 (Settled)`);
+      const balColor = bal > 0 ? '#dc2626' : (bal < 0 ? '#16a34a' : '#64748b');
       return `
       <tr>
         <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0;">${new Date(e.date).toLocaleDateString('en-GB')}</td>
-        <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0; font-weight:bold; color:${e.type === 'INVOICE' || e.type === 'CHARGE' ? '#dc2626' : '#16a34a'};">${e.type}</td>
+        <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0;">
+          <span style="display:inline-block; font-size:9px; font-weight:bold; padding:1px 5px; border-radius:3px; margin-right:6px; background:${e.referenceNumber?.startsWith('FINE-') ? '#fef3c7' : (e.type === 'INVOICE' || e.type === 'CHARGE' ? '#fff1f2' : '#ecfdf5')}; color:${e.referenceNumber?.startsWith('FINE-') ? '#92400e' : (e.type === 'INVOICE' || e.type === 'CHARGE' ? '#dc2626' : '#16a34a')}; border:1px solid ${e.referenceNumber?.startsWith('FINE-') ? '#fcd34d' : (e.type === 'INVOICE' || e.type === 'CHARGE' ? '#fecdd3' : '#a7f3d0')};">${e.referenceNumber?.startsWith('FINE-') ? 'LATE FINE' : e.type}</span>
+          ${e.description}
+        </td>
         <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0; font-family:monospace; font-weight:bold;">${e.referenceNumber}</td>
-        <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0;">${e.description}</td>
-        <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0; text-align:right;">${e.debit > 0 ? '₹' + e.debit.toLocaleString() : '-'}</td>
+        <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0; text-align:right; font-weight:bold; color:#dc2626;">${e.debit > 0 ? '₹' + e.debit.toLocaleString() : '-'}</td>
         <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0; text-align:right; font-weight:bold; color:#16a34a;">${e.credit > 0 ? '₹' + e.credit.toLocaleString() : '-'}</td>
-        <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0; text-align:right; font-weight:bold;">
+        <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0; text-align:right; font-weight:bold; color:${balColor}; font-family:monospace;">
           ${balFormatted}
         </td>
-        <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0;">${e.status || (e.credit > 0 ? 'RECEIVED' : 'BILLED')}</td>
       </tr>
     `;
     }).join('');
+
+    const netClosingBal = this.ledgerBilledTotal > this.ledgerPaidTotal
+      ? `<span style="color:#dc2626; font-weight:bold;">₹${(this.ledgerBilledTotal - this.ledgerPaidTotal).toLocaleString()} (Due)</span>`
+      : (this.ledgerPaidTotal > this.ledgerBilledTotal
+        ? `<span style="color:#16a34a; font-weight:bold;">+₹${(this.ledgerPaidTotal - this.ledgerBilledTotal).toLocaleString()} (Adv)</span>`
+        : '<span style="color:#64748b; font-weight:bold;">₹0.00 (Settled)</span>');
 
     const netBadge = this.ledgerPaidTotal > this.ledgerBilledTotal
       ? `<span style="color:#16a34a; font-weight:bold; background:#ecfdf5; padding:2px 8px; border-radius:4px; border:1px solid #a7f3d0;">+₹${(this.ledgerPaidTotal - this.ledgerBilledTotal).toLocaleString()} (Advance Credit)</span>`
@@ -3345,7 +3566,7 @@ export class FeesComponent implements OnInit {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Student Account Ledger - ${s.student_name}</title>
+        <title>Student Account Passbook - ${s.student_name}</title>
         <style>
           body { font-family: sans-serif; font-size: 12px; color: #1e293b; padding: 24px; margin: 0; }
           .header { border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px; }
@@ -3362,7 +3583,7 @@ export class FeesComponent implements OnInit {
       <body>
         <div class="header">
           <div class="title">${this.auth.currentUser()?.school?.name || 'SchoolSense Academy'}</div>
-          <div class="subtitle">Official Student Account Ledger & Billing Statement | Academic Session: ${this.auth.activeSessionName()}</div>
+          <div class="subtitle">Official Student Account Passbook & Billing Statement | Academic Session: ${this.auth.activeSessionName()}</div>
           <div style="margin-top: 8px; font-weight: bold; font-size: 13px;">
             Student: ${s.student_name} | Admission No: ${s.admission_number || 'N/A'} | Class: ${s.class_name} - ${s.section_name}
           </div>
@@ -3391,22 +3612,28 @@ export class FeesComponent implements OnInit {
           <thead>
             <tr>
               <th>Date</th>
-              <th>Entry Type</th>
-              <th>Ref #</th>
-              <th>Description</th>
-              <th style="text-align:right;">Debit</th>
-              <th style="text-align:right;">Credit</th>
-              <th style="text-align:right;">Running Balance</th>
-              <th>Status</th>
+              <th>Particulars / Description</th>
+              <th>Ref / Voucher #</th>
+              <th style="text-align:right;">Debit (Dr)</th>
+              <th style="text-align:right;">Credit (Cr)</th>
+              <th style="text-align:right;">Balance</th>
             </tr>
           </thead>
           <tbody>
             ${rowsHtml}
           </tbody>
+          <tfoot>
+            <tr style="background:#f8fafc; font-weight:bold; border-top:2px solid #cbd5e1;">
+              <td colspan="3" style="padding:8px; text-transform:uppercase; font-size:10px;">Passbook Closing Totals</td>
+              <td style="padding:8px; text-align:right; color:#dc2626;">₹${this.ledgerBilledTotal.toLocaleString()}</td>
+              <td style="padding:8px; text-align:right; color:#16a34a;">₹${this.ledgerPaidTotal.toLocaleString()}</td>
+              <td style="padding:8px; text-align:right; font-family:monospace;">${netClosingBal}</td>
+            </tr>
+          </tfoot>
         </table>
 
         <div style="margin-top: 24px; font-size: 10px; color: #94a3b8; text-align: center;">
-          This is an official computer-generated account ledger statement generated on ${new Date().toLocaleString('en-IN')}.
+          This is an official computer-generated account passbook statement generated on ${new Date().toLocaleString('en-IN')}.
         </div>
       </body>
       </html>

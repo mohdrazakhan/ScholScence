@@ -327,7 +327,11 @@ export class ApiService {
       return from(this.getFeesManagementOverview(params?.['academicYearId'])) as unknown as Observable<T>;
     }
     if (cleanEndpoint === 'fees/daybook') {
-      return from(this.getDailyDayBook(params?.['date'])) as unknown as Observable<T>;
+      return from(this.getDailyDayBook(
+        params?.['date'],
+        params?.['endDate'] || params?.['end_date'],
+        params?.['includeRecentIfEmpty'] !== 'false' && params?.['includeRecentIfEmpty'] !== false
+      )) as unknown as Observable<T>;
     }
     if (cleanEndpoint.startsWith('fees/80c/')) {
       const studentId = cleanEndpoint.replace('fees/80c/', '');
@@ -9800,54 +9804,98 @@ export class ApiService {
   // ENTERPRISE CBSE FEE ENGINE SERVICE IMPLEMENTATIONS
   // ==============================================================================
 
-  public async getDailyDayBook(date?: string): Promise<DailyDayBookSummary> {
+  public async getDailyDayBook(
+    date?: string,
+    endDate?: string,
+    includeRecentIfEmpty: boolean = true
+  ): Promise<DailyDayBookSummary> {
     const schoolId = this.getSchoolId();
-    const targetDate = date || new Date().toISOString().split('T')[0];
+    const todayStr = new Date().toISOString().split('T')[0];
+    const targetDate = date || todayStr;
+    const targetEndDate = endDate ? endDate : undefined;
 
+    // 1. Attempt RPC call
     try {
-      const { data, error } = await this.supabase.rpc('get_daily_daybook_summary', {
-        p_date: targetDate,
-      });
-
-      if (!error && data && data.success) {
-        return {
-          date: targetDate,
-          totalCollected: Number(data.total_collected || data.totalCollected) || 0,
-          cashAmount: Number(data.cash_amount || data.cashAmount) || 0,
-          upiAmount: Number(data.upi_amount || data.upiAmount) || 0,
-          bankAmount: Number(data.bank_amount || data.bankAmount) || 0,
-          chequeAmount: Number(data.cheque_amount || data.chequeAmount) || 0,
-          transactionCount: Number(data.transaction_count || data.transactionCount) || (data.transactions || []).length,
-          transactions: (data.transactions || []).map((tx: any) => ({
-            receiptNumber: tx.receipt_number || tx.receiptNumber || 'REC-DAILY',
-            studentName: tx.student_name || tx.studentName || 'Student',
-            admissionNumber: tx.admission_number || tx.admissionNumber || '',
-            className: tx.class_name || tx.className || 'Class',
-            amount: Number(tx.amount || tx.amount_paid) || 0,
-            paymentMode: tx.payment_mode || tx.paymentMode || 'CASH',
-            paymentTime: tx.payment_time || tx.created_at || targetDate,
-            collectedBy: tx.collected_by_name || tx.collectedBy || 'Fee Desk',
-            remarks: tx.remarks || '',
-          })),
-        };
+      let rpcResult: any = null;
+      try {
+        const { data, error } = await this.supabase.rpc('get_daily_daybook_summary', {
+          p_date: targetDate,
+          p_end_date: targetEndDate || null,
+        });
+        if (!error && data) {
+          rpcResult = data;
+        } else if (error && !targetEndDate) {
+          // If RPC takes only p_date and threw on p_end_date, retry with p_date only
+          const retryRes = await this.supabase.rpc('get_daily_daybook_summary', {
+            p_date: targetDate,
+          });
+          if (!retryRes.error && retryRes.data) {
+            rpcResult = retryRes.data;
+          }
+        }
+      } catch (innerErr) {
+        if (!targetEndDate) {
+          const retryRes = await this.supabase.rpc('get_daily_daybook_summary', {
+            p_date: targetDate,
+          });
+          if (!retryRes.error && retryRes.data) {
+            rpcResult = retryRes.data;
+          }
+        }
       }
-      if (error) {
-        console.warn('get_daily_daybook_summary RPC error, falling back:', error);
+
+      if (rpcResult && rpcResult.success) {
+        const txList = (rpcResult.transactions || []).map((tx: any) => ({
+          receiptNumber: tx.receipt_number || tx.receiptNumber || 'REC-DAILY',
+          studentName: tx.student_name || tx.studentName || 'Student',
+          admissionNumber: tx.admission_number || tx.admissionNumber || '',
+          className: tx.class_name || tx.className || 'Class',
+          amount: Number(tx.amount || tx.amount_paid) || 0,
+          paymentMode: tx.payment_mode || tx.paymentMode || 'CASH',
+          paymentDate: tx.payment_date || tx.paymentDate || targetDate,
+          paymentTime: tx.payment_time || tx.created_at || targetDate,
+          collectedBy: tx.collected_by_name || tx.collectedBy || 'Fee Desk',
+          remarks: tx.remarks || '',
+        }));
+
+        if (txList.length > 0) {
+          return {
+            date: targetDate,
+            startDate: targetDate,
+            endDate: targetEndDate || targetDate,
+            isRecentFallback: false,
+            totalCollected: Number(rpcResult.total_collected || rpcResult.totalCollected) || 0,
+            cashAmount: Number(rpcResult.cash_amount || rpcResult.cashAmount) || 0,
+            upiAmount: Number(rpcResult.upi_amount || rpcResult.upiAmount) || 0,
+            bankAmount: Number(rpcResult.bank_amount || rpcResult.bankAmount) || 0,
+            chequeAmount: Number(rpcResult.cheque_amount || rpcResult.chequeAmount) || 0,
+            transactionCount: Number(rpcResult.transaction_count || rpcResult.transactionCount) || txList.length,
+            transactions: txList,
+          };
+        }
       }
     } catch (e) {
       console.warn('get_daily_daybook_summary RPC exception:', e);
     }
 
-    // Fallback: Query payments for targetDate
+    // 2. Direct table querying fallback
     try {
-      const { data: payments } = await this.supabase
+      let query = this.supabase
         .from('fee_payments')
         .select('*, student:students(id, first_name, last_name, admission_number)')
-        .eq('school_id', schoolId)
-        .eq('payment_date', targetDate)
+        .eq('school_id', schoolId);
+
+      if (targetEndDate) {
+        query = query.gte('payment_date', targetDate).lte('payment_date', targetEndDate);
+      } else {
+        query = query.eq('payment_date', targetDate);
+      }
+
+      const { data: payments, error: paymentsErr } = await query
+        .order('payment_date', { ascending: false })
         .order('created_at', { ascending: false });
 
-      if (payments && payments.length > 0) {
+      if (!paymentsErr && payments && payments.length > 0) {
         let cash = 0, upi = 0, bank = 0, cheque = 0;
         const txs = payments.map((p: any) => {
           const amt = Number(p.amount_paid) || 0;
@@ -9864,6 +9912,7 @@ export class ApiService {
             className: 'Class',
             amount: amt,
             paymentMode: mode,
+            paymentDate: p.payment_date || targetDate,
             paymentTime: p.created_at || targetDate,
             collectedBy: p.collected_by_name || 'Fee Desk Staff',
             remarks: p.remarks || '',
@@ -9872,6 +9921,9 @@ export class ApiService {
 
         return {
           date: targetDate,
+          startDate: targetDate,
+          endDate: targetEndDate || targetDate,
+          isRecentFallback: false,
           totalCollected: cash + upi + bank + cheque,
           cashAmount: cash,
           upiAmount: upi,
@@ -9881,11 +9933,67 @@ export class ApiService {
           transactions: txs,
         };
       }
-    } catch (e) {}
 
-    // Mock/Empty daybook fallback
+      // If empty for single today date and includeRecentIfEmpty is requested, query recent payments
+      const isSingleToday = !targetEndDate && targetDate === todayStr;
+      if (includeRecentIfEmpty && isSingleToday) {
+        const { data: recentPayments, error: recentErr } = await this.supabase
+          .from('fee_payments')
+          .select('*, student:students(id, first_name, last_name, admission_number)')
+          .eq('school_id', schoolId)
+          .order('payment_date', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (!recentErr && recentPayments && recentPayments.length > 0) {
+          let cash = 0, upi = 0, bank = 0, cheque = 0;
+          const txs = recentPayments.map((p: any) => {
+            const amt = Number(p.amount_paid) || 0;
+            const mode = (p.payment_mode || 'CASH').toUpperCase();
+            if (mode === 'CASH') cash += amt;
+            else if (mode === 'UPI') upi += amt;
+            else if (mode === 'CHEQUE') cheque += amt;
+            else bank += amt;
+
+            return {
+              receiptNumber: p.receipt_number || 'REC-DAILY',
+              studentName: p.student ? `${p.student.first_name || ''} ${p.student.last_name || ''}`.trim() : 'Student',
+              admissionNumber: p.student?.admission_number || '',
+              className: 'Class',
+              amount: amt,
+              paymentMode: mode,
+              paymentDate: p.payment_date || targetDate,
+              paymentTime: p.created_at || targetDate,
+              collectedBy: p.collected_by_name || 'Fee Desk Staff',
+              remarks: p.remarks || '',
+            };
+          });
+
+          return {
+            date: targetDate,
+            startDate: targetDate,
+            endDate: targetEndDate || targetDate,
+            isRecentFallback: true,
+            totalCollected: cash + upi + bank + cheque,
+            cashAmount: cash,
+            upiAmount: upi,
+            bankAmount: bank,
+            chequeAmount: cheque,
+            transactionCount: txs.length,
+            transactions: txs,
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('Day-book fee_payments query fallback error:', e);
+    }
+
+    // Default empty daybook
     return {
       date: targetDate,
+      startDate: targetDate,
+      endDate: targetEndDate || targetDate,
+      isRecentFallback: false,
       totalCollected: 0,
       cashAmount: 0,
       upiAmount: 0,
@@ -9996,6 +10104,52 @@ export class ApiService {
     };
   }
 
+  private getMonthStartDate(monthStr?: string): string {
+    if (!monthStr) return '2026-04-01';
+    const clean = monthStr.trim();
+    const isoMatch = clean.match(/^(\d{4})-(\d{1,2})/);
+    if (isoMatch) {
+      const y = isoMatch[1];
+      const m = isoMatch[2].padStart(2, '0');
+      return `${y}-${m}-01`;
+    }
+    const months: Record<string, string> = {
+      jan: '01', january: '01',
+      feb: '02', february: '02',
+      mar: '03', march: '03',
+      apr: '04', april: '04',
+      may: '05',
+      jun: '06', june: '06',
+      jul: '07', july: '07',
+      aug: '08', august: '08',
+      sep: '09', sept: '09', september: '09',
+      oct: '10', october: '10',
+      nov: '11', november: '11',
+      dec: '12', december: '12',
+    };
+    const tokens = clean.toLowerCase().split(/[\s\-_/,]+/);
+    let foundMonth = '';
+    let foundYear = '';
+    for (const t of tokens) {
+      if (months[t]) {
+        foundMonth = months[t];
+      } else if (/^\d{4}$/.test(t)) {
+        foundYear = t;
+      }
+    }
+    const year = foundYear || new Date().getFullYear().toString();
+    if (foundMonth) {
+      return `${year}-${foundMonth}-01`;
+    }
+    const d = new Date(clean);
+    if (!isNaN(d.getTime())) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      return `${y}-${m}-01`;
+    }
+    return '2026-04-01';
+  }
+
   public async getStudentFeeLedger(studentId: string, academicYearId?: string): Promise<StudentFeeLedgerStatement> {
     const schoolId = this.getSchoolId();
     const effectiveYearId = academicYearId || (await this.getActiveAcademicYearId(schoolId));
@@ -10034,6 +10188,23 @@ export class ApiService {
         const totalPaid = Number(data.totalPaid || 0);
         const totalDiscount = Number(data.totalDiscount || 0);
 
+        // Preserve invoice dates on configured due date of month (e.g. 10th of the month)
+        const invMap = new Map<string, any>();
+        if (Array.isArray(data.invoices)) {
+          data.invoices.forEach((inv: any) => {
+            if (inv.invoice_number) invMap.set(inv.invoice_number, inv);
+          });
+        }
+
+        entries = entries.map(e => {
+          if (e.type === 'INVOICE' && invMap.has(e.referenceNumber)) {
+            const inv = invMap.get(e.referenceNumber);
+            const alignedDate = inv.due_date ? inv.due_date.split('T')[0] : (inv.created_at ? inv.created_at.split('T')[0] : e.date);
+            return { ...e, date: alignedDate };
+          }
+          return e;
+        });
+
         // Merge additional charges if not already in ledgerEntries
         if (additionalCharges.length > 0) {
           const existingRefs = new Set(entries.map(e => e.referenceNumber));
@@ -10054,23 +10225,32 @@ export class ApiService {
               });
             }
           }
-          entries.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
         }
 
-        // Ensure runningBalance is always a valid finite number on every entry
+        // Strict Chronological Passbook Sorting:
+        // 1. Ascending by date
+        // 2. Same date: Debits (INVOICE / CHARGE, prio 1) appear BEFORE Payments (Credits, prio 2)
+        entries.sort((a, b) => {
+          const cmp = (a.date || '').localeCompare(b.date || '');
+          if (cmp !== 0) return cmp;
+          const prioA = (a.type === 'INVOICE' || a.type === 'CHARGE') ? 1 : 2;
+          const prioB = (b.type === 'INVOICE' || b.type === 'CHARGE') ? 1 : 2;
+          return prioA - prioB;
+        });
+
+        // Running balance recalculation:
+        // running = running + debit - credit
+        // Positive = Due, Negative = Advance
         let running = 0;
         entries = entries.map(entry => {
           const debit = Number(entry.debit) || 0;
           const credit = Number(entry.credit) || 0;
           running = running + debit - credit;
-          const rb = Number.isFinite(Number(entry.runningBalance)) && additionalCharges.length === 0
-            ? Number(entry.runningBalance)
-            : running;
           return {
             ...entry,
             debit,
             credit,
-            runningBalance: Number.isFinite(rb) ? rb : (Number.isFinite(running) ? running : 0),
+            runningBalance: Number.isFinite(running) ? running : 0,
           };
         });
 
@@ -10156,6 +10336,17 @@ export class ApiService {
       }
     } catch (e) {}
 
+    let feeRules: any = null;
+    try {
+      const { data: fr } = await this.supabase
+        .from('school_fee_rules')
+        .select('*')
+        .eq('school_id', schoolId)
+        .eq('academic_year_id', effectiveYearId)
+        .maybeSingle();
+      if (fr) feeRules = fr;
+    } catch (e) {}
+
     const invoices = await this.getFeeInvoices({ studentId, academicYearId: effectiveYearId });
 
     let payments: any[] = [];
@@ -10175,17 +10366,6 @@ export class ApiService {
       }
     } catch (e) {}
 
-    const additionalChargesTotal = additionalCharges.reduce((sum, chg) => sum + (Number(chg.amount) || 0), 0);
-    const invoiceBilled = invoices.reduce((sum, inv) => sum + (Number(inv.total_amount) || 0), 0);
-    const totalBilled = invoiceBilled + additionalChargesTotal;
-    const totalDiscount = invoices.reduce((sum, inv) => sum + (Number(inv.discount_amount) || 0), 0);
-    const totalPaid = payments.length > 0
-      ? payments.reduce((sum, p) => sum + (Number(p.amount_paid) || 0), 0)
-      : invoices.reduce((sum, inv) => sum + (Number(inv.paid_amount) || 0), 0);
-
-    const advanceBalance = Math.max(0, totalPaid - totalBilled);
-    const pendingDue = Math.max(0, totalBilled - totalPaid);
-
     type RawEntry = {
       date: string;
       type: 'INVOICE' | 'PAYMENT' | 'CHARGE';
@@ -10199,9 +10379,16 @@ export class ApiService {
     };
 
     const rawList: RawEntry[] = [];
+    let totalFineBilled = 0;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const today = new Date(todayStr);
+
     invoices.forEach(inv => {
+      // Due Date of the month (e.g. 10th of the month)
+      const invDate = inv.due_date ? inv.due_date.split('T')[0] : (inv.created_at ? inv.created_at.split('T')[0] : '2026-04-01');
+
       rawList.push({
-        date: inv.due_date || (inv.created_at ? inv.created_at.split('T')[0] : '2026-04-01'),
+        date: invDate,
         type: 'INVOICE',
         referenceNumber: inv.invoice_number,
         description: `Fee Invoice: ${inv.month_name || 'Standard Term'}`,
@@ -10210,7 +10397,50 @@ export class ApiService {
         status: inv.status,
         sortPrio: 1,
       });
+
+      // Automatic Midnight Late Fee Dynamic Calculation (Flat or Daily)
+      const isUnpaid = inv.status !== 'PAID' && (Number(inv.paid_amount) || 0) < (Number(inv.total_amount) || 0);
+      const isLateFeeEnabled = feeRules?.enable_late_fee || false;
+      const lateFeeAmount = Number(feeRules?.late_fee_amount) || 0;
+      const graceDays = Number(feeRules?.grace_period_days ?? 5);
+
+      if (isUnpaid && isLateFeeEnabled && lateFeeAmount > 0 && inv.due_date) {
+        const dueDate = new Date(inv.due_date.split('T')[0]);
+        const cutoffDate = new Date(dueDate.getTime() + graceDays * 24 * 60 * 60 * 1000);
+        if (today > cutoffDate) {
+          const daysOverdue = Math.max(1, Math.floor((today.getTime() - cutoffDate.getTime()) / (24 * 60 * 60 * 1000)));
+          const fineType = (feeRules?.late_fee_type || 'FLAT').toUpperCase();
+          const fineAmount = fineType === 'DAILY' ? daysOverdue * lateFeeAmount : lateFeeAmount;
+
+          totalFineBilled += fineAmount;
+
+          const fineStartDate = new Date(cutoffDate.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          rawList.push({
+            date: fineStartDate,
+            type: 'CHARGE',
+            referenceNumber: `FINE-${inv.invoice_number}`,
+            description: fineType === 'DAILY'
+              ? `Late Fee Fine (${daysOverdue} days overdue @ ₹${lateFeeAmount}/day)`
+              : `Late Fee Fine (Flat overdue penalty for ${inv.month_name || 'Fee'})`,
+            debit: fineAmount,
+            credit: 0,
+            status: 'OVERDUE',
+            sortPrio: 1,
+          });
+        }
+      }
     });
+
+    const additionalChargesTotal = additionalCharges.reduce((sum, chg) => sum + (Number(chg.amount) || 0), 0);
+    const invoiceBilled = invoices.reduce((sum, inv) => sum + (Number(inv.total_amount) || 0), 0);
+    const totalBilled = invoiceBilled + additionalChargesTotal + totalFineBilled;
+    const totalDiscount = invoices.reduce((sum, inv) => sum + (Number(inv.discount_amount) || 0), 0);
+    const totalPaid = payments.length > 0
+      ? payments.reduce((sum, p) => sum + (Number(p.amount_paid) || 0), 0)
+      : invoices.reduce((sum, inv) => sum + (Number(inv.paid_amount) || 0), 0);
+
+    const advanceBalance = Math.max(0, totalPaid - totalBilled);
+    const pendingDue = Math.max(0, totalBilled - totalPaid);
 
     additionalCharges.forEach(chg => {
       rawList.push({
@@ -12000,7 +12230,7 @@ export class ApiService {
         try {
           const { data: uData, error: uErr } = await this.supabase
             .from('users')
-            .select('id, email, phone, first_name, last_name, status, department, designation, custom_permissions, last_login_at, created_at, updated_at')
+            .select('id, email, phone, first_name, last_name, status, department, designation, custom_permissions, last_login_at, created_at, updated_at, avatar_url, profile_image')
             .in('id', userIds);
           if (!uErr && uData) {
             dbUsers = uData;
@@ -12058,6 +12288,7 @@ export class ApiService {
         // Custom permissions
         const customPerms: string[] = usr.custom_permissions || u.custom_permissions || DEFAULT_ROLE_PERMISSIONS[roleCode] || [];
 
+        const avatarUrl = u.avatar_url || u.profile_image || usr.avatar_url || usr.profile_image || undefined;
         result.push({
           id: u.id,
           school_id: schoolId,
@@ -12066,6 +12297,8 @@ export class ApiService {
           name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email,
           email: u.email,
           phone: u.phone,
+          avatar_url: avatarUrl,
+          profile_image: avatarUrl,
           role: roleCode,
           role_name: r?.name || roleCode,
           department: dept,
@@ -12274,6 +12507,9 @@ export class ApiService {
           custom_permissions: customPermissions,
           status,
         };
+        if (body.avatar_url !== undefined || body.profile_image !== undefined) {
+          userUpdates.avatar_url = body.avatar_url || body.profile_image;
+        }
         if (body.password) {
           userUpdates.password_hash = body.password;
         }
@@ -12291,6 +12527,7 @@ export class ApiService {
           department,
           designation,
           custom_permissions: customPermissions,
+          avatar_url: body.avatar_url || body.profile_image || undefined,
         });
 
         if (insUserErr) {
@@ -12381,6 +12618,7 @@ export class ApiService {
       }
     }
 
+    const avatarUrl = body.avatar_url || body.profile_image || undefined;
     const newDeptUser: DepartmentalStaffUser = {
       id: targetUserId,
       school_id: schoolId,
@@ -12389,6 +12627,8 @@ export class ApiService {
       name: `${firstName} ${lastName}`.trim(),
       email,
       phone,
+      avatar_url: avatarUrl,
+      profile_image: avatarUrl,
       role,
       role_name: designation,
       department,
@@ -12435,13 +12675,18 @@ export class ApiService {
       }
     }
 
-    // 2. Update core user fields (first_name, last_name, phone, email, status, password_hash)
+    // 2. Update core user fields (first_name, last_name, phone, email, status, password_hash, avatar_url)
     const userUpdates: any = {};
     if (body.first_name !== undefined) userUpdates.first_name = body.first_name;
     if (body.last_name !== undefined) userUpdates.last_name = body.last_name;
     if (body.phone !== undefined) userUpdates.phone = body.phone;
     if (body.email !== undefined) userUpdates.email = body.email.toLowerCase().trim();
     if (body.status !== undefined) userUpdates.status = body.status;
+    if (body.avatar_url !== undefined) {
+      userUpdates.avatar_url = body.avatar_url;
+    } else if (body.profile_image !== undefined) {
+      userUpdates.avatar_url = body.profile_image;
+    }
     if (body.password) userUpdates.password_hash = body.password;
 
     if (Object.keys(userUpdates).length > 0) {

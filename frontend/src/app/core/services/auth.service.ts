@@ -845,13 +845,15 @@ export class AuthService {
   login(identifier: string, password: string, schoolCode?: string): Observable<AuthResponse> {
     return from(this.executeLogin(identifier, password, schoolCode)).pipe(
       switchMap(async (res) => {
-        localStorage.setItem(this.TOKEN_KEY, res.accessToken);
-        if (res.signingSecret) {
-          localStorage.setItem(this.SIGNING_SECRET_KEY, res.signingSecret);
+        const token = res.accessToken || (res as any).token;
+        const secret = res.signingSecret || (res as any).signing_secret;
+        localStorage.setItem(this.TOKEN_KEY, token);
+        if (secret) {
+          localStorage.setItem(this.SIGNING_SECRET_KEY, secret);
         } else {
           localStorage.removeItem(this.SIGNING_SECRET_KEY);
         }
-        this.supabase.setAuthToken(res.accessToken, res.signingSecret || null);
+        this.supabase.setAuthToken(token, secret || null);
 
         // Fetch fresh custom permissions for departmental/staff users directly from DB
         const role = (res.user?.role || '').toUpperCase();
@@ -918,11 +920,42 @@ export class AuthService {
     if (error) {
       throw new Error(error.message || 'Invalid email/phone or password.');
     }
-    if (!data || !data.accessToken || !data.user) {
+
+    const token = data?.accessToken || (data as any)?.token;
+    const signingSecret = data?.signingSecret || (data as any)?.signing_secret;
+
+    if (!data || !token || !data.user) {
       const serverMsg = (data as any)?.message;
       throw new Error(serverMsg || 'Invalid email/phone or password.');
     }
+
     const authRes = data as AuthResponse;
+    authRes.accessToken = token;
+    authRes.signingSecret = signingSecret || undefined;
+
+    if (!authRes.user.role && (data as any).is_platform_admin) {
+      authRes.user.role = 'PLATFORM_ADMIN';
+    }
+
+    if (!authRes.user.school && (data as any).school_id) {
+      const schoolId = (data as any).school_id || '00000000-0000-0000-0000-000000000001';
+      const schoolName = (data as any).school_name || (authRes.user.role === 'SUPER_ADMIN' || authRes.user.role === 'PLATFORM_ADMIN' ? 'Platform Console' : 'School');
+      const schoolCodeVal = (data as any).school_code || (authRes.user.role === 'SUPER_ADMIN' || authRes.user.role === 'PLATFORM_ADMIN' ? 'PLATFORM' : cleanCode || 'SCH');
+      authRes.user.school = {
+        id: schoolId,
+        name: schoolName,
+        code: schoolCodeVal,
+        status: 'ACTIVE',
+      };
+    } else if (!authRes.user.school && (authRes.user.role === 'SUPER_ADMIN' || authRes.user.role === 'PLATFORM_ADMIN')) {
+      authRes.user.school = {
+        id: '00000000-0000-0000-0000-000000000001',
+        name: 'Platform Console',
+        code: 'PLATFORM',
+        status: 'ACTIVE',
+      };
+    }
+
     if (authRes.user) {
       this.resolveUserCustomPermissionsFromLocal(authRes.user);
     }
