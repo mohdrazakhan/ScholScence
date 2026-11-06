@@ -12804,6 +12804,17 @@ export class ApiService {
       throw new Error('User ID and new password are required.');
     }
 
+    const schoolId = this.getSchoolId();
+    const currentUserId = this.getUserId();
+    if (schoolId) {
+      const cachedRaw = localStorage.getItem(this.getDeptUsersCacheKey(schoolId));
+      const users: DepartmentalStaffUser[] = cachedRaw ? JSON.parse(cachedRaw) : [];
+      const rootAdmin = users.find((u) => u.is_root_admin);
+      if (rootAdmin && rootAdmin.id === userId && currentUserId && currentUserId !== userId) {
+        throw new Error('Security Restriction: Only the Root Administrator can change their own password. Other administrators cannot reset the Root Admin credentials.');
+      }
+    }
+
     // 1. Try atomic RPC if available
     try {
       const { data: rpcRes, error: rpcErr } = await this.supabase.rpc('admin_reset_user_password', {

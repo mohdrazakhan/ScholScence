@@ -494,13 +494,18 @@ interface FeatureSectionDef {
                 <span class="truncate">Copy</span>
               </button>
 
-              <button type="button" (click)="openResetPasswordModal(u)"
-                      title="Reset account password"
-                      class="h-8 px-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-[#18181c] hover:bg-slate-100 dark:hover:bg-[#222228] border border-slate-200/90 dark:border-[#27272e] transition-all cursor-pointer text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs active:scale-98">
-                <svg class="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              <button type="button" 
+                      (click)="canChangePasswordFor(u) ? openResetPasswordModal(u) : showRestrictedPasswordToast(u)"
+                      [title]="!canChangePasswordFor(u) ? 'Only the Root Administrator can change their own password' : 'Reset account password'"
+                      class="h-8 px-2.5 rounded-xl transition-all text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
+                      [ngClass]="canChangePasswordFor(u) 
+                        ? 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-[#18181c] hover:bg-slate-100 dark:hover:bg-[#222228] border border-slate-200/90 dark:border-[#27272e] cursor-pointer' 
+                        : 'opacity-50 text-slate-400 dark:text-slate-500 bg-slate-50/50 dark:bg-[#141416] border border-slate-200/50 dark:border-[#202024] cursor-not-allowed'">
+                <svg class="w-3.5 h-3.5 shrink-0" [ngClass]="canChangePasswordFor(u) ? 'text-slate-400 dark:text-slate-500' : 'text-slate-300 dark:text-slate-600'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path *ngIf="canChangePasswordFor(u)" stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                  <path *ngIf="!canChangePasswordFor(u)" stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
-                <span class="truncate">Password</span>
+                <span class="truncate">{{ canChangePasswordFor(u) ? 'Password' : 'Protected' }}</span>
               </button>
             </div>
 
@@ -1561,18 +1566,16 @@ export class StaffUsersComponent implements OnInit {
     }
   }
 
-  isPrimaryAdmin(u: DepartmentalStaffUser): boolean {
-    if (!u) return false;
-    if (u.is_root_admin === true) return true;
-    if (u.is_root_admin === false) return false;
+  resolveRootAdmin(): DepartmentalStaffUser | null {
+    const fromFlag = this.usersList.find((u) => u.is_root_admin);
+    if (fromFlag) return fromFlag;
 
-    // Fallback: Resolve singular root admin among administrative users
     const adminCandidates = this.usersList.filter((x) => {
       const r = (x.role || '').toUpperCase();
       return r === 'SCHOOL_ADMIN' || r === 'PRINCIPAL' || x.department === 'Administration';
     });
 
-    if (adminCandidates.length === 0) return false;
+    if (adminCandidates.length === 0) return null;
 
     let root = adminCandidates[0];
     for (let i = 1; i < adminCandidates.length; i++) {
@@ -1590,7 +1593,37 @@ export class StaffUsersComponent implements OnInit {
       }
     }
 
-    return u.id === root.id;
+    return root;
+  }
+
+  isPrimaryAdmin(u: DepartmentalStaffUser): boolean {
+    if (!u) return false;
+    if (u.is_root_admin === true) return true;
+    if (u.is_root_admin === false) return false;
+    const root = this.resolveRootAdmin();
+    return root ? u.id === root.id : false;
+  }
+
+  isCurrentUserRootAdmin(): boolean {
+    const curr = this.auth.currentUser();
+    if (!curr) return false;
+    const root = this.resolveRootAdmin();
+    if (!root) return false;
+    return curr.id === root.id || (!!curr.email && !!root.email && curr.email.toLowerCase() === root.email.toLowerCase());
+  }
+
+  canChangePasswordFor(u: DepartmentalStaffUser): boolean {
+    if (!u) return false;
+    // If target user is the singular Root Admin:
+    if (this.isPrimaryAdmin(u)) {
+      return this.isCurrentUserRootAdmin();
+    }
+    // Any other user's password can be reset by any admin
+    return this.auth.isAdmin();
+  }
+
+  showRestrictedPasswordToast(u: DepartmentalStaffUser): void {
+    this.toast.error('Security Policy: Only the Root Administrator can change their own password.');
   }
 
   toggleUserStatus(u: DepartmentalStaffUser): void {
@@ -1615,6 +1648,10 @@ export class StaffUsersComponent implements OnInit {
   }
 
   openResetPasswordModal(u: DepartmentalStaffUser): void {
+    if (!this.canChangePasswordFor(u)) {
+      this.toast.error('Security Policy: Only the Root Administrator can change their own password.');
+      return;
+    }
     this.targetUserForPassword = u;
     this.newPasswordInput = ''; // Cleared so modal never opens with a pre-filled password
     this.showResetPass = false;
@@ -1623,6 +1660,10 @@ export class StaffUsersComponent implements OnInit {
 
   saveResetPassword(): void {
     if (!this.targetUserForPassword) return;
+    if (!this.canChangePasswordFor(this.targetUserForPassword)) {
+      this.toast.error('Security Policy: Only the Root Administrator can change their own password.');
+      return;
+    }
     const pwd = this.newPasswordInput.trim();
     if (!pwd) {
       this.toast.error('Please enter a new password or click Auto to generate one.');
