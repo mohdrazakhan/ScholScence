@@ -330,14 +330,17 @@ interface FeatureSectionDef {
               <div class="flex items-center gap-3 min-w-0 flex-1">
                 <!-- Avatar with Live Status Dot -->
                 <div class="relative shrink-0">
-                  <img *ngIf="u.avatar_url || u.profile_image"
-                       [src]="u.avatar_url || u.profile_image"
-                       [alt]="u.name || u.first_name"
-                       class="w-10 h-10 rounded-xl object-cover border border-slate-200/80 dark:border-[#27272e] shadow-2xs" />
-                  <div *ngIf="!u.avatar_url && !u.profile_image"
-                       class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm tracking-wider shadow-2xs"
-                       [ngClass]="isPrimaryAdmin(u) ? 'bg-indigo-600 text-white' : 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/60'">
-                    {{ u.first_name ? u.first_name.charAt(0).toUpperCase() : 'U' }}
+                  <div class="w-10 h-10 rounded-xl overflow-hidden border border-slate-200/80 dark:border-[#27272e] shadow-2xs flex items-center justify-center bg-slate-100 dark:bg-[#18181c]">
+                    <img *ngIf="u.avatar_url || u.profile_image"
+                         [src]="u.avatar_url || u.profile_image"
+                         [alt]="u.name || u.first_name"
+                         class="w-full h-full object-cover rounded-xl"
+                         (error)="onAvatarError($event, u)" />
+                    <div *ngIf="!u.avatar_url && !u.profile_image"
+                         class="w-full h-full flex items-center justify-center font-bold text-sm tracking-wider"
+                         [ngClass]="isPrimaryAdmin(u) ? 'bg-indigo-600 text-white' : 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300'">
+                      {{ u.first_name ? u.first_name.charAt(0).toUpperCase() : 'U' }}
+                    </div>
                   </div>
                   <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-[#121214]"
                         [ngClass]="u.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'">
@@ -1100,6 +1103,39 @@ export class StaffUsersComponent implements OnInit {
           seen.add(u.id);
           return true;
         });
+
+        // Enrich with localStorage cache for avatar and profile image if empty
+        const schoolId = this.auth.currentUser()?.school?.id || (() => {
+          try { return JSON.parse(localStorage.getItem('schoolsense_user') || '{}')?.school?.id || ''; } catch { return ''; }
+        })();
+
+        let cachedRaw = schoolId ? localStorage.getItem(`schoolsense_dept_users_${schoolId}`) : null;
+        if (!cachedRaw) {
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('schoolsense_dept_users_')) {
+              cachedRaw = localStorage.getItem(key);
+              break;
+            }
+          }
+        }
+
+        if (cachedRaw) {
+          try {
+            const cachedList: DepartmentalStaffUser[] = JSON.parse(cachedRaw);
+            const cacheMap = new Map(cachedList.map((c) => [c.id, c]));
+            const emailMap = new Map(cachedList.filter((c) => c.email).map((c) => [c.email!.toLowerCase(), c]));
+            filtered.forEach((u) => {
+              const c = cacheMap.get(u.id) || (u.email ? emailMap.get(u.email.toLowerCase()) : undefined);
+              if (c) {
+                const av = (u.avatar_url && u.avatar_url.trim()) || (u.profile_image && u.profile_image.trim()) || c.avatar_url || c.profile_image || '';
+                u.avatar_url = av;
+                u.profile_image = av;
+              }
+            });
+          } catch {}
+        }
+
         this.usersList = filtered;
         // Ensure the singular permanent root admin always retains full 20/20 platform access
         this.usersList.forEach((u) => {
@@ -1509,6 +1545,13 @@ export class StaffUsersComponent implements OnInit {
     this.formData.avatar_url = '';
   }
 
+  onAvatarError(event: Event, u: DepartmentalStaffUser): void {
+    const target = event.target as HTMLImageElement;
+    if (target) {
+      target.style.display = 'none';
+    }
+  }
+
   closeUserModal(): void {
     this.isUserModalOpen = false;
   }
@@ -1538,10 +1581,28 @@ export class StaffUsersComponent implements OnInit {
     this.saving = true;
 
     if (this.isEditing && this.selectedUserId) {
+      // Optimistic update in local list
+      const existingIdx = this.usersList.findIndex((u) => u.id === this.selectedUserId);
+      if (existingIdx !== -1) {
+        this.usersList[existingIdx] = {
+          ...this.usersList[existingIdx],
+          ...this.formData,
+          avatar_url: this.formData.avatar_url,
+          profile_image: this.formData.avatar_url,
+          name: `${this.formData.first_name} ${this.formData.last_name || ''}`.trim(),
+        };
+        this.usersList = [...this.usersList];
+      }
       this.api.put(`departmental-users/${this.selectedUserId}`, this.formData).subscribe({
-        next: () => {
+        next: (updatedRes: any) => {
           this.toast.success(`Updated feature permissions for ${this.formData.first_name}.`);
           this.saving = false;
+          if (existingIdx !== -1) {
+            const finalAv = this.formData.avatar_url || updatedRes?.avatar_url;
+            this.usersList[existingIdx].avatar_url = finalAv;
+            this.usersList[existingIdx].profile_image = finalAv;
+            this.usersList = [...this.usersList];
+          }
           this.closeUserModal();
           this.loadUsers();
         },
@@ -1555,6 +1616,17 @@ export class StaffUsersComponent implements OnInit {
         next: (created) => {
           this.toast.success(`Created login for ${created.name} (${this.formData.department}).`);
           this.saving = false;
+          if (created && created.id) {
+            const exists = this.usersList.some((u) => u.id === created.id);
+            if (!exists) {
+              const enrichedCreated: DepartmentalStaffUser = {
+                ...created,
+                avatar_url: created.avatar_url || this.formData.avatar_url,
+                profile_image: created.profile_image || this.formData.avatar_url,
+              };
+              this.usersList = [enrichedCreated, ...this.usersList];
+            }
+          }
           this.closeUserModal();
           this.loadUsers();
         },

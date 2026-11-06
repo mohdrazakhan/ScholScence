@@ -774,7 +774,6 @@ BEGIN
       SELECT se.class_id
         FROM public.student_enrollments se
        WHERE se.student_id = st.id
-         AND se.school_id = v_school_id
          AND (v_year.id IS NULL OR se.academic_year_id = v_year.id)
          AND se.status = 'ACTIVE'
          AND se.deleted_at IS NULL
@@ -1109,8 +1108,7 @@ BEGIN
     LEFT JOIN LATERAL (
       SELECT se.class_id, se.section_id
         FROM public.student_enrollments se
-       WHERE se.student_id = s.id 
-         AND se.school_id = v_school_id
+       WHERE se.student_id = s.id
          AND (v_year.id IS NULL OR se.academic_year_id = v_year.id)
        ORDER BY se.created_at DESC LIMIT 1
     ) enr ON TRUE
@@ -1247,8 +1245,27 @@ BEGIN
   v_running_balance := 0.00;
 
   FOR r IN (
-    -- 1. Base Tuition Invoices (Net tuition fee debit on configured due date of month)
-    SELECT COALESCE(inv.due_date, inv.created_at::DATE, CURRENT_DATE) AS entry_date,
+    -- 1. Base Tuition Invoices (Net tuition fee debit on configured due date of month, never future dates)
+    SELECT LEAST(CURRENT_DATE, COALESCE(
+             CASE
+               WHEN inv.month_name ~* 'April' THEN make_date(COALESCE(NULLIF(substring(v_year.name from '^([0-9]{4})'), '')::INT, EXTRACT(YEAR FROM CURRENT_DATE)::INT), 4, 1)
+               WHEN inv.month_name ~* 'May' THEN make_date(COALESCE(NULLIF(substring(v_year.name from '^([0-9]{4})'), '')::INT, EXTRACT(YEAR FROM CURRENT_DATE)::INT), 5, 1)
+               WHEN inv.month_name ~* 'June' THEN make_date(COALESCE(NULLIF(substring(v_year.name from '^([0-9]{4})'), '')::INT, EXTRACT(YEAR FROM CURRENT_DATE)::INT), 6, 1)
+               WHEN inv.month_name ~* 'July' THEN make_date(COALESCE(NULLIF(substring(v_year.name from '^([0-9]{4})'), '')::INT, EXTRACT(YEAR FROM CURRENT_DATE)::INT), 7, 1)
+               WHEN inv.month_name ~* 'August' THEN make_date(COALESCE(NULLIF(substring(v_year.name from '^([0-9]{4})'), '')::INT, EXTRACT(YEAR FROM CURRENT_DATE)::INT), 8, 1)
+               WHEN inv.month_name ~* 'September' THEN make_date(COALESCE(NULLIF(substring(v_year.name from '^([0-9]{4})'), '')::INT, EXTRACT(YEAR FROM CURRENT_DATE)::INT), 9, 1)
+               WHEN inv.month_name ~* 'October' THEN make_date(COALESCE(NULLIF(substring(v_year.name from '^([0-9]{4})'), '')::INT, EXTRACT(YEAR FROM CURRENT_DATE)::INT), 10, 1)
+               WHEN inv.month_name ~* 'November' THEN make_date(COALESCE(NULLIF(substring(v_year.name from '^([0-9]{4})'), '')::INT, EXTRACT(YEAR FROM CURRENT_DATE)::INT), 11, 1)
+               WHEN inv.month_name ~* 'December' THEN make_date(COALESCE(NULLIF(substring(v_year.name from '^([0-9]{4})'), '')::INT, EXTRACT(YEAR FROM CURRENT_DATE)::INT), 12, 1)
+               WHEN inv.month_name ~* 'January' THEN make_date(COALESCE(NULLIF(substring(v_year.name from '^([0-9]{4})'), '')::INT, EXTRACT(YEAR FROM CURRENT_DATE)::INT) + 1, 1, 1)
+               WHEN inv.month_name ~* 'February' THEN make_date(COALESCE(NULLIF(substring(v_year.name from '^([0-9]{4})'), '')::INT, EXTRACT(YEAR FROM CURRENT_DATE)::INT) + 1, 2, 1)
+               WHEN inv.month_name ~* 'March' THEN make_date(COALESCE(NULLIF(substring(v_year.name from '^([0-9]{4})'), '')::INT, EXTRACT(YEAR FROM CURRENT_DATE)::INT) + 1, 3, 1)
+               ELSE inv.due_date
+             END,
+             inv.due_date,
+             inv.created_at::DATE,
+             CURRENT_DATE
+           )) AS entry_date,
            'INVOICE' AS entry_type,
            inv.invoice_number AS ref_no,
            'Fee Invoice: ' || COALESCE(inv.month_name, to_char(inv.due_date, 'Mon YYYY')) AS descr,
@@ -1269,7 +1286,7 @@ BEGIN
        )
     UNION ALL
     -- 2. Late Fee Fines (Dedicated debit row on the day overdue fine begins)
-    SELECT (inv.due_date + COALESCE(v_rules.grace_period_days, 5) + 1)::DATE AS entry_date,
+    SELECT LEAST(CURRENT_DATE, (inv.due_date + COALESCE(v_rules.grace_period_days, 5) + 1)::DATE) AS entry_date,
            'CHARGE' AS entry_type,
            'FINE-' || inv.invoice_number AS ref_no,
            CASE
@@ -1292,7 +1309,7 @@ BEGIN
        AND COALESCE(inv.fine_amount, 0.00) > 0
     UNION ALL
     -- 3. Additional Charges
-    SELECT chg.effective_date AS entry_date,
+    SELECT LEAST(CURRENT_DATE, COALESCE(chg.created_at::DATE, chg.effective_date, CURRENT_DATE)) AS entry_date,
            'CHARGE' AS entry_type,
            chg.charge_type AS ref_no,
            chg.description AS descr,
@@ -1309,7 +1326,7 @@ BEGIN
        AND chg.deleted_at IS NULL
     UNION ALL
     -- 4. Fee Payments
-    SELECT p.payment_date AS entry_date,
+    SELECT LEAST(CURRENT_DATE, COALESCE(p.payment_date, p.created_at::DATE, CURRENT_DATE)) AS entry_date,
            'PAYMENT' AS entry_type,
            p.receipt_number AS ref_no,
            'Payment Received (' || p.payment_mode || COALESCE(' - ' || NULLIF(p.transaction_reference, ''), '') || ')' AS descr,

@@ -135,9 +135,11 @@ BEGIN
       COUNT(DISTINCT CASE WHEN se.status != 'ACTIVE' THEN se.student_id END)
       INTO v_active_students, v_inactive_students
       FROM public.student_enrollments se
-     WHERE se.school_id = v_school_id
+      JOIN public.students s ON s.id = se.student_id
+     WHERE s.school_id = v_school_id
        AND se.academic_year_id = v_active_year_id
-       AND se.deleted_at IS NULL;
+       AND se.deleted_at IS NULL
+       AND s.deleted_at IS NULL;
   ELSE
     v_active_students := v_total_students;
     v_inactive_students := 0;
@@ -455,7 +457,7 @@ BEGIN
              AND a.date >= v_start_date
              AND a.date <= v_end_date
         ) att_days ON true
-       WHERE se.school_id = p_school_id
+       WHERE st.school_id = p_school_id
          AND se.section_id = p_section_id
          AND (v_active_year_id IS NULL OR se.academic_year_id = v_active_year_id)
          AND se.status = 'ACTIVE'

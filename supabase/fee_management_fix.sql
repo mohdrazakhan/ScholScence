@@ -135,7 +135,7 @@ BEGIN
         FROM public.student_enrollments se
         JOIN public.students st ON st.id = se.student_id
         JOIN public.classes c ON c.id = se.class_id
-       WHERE se.school_id = v_school_id
+       WHERE st.school_id = v_school_id
          AND se.academic_year_id = v_year_id
          AND se.status = 'ACTIVE'
          AND se.deleted_at IS NULL

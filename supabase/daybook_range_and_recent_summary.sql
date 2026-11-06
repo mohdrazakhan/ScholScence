@@ -206,6 +206,28 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.get_daily_daybook_summary(
+  p_date DATE
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+BEGIN
+  IF public.current_session() IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'session_required');
+  END IF;
+
+  RETURN public._get_daily_daybook_summary_unsafe(
+    public.current_school_id(),
+    p_date,
+    NULL
+  );
+END;
+$$;
+
 GRANT EXECUTE ON FUNCTION public.get_daily_daybook_summary(DATE, DATE) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.get_daily_daybook_summary(DATE) TO anon, authenticated, service_role;
 
 NOTIFY pgrst, 'reload schema';

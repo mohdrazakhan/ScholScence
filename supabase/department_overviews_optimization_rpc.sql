@@ -112,6 +112,8 @@ BEGIN
         TRIM(CONCAT(u.first_name, ' ', COALESCE(u.last_name, ''))) AS name,
         u.email,
         COALESCE(u.phone, '') AS phone,
+        COALESCE(u.avatar_url, u.profile_image, usr.avatar_url, usr.profile_image, '') AS avatar_url,
+        COALESCE(u.avatar_url, u.profile_image, usr.avatar_url, usr.profile_image, '') AS profile_image,
         COALESCE(usr.department, u.department, 
           CASE 
             WHEN r.code = 'FEE_MANAGER' THEN 'Fee & Accounts'

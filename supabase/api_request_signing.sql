@@ -2332,6 +2332,8 @@ begin
         trim(concat(u.first_name, ' ', coalesce(u.last_name, ''))) as name,
         u.email,
         coalesce(u.phone, '') as phone,
+        coalesce(u.avatar_url, u.profile_image, usr.avatar_url, usr.profile_image, '') as avatar_url,
+        coalesce(u.avatar_url, u.profile_image, usr.avatar_url, usr.profile_image, '') as profile_image,
         coalesce(usr.department, u.department,
           case
             when r.code = 'FEE_MANAGER' then 'Fee & Accounts'

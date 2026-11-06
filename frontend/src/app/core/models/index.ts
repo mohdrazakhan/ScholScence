@@ -873,6 +873,10 @@ export interface StudentFeeInvoice {
   status: 'PAID' | 'PARTIAL' | 'UNPAID' | 'OVERDUE';
   items?: { description: string; amount: number }[];
   payments?: FeePaymentRecord[];
+  photo_url?: string;
+  profile_image?: string;
+  avatar_url?: string;
+  student?: any;
   created_at?: string;
 }
 
@@ -1096,6 +1100,9 @@ export interface StudentFeeLedgerStatement {
   admissionNumber: string;
   className: string;
   sectionName: string;
+  photo_url?: string;
+  profile_image?: string;
+  avatar_url?: string;
   academicYearId: string;
   academicYearName: string;
   frequencyPreference: 'MONTHLY' | 'QUARTERLY' | 'ANNUAL';

@@ -9416,7 +9416,7 @@ export class ApiService {
     try {
       let query = this.supabase
         .from('student_fee_invoices')
-        .select('*, student:students(id, first_name, last_name, admission_number, status)')
+        .select('*, student:students(id, first_name, last_name, admission_number, photo_url, status)')
         .eq('school_id', schoolId)
         .order('due_date', { ascending: false });
       if (effectiveYearId) {
@@ -9430,26 +9430,48 @@ export class ApiService {
       }
       const { data, error } = await query;
       if (!error && data && data.length > 0) {
-        return data.map((inv: any) => ({
-          id: inv.id,
-          school_id: inv.school_id,
-          student_id: inv.student_id,
-          student_name: inv.student ? `${inv.student.first_name || ''} ${inv.student.last_name || ''}`.trim() : 'Student',
-          admission_number: inv.student?.admission_number || '',
-          class_name: inv.student?.class?.name || 'Class',
-          section_name: inv.student?.section?.name || 'Section A',
-          academic_year_id: inv.academic_year_id,
-          invoice_number: inv.invoice_number,
-          month_name: inv.month_name || 'Current Month',
-          total_amount: Number(inv.total_amount) || 0,
-          paid_amount: Number(inv.paid_amount) || 0,
-          discount_amount: Number(inv.discount_amount) || 0,
-          fine_amount: Number(inv.fine_amount) || 0,
-          due_date: inv.due_date,
-          status: inv.status || 'UNPAID',
-          items: inv.items || [],
-          created_at: inv.created_at,
-        }));
+        const photosMap = (() => {
+          try {
+            return JSON.parse(localStorage.getItem('schoolsense_student_photos') || '{}');
+          } catch {
+            return {};
+          }
+        })();
+
+        return data.map((inv: any) => {
+          const stPhoto = photosMap[inv.student_id]?.photoUrl
+            || photosMap[inv.student_id]?.photo_url
+            || photosMap[inv.student_id]?.avatar_url
+            || inv.student?.photo_url
+            || inv.student?.avatar_url
+            || inv.student?.profile_image
+            || '';
+
+          return {
+            id: inv.id,
+            school_id: inv.school_id,
+            student_id: inv.student_id,
+            student_name: inv.student ? `${inv.student.first_name || ''} ${inv.student.last_name || ''}`.trim() : 'Student',
+            admission_number: inv.student?.admission_number || '',
+            class_name: inv.student?.class?.name || 'Class',
+            section_name: inv.student?.section?.name || 'Section A',
+            academic_year_id: inv.academic_year_id,
+            invoice_number: inv.invoice_number,
+            month_name: inv.month_name || 'Current Month',
+            total_amount: Number(inv.total_amount) || 0,
+            paid_amount: Number(inv.paid_amount) || 0,
+            discount_amount: Number(inv.discount_amount) || 0,
+            fine_amount: Number(inv.fine_amount) || 0,
+            due_date: inv.due_date,
+            status: inv.status || 'UNPAID',
+            items: inv.items || [],
+            created_at: inv.created_at,
+            photo_url: stPhoto,
+            profile_image: stPhoto,
+            avatar_url: stPhoto,
+            student: inv.student ? { ...inv.student, photo_url: stPhoto, profile_image: stPhoto, avatar_url: stPhoto } : undefined,
+          };
+        });
       }
     } catch (e) {}
 
@@ -9812,70 +9834,50 @@ export class ApiService {
     const schoolId = this.getSchoolId();
     const todayStr = new Date().toISOString().split('T')[0];
     const targetDate = date || todayStr;
-    const targetEndDate = endDate ? endDate : undefined;
+    const isDateRange = !!endDate && endDate !== targetDate;
+    const targetEndDate = isDateRange ? endDate : undefined;
 
-    // 1. Attempt RPC call
-    try {
-      let rpcResult: any = null;
+    // 1. Attempt RPC call ONLY for single day queries (PostgREST schema cache only exposes single p_date parameter)
+    // If isDateRange, avoid RPC call entirely to eliminate PGRST202 red console error in DevTools!
+    if (!isDateRange) {
       try {
         const { data, error } = await this.supabase.rpc('get_daily_daybook_summary', {
           p_date: targetDate,
-          p_end_date: targetEndDate || null,
         });
-        if (!error && data) {
-          rpcResult = data;
-        } else if (error && !targetEndDate) {
-          // If RPC takes only p_date and threw on p_end_date, retry with p_date only
-          const retryRes = await this.supabase.rpc('get_daily_daybook_summary', {
-            p_date: targetDate,
-          });
-          if (!retryRes.error && retryRes.data) {
-            rpcResult = retryRes.data;
+
+        if (!error && data && data.success) {
+          const txList = (data.transactions || []).map((tx: any) => ({
+            receiptNumber: tx.receipt_number || tx.receiptNumber || 'REC-DAILY',
+            studentName: tx.student_name || tx.studentName || 'Student',
+            admissionNumber: tx.admission_number || tx.admissionNumber || '',
+            className: tx.class_name || tx.className || 'Class',
+            amount: Number(tx.amount || tx.amount_paid) || 0,
+            paymentMode: tx.payment_mode || tx.paymentMode || 'CASH',
+            paymentDate: tx.payment_date || tx.paymentDate || targetDate,
+            paymentTime: tx.payment_time || tx.created_at || targetDate,
+            collectedBy: tx.collected_by_name || tx.collectedBy || 'Fee Desk',
+            remarks: tx.remarks || '',
+          }));
+
+          if (txList.length > 0) {
+            return {
+              date: targetDate,
+              startDate: targetDate,
+              endDate: targetDate,
+              isRecentFallback: false,
+              totalCollected: Number(data.total_collected || data.totalCollected) || 0,
+              cashAmount: Number(data.cash_amount || data.cashAmount) || 0,
+              upiAmount: Number(data.upi_amount || data.upiAmount) || 0,
+              bankAmount: Number(data.bank_amount || data.bankAmount) || 0,
+              chequeAmount: Number(data.cheque_amount || data.chequeAmount) || 0,
+              transactionCount: Number(data.transaction_count || data.transactionCount) || txList.length,
+              transactions: txList,
+            };
           }
         }
-      } catch (innerErr) {
-        if (!targetEndDate) {
-          const retryRes = await this.supabase.rpc('get_daily_daybook_summary', {
-            p_date: targetDate,
-          });
-          if (!retryRes.error && retryRes.data) {
-            rpcResult = retryRes.data;
-          }
-        }
+      } catch (e) {
+        // Fall through to direct table query
       }
-
-      if (rpcResult && rpcResult.success) {
-        const txList = (rpcResult.transactions || []).map((tx: any) => ({
-          receiptNumber: tx.receipt_number || tx.receiptNumber || 'REC-DAILY',
-          studentName: tx.student_name || tx.studentName || 'Student',
-          admissionNumber: tx.admission_number || tx.admissionNumber || '',
-          className: tx.class_name || tx.className || 'Class',
-          amount: Number(tx.amount || tx.amount_paid) || 0,
-          paymentMode: tx.payment_mode || tx.paymentMode || 'CASH',
-          paymentDate: tx.payment_date || tx.paymentDate || targetDate,
-          paymentTime: tx.payment_time || tx.created_at || targetDate,
-          collectedBy: tx.collected_by_name || tx.collectedBy || 'Fee Desk',
-          remarks: tx.remarks || '',
-        }));
-
-        if (txList.length > 0) {
-          return {
-            date: targetDate,
-            startDate: targetDate,
-            endDate: targetEndDate || targetDate,
-            isRecentFallback: false,
-            totalCollected: Number(rpcResult.total_collected || rpcResult.totalCollected) || 0,
-            cashAmount: Number(rpcResult.cash_amount || rpcResult.cashAmount) || 0,
-            upiAmount: Number(rpcResult.upi_amount || rpcResult.upiAmount) || 0,
-            bankAmount: Number(rpcResult.bank_amount || rpcResult.bankAmount) || 0,
-            chequeAmount: Number(rpcResult.cheque_amount || rpcResult.chequeAmount) || 0,
-            transactionCount: Number(rpcResult.transaction_count || rpcResult.transactionCount) || txList.length,
-            transactions: txList,
-          };
-        }
-      }
-    } catch (e) {
-      console.warn('get_daily_daybook_summary RPC exception:', e);
     }
 
     // 2. Direct table querying fallback
@@ -10150,6 +10152,54 @@ export class ApiService {
     return '2026-04-01';
   }
 
+  public resolveTransactionDate(inv: any, fallback?: string): string {
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    // 1. If month_name is present and corresponds to an earlier month (e.g., April, May, etc.), use the month start date
+    if (inv?.month_name) {
+      const monthStart = this.getMonthStartDate(inv.month_name);
+      if (monthStart && monthStart <= todayStr) {
+        return monthStart;
+      }
+    }
+
+    // 2. If record has created_at timestamp
+    if (inv?.created_at) {
+      const createdDate = inv.created_at.split('T')[0];
+      if (createdDate <= todayStr) {
+        return createdDate;
+      }
+    }
+
+    // 3. If explicit issue_date or invoice_date exists
+    const issueDate = inv?.issue_date || inv?.invoice_date;
+    if (issueDate) {
+      const parsed = issueDate.split('T')[0];
+      if (parsed <= todayStr) {
+        return parsed;
+      }
+    }
+
+    // 4. Fallback if valid and not future
+    if (fallback) {
+      const fDate = fallback.split('T')[0];
+      if (fDate <= todayStr) {
+        return fDate;
+      }
+    }
+
+    // 5. If due_date is in the past, allow it
+    if (inv?.due_date) {
+      const dDate = inv.due_date.split('T')[0];
+      if (dDate <= todayStr) {
+        return dDate;
+      }
+    }
+
+    // 6. Real-time cap: never exceed today
+    return todayStr;
+  }
+
   public async getStudentFeeLedger(studentId: string, academicYearId?: string): Promise<StudentFeeLedgerStatement> {
     const schoolId = this.getSchoolId();
     const effectiveYearId = academicYearId || (await this.getActiveAcademicYearId(schoolId));
@@ -10196,13 +10246,16 @@ export class ApiService {
           });
         }
 
+        const todayStr = new Date().toISOString().split('T')[0];
         entries = entries.map(e => {
+          let date = e.date;
           if (e.type === 'INVOICE' && invMap.has(e.referenceNumber)) {
             const inv = invMap.get(e.referenceNumber);
-            const alignedDate = inv.due_date ? inv.due_date.split('T')[0] : (inv.created_at ? inv.created_at.split('T')[0] : e.date);
-            return { ...e, date: alignedDate };
+            date = this.resolveTransactionDate(inv, e.date);
+          } else if (date && date > todayStr) {
+            date = todayStr;
           }
-          return e;
+          return { ...e, date };
         });
 
         // Merge additional charges if not already in ledgerEntries
@@ -10213,8 +10266,10 @@ export class ApiService {
             if (!existingRefs.has(ref) && !existingRefs.has(chg.id)) {
               const chgAmount = Number(chg.amount) || 0;
               totalBilled += chgAmount;
+              const rawChgDate = chg.effective_date || (chg.created_at ? chg.created_at.split('T')[0] : todayStr);
+              const chgDate = rawChgDate > todayStr ? (chg.created_at ? chg.created_at.split('T')[0] : todayStr) : rawChgDate;
               entries.push({
-                date: chg.effective_date || (chg.created_at ? chg.created_at.split('T')[0] : new Date().toISOString().split('T')[0]),
+                date: chgDate,
                 type: 'CHARGE',
                 referenceNumber: ref,
                 description: `${chg.charge_type ? chg.charge_type.replace('_', ' ') + ': ' : ''}${chg.description || 'Additional Charge'}`,
@@ -10257,12 +10312,30 @@ export class ApiService {
         const pendingDue = Math.max(0, totalBilled - totalPaid);
         const advanceBalance = Math.max(0, totalPaid - totalBilled);
 
+        const photosMap = (() => {
+          try {
+            return JSON.parse(localStorage.getItem('schoolsense_student_photos') || '{}');
+          } catch {
+            return {};
+          }
+        })();
+        const studentPhoto = data.profile_image
+          || data.avatar_url
+          || data.photo_url
+          || photosMap[studentId]?.photoUrl
+          || photosMap[studentId]?.photo_url
+          || photosMap[studentId]?.avatar_url
+          || '';
+
         return {
           studentId: data.studentId || studentId,
           studentName: data.studentName || 'Student',
           admissionNumber: data.admissionNumber || '',
           className: data.className || 'Class',
           sectionName: data.sectionName || 'Section A',
+          photo_url: studentPhoto,
+          profile_image: studentPhoto,
+          avatar_url: studentPhoto,
           academicYearId: data.academicYearId || effectiveYearId || '',
           academicYearName: data.academicYearName || '2026-2027',
           frequencyPreference: data.frequencyPreference || 'MONTHLY',
@@ -10291,17 +10364,30 @@ export class ApiService {
     let admissionNumber = '';
     let className = 'Class';
     let sectionName = 'Section A';
+    let studentPhoto = '';
 
     try {
+      const photosMap = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('schoolsense_student_photos') || '{}');
+        } catch {
+          return {};
+        }
+      })();
+      studentPhoto = photosMap[studentId]?.photoUrl || photosMap[studentId]?.photo_url || photosMap[studentId]?.avatar_url || '';
+
       const { data: st } = await this.supabase
         .from('students')
-        .select('id, first_name, last_name, admission_number')
+        .select('id, first_name, last_name, admission_number, photo_url')
         .eq('id', studentId)
         .maybeSingle();
 
       if (st) {
         studentName = `${st.first_name || ''} ${st.last_name || ''}`.trim() || 'Student';
         admissionNumber = st.admission_number || '';
+        if (!studentPhoto && (st as any).photo_url) {
+          studentPhoto = (st as any).photo_url;
+        }
       }
 
       let enrQuery = this.supabase
@@ -10384,8 +10470,7 @@ export class ApiService {
     const today = new Date(todayStr);
 
     invoices.forEach(inv => {
-      // Due Date of the month (e.g. 10th of the month)
-      const invDate = inv.due_date ? inv.due_date.split('T')[0] : (inv.created_at ? inv.created_at.split('T')[0] : '2026-04-01');
+      const invDate = this.resolveTransactionDate(inv);
 
       rawList.push({
         date: invDate,
@@ -10414,7 +10499,8 @@ export class ApiService {
 
           totalFineBilled += fineAmount;
 
-          const fineStartDate = new Date(cutoffDate.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          let fineStartDate = new Date(cutoffDate.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          if (fineStartDate > todayStr) fineStartDate = todayStr;
           rawList.push({
             date: fineStartDate,
             type: 'CHARGE',
@@ -10443,8 +10529,10 @@ export class ApiService {
     const pendingDue = Math.max(0, totalBilled - totalPaid);
 
     additionalCharges.forEach(chg => {
+      const rawChgDate = chg.effective_date || (chg.created_at ? chg.created_at.split('T')[0] : todayStr);
+      const chgDate = rawChgDate > todayStr ? (chg.created_at ? chg.created_at.split('T')[0] : todayStr) : rawChgDate;
       rawList.push({
-        date: chg.effective_date || (chg.created_at ? chg.created_at.split('T')[0] : '2026-04-01'),
+        date: chgDate,
         type: 'CHARGE',
         referenceNumber: chg.id ? `CHG-${chg.id.slice(0, 8)}` : `CHG-${chg.charge_type || 'EXTRA'}`,
         description: `${chg.charge_type ? chg.charge_type.replace('_', ' ') + ': ' : ''}${chg.description || 'Additional Charge'}`,
@@ -10498,6 +10586,9 @@ export class ApiService {
       admissionNumber,
       className,
       sectionName,
+      photo_url: studentPhoto,
+      profile_image: studentPhoto,
+      avatar_url: studentPhoto,
       academicYearId: effectiveYearId || '',
       academicYearName: '2026-2027',
       frequencyPreference,
@@ -12184,6 +12275,20 @@ export class ApiService {
         p_school_id: schoolId,
       });
       if (!error && data && data.success) {
+        // Enrich data.users with local storage cache to preserve avatar_url and profile_image
+        const cachedRaw = localStorage.getItem(this.getDeptUsersCacheKey(schoolId));
+        if (cachedRaw) {
+          try {
+            const cachedList: DepartmentalStaffUser[] = JSON.parse(cachedRaw);
+            const cacheMap = new Map(cachedList.map((c) => [c.id, c]));
+            const emailMap = new Map(cachedList.filter(c => c.email).map((c) => [c.email!.toLowerCase(), c]));
+            data.users = (data.users || []).map((u: any) => {
+              const c = cacheMap.get(u.id) || (u.email ? emailMap.get(u.email.toLowerCase()) : undefined);
+              const av = (u.avatar_url && u.avatar_url.trim()) || (u.profile_image && u.profile_image.trim()) || c?.avatar_url || c?.profile_image || undefined;
+              return { ...u, avatar_url: av, profile_image: av };
+            });
+          } catch {}
+        }
         return data;
       }
       if (error) {
@@ -12319,6 +12424,13 @@ export class ApiService {
             if (!seenIds.has(c.id)) {
               result.push(c);
               seenIds.add(c.id);
+            } else {
+              const existing = result.find(r => r.id === c.id || (c.email && r.email?.toLowerCase() === c.email.toLowerCase()));
+              if (existing) {
+                const av = (existing.avatar_url && existing.avatar_url.trim()) || (existing.profile_image && existing.profile_image.trim()) || c.avatar_url || c.profile_image || undefined;
+                existing.avatar_url = av;
+                existing.profile_image = av;
+              }
             }
           }
         } catch {}
@@ -12537,9 +12649,6 @@ export class ApiService {
           custom_permissions: customPermissions,
           status,
         };
-        if (body.avatar_url !== undefined || body.profile_image !== undefined) {
-          userUpdates.avatar_url = body.avatar_url || body.profile_image;
-        }
         if (body.password) {
           userUpdates.password_hash = body.password;
         }
@@ -12557,7 +12666,6 @@ export class ApiService {
           department,
           designation,
           custom_permissions: customPermissions,
-          avatar_url: body.avatar_url || body.profile_image || undefined,
         });
 
         if (insUserErr) {
@@ -12706,18 +12814,13 @@ export class ApiService {
       }
     }
 
-    // 2. Update core user fields (first_name, last_name, phone, email, status, password_hash, avatar_url)
+    // 2. Update core user fields (first_name, last_name, phone, email, status, password_hash)
     const userUpdates: any = {};
     if (body.first_name !== undefined) userUpdates.first_name = body.first_name;
     if (body.last_name !== undefined) userUpdates.last_name = body.last_name;
     if (body.phone !== undefined) userUpdates.phone = body.phone;
     if (body.email !== undefined) userUpdates.email = body.email.toLowerCase().trim();
     if (body.status !== undefined) userUpdates.status = body.status;
-    if (body.avatar_url !== undefined) {
-      userUpdates.avatar_url = body.avatar_url;
-    } else if (body.profile_image !== undefined) {
-      userUpdates.avatar_url = body.profile_image;
-    }
     if (body.password) userUpdates.password_hash = body.password;
 
     if (Object.keys(userUpdates).length > 0) {
@@ -12732,23 +12835,37 @@ export class ApiService {
     }
 
     // 3. Update local cache and broadcast permission changes
+    const av = body.avatar_url !== undefined ? body.avatar_url : (body.profile_image !== undefined ? body.profile_image : undefined);
     try {
       const cachedRaw = localStorage.getItem(this.getDeptUsersCacheKey(schoolId));
-      if (cachedRaw) {
-        let list: DepartmentalStaffUser[] = JSON.parse(cachedRaw);
+      let list: DepartmentalStaffUser[] = cachedRaw ? JSON.parse(cachedRaw) : [];
+      const exists = list.some(u => u.id === id || (body.email && u.email?.toLowerCase() === body.email.toLowerCase()));
+      if (exists) {
         list = list.map(u => {
           if (u.id === id || (body.email && u.email?.toLowerCase() === body.email.toLowerCase())) {
+            const finalAv = av !== undefined ? av : (u.avatar_url || u.profile_image);
             return {
               ...u,
               ...body,
+              avatar_url: finalAv,
+              profile_image: finalAv,
               custom_permissions: body.custom_permissions !== undefined ? [...body.custom_permissions] : u.custom_permissions,
               name: `${body.first_name || u.first_name} ${body.last_name || u.last_name || ''}`.trim(),
             };
           }
           return u;
         });
-        localStorage.setItem(this.getDeptUsersCacheKey(schoolId), JSON.stringify(list));
+      } else {
+        list.push({
+          id,
+          school_id: schoolId,
+          ...body,
+          avatar_url: av,
+          profile_image: av,
+          name: `${body.first_name || ''} ${body.last_name || ''}`.trim(),
+        });
       }
+      localStorage.setItem(this.getDeptUsersCacheKey(schoolId), JSON.stringify(list));
 
       // If active session belongs to this user, immediately sync customPermissions
       const curUserRaw = localStorage.getItem('schoolsense_user');
@@ -12771,7 +12888,13 @@ export class ApiService {
       }
     } catch {}
 
-    return { success: true, id, ...body };
+    return {
+      success: true,
+      id,
+      ...body,
+      avatar_url: av,
+      profile_image: av,
+    };
   }
 
   private async deleteDepartmentalUser(id: string): Promise<any> {

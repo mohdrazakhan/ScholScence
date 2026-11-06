@@ -376,7 +376,29 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.get_daily_daybook_summary(
+  p_date DATE
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+BEGIN
+  IF public.current_session() IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'session_required');
+  END IF;
+
+  RETURN public._get_daily_daybook_summary_unsafe(
+    public.current_school_id(),
+    p_date,
+    NULL
+  );
+END;
+$$;
+
 GRANT EXECUTE ON FUNCTION public.get_daily_daybook_summary(DATE, DATE) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.get_daily_daybook_summary(DATE) TO anon, authenticated, service_role;
 
 
 -- ==============================================================================
@@ -414,7 +436,7 @@ BEGIN
     LEFT JOIN LATERAL (
       SELECT se.class_id, se.section_id
         FROM public.student_enrollments se
-       WHERE se.student_id = s.id AND se.school_id = p_school_id
+       WHERE se.student_id = s.id
        ORDER BY se.created_at DESC LIMIT 1
     ) enr ON TRUE
     LEFT JOIN public.classes c ON c.id = enr.class_id
