@@ -12329,15 +12329,45 @@ export class ApiService {
         return this.generateDefaultDepartmentalUsers(schoolId);
       }
 
-      return result;
+      return this.resolveSingularRootAdmin(result);
     } catch (err) {
       console.warn('Fallback to cached departmental users due to error:', err);
       const cachedRaw = localStorage.getItem(this.getDeptUsersCacheKey(schoolId));
       if (cachedRaw) {
-        try { return JSON.parse(cachedRaw); } catch {}
+        try { return this.resolveSingularRootAdmin(JSON.parse(cachedRaw)); } catch {}
       }
       return this.generateDefaultDepartmentalUsers(schoolId);
     }
+  }
+
+  private resolveSingularRootAdmin(users: DepartmentalStaffUser[]): DepartmentalStaffUser[] {
+    let rootCandidate: DepartmentalStaffUser | null = null;
+    for (const u of users) {
+      const r = (u.role || '').toUpperCase();
+      const isAdm = r === 'SCHOOL_ADMIN' || r === 'PRINCIPAL' || u.department === 'Administration';
+      if (!isAdm) continue;
+
+      if (!rootCandidate) {
+        rootCandidate = u;
+      } else {
+        const uIsAdminEmail = (u.email || '').toLowerCase().startsWith('admin@');
+        const candIsAdminEmail = (rootCandidate.email || '').toLowerCase().startsWith('admin@');
+        if (uIsAdminEmail && !candIsAdminEmail) {
+          rootCandidate = u;
+        } else if (uIsAdminEmail === candIsAdminEmail) {
+          const uTime = u.created_at ? new Date(u.created_at).getTime() : Infinity;
+          const candTime = rootCandidate.created_at ? new Date(rootCandidate.created_at).getTime() : Infinity;
+          if (uTime < candTime) {
+            rootCandidate = u;
+          }
+        }
+      }
+    }
+
+    for (const u of users) {
+      u.is_root_admin = rootCandidate ? u.id === rootCandidate.id : false;
+    }
+    return users;
   }
 
   private generateDefaultDepartmentalUsers(schoolId: string): DepartmentalStaffUser[] {
@@ -12443,7 +12473,7 @@ export class ApiService {
     try {
       localStorage.setItem(this.getDeptUsersCacheKey(schoolId), JSON.stringify(defaults));
     } catch {}
-    return defaults;
+    return this.resolveSingularRootAdmin(defaults);
   }
 
   private async createDepartmentalUser(body: any): Promise<DepartmentalStaffUser> {
@@ -12634,6 +12664,7 @@ export class ApiService {
       department,
       designation,
       status,
+      is_root_admin: false,
       custom_permissions: customPermissions,
       created_at: new Date().toISOString(),
     };

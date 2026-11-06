@@ -354,6 +354,10 @@ interface FeatureSectionDef {
                           class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 leading-normal">
                       Root Admin
                     </span>
+                    <span *ngIf="!isPrimaryAdmin(u) && (u.role === 'SCHOOL_ADMIN' || u.department === 'Administration')" 
+                          class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/60 leading-normal">
+                      {{ u.designation?.toLowerCase()?.includes('co-admin') ? 'Co-Admin' : 'Admin' }}
+                    </span>
                   </div>
                   <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate" title="{{ (u.designation || u.role_name || u.role) }} • {{ u.department }}">
                     <span class="font-semibold text-slate-700 dark:text-slate-200">{{ u.designation || u.role_name || u.role }}</span>
@@ -1083,18 +1087,20 @@ export class StaffUsersComponent implements OnInit {
         const rawList: DepartmentalStaffUser[] =
           res && Array.isArray(res.users) ? res.users : Array.isArray(res) ? res : [];
         const seen = new Set<string>();
-        this.usersList = rawList.filter((u) => {
+        const filtered = rawList.filter((u) => {
           if (!u || !u.id || seen.has(u.id)) return false;
           const r = (u.role || '').toUpperCase();
           if (r === 'SUPER_ADMIN' || r === 'PLATFORM_ADMIN' || r === 'BINARY') return false;
           if ((u.email || '').toLowerCase() === 'admin@schoolscence.in') return false;
           seen.add(u.id);
           return true;
-        }).map((u) => {
+        });
+        this.usersList = filtered;
+        // Ensure the singular permanent root admin always retains full 20/20 platform access
+        this.usersList.forEach((u) => {
           if (this.isPrimaryAdmin(u)) {
             u.custom_permissions = this.allSections.map((s) => s.id);
           }
-          return u;
         });
         this.loading = false;
       },
@@ -1557,21 +1563,34 @@ export class StaffUsersComponent implements OnInit {
 
   isPrimaryAdmin(u: DepartmentalStaffUser): boolean {
     if (!u) return false;
-    const r = (u.role || '').toUpperCase();
-    const desig = (u.designation || '').toLowerCase();
-    const roleName = (u.role_name || '').toLowerCase();
-    const currentUserId = this.auth.currentUser()?.id;
+    if (u.is_root_admin === true) return true;
+    if (u.is_root_admin === false) return false;
 
-    if (r === 'SCHOOL_ADMIN' || r === 'PRINCIPAL') {
-      return true;
+    // Fallback: Resolve singular root admin among administrative users
+    const adminCandidates = this.usersList.filter((x) => {
+      const r = (x.role || '').toUpperCase();
+      return r === 'SCHOOL_ADMIN' || r === 'PRINCIPAL' || x.department === 'Administration';
+    });
+
+    if (adminCandidates.length === 0) return false;
+
+    let root = adminCandidates[0];
+    for (let i = 1; i < adminCandidates.length; i++) {
+      const cand = adminCandidates[i];
+      const candIsAdminEmail = (cand.email || '').toLowerCase().startsWith('admin@');
+      const rootIsAdminEmail = (root.email || '').toLowerCase().startsWith('admin@');
+      if (candIsAdminEmail && !rootIsAdminEmail) {
+        root = cand;
+      } else if (candIsAdminEmail === rootIsAdminEmail) {
+        const candTime = cand.created_at ? new Date(cand.created_at).getTime() : Infinity;
+        const rootTime = root.created_at ? new Date(root.created_at).getTime() : Infinity;
+        if (candTime < rootTime) {
+          root = cand;
+        }
+      }
     }
-    if (roleName.includes('school admin') || desig.includes('school admin')) {
-      return true;
-    }
-    if (currentUserId && u.id === currentUserId && this.auth.isAdmin()) {
-      return true;
-    }
-    return false;
+
+    return u.id === root.id;
   }
 
   toggleUserStatus(u: DepartmentalStaffUser): void {

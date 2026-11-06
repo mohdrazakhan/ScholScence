@@ -1071,6 +1071,7 @@ export interface DepartmentalStaffUser {
   department: string;
   designation?: string;
   status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  is_root_admin?: boolean;
   custom_permissions: string[];
   last_login_at?: string;
   created_at?: string;
