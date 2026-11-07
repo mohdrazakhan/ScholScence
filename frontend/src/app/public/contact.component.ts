@@ -194,9 +194,12 @@ interface LeadForm {
             </div>
 
             <div class="rounded-2xl bg-slate-900 p-6 text-center">
-              <p class="text-sm font-semibold text-white">Launch offer: ₹10/student/month</p>
-              <p class="mt-1 text-xs text-slate-400">Regular ₹15 · every feature included · no setup fee</p>
-              <a routerLink="/pricing" class="mt-3 inline-block text-xs font-bold text-blue-400 hover:text-blue-300">See pricing details →</a>
+              <span class="inline-block rounded-full bg-blue-500/20 px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider text-blue-300">
+                Lite ₹3.5 · Pro ₹10 · Pro+ ₹15
+              </span>
+              <p class="mt-2 text-sm font-semibold text-white">Plans start from ₹3.5/student/mo</p>
+              <p class="mt-1 text-xs text-slate-400">Pro plan ₹10/mo with mobile apps · ₹0 setup fee</p>
+              <a routerLink="/pricing" class="mt-3 inline-block text-xs font-bold text-blue-400 hover:text-blue-300">Compare all 3 plans →</a>
             </div>
           </div>
         </aside>

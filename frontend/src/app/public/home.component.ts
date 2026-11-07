@@ -146,10 +146,10 @@ interface FaqItem {
         <div class="flex flex-col items-center text-center px-0.5">
           <app-vector-art name="fees" class="h-9 w-9 sm:h-20 sm:w-20 md:h-24 md:w-24" />
           <p class="mt-1 sm:mt-3 flex items-baseline justify-center gap-0.5 sm:gap-1.5 text-xs sm:text-xl md:text-3xl font-extrabold text-slate-900 leading-tight">
-            <span class="text-[10px] font-semibold text-slate-400 line-through sm:text-lg">₹15</span>
-            <span>₹10/mo</span>
+            <span>From ₹3.5</span>
+            <span class="text-xs font-semibold text-slate-500 sm:text-base">/mo</span>
           </p>
-          <p class="mt-0.5 hidden text-xs sm:block md:text-sm text-slate-500">Per student (launch offer)</p>
+          <p class="mt-0.5 hidden text-xs sm:block md:text-sm text-slate-500">Lite · Pro ₹10 · Pro+ ₹15</p>
         </div>
       </div>
     </section>
@@ -870,40 +870,132 @@ interface FaqItem {
         <div class="mx-auto max-w-3xl text-center">
           <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Transparent pricing</p>
           <h2 id="pricing-heading" class="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            One simple plan. Every feature included.
+            Three simple plans. Start from just ₹3.5/mo.
           </h2>
           <p class="mt-4 text-base text-slate-600 sm:text-lg">
-            No hidden modules, no per-feature charges, no annual lock-in. We publish our price:
-            most others make you call for a quote.
+            No hidden modules, no setup fees, and no annual lock-in. Onboard easily on Lite at ₹3.5, or choose our all-in-one Pro plan with mobile apps.
           </p>
         </div>
 
-        <div class="mx-auto mt-10 max-w-xl">
-          <div class="relative rounded-3xl border-2 border-blue-600 bg-white p-8 shadow-xl shadow-blue-600/10">
-            <span class="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-blue-600 px-4 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-sm">
-              Launch offer: 33% off
-            </span>
-            <div class="text-center">
-              <div class="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
-                <span class="text-2xl font-semibold text-slate-400 line-through sm:text-3xl">₹15</span>
-                <span class="text-5xl font-extrabold tracking-tight text-slate-900 sm:text-6xl">₹10</span>
-                <span class="text-sm text-slate-500">/ student / month</span>
+        <div class="mx-auto mt-12 grid max-w-6xl gap-6 lg:grid-cols-3 lg:items-stretch">
+          <!-- Lite -->
+          <div class="flex flex-col justify-between rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+            <div>
+              <span class="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                Easy Onboarding
+              </span>
+              <h3 class="mt-3 text-xl font-bold text-slate-900">Lite</h3>
+              <p class="mt-1 text-xs text-slate-500">Core digitization: student directory &amp; roll-call attendance.</p>
+              <div class="mt-5 flex items-baseline gap-1">
+                <span class="text-4xl font-extrabold tracking-tight text-slate-900">₹3.5</span>
+                <span class="text-xs font-medium text-slate-500">/ student / mo</span>
               </div>
-              <p class="mt-3 text-sm font-medium text-slate-600">
-                Billed monthly &middot; Only for active enrolled students &middot; No hidden charges
-              </p>
+              <ul class="mt-5 space-y-2 text-xs text-slate-700">
+                <li class="flex items-center gap-2">✓ Student &amp; Staff Records</li>
+                <li class="flex items-center gap-2">✓ Daily Attendance Register</li>
+                <li class="flex items-center gap-2">✓ Timetable Master Viewer</li>
+                <li class="flex items-center gap-2">✓ Notices &amp; Circulars</li>
+                <li class="flex items-center gap-2">✓ 100% Free Data Migration</li>
+              </ul>
             </div>
-            <ul class="mt-7 grid gap-2.5 sm:grid-cols-2">
-              <li *ngFor="let inc of pricingIncludes" class="flex items-center gap-2 text-sm text-slate-700">
-                <svg class="h-5 w-5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                {{ inc }}
-              </li>
-            </ul>
-            <a routerLink="/pricing"
-               class="mt-8 block rounded-xl bg-blue-600 px-6 py-3.5 text-center text-base font-semibold text-white shadow-lg shadow-blue-600/25 transition-colors hover:bg-blue-700">
-              See full pricing details
+            <a routerLink="/pricing" class="mt-6 block rounded-xl border border-slate-300 py-2.5 text-center text-xs font-bold text-slate-800 transition hover:bg-slate-50">
+              Explore Lite
             </a>
           </div>
+
+          <!-- Pro (Highlighted) -->
+          <div class="relative flex flex-col justify-between rounded-3xl border-2 border-blue-600 bg-white p-6 shadow-xl shadow-blue-600/15 ring-2 ring-blue-600/10 sm:p-7 lg:-translate-y-2">
+            <span class="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-blue-600 px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-white shadow-sm">
+              ★ Most Popular · Recommended
+            </span>
+            <div>
+              <span class="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-blue-700">
+                Complete System
+              </span>
+              <h3 class="mt-3 text-xl font-bold text-slate-900">Pro</h3>
+              <p class="mt-1 text-xs text-slate-600">The full ERP with Parent &amp; Teacher Apps, Fees &amp; Exams.</p>
+              <div class="mt-5 flex items-baseline gap-1.5">
+                <span class="text-lg font-semibold text-slate-400 line-through">₹15</span>
+                <span class="text-4xl font-extrabold tracking-tight text-slate-900">₹10</span>
+                <span class="text-xs font-medium text-slate-500">/ student / mo</span>
+              </div>
+              <div class="mt-1.5 inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
+                🎁 2 Months FREE on Annual Plan (₹100/yr)
+              </div>
+              <ul class="mt-5 space-y-2 text-xs text-slate-700">
+                <li class="flex items-center gap-2 font-medium text-slate-900">✓ Dedicated Parent Mobile App</li>
+                <li class="flex items-center gap-2 font-medium text-slate-900">✓ Dedicated Teacher Mobile App</li>
+                <li class="flex items-center gap-2">✓ Homework &amp; Assignments</li>
+                <li class="flex items-center gap-2">✓ Automated Marksheet Generator</li>
+                <li class="flex items-center gap-2">✓ Fee Management &amp; GST Invoicing</li>
+                <li class="flex items-center gap-2">✓ Parent Grievance Desk</li>
+              </ul>
+            </div>
+            <a routerLink="/contact" [queryParams]="{ type: 'demo', plan: 'pro' }" class="mt-6 block rounded-xl bg-blue-600 py-3 text-center text-xs font-bold text-white shadow-md shadow-blue-600/25 transition hover:bg-blue-700">
+              Book Free Demo (Pro Plan)
+            </a>
+          </div>
+
+          <!-- Pro+ -->
+          <div class="flex flex-col justify-between rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+            <div>
+              <span class="rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-700">
+                Enterprise &amp; Campus
+              </span>
+              <h3 class="mt-3 text-xl font-bold text-slate-900">Pro+</h3>
+              <p class="mt-1 text-xs text-slate-500">For institutions wanting fleet tracking, certificates &amp; visits.</p>
+              <div class="mt-5 flex items-baseline gap-1.5">
+                <span class="text-lg font-semibold text-slate-400 line-through">₹20</span>
+                <span class="text-4xl font-extrabold tracking-tight text-slate-900">₹15</span>
+                <span class="text-xs font-medium text-slate-500">/ student / mo</span>
+              </div>
+              <div class="mt-1.5 inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
+                🎁 2 Months FREE on Annual Plan (₹150/yr)
+              </div>
+              <ul class="mt-5 space-y-2 text-xs text-slate-700">
+                <li class="flex items-center gap-2 font-medium text-slate-900">✓ Everything in Pro</li>
+                <li class="flex items-center gap-2">✓ Transport &amp; Fleet Management</li>
+                <li class="flex items-center gap-2">✓ Auto Board TC/CC Generator</li>
+                <li class="flex items-center gap-2">✓ Alumni Registry</li>
+                <li class="flex items-center gap-2">✓ On-Campus School Visit Training</li>
+              </ul>
+            </div>
+            <a routerLink="/pricing" class="mt-6 block rounded-xl border border-indigo-200 bg-indigo-50/50 py-2.5 text-center text-xs font-bold text-indigo-700 transition hover:bg-indigo-100">
+              Explore Pro+
+            </a>
+          </div>
+        </div>
+
+        <div class="mt-10 text-center">
+          <a routerLink="/pricing" class="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-700">
+            Compare all 3 plans and full feature matrix →
+          </a>
+        </div>
+
+        <!-- No hidden costs banner: ₹0 Setup, ₹0 Data migration, ₹0 On-site training -->
+        <div class="mx-auto mt-16 sm:mt-20 max-w-4xl text-center border-t border-slate-200/80 pt-12 sm:pt-16">
+          <h3 class="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+            No hidden costs. <span class="text-blue-600">Really.</span>
+          </h3>
+
+          <div class="mt-8 sm:mt-12 grid grid-cols-1 divide-y divide-slate-200 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+            <div class="py-5 sm:py-0">
+              <p class="text-5xl sm:text-6xl font-extrabold tracking-tight text-slate-900">₹0</p>
+              <p class="mt-2 text-sm sm:text-base font-semibold text-slate-600">Setup fee</p>
+            </div>
+            <div class="py-5 sm:py-0">
+              <p class="text-5xl sm:text-6xl font-extrabold tracking-tight text-slate-900">₹0</p>
+              <p class="mt-2 text-sm sm:text-base font-semibold text-slate-600">Data migration</p>
+            </div>
+            <div class="py-5 sm:py-0">
+              <p class="text-5xl sm:text-6xl font-extrabold tracking-tight text-slate-900">₹0</p>
+              <p class="mt-2 text-sm sm:text-base font-semibold text-slate-600">On-site training</p>
+            </div>
+          </div>
+
+          <p class="mt-8 text-xs text-slate-500 max-w-lg mx-auto leading-relaxed">
+            WhatsApp, SMS and payment gateway fees are charged by those providers at cost. We add nothing on top.
+          </p>
         </div>
       </div>
     </section>
@@ -1033,9 +1125,9 @@ export class HomeComponent {
     });
 
     this.seo.setPage({
-      title: 'Best School Management System in India | Modern, Fast & Secure School ERP',
+      title: 'Best School Management System in India | Lite (₹3.5), Pro (₹10) & Pro+ (₹15) Plans',
       description:
-        'SchoolSense is India\'s best modern school management system: fast, easy, and secure school ERP with bank-grade security, attendance sync, exams, GST fee invoicing, timetable, and live Parent Connect. Launch offer: ₹10/student/month with ₹0 setup cost.',
+        'India\'s best modern school management system: Lite plan from ₹3.5/student/month for easy onboarding, Pro plan at ₹10/mo with mobile apps & fee automation, and Pro+ at ₹15/mo. ₹0 setup fee, 30-day pay-after-use trial.',
       path: '/',
       jsonLd: [
         {
@@ -1428,8 +1520,12 @@ export class HomeComponent {
       a: 'No. SchoolSense is designed for everyday users with big buttons, simple screens and plain language. Our team handles complete onboarding, data setup and staff training for free. If your staff can use WhatsApp, they can easily use SchoolSense.',
     },
     {
-      q: 'How much does it cost, and are there any hidden charges?',
-      a: 'Pricing is completely transparent: our launch offer is ₹10 per active enrolled student per month (regular price ₹15), uniform for every institution across India with no hidden charges, no per-module fees, and no minimum student boundation. The only addition is mandatory Government GST on your invoice as required by law. Teachers, principals, admin staff and parents log in completely free.',
+      q: 'How much does it cost, and what are the three plans?',
+      a: 'We offer three simple, transparent plans: Lite at ₹3.5 per student/month for easy onboarding and core attendance, our flagship Pro plan at ₹10 per student/month (recommended for 95% of schools, complete with Parent & Teacher mobile apps, homework, automated marksheets, and fee collection), and Pro+ at ₹15 per student/month for institutions requiring transport fleet management, board certificates, alumni registry, and in-person campus visits. All plans include 100% free data migration, ₹0 setup fee, and pay-after-use with zero lock-in.',
+    },
+    {
+      q: 'Do you offer a discount if we choose annual billing?',
+      a: 'Yes! When your school chooses annual billing on either the Pro or Pro+ plans, you get 2 full months FREE (pay for 10 months, use for 12 full months). On the Pro plan, that is just ₹100 per student per year (effectively ₹8.33/mo), and on Pro+, it is ₹150 per student per year (effectively ₹12.50/mo).',
     },
     {
       q: 'Do we have to pay anything upfront? What are the setup and operation costs?',
