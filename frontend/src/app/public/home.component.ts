@@ -98,7 +98,7 @@ interface FaqItem {
             <svg class="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
             </svg>
-            <span class="ss-ribbon" aria-hidden="true">80% OFF</span>
+            <span class="ss-ribbon" aria-hidden="true">33% OFF</span>
           </a>
         </div>
       </div>
@@ -146,7 +146,7 @@ interface FaqItem {
         <div class="flex flex-col items-center text-center px-0.5">
           <app-vector-art name="fees" class="h-9 w-9 sm:h-20 sm:w-20 md:h-24 md:w-24" />
           <p class="mt-1 sm:mt-3 flex items-baseline justify-center gap-0.5 sm:gap-1.5 text-xs sm:text-xl md:text-3xl font-extrabold text-slate-900 leading-tight">
-            <span class="text-[10px] font-semibold text-slate-400 line-through sm:text-lg">₹59</span>
+            <span class="text-[10px] font-semibold text-slate-400 line-through sm:text-lg">₹15</span>
             <span>₹10/mo</span>
           </p>
           <p class="mt-0.5 hidden text-xs sm:block md:text-sm text-slate-500">Per student (launch offer)</p>
@@ -881,11 +881,11 @@ interface FaqItem {
         <div class="mx-auto mt-10 max-w-xl">
           <div class="relative rounded-3xl border-2 border-blue-600 bg-white p-8 shadow-xl shadow-blue-600/10">
             <span class="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-blue-600 px-4 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-sm">
-              Launch offer: 80% off
+              Launch offer: 33% off
             </span>
             <div class="text-center">
               <div class="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
-                <span class="text-2xl font-semibold text-slate-400 line-through sm:text-3xl">₹59</span>
+                <span class="text-2xl font-semibold text-slate-400 line-through sm:text-3xl">₹15</span>
                 <span class="text-5xl font-extrabold tracking-tight text-slate-900 sm:text-6xl">₹10</span>
                 <span class="text-sm text-slate-500">/ student / month</span>
               </div>
@@ -951,7 +951,7 @@ interface FaqItem {
             <svg class="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
             </svg>
-            <span class="ss-ribbon" aria-hidden="true">80% OFF</span>
+            <span class="ss-ribbon" aria-hidden="true">33% OFF</span>
           </a>
           </div>
         </div>
@@ -1033,9 +1033,9 @@ export class HomeComponent {
     });
 
     this.seo.setPage({
-      title: 'Simple School Management System with Live Parent Connect',
+      title: 'Best School Management System in India | Modern, Fast & Secure School ERP',
       description:
-        'SchoolSense is India\'s easiest school management system: attendance, homework, exams, fees, timetable, notices, complaints, alumni and auto-generated TC/CC certificates: with live Parent Connect. Launch offer ₹10 per student/month, all features included.',
+        'SchoolSense is India\'s best modern school management system: fast, easy, and secure school ERP with bank-grade security, attendance sync, exams, GST fee invoicing, timetable, and live Parent Connect. Launch offer: ₹10/student/month with ₹0 setup cost.',
       path: '/',
       jsonLd: [
         {
@@ -1425,31 +1425,43 @@ export class HomeComponent {
   faqs: FaqItem[] = [
     {
       q: 'Do we need a computer expert at our school to use SchoolSense?',
-      a: 'No. SchoolSense is designed for everyday users with big buttons, simple screens and plain language. Our team does the initial setup and trains your staff for free. If your staff can use WhatsApp, they can use SchoolSense.',
+      a: 'No. SchoolSense is designed for everyday users with big buttons, simple screens and plain language. Our team handles complete onboarding, data setup and staff training for free. If your staff can use WhatsApp, they can easily use SchoolSense.',
     },
     {
-      q: 'How much does it cost?',
-      a: 'The regular price is ₹59 per student per month, which covers every feature. As a launch offer, new schools pay just ₹10 per student per month. Billing is monthly and only for enrolled students with no yearly lock-in, no setup fee.',
+      q: 'How much does it cost, and are there any hidden charges?',
+      a: 'Pricing is completely transparent: our launch offer is ₹10 per active enrolled student per month (regular price ₹15), uniform for every institution across India with no hidden charges, no per-module fees, and no minimum student boundation. The only addition is mandatory Government GST on your invoice as required by law. Teachers, principals, admin staff and parents log in completely free.',
     },
     {
-      q: 'Are all features really included in this price?',
-      a: 'Yes. Timetable, attendance, homework, exams & marksheets, fee management, transport & fleet, departmental staff logins, notices, complaints, alumni management and auto-generated certificates (TC, Character Certificate and more) are all included in the base price. Only special on-demand features you may request later are quoted separately.',
+      q: 'Do we have to pay anything upfront? What are the setup and operation costs?',
+      a: 'Zero setup cost and zero operation cost. Your school pays nothing upfront: you do not pay a single rupee until you have completed your full first month. You only pay after experiencing SchoolSense live in your school for 30 days.',
+    },
+    {
+      q: 'Can you migrate data from our old ERP, Excel files, or paper registers?',
+      a: 'Yes, 100% free. Whether your records are in an old ERP system, Excel/CSV spreadsheets, physical paper registers, or local file systems, our team migrates all your school data to SchoolSense without any charges or disruption to your daily classes.',
+    },
+    {
+      q: 'Do you provide staff training, and will your team visit our school?',
+      a: 'Yes. We provide complete staff training during setup, plus regular refresher training every 6 months via interactive online video meets. If required, our team also visits your school in person to train your teachers and administrative staff on-site — with zero extra visit or training charges.',
+    },
+    {
+      q: 'Who controls our school data, and can we export it if we ever leave?',
+      a: 'Your school retains 100% ownership and control of your data at all times. There is no lock-in, no minimum boundation, and no barrier. Whenever you want, simply raise a request to receive your full database in reusable formats (Excel, CSV, PDF). We guarantee complete data handover even after cancellation of subscription.',
+    },
+    {
+      q: 'Is our school data safe and private? Do you ever share it?',
+      a: 'Your data is 100% safe, encrypted in transit and at rest, and strictly confidential. We never share, sell, or misuse your school, staff, parent, or student information with any third party. Your account is maintained lifetime so records are never lost. If you ever raise a request for permanent deletion, your data will be completely and permanently purged from our servers.',
+    },
+    {
+      q: 'Are all features and mobile apps really included in this price?',
+      a: 'Yes. Attendance register with live sync, timetable planning, homework center, exams & automated marksheets, fee management & GST receipts, transport fleet, departmental staff logins, notices, parent complaints, alumni registry, auto TC/CC certificates, and both Parent & Teacher Mobile Apps with live push notifications are all included. Only custom bespoke features requested specifically for your school are quoted separately.',
     },
     {
       q: 'Can parents use it on a basic smartphone?',
-      a: 'Yes. Parents get updates in a simple mobile-friendly view that works in any phone browser: no expensive phone needed. Everything is shown in an easy timeline: attendance, homework, marks, fees and notices.',
-    },
-    {
-      q: 'Is our school data safe?',
-      a: 'Your data is protected at several layers. Everything is encrypted while travelling and while stored. Access is role-based, so staff see only what their role allows and parents see only their own child. Passwords are stored as one-way hashes, meaning nobody \u2014 including our team \u2014 can read them. Sensitive actions are recorded in an audit log, and your records are exported back to you whenever you ask.',
+      a: 'Yes. Parents get instant updates through our simple, lightweight Parent App and mobile portal that works smoothly in any phone browser on basic internet — no expensive smartphone required.',
     },
     {
       q: 'How long does it take to start?',
-      a: 'Most schools go live within a week. We set up your classes, sections, subjects and fee structure, train your teachers and admin staff, and stay available while you settle in. Setup and training are free.',
-    },
-    {
-      q: 'Can you build a feature our school specifically needs?',
-      a: 'Yes. Every school works a little differently, so we build custom features on request: special reports, formats or workflows. Tell us what you need and we will scope it honestly before building anything. Your base plan price never changes because of it.',
+      a: 'Most schools go live within a week. We enter your classes, sections, subjects and fee structure, migrate your existing data, train your staff, and stay with you through go-live: completely free of cost.',
     },
   ];
 }

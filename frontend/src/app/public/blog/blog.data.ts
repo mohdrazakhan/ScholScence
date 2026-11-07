@@ -73,7 +73,7 @@ export const BLOG_POSTS: BlogPost[] = [
             [
               'Pricing',
               '"Request a quote". Price depends on negotiation, modules and student count.',
-              'Published openly: ₹59 per student/month, with a launch offer of ₹10. One plan, all features.',
+              'Published openly: ₹15 per student/month, with a launch offer of ₹10. One plan, all features.',
             ],
             [
               'Parent experience',
@@ -145,7 +145,7 @@ export const BLOG_POSTS: BlogPost[] = [
       'Most Indian school ERP vendors do not publish pricing: you negotiate blind.',
       'Two schools with the same student count can pay very different amounts for identical software.',
       'Setup fees, parent app charges and training costs often appear after the quote.',
-      'SchoolSense publishes one price for everything: ₹59/student/month, launch offer ₹10.',
+      'SchoolSense publishes one price for everything: ₹15/student/month, launch offer ₹10.',
     ],
     sections: [
       {
@@ -176,7 +176,7 @@ export const BLOG_POSTS: BlogPost[] = [
         table: {
           headers: ['Item', 'Other vendors (typical)', 'SchoolSense'],
           rows: [
-            ['Base price', 'Quoted privately in slabs', '₹59 per student/month, published on our pricing page'],
+            ['Base price', 'Quoted privately in slabs', '₹15 per student/month, published on our pricing page'],
             ['Launch offer', 'Discounts only if you negotiate', '₹10 per student/month for new schools: shown to everyone'],
             ['Parent app', 'Often a paid add-on', 'Included free, unlimited parents'],
             ['Teacher app', 'Often absent or paid', 'Included free'],
@@ -231,7 +231,7 @@ export const BLOG_POSTS: BlogPost[] = [
         paragraphs: [
           'A vendor confident in its product shows its price. Ask what the full monthly cost is for your exact student count, including the parent app, setup, training and message notifications. If any of those are "extra", write down the real number.',
         ],
-        note: 'SchoolSense: ₹59/student/month (₹10 launch offer), everything included, published on our pricing page.',
+        note: 'SchoolSense: ₹15/student/month (₹10 launch offer), everything included, published on our pricing page.',
       },
       {
         heading: '2. How fast can attendance and homework actually go live?',
@@ -410,6 +410,217 @@ export const BLOG_POSTS: BlogPost[] = [
           'The practical effect is that SchoolSense asks almost nothing of your staff: a short training session with our team, and then habits. Teachers mark attendance in seconds; the office posts notices in a couple of taps; the principal checks today\'s strength at a glance. No manuals, no consultants, no "please raise a ticket to change a section name".',
           'That is what "the simplest school software" should mean: and it is the standard we hold ourselves to on every screen we ship.',
         ],
+      },
+    ],
+  },
+
+  // ---------------------------------------------------------------- POST 6: BEST SCHOOL MANAGEMENT SYSTEM & COMPARISON
+  {
+    slug: 'best-school-management-system-india-modern-software-comparison',
+    title: 'Best School Management System in India: Why Modern Software Beats Clunky ERPs (2026 Comparison)',
+    seoTitle: 'Best School Management System in India (2026): Modern, Fast & Affordable School ERP',
+    description:
+      'Looking for the best school management system in India? Discover why modern cloud software beats traditional ERPs on speed, simplicity, bank-grade security, and 100% transparent pricing (₹10/mo launch offer with ₹0 setup fee).',
+    date: '2026-11-02',
+    dateDisplay: '2 November 2026',
+    readMinutes: 9,
+    category: 'Comparison',
+    image: '/assets/images/school_campus_courtyard.jpg',
+    intro:
+      'When school owners and principals search for the "best school management system in India," they are usually bombarded by enterprise sales pitches offering 100+ bloated modules, hidden pricing slabs, and expensive setup fees. Today, the definition of the best school software has shifted fundamentally: it is no longer about who has the longest feature list, but who provides the fastest, simplest, most secure, and transparent tool that non-technical teachers love to use every morning.',
+    keyTakeaways: [
+      'Modern school software prioritizes clean UI, sub-second speed, and effortless parent updates over bloated, confusing menus.',
+      'Legacy ERPs lock schools into 1-to-3 year contracts with hidden setup charges (₹20,000–₹50,000) and separate app fees.',
+      'SchoolSense delivers an all-in-one system for ₹10/student/month (launch offer, regular ₹15) with zero setup fee and zero lock-in.',
+      'Includes both Parent App and Teacher App with live push notifications at no extra charge.',
+      'Built natively for Indian school operations: CBSE, ICSE, and State Boards with April–March academic sessions.',
+    ],
+    sections: [
+      {
+        heading: 'What Makes a School Management System the "Best" in 2026?',
+        paragraphs: [
+          'For over a decade, Indian schools had to settle for clunky, desktop-derived ERP software. Teachers spent 15 minutes navigating convoluted menus just to record morning attendance, and parents received stale SMS messages hours after events occurred. Modern schools operate differently.',
+          'The best modern school management software must fulfill four non-negotiable criteria:',
+        ],
+        bullets: [
+          'Simplicity for non-IT teachers: If a teacher can use WhatsApp or UPI on a smartphone, they should be able to mark attendance and assign homework in under 30 seconds.',
+          'Live Parent Connect: Parents expect real-time notifications on their child\'s attendance, report cards, fees, and circulars directly on their mobile phone.',
+          'Bank-Grade Data Security: Student records and fee collections must be protected by cryptographic security, multi-tenant isolation, and strict data sovereignty.',
+          '100% Transparent, Fair Pricing: No hidden module charges, no private negotiation slabs, no setup fees, and no coercive annual lock-ins.',
+        ],
+      },
+      {
+        heading: 'Head-to-Head Comparison: SchoolSense vs Traditional School ERPs',
+        paragraphs: [
+          'Here is how modern cloud school software compares against traditional Indian school ERP vendors across the operational pillars that actually affect your daily workflow:',
+        ],
+        table: {
+          headers: ['Feature / Requirement', 'Traditional School ERP', 'SchoolSense Modern System'],
+          rows: [
+            ['Onboarding & Setup Cost', '₹20,000 – ₹50,000 setup & data entry fee', '₹0 (Completely Free)'],
+            ['First Month Guarantee', 'Paid upfront before software access', '100% Free: Pay only after completing month 1'],
+            ['Base Price (Per Student)', '₹40 – ₹100/mo (quoted privately in slabs)', '₹10/mo launch offer (regular ₹15/mo) published openly'],
+            ['Parent & Teacher Mobile Apps', 'Sold as separate paid add-on modules', 'Both apps included free for all parents & teachers'],
+            ['Data Migration', 'Weeks of manual entry or paid migration', '100% Free migration from old ERP, Excel, or paper files'],
+            ['Staff Training Commitment', 'One-time initial visit; paid thereafter', 'Free training every 6 months (online or campus visit)'],
+            ['Contract & Cancellation', '1 to 3 year mandatory annual lock-in', 'Monthly pay-as-you-go; cancel anytime with zero penalty'],
+            ['Data Ownership & Export', 'Proprietary lock-in; hard to export', '100% data ownership; export to Excel/CSV/PDF anytime'],
+            ['User Experience', 'Complex menus built for IT operators', 'Clean claymorphic design built for non-IT teachers'],
+          ],
+        },
+      },
+      {
+        heading: 'Why Indian School Owners and Principals Choose SchoolSense',
+        paragraphs: [
+          'SchoolSense is built from the ground up for Indian educational institutions. We understand that Indian schools run on April–March academic sessions, roll-call attendance registers, CBSE/ICSE grading patterns, class-teacher allocations, and GST-compliant fee collections with partial receipting.',
+          'Instead of offering complicated enterprise ERP suites where 80% of buttons remain unused, SchoolSense focuses on the core daily workflows: attendance sync, automatic timetable generation, homework distribution, automated exam marksheets, transport fleet management, student deactivation/transfer requests, and one-click Transfer Certificate (TC) generation.',
+        ],
+      },
+      {
+        heading: 'Try the Best School Management System Risk-Free',
+        paragraphs: [
+          'You should never buy school software based on a glossy brochure. SchoolSense operates on a 30-day pay-after-trial model: we set up your entire institution, migrate your data, train your teachers, and let you run your school live for a full month before you pay a single rupee.',
+        ],
+        note: 'Book a free 30-minute demo today. See your own class rosters and fee structures live on SchoolSense within 48 hours.',
+      },
+    ],
+  },
+
+  // ---------------------------------------------------------------- POST 7: SECURITY & API PROTECTION
+  {
+    slug: 'school-management-system-security-api-protection-data-privacy',
+    title: 'Bank-Grade Security for Schools: How SchoolSense Protects Student Data & Prevents API Replay Attacks',
+    seoTitle: 'Bank-Grade School ERP Security & API Protection: Student Data Privacy Guide',
+    description:
+      'Learn how SchoolSense safeguards school and student records with bank-grade security: multi-tenant Row-Level Security (RLS), cryptographic HMAC-SHA256 request signing, zero-trust token headers, lifetime data guarantee, and zero third-party data sharing.',
+    date: '2026-11-05',
+    dateDisplay: '5 November 2026',
+    readMinutes: 8,
+    category: 'Security',
+    image: '/assets/images/school_science_lab.jpg',
+    intro:
+      'School management systems store some of the most sensitive personal data in India: children\'s identification, home addresses, parent contact numbers, fee transaction records, and disciplinary notes. In recent years, legacy school software has suffered severe vulnerabilities: exposed database credentials, unauthenticated API endpoints, and leaking student databases to third-party marketing companies. At SchoolSense, we believe school software must meet the same rigorous security baseline as modern banking applications.',
+    keyTakeaways: [
+      'Multi-tenant Row-Level Security (RLS) guarantees complete database isolation between different schools and user roles.',
+      'Cryptographic HMAC-SHA256 request signing and nonce replay defense prevent automated script attacks (Postman/curl replay protection).',
+      'Zero plaintext passwords: all credentials are encrypted using one-way bcrypt hashing with salted rounds.',
+      'Absolute data privacy guarantee: SchoolSense never sells, monetizes, or shares school or student data with any third party.',
+      'Permanent data sovereignty: schools retain lifetime account access, export reusable data anytime, or request permanent cryptographic purging.',
+    ],
+    sections: [
+      {
+        heading: 'The Vulnerability Crisis in Legacy School Software',
+        paragraphs: [
+          'Most older school ERPs were written a decade ago using monolithic frameworks that expose backend database tables directly or rely on client-side security checks. In many legacy systems, an attacker using tools like Postman or curl can forge HTTP headers or manipulate school IDs to view records from another school.',
+          'Worse, many software providers treat student and parent phone numbers as commercial assets, reselling contact lists to coaching centers, ed-tech portals, and book distributors. SchoolSense was engineered to eliminate these security and privacy flaws by design.',
+        ],
+      },
+      {
+        heading: '1. Multi-Tenant Row-Level Security (RLS) at the Database Core',
+        paragraphs: [
+          'In SchoolSense, tenant isolation is not handled by frontend JavaScript. It is enforced at the PostgreSQL database kernel using Row-Level Security (RLS):',
+        ],
+        bullets: [
+          'Cryptographic Session Derivation: Every API request must carry a cryptographically signed session token in the x-schoolsense-token header. The database derives the active school ID and user ID directly on the server.',
+          'Zero Client Trust: Even if a malicious user alters client-side variables or requests another school\'s student ID, the database kernel strictly filters rows matching current_school_id().',
+          'Role-Based Granular Boundaries: Class teachers only access their designated section; subject teachers see only their enrolled marks; and parents can only ever query records belonging to their own verified children.',
+        ],
+      },
+      {
+        heading: '2. Anti-Postman & API Replay Attack Protection',
+        paragraphs: [
+          'Modern web security requires defending against automated scripts, credential replay, and bot scraping. SchoolSense implements bank-grade API request signing:',
+        ],
+        bullets: [
+          'HMAC-SHA256 Signature Verification: Privileged API mutations are signed using Web Crypto HMAC-SHA256 with timestamp drift validation.',
+          'Nonce Anti-Replay Defense: Requests incorporate one-time cryptographic nonces that expire within seconds, preventing captured network packets from being re-executed in Postman or automated curl scripts.',
+          'Rate-Limiting & Audit Logging: Every sensitive administrative action — such as fee balance adjustments, roll-number reallocations, and TC generations — is recorded in an immutable database audit log with user and timestamp footprints.',
+        ],
+      },
+      {
+        heading: '3. Complete Data Privacy: Zero Third-Party Sharing',
+        paragraphs: [
+          'Our data privacy commitment is clear, legal, and unambiguous: SchoolSense does not run third-party advertising trackers, analytics brokers, or data-monetization scripts. Your school\'s data belongs solely to your school.',
+        ],
+        bullets: [
+          'Never Sold, Never Shared: We will never share, sell, rent, or trade your student, parent, or teacher data to any third-party company.',
+          'Encrypted in Transit & At Rest: All data is transmitted over TLS 1.3 encryption and stored in encrypted cloud volumes with automated offsite backups.',
+          'Lifetime Account Integrity: We never arbitrarily delete or lock your historical records, ensuring you maintain institutional memory year after year.',
+        ],
+      },
+      {
+        heading: '4. Sovereign Right to Permanent Data Deletion',
+        paragraphs: [
+          'Schools have the absolute legal right to data portability and data destruction. If your institution ever decides to leave SchoolSense:',
+        ],
+        bullets: [
+          'Reusable Data Handover: Simply raise a request and download your entire database — attendance records, fee invoices, student profiles, and grade sheets — in standard Excel, CSV, and PDF formats with zero export fees.',
+          'Permanent Cryptographic Purge: If requested, our system permanently and irreversibly purges your school\'s records from active databases and storage buckets in compliance with data privacy regulations.',
+        ],
+        note: 'SchoolSense combines bank-grade application security with complete data sovereignty. Your school remains 100% in control.',
+      },
+    ],
+  },
+
+  // ---------------------------------------------------------------- POST 8: ONBOARDING & MIGRATION PROCESS
+  {
+    slug: 'school-erp-migration-onboarding-process-guide',
+    title: 'Step-by-Step School ERP Migration: How We Switch Your School to SchoolSense with Zero Downtime',
+    seoTitle: 'School ERP Migration & Onboarding Guide (2026): Zero Downtime, Free Setup',
+    description:
+      'Thinking of switching school software? Here is our complete step-by-step onboarding guide: free data migration from old ERPs or Excel, staff training every 6 months, and our 30-day pay-after-use trial with ₹0 setup cost.',
+    date: '2026-11-07',
+    dateDisplay: '7 November 2026',
+    readMinutes: 7,
+    category: 'Process',
+    image: '/assets/images/slider_classroom.jpg',
+    intro:
+      'The biggest reason schools stay trapped with outdated, slow, or expensive software is not loyalty — it is the fear of migration. Principals worry about lost student rosters, broken fee balances, confused teachers, and days of administrative downtime during the switch. At SchoolSense, we designed a zero-downtime, fully managed onboarding process where our engineering team handles every aspect of data migration and staff training for free.',
+    keyTakeaways: [
+      'Zero Setup & Operation Cost: Schools do not pay a single rupee upfront; you only pay after completing your full first month.',
+      '100% Free Data Migration: We migrate all your records from old ERPs, Excel spreadsheets, CSVs, or paper registers.',
+      'Continuous Staff Training: Full initial onboarding plus scheduled refresher sessions every 6 months (online or in-person school visits).',
+      'Go-Live in Days, Not Months: Classes, sections, subjects, fee heads, and parent portals are configured within 48 to 72 hours.',
+      'Unrestricted Data Portability: Export your entire school database in reusable formats at any time, even after subscription cancellation.',
+    ],
+    sections: [
+      {
+        heading: 'Why Traditional ERP Migrations Fail (And How We Fixed It)',
+        paragraphs: [
+          'Traditional school software vendors hand you a blank database and a 200-page manual, expecting school clerks to manually re-enter hundreds of students, parents, and fee heads during working hours. When errors occur, classes get disrupted, fee receipts go missing, and staff get overwhelmed.',
+          'SchoolSense takes a "white-glove" migration approach. We do not ask your staff to become data migration engineers. Our team does the heavy lifting while your school continues its daily schedule uninterrupted.',
+        ],
+      },
+      {
+        heading: 'The 5-Step SchoolSense Migration Roadmap',
+        paragraphs: [
+          'Here is the exact step-by-step roadmap we follow when bringing a new school onto SchoolSense:',
+        ],
+        bullets: [
+          'Step 1: 30-Day Pay-After-Use Activation: You sign up with ₹0 upfront payment and zero setup fees. Your full school environment is provisioned immediately with all features and mobile apps enabled.',
+          'Step 2: Free Data Extraction & Cleaning: Send us your existing data in whatever format you have — exports from your old ERP, Excel workbooks, Google Sheets, CSV files, or even scanned admission registers. Our data team cleans, deduplicates, and validates your records.',
+          'Step 3: Academic & Fee Structure Configuration: We configure your academic session, grades, section capacities, subjects, class teachers, fee categories, and invoice installments tailored to your school\'s fee rules.',
+          'Step 4: Interactive Staff Training: We host live hands-on training sessions with your teachers and administrators. Because SchoolSense uses large buttons and plain language, teachers master morning roll-call attendance in less than 15 minutes.',
+          'Step 5: Morning Go-Live Roll-Call: On your official launch day, our support team is on live standby via phone and WhatsApp during morning assembly to ensure attendance syncs seamlessly to parents\' phones.',
+        ],
+      },
+      {
+        heading: 'Our Ongoing Training Guarantee: Every 6 Months',
+        paragraphs: [
+          'School software is not a one-time handoff. Schools hire new teachers, promote staff, and introduce new academic policies every session. That is why SchoolSense includes ongoing training as a permanent part of our service:',
+        ],
+        bullets: [
+          'Bi-Annual Refresher Meets: Every 6 months, we schedule interactive online video sessions for all your staff to review best practices, answer questions, and train new teachers.',
+          'On-Campus School Visits: If your school requires in-person guidance, our field support team visits your school campus to provide comprehensive on-site training at zero extra visit fee.',
+          'Direct Phone & WhatsApp Support: No frustrating ticketing portals or automated bots. Your principal and office staff have direct contact with dedicated human engineers who know your school by name.',
+        ],
+      },
+      {
+        heading: 'Complete Freedom & Data Portability',
+        paragraphs: [
+          'We earn your trust every single month. Because SchoolSense operates on a monthly pay-as-you-go model at ₹10 per active student (launch offer) with no annual contract or lock-in, you remain in complete control. If you ever choose to cancel, simply raise a request to receive your full school database in reusable Excel, CSV, and PDF formats.',
+        ],
+        note: 'Ready to switch to a fast, modern, and affordable school management system? Contact us today to start your free 30-day onboarding.',
       },
     ],
   },

@@ -506,9 +506,9 @@ export class FeaturesComponent {
 
   constructor() {
     this.seo.setPage({
-      title: 'Features: Attendance, Homework, Exams, Fees, Certificates & Mobile Apps',
+      title: 'Modern School Management Software Features: Attendance, Exams, Fees, Certificates & Mobile Apps',
       description:
-        'All SchoolSense features: 1-tap attendance, conflict-free timetable, automated marksheets, fee invoices, auto-generated board certificates, and dedicated Parent & Teacher mobile apps.',
+        'Explore modern school management software features: 1-tap roll-call attendance, conflict-free timetable, automated marksheets, GST fee invoicing, bank-grade security, auto TC generation, and dedicated Parent & Teacher mobile apps.',
       path: '/features',
       jsonLd: [
         {

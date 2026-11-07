@@ -37,6 +37,7 @@ export interface AggregatedStudentFeeRecord {
   totalDiscount: number;
   outstandingDue: number;
   advanceCredit: number;
+  totalRefunded?: number;
   status: 'PENDING DUE' | 'SETTLED' | 'ADVANCE';
   invoicesCount: number;
   primaryInvoice: StudentFeeInvoice;
@@ -2177,6 +2178,25 @@ export class FeesComponent implements OnInit {
     return Math.max(0, net);
   }
 
+  studentRefundsMap: { [studentId: string]: number } = {};
+
+  getStudentRefundsMap(): { [studentId: string]: number } {
+    const map = { ...this.studentRefundsMap };
+    const schoolId = (this.auth.currentUser() as any)?.school_id || this.auth.currentUser()?.school?.id;
+    try {
+      const localKey = `schoolsense_fee_refunds_${schoolId}`;
+      const localList: any[] = JSON.parse(localStorage.getItem(localKey) || '[]');
+      if (Array.isArray(localList)) {
+        localList.forEach((r: any) => {
+          if (r.student_id && r.amount) {
+            map[r.student_id] = (map[r.student_id] || 0) + Number(r.amount);
+          }
+        });
+      }
+    } catch {}
+    return map;
+  }
+
   // School Fee Rules & Late Fee Policy State
   schoolFeeRules: SchoolFeeRules = {
     monthly_discount_pct: 0,
@@ -2406,9 +2426,13 @@ export class FeesComponent implements OnInit {
       record.paidAmount += Number(inv.paid_amount) || 0;
     }
 
+    const studentRefunds = this.getStudentRefundsMap();
     const result = Array.from(studentMap.values()).map((st) => {
-      st.pendingDue = Math.max(0, st.totalAmount - st.paidAmount);
-      st.advanceCredit = Math.max(0, st.paidAmount - st.totalAmount);
+      const studentId = st.invoices[0]?.student_id;
+      const refundAmt = studentRefunds[studentId] || 0;
+      const netPaid = Math.max(0, st.paidAmount - refundAmt);
+      st.pendingDue = Math.max(0, st.totalAmount - netPaid);
+      st.advanceCredit = Math.max(0, netPaid - st.totalAmount);
       return st;
     });
 
@@ -2556,8 +2580,11 @@ export class FeesComponent implements OnInit {
       }
     }
 
+    const studentRefunds = this.getStudentRefundsMap();
     const list = Array.from(studentMap.values()).map((st) => {
-      const netSettled = st.totalPaid + (st.totalDiscount || 0);
+      const refundAmt = studentRefunds[st.student_id] || 0;
+      st.totalRefunded = refundAmt;
+      const netSettled = (st.totalPaid + (st.totalDiscount || 0)) - refundAmt;
       if (st.totalBilled > netSettled) {
         st.outstandingDue = st.totalBilled - netSettled;
         st.advanceCredit = 0;
@@ -2919,6 +2946,17 @@ export class FeesComponent implements OnInit {
     this.loadingOverview = true;
     this.loadingInvoices = true;
     this.loadingStructures = true;
+
+    this.api.getAllFeeRefunds(sessionId).then((refunds) => {
+      this.studentRefundsMap = {};
+      if (Array.isArray(refunds)) {
+        refunds.forEach((r: any) => {
+          if (r.student_id && r.amount) {
+            this.studentRefundsMap[r.student_id] = (this.studentRefundsMap[r.student_id] || 0) + Number(r.amount);
+          }
+        });
+      }
+    }).catch(() => {});
 
     this.api.get<any>('fees/overview-full', sessionId ? { academicYearId: sessionId } : undefined).subscribe({
       next: (res) => {
@@ -4374,6 +4412,11 @@ export class FeesComponent implements OnInit {
         reason: this.refundForm.reason,
         refund_date: new Date().toISOString(),
       };
+
+      if (this.activeLedgerStudent?.student_id) {
+        const sid = this.activeLedgerStudent.student_id;
+        this.studentRefundsMap[sid] = (this.studentRefundsMap[sid] || 0) + amt;
+      }
 
       this.closeRefundModal();
 

@@ -36,7 +36,7 @@ interface FaqItem {
         <div class="mx-auto max-w-4xl">
           <div class="relative rounded-3xl border-2 border-blue-600 bg-white shadow-2xl shadow-blue-600/10">
             <span class="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-blue-600 px-5 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm">
-              Launch offer: 80% off for new schools
+              Launch offer: 33% off for new schools
             </span>
 
             <div class="grid gap-8 p-8 sm:p-10 lg:grid-cols-5">
@@ -46,7 +46,7 @@ interface FaqItem {
                 <p class="mt-1 text-sm text-slate-500">For schools of every size, boards and mediums.</p>
 
                 <div class="mt-6 flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1 lg:justify-start">
-                  <span class="text-3xl font-semibold text-slate-400 line-through sm:text-4xl">₹59</span>
+                  <span class="text-3xl font-semibold text-slate-400 line-through sm:text-4xl">₹15</span>
                   <span class="text-6xl font-extrabold tracking-tight text-slate-900">₹10</span>
                   <span class="text-sm text-slate-500">/ student / month</span>
                 </div>
@@ -54,7 +54,7 @@ interface FaqItem {
                   Billed monthly &middot; Only for active enrolled students &middot; No hidden charges
                 </p>
                 <p class="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-600 ring-1 ring-slate-200">
-                  You save 80% with the launch offer. No setup fee, no yearly lock-in,
+                  You save 33% with the launch offer. No setup fee, no yearly lock-in,
                   no per-feature charges.
                 </p>
 
@@ -110,17 +110,17 @@ interface FaqItem {
             <div class="rounded-xl bg-white p-5 ring-1 ring-slate-200">
               <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">School with 200 students</p>
               <p class="mt-2 text-2xl font-extrabold text-slate-900">₹2,000<span class="text-sm font-medium text-slate-500">/month</span></p>
-              <p class="mt-1 text-xs text-slate-500">at launch price (₹11,800/month at regular ₹59)</p>
+              <p class="mt-1 text-xs text-slate-500">at launch price (₹3,000/month at regular ₹15)</p>
             </div>
             <div class="rounded-xl bg-white p-5 ring-1 ring-slate-200">
               <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">School with 500 students</p>
               <p class="mt-2 text-2xl font-extrabold text-slate-900">₹5,000<span class="text-sm font-medium text-slate-500">/month</span></p>
-              <p class="mt-1 text-xs text-slate-500">at launch price (₹29,500/month at regular ₹59)</p>
+              <p class="mt-1 text-xs text-slate-500">at launch price (₹7,500/month at regular ₹15)</p>
             </div>
             <div class="rounded-xl bg-white p-5 ring-1 ring-slate-200">
               <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">School with 1,000 students</p>
               <p class="mt-2 text-2xl font-extrabold text-slate-900">₹10,000<span class="text-sm font-medium text-slate-500">/month</span></p>
-              <p class="mt-1 text-xs text-slate-500">at launch price (₹59,000/month at regular ₹59)</p>
+              <p class="mt-1 text-xs text-slate-500">at launch price (₹15,000/month at regular ₹15)</p>
             </div>
           </div>
         </div>
@@ -190,7 +190,27 @@ export class PricingComponent {
   faqs: FaqItem[] = [
     {
       q: 'Is ₹10 per student per month really the full price?',
-      a: 'Yes: for schools joining during our launch period. The regular price is ₹59 per student per month, and the launch offer reduces it to ₹10 for new schools. Both prices include every feature: there are no paid modules hiding behind the base plan.',
+      a: 'Yes, 100% transparent: our launch offer is ₹10 per active student per month (regular price ₹15), uniform for every institution across India with no hidden charges, no per-module fees, and no minimum student boundation. The only addition is mandatory Government GST on your invoice as required by law. Teachers, principals, admin staff and parents log in completely free.',
+    },
+    {
+      q: 'Do we pay anything upfront, and what are the setup or operational costs?',
+      a: 'Zero setup cost and zero operation cost. Your school does NOT pay a single rupee upfront: you do not pay anything until you have completed your full first month. You only pay after experiencing SchoolSense live in your school for 30 days.',
+    },
+    {
+      q: 'Can you migrate data from our old ERP, files, or existing systems?',
+      a: 'Yes, 100% free. Whether your records are currently in an old ERP system, Excel/CSV spreadsheets, physical registers, or local file systems, our team handles complete migration to SchoolSense without any charges or disruption to your school.',
+    },
+    {
+      q: 'Do you provide ongoing staff training and school visits?',
+      a: 'Yes. We train your staff during onboarding, followed by refresher staff training every 6 months via interactive online video sessions. If required, our team also visits your school in person to train your teachers and administrative staff on-site — without any extra visit or training fees.',
+    },
+    {
+      q: 'Who controls our school data, and what happens if we ever cancel?',
+      a: 'Your school retains 100% ownership and control of your data at all times. There is no lock-in, no annual commitment, and no restriction. Whenever you need it, simply raise a request to receive your complete data in clean, reusable formats (Excel, CSV, PDF). We guarantee full data handover even after cancellation of subscription.',
+    },
+    {
+      q: 'Is our school data safe and private? Do you ever share it?',
+      a: 'Your data is 100% safe, securely encrypted in transit and at rest, and strictly confidential. We never sell, share, or misuse your school, staff, parent, or student information with any third party. Your account is maintained lifetime so records are never lost. If you ever request permanent data deletion, all your records will be permanently and irreversibly purged from our servers.',
     },
     {
       q: 'What counts as a "student" for billing?',
@@ -198,31 +218,23 @@ export class PricingComponent {
     },
     {
       q: 'How do we pay?',
-      a: 'Each school gets a simple wallet: you top it up and the monthly fee is deducted automatically with a proper receipt for every transaction. You always have a clear ledger of what was billed and when.',
+      a: 'Each school gets a simple wallet: you top it up and the monthly fee is deducted automatically with a proper GST receipt for every transaction. You always have a clear, transparent ledger of what was billed and when.',
     },
     {
       q: 'Is there a mobile app for parents and teachers?',
-      a: 'Yes. Every plan includes two dedicated mobile apps: a Parent App (live attendance, homework, marks and results, fee receipts and fines, events, push notifications and complaint tracking) and a Teacher App (attendance, homework, marks, notices and complaint management). Both work on Android and iPhone and are included at no extra charge.',
-    },
-    {
-      q: 'Are there any setup or training charges?',
-      a: 'No. We set up your classes, sections, subjects and fee structure, migrate your existing student data, and train your staff: all free as part of onboarding.',
+      a: 'Yes. Every plan includes two dedicated mobile apps: a Parent App (live attendance, homework, marks and results, fee receipts, notices, push notifications and complaint tracking) and a Teacher App (attendance, homework, marks, notices and complaints). Both work on Android and iPhone and are included at no extra charge.',
     },
     {
       q: 'What are "on-demand features"?',
-      a: 'Anything custom your school specifically wants beyond the standard system: for example, a special report format or an integration. We quote these separately before building anything, and the base plan price never changes because of them.',
-    },
-    {
-      q: 'Can we cancel?',
-      a: 'Yes. There is no yearly lock-in. If you ever stop using SchoolSense, your school\'s data is handed back to you in a usable format.',
+      a: 'Anything bespoke your school specifically asks for beyond the standard system (like a special report format or custom integration). We quote these openly before building anything, and your base per-student subscription rate never changes because of them.',
     },
   ];
 
   constructor() {
     this.seo.setPage({
-      title: 'Pricing: ₹10 per Student/Month Launch Offer, All Features Included',
+      title: 'Affordable School ERP Pricing: ₹10 per Student/Month, ₹0 Setup, All Features Included',
       description:
-        'SchoolSense school management system pricing: regular ₹59 per student per month, launch offer ₹10 per student per month. All features included: attendance, timetable, homework, exams, fee management, transport fleet, departmental staff logins, notices, complaints, alumni, auto TC/CC certificates and Parent Connect. No setup fee, no lock-in.',
+        'Most affordable, transparent school management system in India. Launch offer: ₹10/student/month (regular ₹15) with ₹0 setup cost, 30-day pay-after-use trial, zero lock-in, bank-grade security, and free Parent & Teacher apps.',
       path: '/pricing',
       jsonLd: [
         {
@@ -245,11 +257,11 @@ export class PricingComponent {
             {
               '@type': 'Offer',
               name: 'Regular Price',
-              price: '59.00',
+              price: '15.00',
               priceCurrency: 'INR',
               availability: 'https://schema.org/InStock',
               url: 'https://www.schoolsense.in/pricing',
-              description: 'Regular price: ₹59 per student per month, all features included.',
+              description: 'Regular price: ₹15 per student per month, all features included.',
             },
           ],
         },

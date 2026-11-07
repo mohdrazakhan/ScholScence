@@ -10459,6 +10459,24 @@ export class ApiService {
       // Table may not yet exist
     }
 
+    // Dev/Offline Resilience: Load local refunds if database query was empty or table not migrated yet
+    try {
+      const localKey = `schoolsense_fee_refunds_${schoolId}`;
+      const localList: any[] = JSON.parse(localStorage.getItem(localKey) || '[]');
+      if (Array.isArray(localList) && localList.length > 0) {
+        const studentLocals = localList.filter((r: any) => r.student_id === studentId);
+        if (studentLocals.length > 0) {
+          const existingRefs = new Set(refunds.map((r: any) => r.voucher_number || r.voucherNumber));
+          studentLocals.forEach((lr: any) => {
+            const vNo = lr.voucher_number || lr.voucherNumber;
+            if (!existingRefs.has(vNo)) {
+              refunds.push(lr);
+            }
+          });
+        }
+      }
+    } catch (e) {}
+
     // 1. Try secure RPC get_student_fee_ledger
     try {
       const { data, error } = await this.supabase.rpc('get_student_fee_ledger', {
@@ -10552,7 +10570,26 @@ export class ApiService {
         }
 
         // Merge refunds into ledgerEntries if not already present
-        const refundsList = Array.isArray(data.refunds) && data.refunds.length > 0 ? data.refunds : refunds;
+        const refundsList: any[] = [];
+        const seenVouchers = new Set<string>();
+        if (Array.isArray(data.refunds)) {
+          data.refunds.forEach((r: any) => {
+            const v = r.voucher_number || r.voucherNumber;
+            if (v && !seenVouchers.has(v)) {
+              seenVouchers.add(v);
+              refundsList.push(r);
+            }
+          });
+        }
+        if (Array.isArray(refunds)) {
+          refunds.forEach((r: any) => {
+            const v = r.voucher_number || r.voucherNumber;
+            if (v && !seenVouchers.has(v)) {
+              seenVouchers.add(v);
+              refundsList.push(r);
+            }
+          });
+        }
         const totalRefunded = refundsList.reduce((sum: number, r: any) => sum + (Number(r.amount) || 0), 0);
 
         const existingRefundRefs = new Set(entries.map(e => e.referenceNumber));
@@ -11200,6 +11237,47 @@ export class ApiService {
     } catch (e) {
       return [];
     }
+  }
+
+  public async getAllFeeRefunds(academicYearId?: string): Promise<StudentFeeRefund[]> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId) return [];
+    const effectiveYearId = academicYearId || (await this.getActiveAcademicYearId(schoolId));
+    let list: StudentFeeRefund[] = [];
+
+    try {
+      let query = this.supabase
+        .from('student_fee_refunds')
+        .select('*')
+        .eq('school_id', schoolId)
+        .order('refund_date', { ascending: false });
+
+      if (effectiveYearId) {
+        query = query.eq('academic_year_id', effectiveYearId);
+      }
+
+      const { data, error } = await query;
+      if (!error && data && data.length > 0) {
+        list = data as StudentFeeRefund[];
+      }
+    } catch (e) {}
+
+    try {
+      const localKey = `schoolsense_fee_refunds_${schoolId}`;
+      const localList: any[] = JSON.parse(localStorage.getItem(localKey) || '[]');
+      if (Array.isArray(localList) && localList.length > 0) {
+        const seen = new Set(list.map((r: any) => r.voucher_number || r.voucherNumber));
+        localList.forEach((lr: any) => {
+          const v = lr.voucher_number || lr.voucherNumber;
+          if (v && !seen.has(v)) {
+            seen.add(v);
+            list.push(lr);
+          }
+        });
+      }
+    } catch (e) {}
+
+    return list;
   }
 
   public async getSchoolFeeRules(academicYearId?: string): Promise<SchoolFeeRules> {

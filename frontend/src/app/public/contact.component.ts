@@ -195,7 +195,7 @@ interface LeadForm {
 
             <div class="rounded-2xl bg-slate-900 p-6 text-center">
               <p class="text-sm font-semibold text-white">Launch offer: ₹10/student/month</p>
-              <p class="mt-1 text-xs text-slate-400">Regular ₹59 · every feature included · no setup fee</p>
+              <p class="mt-1 text-xs text-slate-400">Regular ₹15 · every feature included · no setup fee</p>
               <a routerLink="/pricing" class="mt-3 inline-block text-xs font-bold text-blue-400 hover:text-blue-300">See pricing details →</a>
             </div>
           </div>

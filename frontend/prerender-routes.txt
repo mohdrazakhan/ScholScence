@@ -9,6 +9,9 @@
 /blog/how-to-choose-school-management-software-india
 /blog/why-parent-connect-matters-schools
 /blog/simplest-school-management-software
+/blog/best-school-management-system-india-modern-software-comparison
+/blog/school-management-system-security-api-protection-data-privacy
+/blog/school-erp-migration-onboarding-process-guide
 /legal/terms
 /legal/privacy
 /legal/data-processing
