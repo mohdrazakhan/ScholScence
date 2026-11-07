@@ -327,6 +327,9 @@ BEGIN
       i.created_at,
       TRIM(CONCAT(s.first_name, ' ', COALESCE(s.last_name, ''))) AS student_name,
       COALESCE(s.admission_number, '') AS admission_number,
+      s.photo_url,
+      s.photo_url AS profile_image,
+      s.photo_url AS avatar_url,
       COALESCE(c.name, 'Class') AS class_name,
       COALESCE(sec.name, 'Section A') AS section_name
     FROM public.student_fee_invoices i

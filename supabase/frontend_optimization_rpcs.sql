@@ -530,7 +530,10 @@ CREATE OR REPLACE FUNCTION public._collect_fee_payment_unsafe(
   p_amount NUMERIC,
   p_payment_mode TEXT,
   p_transaction_reference TEXT DEFAULT NULL,
-  p_notes TEXT DEFAULT NULL
+  p_notes TEXT DEFAULT NULL,
+  p_discount_amount NUMERIC DEFAULT 0.00,
+  p_discount_type TEXT DEFAULT NULL,
+  p_discount_code TEXT DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -540,20 +543,29 @@ AS $$
 DECLARE
   v_invoice RECORD;
   v_user_rec RECORD;
+  v_existing_settled NUMERIC(10, 2);
   v_remaining NUMERIC(10, 2);
+  v_applied_discount NUMERIC(10, 2) := 0.00;
+  v_payable_after_discount NUMERIC(10, 2) := 0.00;
   v_new_paid NUMERIC(10, 2);
+  v_new_discount NUMERIC(10, 2);
   v_new_status VARCHAR(20);
   v_receipt_number VARCHAR(100);
   v_payment_id UUID;
   v_payment_time TIMESTAMPTZ := clock_timestamp();
+  v_clean_code VARCHAR(100);
+  v_clean_type VARCHAR(50);
 BEGIN
-  -- 1. Validate Payment Amount
-  IF p_amount IS NULL OR p_amount <= 0 THEN
-    RETURN jsonb_build_object('success', false, 'error', 'invalid_payment_amount');
+  -- 1. Validate Payment Amount & Discount
+  IF (p_amount IS NULL OR p_amount < 0) AND (p_discount_amount IS NULL OR p_discount_amount <= 0) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'invalid_payment_amount', 'message', 'Please enter a valid payment amount or concession.');
   END IF;
 
+  v_clean_code := NULLIF(TRIM(p_discount_code), '');
+  v_clean_type := COALESCE(NULLIF(TRIM(p_discount_type), ''), CASE WHEN v_clean_code IS NOT NULL THEN 'PROMOCODE' ELSE NULL END);
+
   -- 2. Concurrency Lock on Invoice
-  SELECT id, school_id, academic_year_id, student_id, invoice_number, total_amount, paid_amount, status
+  SELECT id, school_id, academic_year_id, student_id, invoice_number, total_amount, paid_amount, discount_amount, discount_code, discount_type, status
     INTO v_invoice
     FROM public.student_fee_invoices
    WHERE id = p_invoice_id
@@ -562,27 +574,42 @@ BEGIN
      FOR UPDATE;
 
   IF NOT FOUND THEN
-    RETURN jsonb_build_object('success', false, 'error', 'invoice_not_found');
+    RETURN jsonb_build_object('success', false, 'error', 'invoice_not_found', 'message', 'Selected invoice not found.');
   END IF;
 
-  -- 3. Check remaining due
-  v_remaining := GREATEST(0.00, v_invoice.total_amount - v_invoice.paid_amount);
+  -- 3. Check remaining due considering existing paid + existing discount
+  v_existing_settled := COALESCE(v_invoice.paid_amount, 0.00) + COALESCE(v_invoice.discount_amount, 0.00);
+  v_remaining := GREATEST(0.00, v_invoice.total_amount - v_existing_settled);
 
   IF v_remaining <= 0 THEN
-    RETURN jsonb_build_object('success', false, 'error', 'invoice_already_fully_paid');
+    RETURN jsonb_build_object('success', false, 'error', 'invoice_already_fully_paid', 'message', 'This invoice has already been fully settled.');
   END IF;
 
-  IF p_amount > v_remaining THEN
+  -- Calculate discount safely (capped at remaining due)
+  IF p_discount_amount IS NOT NULL AND p_discount_amount > 0 THEN
+    v_applied_discount := LEAST(p_discount_amount, v_remaining);
+  ELSE
+    v_applied_discount := 0.00;
+  END IF;
+
+  v_payable_after_discount := v_remaining - v_applied_discount;
+
+  -- Validate actual payment cash/UPI amount does not exceed payable
+  IF p_amount > v_payable_after_discount THEN
     RETURN jsonb_build_object(
       'success', false,
       'error', 'amount_exceeds_due',
-      'remaining_due', v_remaining
+      'remaining_due', v_payable_after_discount,
+      'applied_discount', v_applied_discount,
+      'message', format('Payment amount (₹%s) exceeds payable amount (₹%s) after discount.', p_amount, v_payable_after_discount)
     );
   END IF;
 
   -- 4. Compute updated figures
-  v_new_paid := v_invoice.paid_amount + p_amount;
-  IF v_new_paid >= v_invoice.total_amount THEN
+  v_new_paid := COALESCE(v_invoice.paid_amount, 0.00) + COALESCE(p_amount, 0.00);
+  v_new_discount := COALESCE(v_invoice.discount_amount, 0.00) + v_applied_discount;
+
+  IF (v_new_paid + v_new_discount) >= v_invoice.total_amount THEN
     v_new_status := 'PAID';
   ELSE
     v_new_status := 'PARTIAL';
@@ -608,6 +635,9 @@ BEGIN
     collected_by_user_id,
     collected_by_name,
     remarks,
+    discount_amount,
+    discount_code,
+    discount_type,
     created_at,
     updated_at
   ) VALUES (
@@ -616,13 +646,16 @@ BEGIN
     v_invoice.id,
     v_invoice.student_id,
     v_receipt_number,
-    p_amount,
+    COALESCE(p_amount, 0.00),
     COALESCE(NULLIF(UPPER(p_payment_mode), ''), 'CASH'),
     v_payment_time::DATE,
     p_transaction_reference,
     p_user_id,
     TRIM(COALESCE(v_user_rec.first_name, '') || ' ' || COALESCE(v_user_rec.last_name, '')),
     p_notes,
+    v_applied_discount,
+    v_clean_code,
+    v_clean_type,
     v_payment_time,
     v_payment_time
   ) RETURNING id INTO v_payment_id;
@@ -630,11 +663,23 @@ BEGIN
   -- 7. Update Student Fee Invoice
   UPDATE public.student_fee_invoices
      SET paid_amount = v_new_paid,
+         discount_amount = v_new_discount,
+         discount_code = COALESCE(v_clean_code, v_invoice.discount_code),
+         discount_type = COALESCE(v_clean_type, v_invoice.discount_type),
          status = v_new_status,
          updated_at = v_payment_time
    WHERE id = v_invoice.id;
 
-  -- 8. Audit Log Entry
+  -- 8. Increment promocode usage counter if coupon code was used
+  IF v_clean_code IS NOT NULL THEN
+    UPDATE public.fee_promocodes
+       SET used_count = COALESCE(used_count, 0) + 1,
+           updated_at = v_payment_time
+     WHERE school_id = p_school_id
+       AND UPPER(code) = UPPER(v_clean_code);
+  END IF;
+
+  -- 9. Audit Log Entry
   INSERT INTO public.audit_logs (
     school_id,
     user_id,
@@ -649,23 +694,41 @@ BEGIN
     'FEE_PAYMENT_COLLECTED',
     'student_fee_invoices',
     v_invoice.id,
-    jsonb_build_object('paid_amount', v_invoice.paid_amount, 'status', v_invoice.status),
-    jsonb_build_object('paid_amount', v_new_paid, 'status', v_new_status, 'payment_id', v_payment_id, 'receipt', v_receipt_number)
+    jsonb_build_object(
+      'paid_amount', v_invoice.paid_amount,
+      'discount_amount', v_invoice.discount_amount,
+      'status', v_invoice.status
+    ),
+    jsonb_build_object(
+      'paid_amount', v_new_paid,
+      'discount_amount', v_new_discount,
+      'discount_code', v_clean_code,
+      'status', v_new_status,
+      'payment_id', v_payment_id,
+      'receipt', v_receipt_number
+    )
   );
 
   RETURN jsonb_build_object(
     'success', true,
     'invoice_id', v_invoice.id,
     'receipt_number', v_receipt_number,
-    'amount_paid', p_amount,
-    'remaining_due', GREATEST(0.00, v_invoice.total_amount - v_new_paid),
+    'amount_paid', COALESCE(p_amount, 0.00),
+    'discount_amount', v_applied_discount,
+    'discount_code', v_clean_code,
+    'total_settled', v_new_paid + v_new_discount,
+    'remaining_due', GREATEST(0.00, v_invoice.total_amount - (v_new_paid + v_new_discount)),
     'status', v_new_status,
-    'paid_at', to_char(v_payment_time, 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+    'paid_at', to_char(v_payment_time, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+    'message', CASE 
+      WHEN v_applied_discount > 0 THEN format('Payment of ₹%s with discount ₹%s (Coupon: %s) recorded successfully.', p_amount, v_applied_discount, COALESCE(v_clean_code, 'APPLIED'))
+      ELSE format('Payment of ₹%s recorded successfully.', p_amount)
+    END
   );
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public._collect_fee_payment_unsafe(UUID, UUID, UUID, NUMERIC, TEXT, TEXT, TEXT) FROM public, anon, authenticated;
+REVOKE ALL ON FUNCTION public._collect_fee_payment_unsafe(UUID, UUID, UUID, NUMERIC, TEXT, TEXT, TEXT, NUMERIC, TEXT, TEXT) FROM public, anon, authenticated;
 
 -- Public Session-Guarded Wrapper for collect_fee_payment
 CREATE OR REPLACE FUNCTION public.collect_fee_payment(
@@ -673,7 +736,10 @@ CREATE OR REPLACE FUNCTION public.collect_fee_payment(
   p_amount NUMERIC,
   p_payment_mode TEXT,
   p_transaction_reference TEXT DEFAULT NULL,
-  p_notes TEXT DEFAULT NULL
+  p_notes TEXT DEFAULT NULL,
+  p_discount_amount NUMERIC DEFAULT 0.00,
+  p_discount_type TEXT DEFAULT NULL,
+  p_discount_code TEXT DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -685,12 +751,12 @@ DECLARE
   v_role TEXT;
 BEGIN
   IF v_sess IS NULL THEN
-    RETURN jsonb_build_object('success', false, 'error', 'session_required');
+    RETURN jsonb_build_object('success', false, 'error', 'session_required', 'message', 'Valid user session required');
   END IF;
 
   v_role := public.current_app_role();
   IF v_role NOT IN ('SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'FEE_MANAGER') THEN
-    RETURN jsonb_build_object('success', false, 'error', 'unauthorized_fee_collection');
+    RETURN jsonb_build_object('success', false, 'error', 'unauthorized_fee_collection', 'message', 'Role unauthorized to collect fees');
   END IF;
 
   RETURN public._collect_fee_payment_unsafe(
@@ -700,12 +766,15 @@ BEGIN
     p_amount,
     p_payment_mode,
     p_transaction_reference,
-    p_notes
+    p_notes,
+    p_discount_amount,
+    p_discount_type,
+    p_discount_code
   );
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.collect_fee_payment(UUID, NUMERIC, TEXT, TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.collect_fee_payment(UUID, NUMERIC, TEXT, TEXT, TEXT, NUMERIC, TEXT, TEXT) TO anon, authenticated, service_role;
 
 
 -- ==============================================================================

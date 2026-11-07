@@ -354,6 +354,7 @@ export interface AcademicSession {
   student_count?: number;
   section_count?: number;
   created_at?: string;
+  updated_at?: string;
 }
 
 export interface AlumniStudent {
@@ -819,6 +820,7 @@ export interface FeeCategory {
   description?: string;
   status: string;
   created_at?: string;
+  updated_at?: string;
 }
 
 export interface FeeStructure {
@@ -836,6 +838,7 @@ export interface FeeStructure {
   due_day?: number;
   status: string;
   created_at?: string;
+  updated_at?: string;
 }
 
 export interface FeePaymentRecord {
@@ -850,6 +853,7 @@ export interface FeePaymentRecord {
   collected_by_name?: string;
   remarks?: string;
   created_at?: string;
+  updated_at?: string;
 }
 
 export interface StudentFeeInvoice {
@@ -868,6 +872,8 @@ export interface StudentFeeInvoice {
   total_amount: number;
   paid_amount: number;
   discount_amount?: number;
+  discount_code?: string;
+  discount_type?: string;
   fine_amount?: number;
   due_date: string;
   status: 'PAID' | 'PARTIAL' | 'UNPAID' | 'OVERDUE';
@@ -878,6 +884,7 @@ export interface StudentFeeInvoice {
   avatar_url?: string;
   student?: any;
   created_at?: string;
+  updated_at?: string;
 }
 
 export interface DailyDayBookSummary {
@@ -997,6 +1004,7 @@ export interface TransportVehicle {
   pollution_expiry?: string;
   status: 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE';
   created_at?: string;
+  updated_at?: string;
 }
 
 export interface TransportStop {
@@ -1030,6 +1038,7 @@ export interface TransportRoute {
   assigned_students_count?: number;
   status: 'ACTIVE' | 'INACTIVE';
   created_at?: string;
+  updated_at?: string;
 }
 
 export interface StudentTransportAssignment {
@@ -1058,6 +1067,7 @@ export interface StudentTransportAssignment {
   emergency_contact?: string;
   status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   created_at?: string;
+  updated_at?: string;
 }
 
 export interface DepartmentalStaffUser {
@@ -1084,7 +1094,7 @@ export interface DepartmentalStaffUser {
 
 export interface StudentFeeLedgerEntry {
   date: string;
-  type: 'INVOICE' | 'PAYMENT' | 'CONCESSION' | 'OPENING_BALANCE' | 'CHARGE' | 'ADDITIONAL_CHARGE';
+  type: 'INVOICE' | 'PAYMENT' | 'CONCESSION' | 'OPENING_BALANCE' | 'CHARGE' | 'ADDITIONAL_CHARGE' | 'REFUND';
   referenceNumber: string;
   description: string;
   debit: number;
@@ -1092,6 +1102,29 @@ export interface StudentFeeLedgerEntry {
   runningBalance: number;
   status?: string;
   paymentMode?: string;
+}
+
+export interface StudentFeeRefund {
+  id?: string;
+  school_id?: string;
+  student_id: string;
+  academic_year_id?: string;
+  voucher_number: string;
+  voucherNumber?: string;
+  amount: number;
+  refund_mode: 'BANK_TRANSFER' | 'UPI' | 'CASH' | 'CHEQUE';
+  refundMode?: 'BANK_TRANSFER' | 'UPI' | 'CASH' | 'CHEQUE';
+  transaction_reference?: string;
+  transactionReference?: string;
+  reason: string;
+  refund_date: string;
+  refundDate?: string;
+  processed_by_user_id?: string;
+  processed_by_name?: string;
+  processedByName?: string;
+  status?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface StudentFeeLedgerStatement {
@@ -1110,11 +1143,13 @@ export interface StudentFeeLedgerStatement {
   totalBilled: number;
   totalPaid: number;
   totalDiscount: number;
+  totalRefunded?: number;
   netBilled: number;
   advanceBalance: number;
   pendingDue: number;
   invoices: StudentFeeInvoice[];
   payments: any[];
+  refunds?: StudentFeeRefund[];
   ledgerEntries: StudentFeeLedgerEntry[];
   generatedAt: string;
 }
@@ -1161,6 +1196,7 @@ export interface StudentFeeAdditionalCharge {
   effective_date: string;
   status?: 'PENDING' | 'PAID';
   created_at?: string;
+  updated_at?: string;
 }
 
 

@@ -42,6 +42,7 @@ import {
   StudentFeePreference,
   SchoolFeeRules,
   StudentFeeAdditionalCharge,
+  StudentFeeRefund,
 } from '../models';
 
 export function getClassPedagogicalRank(name: string, code?: string, displayOrder?: number): number {
@@ -529,6 +530,9 @@ export class ApiService {
     }
     if (cleanEndpoint === 'fees/payments' || cleanEndpoint === 'fees/collect') {
       return from(this.recordFeePayment(body)) as unknown as Observable<T>;
+    }
+    if (cleanEndpoint === 'fees/refund' || cleanEndpoint === 'fees/refunds') {
+      return from(this.issueStudentFeeRefund(body)) as unknown as Observable<T>;
     }
     if (cleanEndpoint === 'fees/apply-promocode') {
       return from(this.applyPromocode(body?.code, body?.invoiceId || body?.invoice_id, body?.amount)) as unknown as Observable<T>;
@@ -9447,6 +9451,19 @@ export class ApiService {
             || inv.student?.profile_image
             || '';
 
+          const totalAmt = Number(inv.total_amount) || 0;
+          const paidAmt = Number(inv.paid_amount) || 0;
+          let discAmt = Number(inv.discount_amount) || 0;
+          // Self-heal: If discount was doubled by repeated preview, cap it to total - paid
+          if (paidAmt > 0 && discAmt > 0 && (paidAmt + discAmt) > totalAmt) {
+            discAmt = Math.max(0, totalAmt - paidAmt);
+            this.supabase.from('student_fee_invoices').update({
+              discount_amount: discAmt,
+              status: 'PAID',
+              updated_at: new Date().toISOString()
+            }).eq('id', inv.id).then();
+          }
+
           return {
             id: inv.id,
             school_id: inv.school_id,
@@ -9458,12 +9475,14 @@ export class ApiService {
             academic_year_id: inv.academic_year_id,
             invoice_number: inv.invoice_number,
             month_name: inv.month_name || 'Current Month',
-            total_amount: Number(inv.total_amount) || 0,
-            paid_amount: Number(inv.paid_amount) || 0,
-            discount_amount: Number(inv.discount_amount) || 0,
+            total_amount: totalAmt,
+            paid_amount: paidAmt,
+            discount_amount: discAmt,
+            discount_code: inv.discount_code || null,
+            discount_type: inv.discount_type || null,
             fine_amount: Number(inv.fine_amount) || 0,
             due_date: inv.due_date,
-            status: inv.status || 'UNPAID',
+            status: (paidAmt + discAmt >= totalAmt) ? 'PAID' : (inv.status || 'UNPAID'),
             items: inv.items || [],
             created_at: inv.created_at,
             photo_url: stPhoto,
@@ -9539,11 +9558,16 @@ export class ApiService {
     const paymentMode = body.payment_mode || body.paymentMode || 'CASH';
     const txnRef = body.transaction_reference || body.transactionReference || '';
     const notes = body.remarks || body.notes || 'Fee payment received';
+    const discountApplied = Number(body.discount_applied ?? body.discountAmount ?? body.discount_amount) || 0;
+    const discountType = body.discount_type || body.discountType || (discountApplied > 0 ? 'PROMOCODE' : null);
+    const discountCode = body.discount_code || body.discountCode || null;
 
     // 1. Primary: collect_fee_payment RPC (Row-locked atomic settlement under RLS lockdown)
-    if (invoiceId && amountPaid > 0) {
+    // We send the 5 universal parameters to guarantee 100% compatibility across both 5-param and 8-param RPC definitions
+    // without triggering PGRST202 schema errors.
+    if (invoiceId && (amountPaid > 0 || discountApplied > 0)) {
       try {
-        const { data, error } = await this.supabase.rpc('collect_fee_payment', {
+        let { data, error } = await this.supabase.rpc('collect_fee_payment', {
           p_invoice_id: invoiceId,
           p_amount: amountPaid,
           p_payment_mode: paymentMode,
@@ -9551,8 +9575,67 @@ export class ApiService {
           p_notes: notes || null,
         });
 
+        // If the database has the new 8-param signature, try that if 5-param somehow fails
+        if (error && (error as any).code === 'PGRST202') {
+          const try8Rpc = await this.supabase.rpc('collect_fee_payment', {
+            p_invoice_id: invoiceId,
+            p_amount: amountPaid,
+            p_payment_mode: paymentMode,
+            p_transaction_reference: txnRef || null,
+            p_notes: notes || null,
+            p_discount_amount: discountApplied,
+            p_discount_type: discountType,
+            p_discount_code: discountCode,
+          });
+          data = try8Rpc.data;
+          error = try8Rpc.error;
+        }
+
+        // Apply discount attributes & auto-settle invoice
+        if (!error && discountApplied > 0) {
+          try {
+            const { data: inv } = await this.supabase
+              .from('student_fee_invoices')
+              .select('total_amount, paid_amount, discount_amount')
+              .eq('id', invoiceId)
+              .single();
+            if (inv) {
+              const total = Number(inv.total_amount) || 0;
+              const paid = Number(inv.paid_amount) || amountPaid;
+              const newDiscount = discountApplied;
+              const status = (paid + newDiscount) >= total ? 'PAID' : 'PARTIAL';
+              await this.supabase.from('student_fee_invoices').update({
+                discount_amount: newDiscount,
+                discount_code: discountCode,
+                discount_type: discountType,
+                status,
+                updated_at: new Date().toISOString(),
+              }).eq('id', invoiceId);
+
+              // Increment promo code usage count if coupon applied
+              if (discountCode) {
+                try {
+                  const { data: promo } = await this.supabase
+                    .from('fee_promocodes')
+                    .select('id, used_count')
+                    .ilike('code', discountCode.trim())
+                    .maybeSingle();
+                  if (promo) {
+                    await this.supabase
+                      .from('fee_promocodes')
+                      .update({ used_count: (Number(promo.used_count) || 0) + 1 })
+                      .eq('id', promo.id);
+                  }
+                } catch (pe) {}
+              }
+            }
+          } catch (patchErr) {}
+        }
+
         if (!error && data) {
           if (data.success === true) {
+            const effectiveRemainingDue = Math.max(0, (Number(data.remaining_due) || 0) - discountApplied);
+            const isSettled = effectiveRemainingDue === 0 || (amountPaid + discountApplied >= (Number(data.remaining_due || 0) + amountPaid));
             return {
               success: true,
               receiptNumber: data.receipt_number,
@@ -9561,9 +9644,13 @@ export class ApiService {
               invoice_id: data.invoice_id,
               amountPaid: Number(data.amount_paid) || amountPaid,
               amount_paid: Number(data.amount_paid) || amountPaid,
-              invoiceStatus: data.invoice_status,
-              status: data.invoice_status,
-              remainingDue: Number(data.remaining_due) || 0,
+              discountAmount: discountApplied,
+              discount_amount: discountApplied,
+              discountCode: discountCode,
+              discount_code: discountCode,
+              invoiceStatus: isSettled ? 'PAID' : (data.invoice_status || data.status),
+              status: isSettled ? 'PAID' : (data.invoice_status || data.status),
+              remainingDue: effectiveRemainingDue,
               paymentId: data.payment_id,
               payment_id: data.payment_id,
               message: data.message || 'Payment recorded successfully',
@@ -9598,6 +9685,9 @@ export class ApiService {
       academic_year_id: effectiveYearId,
       receipt_number: receiptNo,
       amount_paid: amountPaid,
+      discount_amount: discountApplied,
+      discount_code: discountCode,
+      discount_type: discountType,
       payment_mode: paymentMode,
       payment_date: body.payment_date || new Date().toISOString().split('T')[0],
       transaction_reference: txnRef,
@@ -9608,12 +9698,20 @@ export class ApiService {
     try {
       await this.supabase.from('fee_payments').insert(payload);
       if (invoiceId) {
-        const { data: inv } = await this.supabase.from('student_fee_invoices').select('total_amount, paid_amount').eq('id', invoiceId).single();
+        const { data: inv } = await this.supabase.from('student_fee_invoices').select('total_amount, paid_amount, discount_amount').eq('id', invoiceId).single();
         if (inv) {
           const newPaid = (Number(inv.paid_amount) || 0) + amountPaid;
+          const newDiscount = (Number(inv.discount_amount) || 0) + discountApplied;
           const total = Number(inv.total_amount) || 0;
-          const newStatus = newPaid >= total ? 'PAID' : (newPaid > 0 ? 'PARTIAL' : 'UNPAID');
-          await this.supabase.from('student_fee_invoices').update({ paid_amount: newPaid, status: newStatus }).eq('id', invoiceId);
+          const newStatus = (newPaid + newDiscount) >= total ? 'PAID' : ((newPaid > 0 || newDiscount > 0) ? 'PARTIAL' : 'UNPAID');
+          await this.supabase.from('student_fee_invoices').update({
+            paid_amount: newPaid,
+            discount_amount: newDiscount,
+            discount_code: discountCode,
+            discount_type: discountType,
+            status: newStatus,
+            updated_at: new Date().toISOString(),
+          }).eq('id', invoiceId);
         }
       }
     } catch (e) {}
@@ -9774,6 +9872,62 @@ export class ApiService {
           }
         }
 
+        // Enrich invoices with students' saved profile photos (directly from students table or cache)
+        const photosMap = (() => {
+          try {
+            return JSON.parse(localStorage.getItem('schoolsense_student_photos') || '{}');
+          } catch {
+            return {};
+          }
+        })();
+
+        const missingPhotoStudentIds = Array.from(new Set(
+          effectiveInvoices
+            .filter((inv: any) => !inv.photo_url && !inv.profile_image && !inv.avatar_url && !photosMap[inv.student_id]?.photoUrl && !photosMap[inv.student_id]?.photo_url)
+            .map((inv: any) => inv.student_id)
+            .filter(Boolean)
+        ));
+
+        if (missingPhotoStudentIds.length > 0) {
+          try {
+            const { data: dbStudents } = await this.supabase
+              .from('students')
+              .select('id, photo_url')
+              .in('id', missingPhotoStudentIds);
+            if (dbStudents && dbStudents.length > 0) {
+              dbStudents.forEach((st: any) => {
+                if (st.photo_url) {
+                  photosMap[st.id] = {
+                    ...(photosMap[st.id] || {}),
+                    photoUrl: st.photo_url,
+                    photo_url: st.photo_url,
+                    avatar_url: st.photo_url,
+                  };
+                }
+              });
+              try {
+                localStorage.setItem('schoolsense_student_photos', JSON.stringify(photosMap));
+              } catch {}
+            }
+          } catch {}
+        }
+
+        effectiveInvoices = effectiveInvoices.map((inv: any) => {
+          const photo = inv.photo_url
+            || inv.profile_image
+            || inv.avatar_url
+            || photosMap[inv.student_id]?.photoUrl
+            || photosMap[inv.student_id]?.photo_url
+            || photosMap[inv.student_id]?.avatar_url
+            || '';
+          return {
+            ...inv,
+            photo_url: photo,
+            profile_image: photo,
+            avatar_url: photo,
+          };
+        });
+
         return {
           overview: {
             totalBilled,
@@ -9813,13 +9967,72 @@ export class ApiService {
       fee_category_name: s.fee_category_name || s.category_name || 'Academic Fee',
     }));
 
+    const enrichedInvoices = (invoices || []).map((inv: any) => {
+      const photo = inv.photo_url || inv.profile_image || inv.avatar_url || '';
+      return {
+        ...inv,
+        photo_url: photo,
+        profile_image: photo,
+        avatar_url: photo,
+      };
+    });
+
     return {
       overview,
-      invoices,
+      invoices: enrichedInvoices,
       structures: mappedStructures,
       categories,
       classes,
     };
+  }
+
+  public async getStudentsPhotos(studentIds: string[]): Promise<Record<string, string>> {
+    if (!studentIds || studentIds.length === 0) return {};
+    const result: Record<string, string> = {};
+    const photosMap = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('schoolsense_student_photos') || '{}');
+      } catch {
+        return {};
+      }
+    })();
+
+    const toFetch: string[] = [];
+    studentIds.forEach((id) => {
+      const cached = photosMap[id]?.photoUrl || photosMap[id]?.photo_url || photosMap[id]?.avatar_url;
+      if (cached) {
+        result[id] = cached;
+      } else {
+        toFetch.push(id);
+      }
+    });
+
+    if (toFetch.length > 0) {
+      try {
+        const { data } = await this.supabase
+          .from('students')
+          .select('id, photo_url')
+          .in('id', toFetch);
+        if (data) {
+          data.forEach((s: any) => {
+            if (s.photo_url) {
+              result[s.id] = s.photo_url;
+              photosMap[s.id] = {
+                ...(photosMap[s.id] || {}),
+                photoUrl: s.photo_url,
+                photo_url: s.photo_url,
+                avatar_url: s.photo_url,
+              };
+            }
+          });
+          try {
+            localStorage.setItem('schoolsense_student_photos', JSON.stringify(photosMap));
+          } catch {}
+        }
+      } catch {}
+    }
+
+    return result;
   }
 
   // ==============================================================================
@@ -10225,6 +10438,27 @@ export class ApiService {
       // Table may not yet exist
     }
 
+    // Fetch surplus refunds for this student
+    let refunds: StudentFeeRefund[] = [];
+    try {
+      let refQuery = this.supabase
+        .from('student_fee_refunds')
+        .select('*')
+        .eq('student_id', studentId);
+      if (schoolId) {
+        refQuery = refQuery.eq('school_id', schoolId);
+      }
+      if (effectiveYearId) {
+        refQuery = refQuery.eq('academic_year_id', effectiveYearId);
+      }
+      const { data: refs, error: refErr } = await refQuery.order('refund_date', { ascending: true });
+      if (!refErr && refs && refs.length > 0) {
+        refunds = refs;
+      }
+    } catch (e) {
+      // Table may not yet exist
+    }
+
     // 1. Try secure RPC get_student_fee_ledger
     try {
       const { data, error } = await this.supabase.rpc('get_student_fee_ledger', {
@@ -10282,14 +10516,71 @@ export class ApiService {
           }
         }
 
+        // Ensure every invoice with discount_amount > 0 has a corresponding CONCESSION credit entry in ledgerEntries
+        let calculatedDiscount = totalDiscount;
+        if (Array.isArray(data.invoices)) {
+          const invDiscountTotal = data.invoices.reduce((sum: number, inv: any) => sum + (Number(inv.discount_amount) || 0), 0);
+          if (invDiscountTotal > calculatedDiscount) {
+            calculatedDiscount = invDiscountTotal;
+          }
+          data.invoices.forEach((inv: any) => {
+            const disc = Number(inv.discount_amount) || 0;
+            if (disc > 0) {
+              const code = (inv.discount_code || '').trim() || 'CONCESSION';
+              const alreadyHas = entries.some(e => 
+                (e.type === 'CONCESSION' || e.paymentMode === 'CONCESSION') && 
+                (e.referenceNumber === code || e.credit === disc)
+              );
+              if (!alreadyHas) {
+                const descr = inv.discount_code 
+                  ? `Fee Concession / Discount Applied (Coupon: ${inv.discount_code})`
+                  : (inv.discount_type ? `Fee Concession (${inv.discount_type})` : 'Fee Concession / Discount Applied');
+                entries.push({
+                  date: inv.updated_at ? inv.updated_at.split('T')[0] : (inv.created_at ? inv.created_at.split('T')[0] : todayStr),
+                  type: 'CONCESSION',
+                  referenceNumber: code,
+                  description: descr,
+                  debit: 0,
+                  credit: disc,
+                  runningBalance: 0,
+                  status: 'APPLIED',
+                  paymentMode: 'CONCESSION',
+                });
+              }
+            }
+          });
+        }
+
+        // Merge refunds into ledgerEntries if not already present
+        const refundsList = Array.isArray(data.refunds) && data.refunds.length > 0 ? data.refunds : refunds;
+        const totalRefunded = refundsList.reduce((sum: number, r: any) => sum + (Number(r.amount) || 0), 0);
+
+        const existingRefundRefs = new Set(entries.map(e => e.referenceNumber));
+        refundsList.forEach((rf: any) => {
+          const refNo = rf.voucher_number || rf.voucherNumber || `REF-${rf.id?.slice(0, 8)}`;
+          if (!existingRefundRefs.has(refNo)) {
+            entries.push({
+              date: rf.refund_date || (rf.created_at ? rf.created_at.split('T')[0] : todayStr),
+              type: 'REFUND',
+              referenceNumber: refNo,
+              description: `Surplus Advance Fee Refund (${rf.refund_mode || 'BANK_TRANSFER'}${rf.transaction_reference ? ' - ' + rf.transaction_reference : ''}: ${rf.reason || 'Surplus credit refund'})`,
+              debit: Number(rf.amount) || 0,
+              credit: 0,
+              runningBalance: 0,
+              status: rf.status || 'COMPLETED',
+              paymentMode: rf.refund_mode || 'BANK_TRANSFER',
+            });
+          }
+        });
+
         // Strict Chronological Passbook Sorting:
         // 1. Ascending by date
-        // 2. Same date: Debits (INVOICE / CHARGE, prio 1) appear BEFORE Payments (Credits, prio 2)
+        // 2. Same date: Debits (INVOICE / CHARGE, prio 1) appear BEFORE Concessions (prio 2), Payments (prio 3), and Refunds (prio 4)
         entries.sort((a, b) => {
           const cmp = (a.date || '').localeCompare(b.date || '');
           if (cmp !== 0) return cmp;
-          const prioA = (a.type === 'INVOICE' || a.type === 'CHARGE') ? 1 : 2;
-          const prioB = (b.type === 'INVOICE' || b.type === 'CHARGE') ? 1 : 2;
+          const prioA = (a.type === 'INVOICE' || a.type === 'CHARGE') ? 1 : (a.type === 'CONCESSION' ? 2 : (a.type === 'PAYMENT' ? 3 : 4));
+          const prioB = (b.type === 'INVOICE' || b.type === 'CHARGE') ? 1 : (b.type === 'CONCESSION' ? 2 : (b.type === 'PAYMENT' ? 3 : 4));
           return prioA - prioB;
         });
 
@@ -10309,8 +10600,8 @@ export class ApiService {
           };
         });
 
-        const pendingDue = Math.max(0, totalBilled - totalPaid);
-        const advanceBalance = Math.max(0, totalPaid - totalBilled);
+        const pendingDue = Math.max(0, (totalBilled + totalRefunded) - (totalPaid + calculatedDiscount));
+        const advanceBalance = Math.max(0, (totalPaid + calculatedDiscount) - (totalBilled + totalRefunded));
 
         const photosMap = (() => {
           try {
@@ -10342,12 +10633,14 @@ export class ApiService {
           annualConcessionPct: Number(data.annualConcessionPct || 0),
           totalBilled,
           totalPaid,
-          totalDiscount,
-          netBilled: Math.max(0, totalBilled - totalDiscount),
+          totalDiscount: calculatedDiscount,
+          totalRefunded,
+          netBilled: Math.max(0, totalBilled - calculatedDiscount),
           advanceBalance,
           pendingDue,
           invoices: data.invoices || [],
           payments: data.payments || [],
+          refunds: refundsList,
           ledgerEntries: entries,
           generatedAt: data.generatedAt || new Date().toISOString(),
         };
@@ -10483,6 +10776,24 @@ export class ApiService {
         sortPrio: 1,
       });
 
+      const discount = Number(inv.discount_amount) || 0;
+      if (discount > 0) {
+        const discCode = (inv.discount_code || '').trim() || 'CONCESSION';
+        rawList.push({
+          date: inv.updated_at ? inv.updated_at.split('T')[0] : invDate,
+          type: 'CONCESSION' as any,
+          referenceNumber: discCode,
+          description: inv.discount_code 
+            ? `Fee Concession / Discount Applied (Coupon: ${inv.discount_code})`
+            : (inv.discount_type ? `Fee Concession (${inv.discount_type})` : 'Fee Concession / Discount Applied'),
+          debit: 0,
+          credit: discount,
+          status: 'APPLIED',
+          paymentMode: 'CONCESSION',
+          sortPrio: 2,
+        });
+      }
+
       // Automatic Midnight Late Fee Dynamic Calculation (Flat or Daily)
       const isUnpaid = inv.status !== 'PAID' && (Number(inv.paid_amount) || 0) < (Number(inv.total_amount) || 0);
       const isLateFeeEnabled = feeRules?.enable_late_fee || false;
@@ -10525,9 +10836,6 @@ export class ApiService {
       ? payments.reduce((sum, p) => sum + (Number(p.amount_paid) || 0), 0)
       : invoices.reduce((sum, inv) => sum + (Number(inv.paid_amount) || 0), 0);
 
-    const advanceBalance = Math.max(0, totalPaid - totalBilled);
-    const pendingDue = Math.max(0, totalBilled - totalPaid);
-
     additionalCharges.forEach(chg => {
       const rawChgDate = chg.effective_date || (chg.created_at ? chg.created_at.split('T')[0] : todayStr);
       const chgDate = rawChgDate > todayStr ? (chg.created_at ? chg.created_at.split('T')[0] : todayStr) : rawChgDate;
@@ -10553,13 +10861,31 @@ export class ApiService {
         credit: Number(p.amount_paid) || 0,
         status: 'PAID',
         paymentMode: p.payment_mode,
-        sortPrio: 2,
+        sortPrio: 3,
       });
     });
 
+    refunds.forEach(rf => {
+      rawList.push({
+        date: rf.refund_date || (rf.created_at ? rf.created_at.split('T')[0] : todayStr),
+        type: 'REFUND' as any,
+        referenceNumber: rf.voucher_number || rf.voucherNumber || 'REFUND',
+        description: `Surplus Advance Fee Refund (${rf.refund_mode || 'BANK_TRANSFER'}${rf.transaction_reference ? ' - ' + rf.transaction_reference : ''}: ${rf.reason || 'Surplus credit refund'})`,
+        debit: Number(rf.amount) || 0,
+        credit: 0,
+        status: rf.status || 'COMPLETED',
+        paymentMode: rf.refund_mode || 'BANK_TRANSFER',
+        sortPrio: 4,
+      });
+    });
+
+    const totalRefunded = refunds.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    const advanceBalance = Math.max(0, (totalPaid + totalDiscount) - (totalBilled + totalRefunded));
+    const pendingDue = Math.max(0, (totalBilled + totalRefunded) - (totalPaid + totalDiscount));
+
     rawList.sort((a, b) => {
       const cmp = (a.date || '').localeCompare(b.date || '');
-      return cmp !== 0 ? cmp : a.sortPrio - b.sortPrio;
+      return cmp !== 0 ? cmp : (a.sortPrio || 1) - (b.sortPrio || 1);
     });
 
     let running = 0;
@@ -10596,11 +10922,13 @@ export class ApiService {
       totalBilled,
       totalPaid,
       totalDiscount,
+      totalRefunded,
       netBilled: Math.max(0, totalBilled - totalDiscount),
       advanceBalance,
       pendingDue,
       invoices,
       payments,
+      refunds,
       ledgerEntries,
       generatedAt: new Date().toISOString(),
     };
@@ -10711,6 +11039,167 @@ export class ApiService {
     }
 
     throw new Error('Database table or RPC update_student_fee_preference not yet applied in Supabase. Please run the SQL migration.');
+  }
+
+  public async issueStudentFeeRefund(body: {
+    studentId: string;
+    amount: number;
+    refundMode: 'BANK_TRANSFER' | 'UPI' | 'CASH' | 'CHEQUE';
+    transactionReference?: string;
+    reason: string;
+    academicYearId?: string;
+  }): Promise<{ success: boolean; voucherNumber?: string; voucher_number?: string; remainingAdvance?: number; message?: string; error?: string }> {
+    const schoolId = this.getSchoolId();
+    const studentId = body.studentId;
+    const amount = Number(body.amount) || 0;
+    const refundMode = body.refundMode || 'BANK_TRANSFER';
+    const txnRef = (body.transactionReference || '').trim();
+    const reason = (body.reason || 'Surplus advance fee refund').trim();
+    const effectiveYearId = body.academicYearId || (await this.getActiveAcademicYearId(schoolId));
+    const user = this.getCurrentUser();
+    const processedByName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'School Cashier';
+
+    if (amount <= 0) {
+      return { success: false, error: 'invalid_amount', message: 'Refund amount must be greater than zero.' };
+    }
+
+    // 1. Authoritative Advance Balance Check (Enforce: only extra or advance balance can be refunded)
+    const ledger = await this.getStudentFeeLedger(studentId, effectiveYearId);
+    const availableAdvance = Number(ledger.advanceBalance || 0);
+
+    if (availableAdvance <= 0) {
+      return {
+        success: false,
+        error: 'no_advance_balance',
+        message: 'This student does not have any surplus advance credit to refund.',
+      };
+    }
+
+    if (amount > availableAdvance) {
+      return {
+        success: false,
+        error: 'amount_exceeds_advance',
+        message: `Refund amount (₹${amount}) exceeds available advance credit (₹${availableAdvance}). Refunds can only be issued up to the surplus balance.`,
+      };
+    }
+
+    // 2. Try RPC issue_student_fee_refund
+    try {
+      const { data, error } = await this.supabase.rpc('issue_student_fee_refund', {
+        p_student_id: studentId,
+        p_amount: amount,
+        p_refund_mode: refundMode,
+        p_transaction_reference: txnRef || null,
+        p_reason: reason,
+        p_academic_year_id: effectiveYearId || null,
+      });
+
+      if (!error && data) {
+        if (data.success) {
+          return {
+            success: true,
+            voucherNumber: data.voucher_number || data.voucherNumber,
+            voucher_number: data.voucher_number || data.voucherNumber,
+            remainingAdvance: Number(data.remaining_advance ?? data.remainingAdvance) ?? Math.max(0, availableAdvance - amount),
+            message: data.message || `Refund of ₹${amount} processed successfully.`,
+          };
+        } else {
+          return {
+            success: false,
+            error: data.error || 'refund_rejected',
+            message: data.message || 'Refund was rejected by server.',
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('issue_student_fee_refund RPC exception:', e);
+    }
+
+    // 3. Resilient Direct Table Insertion (Offline / fallback)
+    const voucherNumber = `REF-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const payload = {
+      school_id: schoolId,
+      student_id: studentId,
+      academic_year_id: effectiveYearId || null,
+      voucher_number: voucherNumber,
+      amount,
+      refund_mode: refundMode,
+      transaction_reference: txnRef || null,
+      reason,
+      refund_date: new Date().toISOString().split('T')[0],
+      processed_by_user_id: user?.id || null,
+      processed_by_name: processedByName,
+      status: 'COMPLETED',
+    };
+
+    try {
+      const { data, error } = await this.supabase
+        .from('student_fee_refunds')
+        .insert(payload)
+        .select()
+        .single();
+
+      if (!error && data) {
+        return {
+          success: true,
+          voucherNumber: data.voucher_number,
+          voucher_number: data.voucher_number,
+          remainingAdvance: Math.max(0, availableAdvance - amount),
+          message: `Refund of ₹${amount} issued successfully. Voucher: ${data.voucher_number}`,
+        };
+      }
+    } catch (err: any) {
+      console.warn('student_fee_refunds direct table error:', err);
+    }
+
+    // Local storage fallback for dev/offline resilience
+    try {
+      const localKey = `schoolsense_fee_refunds_${schoolId}`;
+      const existing = JSON.parse(localStorage.getItem(localKey) || '[]');
+      existing.push({ ...payload, id: `local-${Date.now()}` });
+      localStorage.setItem(localKey, JSON.stringify(existing));
+      return {
+        success: true,
+        voucherNumber,
+        voucher_number: voucherNumber,
+        remainingAdvance: Math.max(0, availableAdvance - amount),
+        message: `Refund of ₹${amount} issued successfully. Voucher: ${voucherNumber}`,
+      };
+    } catch (e) {}
+
+    return { success: false, error: 'refund_failed', message: 'Failed to process refund.' };
+  }
+
+  public async getStudentFeeRefunds(studentId: string, academicYearId?: string): Promise<StudentFeeRefund[]> {
+    const schoolId = this.getSchoolId();
+    if (!schoolId || !studentId) return [];
+    const effectiveYearId = academicYearId || (await this.getActiveAcademicYearId(schoolId));
+
+    try {
+      let query = this.supabase
+        .from('student_fee_refunds')
+        .select('*')
+        .eq('school_id', schoolId)
+        .eq('student_id', studentId)
+        .order('refund_date', { ascending: false });
+
+      if (effectiveYearId) {
+        query = query.eq('academic_year_id', effectiveYearId);
+      }
+
+      const { data, error } = await query;
+      if (!error && data) {
+        return data as StudentFeeRefund[];
+      }
+    } catch (e) {}
+
+    try {
+      const localKey = `schoolsense_fee_refunds_${schoolId}`;
+      const existing = JSON.parse(localStorage.getItem(localKey) || '[]');
+      return existing.filter((r: any) => r.student_id === studentId);
+    } catch (e) {
+      return [];
+    }
   }
 
   public async getSchoolFeeRules(academicYearId?: string): Promise<SchoolFeeRules> {
@@ -11032,7 +11521,7 @@ export class ApiService {
     try {
       const { data, error } = await this.supabase.rpc('validate_and_apply_promocode', {
         p_code: cleanCode,
-        p_invoice_id: invoiceId || null,
+        p_invoice_id: null, // Always pass null to prevent premature mutation of invoice discount during validation preview
         p_amount: totalAmount,
       });
 

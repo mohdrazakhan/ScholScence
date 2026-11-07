@@ -34,6 +34,7 @@ export interface AggregatedStudentFeeRecord {
   photo_url?: string;
   totalBilled: number;
   totalPaid: number;
+  totalDiscount: number;
   outstandingDue: number;
   advanceCredit: number;
   status: 'PENDING DUE' | 'SETTLED' | 'ADVANCE';
@@ -397,6 +398,16 @@ export interface AggregatedStudentFeeRecord {
                               <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                             </svg>
                             <span>Send Fee Reminder</span>
+                          </button>
+
+                          <!-- Issue Advance Refund (if student has advance credit) -->
+                          <button *ngIf="st.advanceCredit > 0"
+                                  (click)="openRefundModalForStudent(st); closeActionDropdown()"
+                                  class="w-full px-3 py-2 text-emerald-700 hover:bg-emerald-50 flex items-center gap-2 cursor-pointer transition-colors font-medium border-t border-slate-100">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>Issue Advance Refund (₹{{ st.advanceCredit | number:'1.0-0' }})</span>
                           </button>
                         </div>
                       </div>
@@ -1320,6 +1331,12 @@ export interface AggregatedStudentFeeRecord {
 
               <!-- Top Actions -->
               <div class="flex items-center gap-2">
+                <button *ngIf="currentAvailableAdvance > 0"
+                        (click)="openRefundModal()" 
+                        class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 animate-pulse">
+                  <span>💸</span>
+                  <span>Issue Refund</span>
+                </button>
                 <button (click)="openAddChargeModal()" class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 border border-indigo-200">
                   <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
@@ -1370,35 +1387,42 @@ export interface AggregatedStudentFeeRecord {
               <!-- Card 4: Outstanding Due / Advance Credit -->
               <div class="p-3.5 rounded-2xl border"
                    [ngClass]="{
-                     'bg-emerald-50 border-emerald-300 text-emerald-950': ledgerPaidTotal > ledgerBilledTotal,
-                     'bg-rose-50 border-rose-300 text-rose-950': ledgerBilledTotal > ledgerPaidTotal,
-                     'bg-slate-50 border-slate-200 text-slate-900': ledgerPaidTotal === ledgerBilledTotal
+                     'bg-emerald-50 border-emerald-300 text-emerald-950': currentAvailableAdvance > 0,
+                     'bg-rose-50 border-rose-300 text-rose-950': (ledgerBilledTotal + ledgerRefundTotal) > (ledgerPaidTotal + ledgerDiscountTotal),
+                     'bg-slate-50 border-slate-200 text-slate-900': currentAvailableAdvance === 0 && (ledgerBilledTotal + ledgerRefundTotal) === (ledgerPaidTotal + ledgerDiscountTotal)
                    }">
                 <div class="text-[11px] font-bold uppercase tracking-wider flex items-center justify-between">
-                  <span>{{ ledgerPaidTotal > ledgerBilledTotal ? 'Advance Credit' : (ledgerBilledTotal > ledgerPaidTotal ? 'Outstanding Due' : 'Account Status') }}</span>
-                  <span *ngIf="ledgerPaidTotal > ledgerBilledTotal" class="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-600 text-white font-bold">
+                  <span>{{ currentAvailableAdvance > 0 ? 'Advance Credit' : ((ledgerBilledTotal + ledgerRefundTotal) > (ledgerPaidTotal + ledgerDiscountTotal) ? 'Outstanding Due' : 'Account Status') }}</span>
+                  <span *ngIf="currentAvailableAdvance > 0" class="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-600 text-white font-bold">
                     ADVANCE
                   </span>
-                  <span *ngIf="ledgerBilledTotal > ledgerPaidTotal" class="text-[10px] px-1.5 py-0.5 rounded-md bg-rose-600 text-white font-bold">
+                  <span *ngIf="(ledgerBilledTotal + ledgerRefundTotal) > (ledgerPaidTotal + ledgerDiscountTotal)" class="text-[10px] px-1.5 py-0.5 rounded-md bg-rose-600 text-white font-bold">
                     PENDING DUE
                   </span>
-                  <span *ngIf="ledgerPaidTotal === ledgerBilledTotal" class="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-600 text-white font-bold">
+                  <span *ngIf="currentAvailableAdvance === 0 && (ledgerBilledTotal + ledgerRefundTotal) === (ledgerPaidTotal + ledgerDiscountTotal)" class="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-600 text-white font-bold">
                     SETTLED
                   </span>
                 </div>
                 <div class="text-xl font-black mt-1"
-                     [ngClass]="ledgerPaidTotal > ledgerBilledTotal ? 'text-emerald-700' : (ledgerBilledTotal > ledgerPaidTotal ? 'text-rose-600' : 'text-slate-800')">
-                  <span *ngIf="ledgerPaidTotal > ledgerBilledTotal" class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-lg border border-emerald-200 text-base font-black">
-                    +₹{{ (ledgerPaidTotal - ledgerBilledTotal) | number:'1.0-0' }}
+                     [ngClass]="currentAvailableAdvance > 0 ? 'text-emerald-700' : ((ledgerBilledTotal + ledgerRefundTotal) > (ledgerPaidTotal + ledgerDiscountTotal) ? 'text-rose-600' : 'text-slate-800')">
+                  <span *ngIf="currentAvailableAdvance > 0" class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-lg border border-emerald-200 text-base font-black">
+                    +₹{{ currentAvailableAdvance | number:'1.0-0' }}
                   </span>
-                  <span *ngIf="ledgerBilledTotal > ledgerPaidTotal">₹{{ (ledgerBilledTotal - ledgerPaidTotal) | number:'1.0-0' }}</span>
-                  <span *ngIf="ledgerPaidTotal === ledgerBilledTotal">₹0.00</span>
+                  <span *ngIf="(ledgerBilledTotal + ledgerRefundTotal) > (ledgerPaidTotal + ledgerDiscountTotal)">₹{{ ((ledgerBilledTotal + ledgerRefundTotal) - (ledgerPaidTotal + ledgerDiscountTotal)) | number:'1.0-0' }}</span>
+                  <span *ngIf="currentAvailableAdvance === 0 && (ledgerBilledTotal + ledgerRefundTotal) === (ledgerPaidTotal + ledgerDiscountTotal)">₹0.00</span>
                 </div>
-                <div class="text-[10px] mt-0.5" [ngClass]="ledgerPaidTotal > ledgerBilledTotal ? 'text-emerald-700' : (ledgerBilledTotal > ledgerPaidTotal ? 'text-rose-600' : 'text-slate-500')">
-                  <span *ngIf="ledgerPaidTotal > ledgerBilledTotal">Student has advance credit on account</span>
-                  <span *ngIf="ledgerBilledTotal > ledgerPaidTotal">Pending balance due for payment</span>
-                  <span *ngIf="ledgerPaidTotal === ledgerBilledTotal">Zero outstanding dues</span>
+                <div class="text-[10px] mt-0.5" [ngClass]="currentAvailableAdvance > 0 ? 'text-emerald-700' : ((ledgerBilledTotal + ledgerRefundTotal) > (ledgerPaidTotal + ledgerDiscountTotal) ? 'text-rose-600' : 'text-slate-500')">
+                  <span *ngIf="currentAvailableAdvance > 0">Student has advance credit on account</span>
+                  <span *ngIf="(ledgerBilledTotal + ledgerRefundTotal) > (ledgerPaidTotal + ledgerDiscountTotal)">Pending balance due for payment</span>
+                  <span *ngIf="currentAvailableAdvance === 0 && (ledgerBilledTotal + ledgerRefundTotal) === (ledgerPaidTotal + ledgerDiscountTotal)">Zero outstanding dues</span>
                 </div>
+                <button *ngIf="currentAvailableAdvance > 0"
+                        (click)="openRefundModal()"
+                        type="button"
+                        class="mt-2.5 w-full py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95">
+                  <span>💸</span>
+                  <span>Refund Advance (₹{{ currentAvailableAdvance | number:'1.0-0' }})</span>
+                </button>
               </div>
             </div>
 
@@ -1504,7 +1528,7 @@ export interface AggregatedStudentFeeRecord {
                       <td class="py-2.5 px-3">
                         <div class="flex items-center gap-1.5 flex-wrap">
                           <span class="px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0"
-                                [ngClass]="item.referenceNumber?.startsWith('FINE-') ? 'bg-amber-50 text-amber-800 border border-amber-300' : (item.type === 'INVOICE' || item.type === 'CHARGE' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200')">
+                                [ngClass]="item.referenceNumber?.startsWith('FINE-') ? 'bg-amber-50 text-amber-800 border border-amber-300' : (item.type === 'REFUND' ? 'bg-amber-100 text-amber-800 border border-amber-400 font-black' : (item.type === 'INVOICE' || item.type === 'CHARGE' ? 'bg-rose-50 text-rose-700 border border-rose-200' : ((item.type === 'CONCESSION' || item.paymentMode === 'CONCESSION') ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200')))">
                             {{ item.referenceNumber?.startsWith('FINE-') ? 'LATE FINE' : item.type }}
                           </span>
                           <span>{{ item.description }}</span>
@@ -1548,13 +1572,13 @@ export interface AggregatedStudentFeeRecord {
                         ₹{{ ledgerPaidTotal | number:'1.0-0' }}
                       </td>
                       <td class="py-2.5 px-3 text-right font-mono font-black whitespace-nowrap">
-                        <span *ngIf="ledgerBilledTotal > ledgerPaidTotal" class="text-rose-600">
-                          ₹{{ (ledgerBilledTotal - ledgerPaidTotal) | number:'1.0-0' }} (Due)
+                        <span *ngIf="ledgerBilledTotal > (ledgerPaidTotal + ledgerDiscountTotal)" class="text-rose-600">
+                          ₹{{ (ledgerBilledTotal - (ledgerPaidTotal + ledgerDiscountTotal)) | number:'1.0-0' }} (Due)
                         </span>
-                        <span *ngIf="ledgerPaidTotal > ledgerBilledTotal" class="inline-flex items-center text-[11px] text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">
-                          +₹{{ (ledgerPaidTotal - ledgerBilledTotal) | number:'1.0-0' }} (Adv)
+                        <span *ngIf="(ledgerPaidTotal + ledgerDiscountTotal) > ledgerBilledTotal" class="inline-flex items-center text-[11px] text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">
+                          +₹{{ ((ledgerPaidTotal + ledgerDiscountTotal) - ledgerBilledTotal) | number:'1.0-0' }} (Adv)
                         </span>
-                        <span *ngIf="ledgerBilledTotal === ledgerPaidTotal" class="text-slate-500">
+                        <span *ngIf="ledgerBilledTotal === (ledgerPaidTotal + ledgerDiscountTotal)" class="text-slate-500">
                           ₹0.00 (Settled)
                         </span>
                       </td>
@@ -1662,6 +1686,124 @@ export interface AggregatedStudentFeeRecord {
             </button>
           </div>
 
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- SUB-MODAL: ISSUE STUDENT FEE SURPLUS REFUND                    -->
+      <!-- ============================================================== -->
+      <div *ngIf="showRefundModal" class="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-6 bg-slate-950/70 backdrop-blur-xs overflow-hidden">
+        <div class="fixed inset-0" (click)="closeRefundModal()"></div>
+        <div class="relative bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-200/90 z-10 animate-scaleUp flex flex-col max-h-[90vh] overflow-hidden">
+          
+          <!-- Header -->
+          <div class="p-5 sm:px-6 sm:pt-6 sm:pb-3 border-b border-slate-100 shrink-0 bg-white flex items-center justify-between">
+            <div>
+              <span class="text-[10px] font-black uppercase tracking-wider text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-300">
+                SURPLUS ADVANCE REFUND
+              </span>
+              <h3 class="font-black text-slate-900 text-base mt-1">Issue Fee Refund</h3>
+              <p class="text-xs text-slate-500 mt-0.5">Disburse surplus credit or scholarship overpayments back to the parent/student.</p>
+            </div>
+            <button (click)="closeRefundModal()" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Body -->
+          <div class="p-5 sm:p-6 overflow-y-auto flex-1 space-y-4 text-xs">
+            <!-- Student Context -->
+            <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
+              <div>
+                <div class="font-bold text-slate-900 text-xs">{{ activeLedgerStudent?.student_name }}</div>
+                <div class="text-[10px] text-slate-500 font-mono">Adm: {{ activeLedgerStudent?.admission_number }} | {{ activeLedgerStudent?.class_name }} - {{ activeLedgerStudent?.section_name }}</div>
+              </div>
+              <div class="text-right">
+                <div class="text-[10px] uppercase font-bold text-emerald-700">Available Advance</div>
+                <div class="text-sm font-black text-emerald-700 font-mono">+₹{{ currentAvailableAdvance | number:'1.0-0' }}</div>
+              </div>
+            </div>
+
+            <!-- Error Banner -->
+            <div *ngIf="refundError" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs flex items-center gap-2">
+              <svg class="w-4 h-4 text-rose-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+              <span>{{ refundError }}</span>
+            </div>
+
+            <!-- Policy Warning -->
+            <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-[11px] leading-relaxed flex items-start gap-2">
+              <span class="text-sm">⚠️</span>
+              <span><strong>Policy Constraint:</strong> Refunds can only be issued up to the available surplus advance balance of <strong>₹{{ currentAvailableAdvance | number:'1.0-0' }}</strong>. Amounts exceeding this cannot be processed.</span>
+            </div>
+
+            <div class="space-y-3">
+              <!-- Refund Amount -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="font-bold text-slate-700">Refund Amount (INR ₹) *</label>
+                  <button type="button" (click)="refundForm.amount = currentAvailableAdvance" class="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer">
+                    Refund Full Advance (₹{{ currentAvailableAdvance }})
+                  </button>
+                </div>
+                <div class="relative">
+                  <span class="absolute left-3 top-2.5 font-bold text-slate-400">₹</span>
+                  <input type="number" 
+                         [(ngModel)]="refundForm.amount" 
+                         min="1" 
+                         [max]="currentAvailableAdvance"
+                         placeholder="Enter refund amount" 
+                         class="w-full pl-7 pr-3 py-2 bg-slate-50 border rounded-xl font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                         [ngClass]="(refundForm.amount > currentAvailableAdvance || refundForm.amount <= 0) ? 'border-rose-300 bg-rose-50/50' : 'border-slate-200'" />
+                </div>
+                <span *ngIf="refundForm.amount > currentAvailableAdvance" class="text-[10px] text-rose-600 font-bold block mt-1">
+                  Amount exceeds maximum refundable advance of ₹{{ currentAvailableAdvance }}.
+                </span>
+              </div>
+
+              <!-- Refund Mode -->
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Refund Payment Mode *</label>
+                <select [(ngModel)]="refundForm.refund_mode" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20">
+                  <option value="BANK_TRANSFER">Direct Bank Transfer / NEFT / RTGS</option>
+                  <option value="UPI">UPI / Instant QR Remittance</option>
+                  <option value="CASH">Cash Disbursement (Cashier Counter)</option>
+                  <option value="CHEQUE">Account Payee Cheque</option>
+                </select>
+              </div>
+
+              <!-- Transaction Reference -->
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Transaction Ref / Cheque No / UTR</label>
+                <input type="text" [(ngModel)]="refundForm.transaction_reference" placeholder="e.g. UTR-9876543210 or Cheque #102938" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20" />
+              </div>
+
+              <!-- Reason / Remarks -->
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Refund Reason / Remarks *</label>
+                <input type="text" [(ngModel)]="refundForm.reason" placeholder="e.g. Surplus credit refund after Merit Scholarship" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer Actions -->
+          <div class="p-4 sm:px-6 border-t border-slate-100 shrink-0 flex items-center justify-between bg-slate-50/50">
+            <button (click)="closeRefundModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer transition-colors">
+              Cancel
+            </button>
+            <button (click)="submitRefund()" 
+                    [disabled]="processingRefund || !refundForm.amount || refundForm.amount <= 0 || refundForm.amount > currentAvailableAdvance" 
+                    class="px-5 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
+              <svg *ngIf="processingRefund" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>{{ processingRefund ? 'Processing...' : 'Confirm & Issue Refund' }}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -2010,6 +2152,7 @@ export class FeesComponent implements OnInit {
   ledgerBilledTotal = 0;
   ledgerPaidTotal = 0;
   ledgerDiscountTotal = 0;
+  ledgerRefundTotal = 0;
   ledgerNetBalance = 0;
   ledgerInvoicesCount = 0;
   selectedBillingFrequency: 'MONTHLY' | 'QUARTERLY' | 'ANNUAL' = 'MONTHLY';
@@ -2017,6 +2160,22 @@ export class FeesComponent implements OnInit {
   annualDiscountApplied = false;
   feePreferenceNotes: string = '';
   savingPreference = false;
+
+  // Fee Refund Modal State
+  showRefundModal = false;
+  processingRefund = false;
+  refundError = '';
+  refundForm = {
+    amount: 0,
+    refund_mode: 'BANK_TRANSFER' as 'BANK_TRANSFER' | 'UPI' | 'CASH' | 'CHEQUE',
+    transaction_reference: '',
+    reason: 'Surplus advance credit refund',
+  };
+
+  get currentAvailableAdvance(): number {
+    const net = (this.ledgerPaidTotal + this.ledgerDiscountTotal) - (this.ledgerBilledTotal + this.ledgerRefundTotal);
+    return Math.max(0, net);
+  }
 
   // School Fee Rules & Late Fee Policy State
   schoolFeeRules: SchoolFeeRules = {
@@ -2364,6 +2523,7 @@ export class FeesComponent implements OnInit {
           photo_url: studentPhoto,
           totalBilled: 0,
           totalPaid: 0,
+          totalDiscount: 0,
           outstandingDue: 0,
           advanceCredit: 0,
           status: 'SETTLED',
@@ -2390,19 +2550,21 @@ export class FeesComponent implements OnInit {
       record.invoicesCount++;
       record.totalBilled += Number(inv.total_amount) || 0;
       record.totalPaid += Number(inv.paid_amount) || 0;
-      if (inv.status !== 'PAID' && (Number(inv.total_amount) - Number(inv.paid_amount)) > 0) {
+      record.totalDiscount += Number(inv.discount_amount) || 0;
+      if (inv.status !== 'PAID' && (Number(inv.total_amount) - (Number(inv.paid_amount) + Number(inv.discount_amount || 0))) > 0) {
         record.primaryInvoice = inv;
       }
     }
 
     const list = Array.from(studentMap.values()).map((st) => {
-      if (st.totalBilled > st.totalPaid) {
-        st.outstandingDue = st.totalBilled - st.totalPaid;
+      const netSettled = st.totalPaid + (st.totalDiscount || 0);
+      if (st.totalBilled > netSettled) {
+        st.outstandingDue = st.totalBilled - netSettled;
         st.advanceCredit = 0;
         st.status = 'PENDING DUE';
-      } else if (st.totalPaid > st.totalBilled) {
+      } else if (netSettled > st.totalBilled) {
         st.outstandingDue = 0;
-        st.advanceCredit = st.totalPaid - st.totalBilled;
+        st.advanceCredit = netSettled - st.totalBilled;
         st.status = 'ADVANCE';
       } else {
         st.outstandingDue = 0;
@@ -2762,11 +2924,20 @@ export class FeesComponent implements OnInit {
       next: (res) => {
         if (res) {
           this.overview = res.overview || null;
-          this.invoices = res.invoices || [];
+          this.invoices = (res.invoices || []).map((inv: any) => {
+            const photo = inv.photo_url || inv.profile_image || inv.avatar_url || this.resolveStudentPhotoLocal(inv.student_id);
+            return {
+              ...inv,
+              photo_url: photo,
+              profile_image: photo,
+              avatar_url: photo,
+            };
+          });
           this.structures = res.structures || [];
           this.classes = res.classes || [];
           this.categories = res.categories || [];
           this.populateMatrixGrid();
+          this.enrichStudentPhotos();
         }
         this.loadingOverview = false;
         this.loadingInvoices = false;
@@ -3385,7 +3556,7 @@ export class FeesComponent implements OnInit {
     this.promoAppliedMessage = '';
 
     try {
-      const res = await this.api.validateAndApplyPromocode(code, this.collectForm.invoice_id, this.originalDueAmount);
+      const res = await this.api.validateAndApplyPromocode(code, null, this.originalDueAmount);
       if (res.success) {
         const discountAmt = Math.min(res.discountAmount, this.originalDueAmount);
         this.appliedDiscount = {
@@ -3452,6 +3623,13 @@ export class FeesComponent implements OnInit {
         this.loadDayBook();
         const inv = this.invoices.find((i) => i.id === this.collectForm.invoice_id);
         if (inv) {
+          if (this.appliedDiscount.amount > 0) {
+            inv.discount_amount = this.appliedDiscount.amount;
+            inv.discount_code = this.appliedDiscount.code || 'COUPON';
+            inv.discount_type = this.appliedDiscount.type;
+          }
+          inv.paid_amount = (Number(inv.paid_amount) || 0) + this.collectForm.amount_paid;
+          inv.status = ((Number(inv.paid_amount) || 0) + (Number(inv.discount_amount) || 0) >= (Number(inv.total_amount) || 0)) ? 'PAID' : 'PARTIAL';
           this.printFeeReceipt(inv, receiptNo, this.collectForm.amount_paid);
         }
       } else {
@@ -3638,6 +3816,30 @@ export class FeesComponent implements OnInit {
     return '';
   }
 
+  async enrichStudentPhotos() {
+    const missingIds = Array.from(new Set(
+      this.invoices
+        .filter((inv) => !inv.photo_url && !inv.profile_image && !inv.avatar_url && !this.resolveStudentPhotoLocal(inv.student_id))
+        .map((inv) => inv.student_id)
+        .filter(Boolean)
+    ));
+
+    if (missingIds.length === 0) return;
+
+    try {
+      const photos = await this.api.getStudentsPhotos(missingIds);
+      if (photos && Object.keys(photos).length > 0) {
+        this.invoices = this.invoices.map((inv) => {
+          const ph = photos[inv.student_id] || inv.photo_url || inv.profile_image || '';
+          if (ph && !inv.photo_url) {
+            return { ...inv, photo_url: ph, profile_image: ph, avatar_url: ph };
+          }
+          return inv;
+        });
+      }
+    } catch {}
+  }
+
   async openStudentLedgerModal(inv: StudentFeeInvoice) {
     if (!inv.profile_image && !inv.avatar_url && !inv.photo_url) {
       const ph = this.resolveStudentPhotoLocal(inv.student_id);
@@ -3650,6 +3852,7 @@ export class FeesComponent implements OnInit {
     this.activeLedgerStudent = inv;
     this.showLedgerModal = true;
     this.loadingLedger = true;
+    this.ledgerRefundTotal = 0;
     this.selectedBillingFrequency = 'MONTHLY';
     this.annualConcessionPct = 10;
     this.annualDiscountApplied = false;
@@ -3674,21 +3877,25 @@ export class FeesComponent implements OnInit {
           this.ledgerBilledTotal = statement.totalBilled;
           this.ledgerPaidTotal = statement.totalPaid;
           this.ledgerDiscountTotal = statement.totalDiscount || 0;
+          this.ledgerRefundTotal = statement.totalRefunded || 0;
           this.ledgerNetBalance = statement.advanceBalance > 0 ? statement.advanceBalance : -statement.pendingDue;
           this.selectedBillingFrequency = statement.frequencyPreference || 'MONTHLY';
           this.annualConcessionPct = statement.annualConcessionPct || 10;
           this.annualDiscountApplied = (statement.annualConcessionPct || 0) > 0;
         } else {
           const payments = await this.api.getStudentFeePayments(inv.student_id);
-          this.buildStudentLedger(studentInvoices, payments);
+          const refunds = await this.api.getStudentFeeRefunds(inv.student_id);
+          this.buildStudentLedger(studentInvoices, payments, refunds);
         }
       } else {
         const payments = await this.api.getStudentFeePayments(inv.student_id);
-        this.buildStudentLedger(studentInvoices, payments);
+        const refunds = await this.api.getStudentFeeRefunds(inv.student_id);
+        this.buildStudentLedger(studentInvoices, payments, refunds);
       }
     } catch {
       const payments = await this.api.getStudentFeePayments(inv.student_id);
-      this.buildStudentLedger(studentInvoices, payments);
+      const refunds = await this.api.getStudentFeeRefunds(inv.student_id);
+      this.buildStudentLedger(studentInvoices, payments, refunds);
     } finally {
       this.loadingLedger = false;
     }
@@ -3700,13 +3907,13 @@ export class FeesComponent implements OnInit {
     this.ledgerEntries = [];
   }
 
-  buildStudentLedger(invoices: StudentFeeInvoice[], payments: any[]) {
+  buildStudentLedger(invoices: StudentFeeInvoice[], payments: any[], refunds: any[] = []) {
     const rawItems: Array<{
       date: string;
       sortPrio?: number;
       reference: string;
       description: string;
-      type: 'INVOICE' | 'PAYMENT' | 'CHARGE';
+      type: 'INVOICE' | 'PAYMENT' | 'CHARGE' | 'CONCESSION' | 'REFUND';
       mode?: string;
       status?: string;
       debit: number;
@@ -3721,7 +3928,11 @@ export class FeesComponent implements OnInit {
     if (invoices && invoices.length > 0) {
       invoices.forEach((inv) => {
         const amount = Number(inv.total_amount) || 0;
-        const discount = Number(inv.discount_amount) || 0;
+        let discount = Number(inv.discount_amount) || 0;
+        const paid = Number(inv.paid_amount) || 0;
+        if (paid > 0 && discount > 0 && (paid + discount) > amount) {
+          discount = Math.max(0, amount - paid);
+        }
         totalBilled += amount;
         totalDiscount += discount;
         const invDate = this.api.resolveTransactionDate(inv, inv.due_date);
@@ -3736,6 +3947,24 @@ export class FeesComponent implements OnInit {
           debit: amount,
           credit: 0,
         });
+
+        if (discount > 0) {
+          const discCode = (inv.discount_code || '').trim() || 'CONCESSION';
+          const discLabel = inv.discount_code
+            ? `Fee Concession / Discount Applied (Coupon: ${inv.discount_code})`
+            : (inv.discount_type ? `Fee Concession (${inv.discount_type})` : 'Fee Concession / Discount Applied');
+          rawItems.push({
+            date: inv.updated_at ? inv.updated_at.split('T')[0] : invDate,
+            sortPrio: 2,
+            reference: discCode,
+            description: discLabel,
+            type: 'CONCESSION' as any,
+            mode: 'CONCESSION',
+            status: 'APPLIED',
+            debit: 0,
+            credit: discount,
+          });
+        }
       });
     } else {
       // April-to-March Indian Academic Session schedule alignment
@@ -3829,7 +4058,7 @@ export class FeesComponent implements OnInit {
         const pDate = (p.payment_date || p.created_at || new Date().toISOString()).split('T')[0];
         rawItems.push({
           date: pDate,
-          sortPrio: 2,
+          sortPrio: 3,
           reference: p.receipt_number || 'REC-DIRECT',
           description: `Fee Payment Received (${p.remarks || 'Cashier Desk'})`,
           type: 'PAYMENT',
@@ -3847,7 +4076,7 @@ export class FeesComponent implements OnInit {
           const pDate = (inv.created_at || new Date().toISOString()).split('T')[0];
           rawItems.push({
             date: pDate,
-            sortPrio: 2,
+            sortPrio: 3,
             reference: `REC-${inv.invoice_number}`,
             description: `Fee Payment Received (${inv.month_name || 'Settled'})`,
             type: 'PAYMENT',
@@ -3857,6 +4086,27 @@ export class FeesComponent implements OnInit {
             credit: paid,
           });
         }
+      });
+    }
+
+    // 3. Debits from surplus refunds disbursed to parents
+    let totalRefunded = 0;
+    if (refunds && refunds.length > 0) {
+      refunds.forEach((rf) => {
+        const amt = Number(rf.amount) || 0;
+        totalRefunded += amt;
+        const rfDate = (rf.refund_date || rf.created_at || new Date().toISOString()).split('T')[0];
+        rawItems.push({
+          date: rfDate,
+          sortPrio: 4,
+          reference: rf.voucher_number || rf.voucherNumber || 'REFUND',
+          description: `Surplus Advance Fee Refund (${rf.refund_mode || 'BANK_TRANSFER'}${rf.transaction_reference ? ' - ' + rf.transaction_reference : ''}: ${rf.reason || 'Surplus credit refund'})`,
+          type: 'REFUND',
+          mode: rf.refund_mode || 'BANK_TRANSFER',
+          status: rf.status || 'COMPLETED',
+          debit: amt,
+          credit: 0,
+        });
       });
     }
 
@@ -3886,7 +4136,12 @@ export class FeesComponent implements OnInit {
     this.ledgerBilledTotal = totalBilled;
     this.ledgerPaidTotal = totalPaid;
     this.ledgerDiscountTotal = totalDiscount;
-    this.ledgerNetBalance = totalBilled - totalPaid;
+    this.ledgerRefundTotal = totalRefunded;
+    const effectiveDebits = totalBilled + totalRefunded;
+    const effectiveCredits = totalPaid + totalDiscount;
+    this.ledgerNetBalance = effectiveCredits > effectiveDebits
+      ? (effectiveCredits - effectiveDebits)
+      : -(effectiveDebits - effectiveCredits);
   }
 
   calculateAnnualConcessionSavings(): number {
@@ -3934,7 +4189,7 @@ export class FeesComponent implements OnInit {
       <tr>
         <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0;">${new Date(e.date).toLocaleDateString('en-GB')}</td>
         <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0;">
-          <span style="display:inline-block; font-size:9px; font-weight:bold; padding:1px 5px; border-radius:3px; margin-right:6px; background:${e.referenceNumber?.startsWith('FINE-') ? '#fef3c7' : (e.type === 'INVOICE' || e.type === 'CHARGE' ? '#fff1f2' : '#ecfdf5')}; color:${e.referenceNumber?.startsWith('FINE-') ? '#92400e' : (e.type === 'INVOICE' || e.type === 'CHARGE' ? '#dc2626' : '#16a34a')}; border:1px solid ${e.referenceNumber?.startsWith('FINE-') ? '#fcd34d' : (e.type === 'INVOICE' || e.type === 'CHARGE' ? '#fecdd3' : '#a7f3d0')};">${e.referenceNumber?.startsWith('FINE-') ? 'LATE FINE' : e.type}</span>
+          <span style="display:inline-block; font-size:9px; font-weight:bold; padding:1px 5px; border-radius:3px; margin-right:6px; background:${e.referenceNumber?.startsWith('FINE-') ? '#fef3c7' : (e.type === 'INVOICE' || e.type === 'CHARGE' ? '#fff1f2' : (e.type === 'CONCESSION' ? '#faf5ff' : '#ecfdf5'))}; color:${e.referenceNumber?.startsWith('FINE-') ? '#92400e' : (e.type === 'INVOICE' || e.type === 'CHARGE' ? '#dc2626' : (e.type === 'CONCESSION' ? '#6d28d9' : '#16a34a'))}; border:1px solid ${e.referenceNumber?.startsWith('FINE-') ? '#fcd34d' : (e.type === 'INVOICE' || e.type === 'CHARGE' ? '#fecdd3' : (e.type === 'CONCESSION' ? '#ddd6fe' : '#a7f3d0'))};">${e.referenceNumber?.startsWith('FINE-') ? 'LATE FINE' : e.type}</span>
           ${e.description}
         </td>
         <td style="padding:6px 8px; border-bottom:1px solid #e2e8f0; font-family:monospace; font-weight:bold;">${e.referenceNumber}</td>
@@ -3947,16 +4202,17 @@ export class FeesComponent implements OnInit {
     `;
     }).join('');
 
-    const netClosingBal = this.ledgerBilledTotal > this.ledgerPaidTotal
-      ? `<span style="color:#dc2626; font-weight:bold;">₹${(this.ledgerBilledTotal - this.ledgerPaidTotal).toLocaleString()} (Due)</span>`
-      : (this.ledgerPaidTotal > this.ledgerBilledTotal
-        ? `<span style="color:#16a34a; font-weight:bold;">+₹${(this.ledgerPaidTotal - this.ledgerBilledTotal).toLocaleString()} (Adv)</span>`
+    const effectiveCredits = this.ledgerPaidTotal + this.ledgerDiscountTotal;
+    const netClosingBal = this.ledgerBilledTotal > effectiveCredits
+      ? `<span style="color:#dc2626; font-weight:bold;">₹${(this.ledgerBilledTotal - effectiveCredits).toLocaleString()} (Due)</span>`
+      : (effectiveCredits > this.ledgerBilledTotal
+        ? `<span style="color:#16a34a; font-weight:bold;">+₹${(effectiveCredits - this.ledgerBilledTotal).toLocaleString()} (Adv)</span>`
         : '<span style="color:#64748b; font-weight:bold;">₹0.00 (Settled)</span>');
 
-    const netBadge = this.ledgerPaidTotal > this.ledgerBilledTotal
-      ? `<span style="color:#16a34a; font-weight:bold; background:#ecfdf5; padding:2px 8px; border-radius:4px; border:1px solid #a7f3d0;">+₹${(this.ledgerPaidTotal - this.ledgerBilledTotal).toLocaleString()} (Advance Credit)</span>`
-      : (this.ledgerBilledTotal > this.ledgerPaidTotal
-        ? `<span style="color:#dc2626; font-weight:bold; background:#fff1f2; padding:2px 8px; border-radius:4px; border:1px solid #fecdd3;">₹${(this.ledgerBilledTotal - this.ledgerPaidTotal).toLocaleString()} (Outstanding Due)</span>`
+    const netBadge = effectiveCredits > this.ledgerBilledTotal
+      ? `<span style="color:#16a34a; font-weight:bold; background:#ecfdf5; padding:2px 8px; border-radius:4px; border:1px solid #a7f3d0;">+₹${(effectiveCredits - this.ledgerBilledTotal).toLocaleString()} (Advance Credit)</span>`
+      : (this.ledgerBilledTotal > effectiveCredits
+        ? `<span style="color:#dc2626; font-weight:bold; background:#fff1f2; padding:2px 8px; border-radius:4px; border:1px solid #fecdd3;">₹${(this.ledgerBilledTotal - effectiveCredits).toLocaleString()} (Outstanding Due)</span>`
         : '<span style="color:#475569; font-weight:bold;">Settled (₹0.00)</span>');
 
     printWindow.document.write(`
@@ -4035,6 +4291,188 @@ export class FeesComponent implements OnInit {
       </body>
       </html>
     `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 400);
+  }
+
+  // ==============================================================================
+  // STUDENT FEE REFUND ACTIONS (SURPLUS ADVANCE CREDIT DISBURSEMENT)
+  // ==============================================================================
+  openRefundModal(student?: any) {
+    if (student) {
+      this.activeLedgerStudent = student;
+    }
+    const maxAdv = this.currentAvailableAdvance;
+    this.refundForm = {
+      amount: maxAdv > 0 ? maxAdv : 0,
+      refund_mode: 'BANK_TRANSFER',
+      transaction_reference: '',
+      reason: 'Surplus advance credit refund',
+    };
+    this.refundError = '';
+    this.showRefundModal = true;
+  }
+
+  closeRefundModal() {
+    this.showRefundModal = false;
+    this.refundError = '';
+    this.processingRefund = false;
+  }
+
+  async openRefundModalForStudent(st: AggregatedStudentFeeRecord) {
+    this.openStudentLedgerForStudent(st);
+    this.openRefundModal();
+  }
+
+  async submitRefund() {
+    if (!this.activeLedgerStudent) {
+      this.refundError = 'No student selected for refund.';
+      return;
+    }
+
+    const amt = Number(this.refundForm.amount) || 0;
+    const maxAdv = this.currentAvailableAdvance;
+
+    if (amt <= 0) {
+      this.refundError = 'Please enter a valid refund amount greater than ₹0.';
+      return;
+    }
+
+    if (amt > maxAdv) {
+      this.refundError = `Cannot refund ₹${amt}. Maximum refundable advance credit is ₹${maxAdv}.`;
+      return;
+    }
+
+    this.processingRefund = true;
+    this.refundError = '';
+
+    try {
+      const res = await this.api.issueStudentFeeRefund({
+        studentId: this.activeLedgerStudent.student_id,
+        amount: amt,
+        refundMode: this.refundForm.refund_mode,
+        transactionReference: this.refundForm.transaction_reference,
+        reason: this.refundForm.reason || 'Surplus advance credit refund',
+        academicYearId: this.auth.activeAcademicSession()?.id,
+      });
+
+      if (!res || !res.success) {
+        throw new Error(res?.message || 'Failed to process refund.');
+      }
+
+      const issuedVoucher = res.voucherNumber || res.voucher_number || 'REFUND';
+      this.toast.success(`Refund of ₹${amt.toLocaleString()} processed successfully! Voucher #${issuedVoucher}`);
+
+      const issuedRefundRecord = {
+        voucher_number: issuedVoucher,
+        amount: amt,
+        refund_mode: this.refundForm.refund_mode,
+        transaction_reference: this.refundForm.transaction_reference,
+        reason: this.refundForm.reason,
+        refund_date: new Date().toISOString(),
+      };
+
+      this.closeRefundModal();
+
+      // Refresh Ledger modal statement
+      if (this.activeLedgerStudent) {
+        await this.openStudentLedgerModal(this.activeLedgerStudent);
+      }
+      // Also reload data to keep overview in sync
+      this.loadAllData();
+
+      // Prompt printing voucher
+      setTimeout(() => {
+        if (confirm(`Do you want to print official Refund Voucher (${issuedVoucher})?`)) {
+          this.printRefundVoucher(issuedRefundRecord);
+        }
+      }, 300);
+    } catch (err: any) {
+      this.refundError = err?.message || 'Error processing refund.';
+      this.toast.error(this.refundError);
+    } finally {
+      this.processingRefund = false;
+    }
+  }
+
+  printRefundVoucher(refund: any) {
+    if (!this.activeLedgerStudent) return;
+    const s = this.activeLedgerStudent;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const voucherNum = refund.voucher_number || refund.voucherNumber || 'REFUND';
+    const amt = Number(refund.amount) || 0;
+    const mode = refund.refund_mode || refund.paymentMode || 'BANK_TRANSFER';
+    const txn = refund.transaction_reference || 'N/A';
+    const reason = refund.reason || 'Surplus advance balance refund';
+    const schoolName = this.auth.currentUser()?.school?.name || 'SchoolSense Academy';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Fee Refund Payment Voucher - ${voucherNum}</title>
+        <style>
+          body { font-family: 'Inter', sans-serif, -apple-system; font-size: 13px; color: #0f172a; padding: 36px; margin: 0; background: #fff; }
+          .receipt-box { max-width: 650px; margin: 0 auto; border: 2px solid #0f172a; border-radius: 12px; padding: 28px; }
+          .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 16px; margin-bottom: 20px; }
+          .title { font-size: 20px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
+          .badge { display: inline-block; padding: 4px 10px; background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; font-size: 11px; font-weight: 800; border-radius: 6px; margin-top: 6px; }
+          .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 22px; font-size: 12px; }
+          .info-grid div { padding: 4px 0; border-bottom: 1px dashed #e2e8f0; }
+          .info-grid strong { color: #475569; display: inline-block; width: 130px; }
+          .amount-banner { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 8px; padding: 16px; text-align: center; margin: 20px 0; }
+          .amount-val { font-size: 28px; font-weight: 900; color: #0f172a; }
+          .footer { margin-top: 40px; display: flex; justify-content: space-between; padding-top: 24px; }
+          .sig-box { border-top: 1px solid #94a3b8; width: 180px; text-align: center; font-size: 11px; color: #64748b; padding-top: 6px; }
+        </style>
+      </head>
+      <body>
+        <div class="receipt-box">
+          <div class="header">
+            <div>
+              <div class="title">${schoolName}</div>
+              <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Official Fee Disbursement & Refund Voucher</div>
+              <div class="badge">SURPLUS ADVANCE REFUND</div>
+            </div>
+            <div style="text-align: right; font-family: monospace; font-size: 12px;">
+              <div><strong>Voucher #:</strong> ${voucherNum}</div>
+              <div><strong>Date:</strong> ${new Date(refund.refund_date || new Date()).toLocaleDateString('en-IN')}</div>
+            </div>
+          </div>
+
+          <div class="info-grid">
+            <div><strong>Student Name:</strong> ${s.student_name}</div>
+            <div><strong>Admission No:</strong> ${s.admission_number || 'N/A'}</div>
+            <div><strong>Class & Section:</strong> ${s.class_name} (${s.section_name})</div>
+            <div><strong>Disbursement Mode:</strong> ${mode}</div>
+            <div><strong>Txn Reference:</strong> ${txn}</div>
+            <div><strong>Reason:</strong> ${reason}</div>
+          </div>
+
+          <div class="amount-banner">
+            <div style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: bold; letter-spacing: 0.05em;">Refund Amount Disbursed</div>
+            <div class="amount-val">₹${amt.toLocaleString('en-IN')}</div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Rupees ${amt.toLocaleString('en-IN')} Only</div>
+          </div>
+
+          <div style="font-size: 10px; color: #94a3b8; text-align: center; margin-top: 16px;">
+            This voucher acknowledges the formal disbursement of excess/advance fee credit back to the registered guardian.
+          </div>
+
+          <div class="footer">
+            <div class="sig-box">Receiver / Guardian Signature</div>
+            <div class="sig-box">Cashier / Bursar Seal & Sign</div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    printWindow.document.write(html);
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => {
@@ -4297,6 +4735,12 @@ export class FeesComponent implements OnInit {
                 <td>Composite Monthly Tuition & Academic Fee</td>
                 <td style="text-align: right;">₹${inv.total_amount}</td>
               </tr>
+              ${(inv.discount_amount && Number(inv.discount_amount) > 0) ? `
+              <tr style="color: #6d28d9; background: #faf5ff;">
+                <td><strong>Fee Concession / Discount</strong> (${inv.discount_code ? 'Coupon: ' + inv.discount_code : 'Approved Concession'})</td>
+                <td style="text-align: right; font-weight: bold;">-₹${inv.discount_amount}</td>
+              </tr>
+              ` : ''}
               <tr class="total-row">
                 <td>Total Received (Cleared)</td>
                 <td style="text-align: right; color: #047857;">₹${amount}</td>
