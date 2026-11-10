@@ -162,6 +162,32 @@ interface LeadForm {
         <!-- ================= SIDE INFO ================= -->
         <aside class="lg:col-span-2">
           <div class="space-y-4">
+            <div class="rounded-2xl border border-blue-100 bg-blue-50/50 p-6">
+              <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                </svg>
+              </span>
+              <h3 class="mt-4 text-base font-bold text-slate-900">Email us directly</h3>
+              <p class="mt-1.5 text-sm leading-relaxed text-slate-600">
+                Prefer sending an email? We reply within 24 hours:
+              </p>
+              <div class="mt-4 space-y-2.5">
+                <div>
+                  <span class="block text-xs font-semibold uppercase tracking-wider text-slate-500">Sales &amp; Demos</span>
+                  <a href="mailto:enquiry@schoolsense.in" class="mt-0.5 inline-block text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline">
+                    enquiry&#64;schoolsense.in
+                  </a>
+                </div>
+                <div>
+                  <span class="block text-xs font-semibold uppercase tracking-wider text-slate-500">Customer Support</span>
+                  <a href="mailto:support@schoolsense.in" class="mt-0.5 inline-block text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline">
+                    support&#64;schoolsense.in
+                  </a>
+                </div>
+              </div>
+            </div>
+
             <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-6">
               <app-vector-art name="classroom" class="h-16 w-16" />
               <h3 class="mt-4 text-base font-bold text-slate-900">A free 30-minute demo</h3>

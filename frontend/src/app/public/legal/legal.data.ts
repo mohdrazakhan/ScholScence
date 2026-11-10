@@ -33,9 +33,9 @@ export interface LegalDoc {
 // ---------------------------------------------------------------------------
 export const LEGAL_ENTITY = 'SchoolSense';           // exact registered name
 export const LEGAL_ADDRESS = '[Registered office address, India]';
-export const LEGAL_EMAIL = 'legal@schoolsense.in';
+export const LEGAL_EMAIL = 'enquiry@schoolsense.in';
 export const SUPPORT_EMAIL = 'support@schoolsense.in';
-export const PRIVACY_EMAIL = 'privacy@schoolsense.in';
+export const PRIVACY_EMAIL = 'support@schoolsense.in';
 export const GRIEVANCE_OFFICER = '[Name of Grievance Officer]';
 export const GRIEVANCE_PHONE = '[Grievance officer phone]';
 export const JURISDICTION_CITY = '[City]';

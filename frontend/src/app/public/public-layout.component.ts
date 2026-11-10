@@ -144,6 +144,15 @@ import { AuthService } from '../core/services/auth.service';
                 <li><a routerLink="/legal/terms" class="transition-colors hover:text-white">Terms &amp; Conditions</a></li>
                 <li><a routerLink="/legal/privacy" class="transition-colors hover:text-white">Privacy Policy</a></li>
                 <li><a routerLink="/legal/acceptable-use" class="transition-colors hover:text-white">Acceptable Use</a></li>
+                <li class="pt-2 border-t border-slate-800">
+                  <span class="block text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Email Us</span>
+                  <a href="mailto:enquiry@schoolsense.in" class="block text-xs text-slate-300 hover:text-white transition-colors">
+                    enquiry&#64;schoolsense.in
+                  </a>
+                  <a href="mailto:support@schoolsense.in" class="mt-1 block text-xs text-slate-300 hover:text-white transition-colors">
+                    support&#64;schoolsense.in
+                  </a>
+                </li>
               </ul>
               <a routerLink="/contact?type=demo"
                  class="mt-5 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500">
