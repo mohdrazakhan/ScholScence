@@ -108,17 +108,181 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
-    <div class="min-h-screen w-full bg-gradient-to-br from-slate-100 via-[#eef2f8] to-[#e2e8f0] flex flex-col lg:flex-row items-stretch font-sans text-slate-800 selection:bg-blue-500 selection:text-white relative">
+    <div class="min-h-screen w-full bg-[#f8fafc] flex flex-col font-sans text-slate-800 selection:bg-indigo-500 selection:text-white relative">
       
-      <!-- Back to Public Website Floating Link -->
-      <a *ngIf="!subdomainForced"
-         routerLink="/"
-         class="schoolsence-back-home absolute top-4 left-4 z-50 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/90 hover:bg-white text-slate-700 hover:text-indigo-600 font-bold text-xs shadow-sm border border-slate-200 transition-all backdrop-blur-sm">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        <span>Back to Home</span>
-      </a>
+      <!-- ================================================================================== -->
+      <!-- UNKNOWN / NOT FOUND SCHOOL SUBDOMAIN VIEW (e.g. ts.schoolsense.in) -->
+      <!-- Clean, Minimalist, Claymorphic & Fits 100% on screen without scrolling -->
+      <!-- ================================================================================== -->
+      <div *ngIf="subdomainNotFound" class="h-screen max-h-screen w-full flex flex-col justify-between items-center p-4 sm:p-6 overflow-hidden animate-fadeIn">
+        
+        <!-- Top Navigation -->
+        <header class="w-full max-w-4xl flex items-center justify-between shrink-0">
+          <button type="button" (click)="goToMainSite()"
+                  class="clay-button-secondary px-3.5 py-2 text-xs font-bold gap-2">
+            <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span>Back to SchoolSense Home</span>
+          </button>
+
+          <a (click)="goToMainSite()" class="cursor-pointer" aria-label="SchoolSense">
+            <img src="/brand/left_icon_logo.png" alt="SchoolSense" class="h-7 sm:h-8 w-auto object-contain" />
+          </a>
+        </header>
+
+        <!-- Center Card -->
+        <main class="w-full max-w-lg mx-auto flex-1 flex flex-col items-center justify-center py-2 shrink">
+          <div class="w-full clay-card p-6 sm:p-8 text-center space-y-4">
+            
+            <!-- Animated Minimalist Vector Art -->
+            <div class="w-28 h-28 sm:w-32 sm:h-32 mx-auto flex items-center justify-center">
+              <svg class="w-full h-full drop-shadow-sm" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <style>
+                  @keyframes clayFloat {
+                    0%, 100% { transform: translateY(0px); }
+                    50% { transform: translateY(-4px); }
+                  }
+                  @keyframes searchLens {
+                    0%, 100% { transform: translate(0, 0); }
+                    50% { transform: translate(-2px, -3px); }
+                  }
+                  @keyframes gentleSpark {
+                    0%, 100% { opacity: 0.35; }
+                    50% { opacity: 0.9; }
+                  }
+                  .va-float-building { animation: clayFloat 3.5s ease-in-out infinite; }
+                  .va-lens-float { animation: searchLens 4s ease-in-out infinite; }
+                  .va-sparkle { animation: gentleSpark 2.2s ease-in-out infinite; }
+                </style>
+
+                <!-- Soft neutral base backdrop -->
+                <circle cx="100" cy="100" r="82" fill="#F1F5F9" />
+
+                <!-- School Building with subtle float -->
+                <g class="va-float-building">
+                  <!-- Building Base -->
+                  <rect x="56" y="106" width="88" height="46" rx="4" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2" />
+                  
+                  <!-- Pediment Roof (SchoolSense Indigo Theme) -->
+                  <path d="M50 106L100 74L150 106H50Z" fill="#4F46E5" stroke="#4338CA" stroke-width="2" stroke-linejoin="round" />
+                  
+                  <!-- Clock Tower -->
+                  <rect x="88" y="52" width="24" height="24" rx="3" fill="#EEF2FF" stroke="#6366F1" stroke-width="2" />
+                  <circle cx="100" cy="64" r="5.5" fill="#FFFFFF" stroke="#4F46E5" stroke-width="1.5" />
+                  <path d="M100 61V64H103" stroke="#4F46E5" stroke-width="1.5" stroke-linecap="round" />
+                  
+                  <!-- Tower Flag -->
+                  <line x1="100" y1="52" x2="100" y2="38" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" />
+                  <path d="M100 38L114 43L100 48V38Z" fill="#6366F1" />
+                  
+                  <!-- Minimal Pillars -->
+                  <rect x="70" y="118" width="6" height="34" rx="1" fill="#E2E8F0" />
+                  <rect x="86" y="118" width="6" height="34" rx="1" fill="#E2E8F0" />
+                  <rect x="108" y="118" width="6" height="34" rx="1" fill="#E2E8F0" />
+                  <rect x="124" y="118" width="6" height="34" rx="1" fill="#E2E8F0" />
+                  
+                  <!-- Door -->
+                  <path d="M94 152V134C94 130.686 96.686 128 100 128C103.314 128 106 130.686 106 134V152H94Z" fill="#334155" />
+                </g>
+
+                <!-- Floating Magnifying Glass Lens -->
+                <g class="va-lens-float">
+                  <circle cx="136" cy="88" r="22" fill="#FFFFFF" stroke="#4F46E5" stroke-width="3" />
+                  <path d="M152 104L168 120" stroke="#4F46E5" stroke-width="4" stroke-linecap="round" />
+                  <text x="136" y="95" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="800" font-size="20" fill="#4338CA">?</text>
+                </g>
+
+                <!-- Minimalistic theme sparkles -->
+                <path class="va-sparkle" d="M44 68L46 63L51 61L46 59L44 54L42 59L37 61L42 63L44 68Z" fill="#6366F1" />
+                <path class="va-sparkle" d="M164 48L165.5 44L169.5 42.5L165.5 41L164 37L162.5 41L158.5 42.5L162.5 44L164 48Z" fill="#4F46E5" />
+                <circle cx="40" cy="94" r="2.5" fill="#C7D2FE" />
+                <circle cx="160" cy="140" r="3" fill="#C7D2FE" />
+              </svg>
+            </div>
+
+            <!-- Header & Subtitle (Clean & Minimalist without round badge or blinking dot) -->
+            <div class="space-y-1.5">
+              <p class="text-xs font-bold uppercase tracking-wider text-indigo-600">School Portal Not Found</p>
+              
+              <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                We couldn't find this school portal
+              </h1>
+
+              <p class="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">
+                No active campus is registered under:
+                <br>
+                <code class="mt-1 inline-block px-2.5 py-0.5 rounded-lg bg-slate-100 border border-slate-200 text-indigo-700 font-bold text-xs">
+                  {{ subdomainNotFound }}.schoolsense.in
+                </code>
+              </p>
+            </div>
+
+            <!-- Guidance Box (Clay Surface) -->
+            <div class="clay-surface p-3 sm:p-3.5 text-left text-xs space-y-1.5 text-slate-600 max-w-md mx-auto">
+              <div class="flex items-center gap-1.5 font-bold text-slate-800">
+                <svg class="w-4 h-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>What should I do?</span>
+              </div>
+              <ul class="space-y-1 pl-5 list-disc text-slate-500 text-[11px] sm:text-xs leading-normal">
+                <li>Check for any spelling mistakes in the web address.</li>
+                <li>Ask your school administration for their official portal link.</li>
+                <li>Or select your institution directly from our directory.</li>
+              </ul>
+            </div>
+
+            <!-- Primary Actions (Clay Buttons) -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-1">
+              <button type="button" (click)="goToMainSite()"
+                      class="clay-button-primary w-full sm:w-auto px-5 py-2.5 text-xs font-bold gap-2">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span>Go to SchoolSense Home</span>
+              </button>
+
+              <button type="button" (click)="browseAllSchools()"
+                      class="clay-button-secondary w-full sm:w-auto px-5 py-2.5 text-xs font-bold gap-2">
+                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <span>Select School Here</span>
+              </button>
+            </div>
+
+            <!-- Demo link for school principals -->
+            <p class="text-[11px] text-slate-400 pt-1">
+              Are you a school administrator?
+              <a (click)="goToDemo()" class="text-indigo-600 font-bold hover:underline cursor-pointer ml-1">
+                Book a free demo →
+              </a>
+            </p>
+
+          </div>
+        </main>
+
+        <!-- Minimal Footer -->
+        <footer class="w-full max-w-4xl flex items-center justify-center text-[11px] text-slate-400 py-1.5 shrink-0">
+          <span>Official Institutional Portal • 256-bit SSL Encrypted • SchoolSense</span>
+        </footer>
+
+      </div>
+
+      <!-- ================================================================================== -->
+      <!-- REGULAR LOGIN / SELECTION (When subdomain is valid or user searches) -->
+      <!-- ================================================================================== -->
+      <div *ngIf="!subdomainNotFound" class="min-h-screen w-full flex flex-col lg:flex-row items-stretch">
+        <!-- Back to Public Website Floating Link -->
+        <a *ngIf="!subdomainForced || step === 'SELECT_SCHOOL'"
+           (click)="goToMainSite()"
+           class="schoolsence-back-home absolute top-4 left-4 z-50 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/90 hover:bg-white text-slate-700 hover:text-indigo-600 font-bold text-xs shadow-sm border border-slate-200 transition-all backdrop-blur-sm cursor-pointer">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>Back to Home</span>
+        </a>
       
       <!-- ================================================================================== -->
       <!-- LEFT COLUMN (50% Split Screen - Centered Content & SchoolSense Showcase) -->
@@ -132,7 +296,7 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
         <div class="w-full max-w-lg my-auto space-y-7 relative z-10">
           
           <!-- STEP 1 LEFT: SchoolSense Branding (Desktop Showcase - ONLY when no school is selected and not on school portal) -->
-          <div *ngIf="((step === 'SELECT_SCHOOL' && !subdomainForced) || isRootLogin)" class="schoolsence-platform-showcase space-y-6 animate-fadeIn flex flex-col items-center text-center">
+          <div *ngIf="step === 'SELECT_SCHOOL' || isRootLogin" class="schoolsence-platform-showcase space-y-6 animate-fadeIn flex flex-col items-center text-center">
             
             <!-- SchoolSense Master Brand Hero Centered in Left Portion (Desktop Only) -->
             <div class="hidden lg:flex w-full justify-center py-2">
@@ -207,7 +371,7 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
           </div>
 
           <!-- STEP 2 LEFT (Loading State on Cold Cache Subdomain): Skeleton Pulse -->
-          <div *ngIf="subdomainForced && !selectedSchool && !isRootLogin" class="space-y-6 flex flex-col items-center text-center animate-pulse">
+          <div *ngIf="subdomainForced && !selectedSchool && !isRootLogin && step !== 'SELECT_SCHOOL'" class="space-y-6 flex flex-col items-center text-center animate-pulse">
             <div class="hidden lg:flex space-y-3 flex-col items-center">
               <div class="w-16 h-16 rounded-2xl bg-slate-200 shadow-sm mx-auto"></div>
               <div class="h-6 w-52 bg-slate-200 rounded-xl"></div>
@@ -318,7 +482,7 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
         <div class="w-full max-w-md mb-6 text-center flex flex-col items-center lg:hidden animate-fadeIn">
           
           <!-- Step 1 / Platform Mobile Header -->
-          <div *ngIf="((step === 'SELECT_SCHOOL' && !subdomainForced) || isRootLogin)" class="schoolsence-platform-showcase space-y-3 flex flex-col items-center w-full">
+          <div *ngIf="step === 'SELECT_SCHOOL' || isRootLogin" class="schoolsence-platform-showcase space-y-3 flex flex-col items-center w-full">
             <div (click)="onLogoClick()"
                  class="inline-flex items-center justify-center py-1 select-none cursor-default">
               <img src="/brand/top_icon_logo.png"
@@ -357,10 +521,7 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
         </div>
 
         <!-- STEP 1 RIGHT: School Selection Dropdown -->
-        <div *ngIf="step === 'SELECT_SCHOOL' && subdomainNotFound" class="w-full max-w-md rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-xs font-medium text-amber-800 animate-fadeIn">
-          We couldn't find a school at the address "{{ subdomainNotFound }}". Please select your school below, or check the address with your school office.
-        </div>
-        <div *ngIf="step === 'SELECT_SCHOOL' && !subdomainForced" class="schoolsence-platform-select w-full max-w-md bg-white rounded-3xl border border-slate-200/90 shadow-[0_20px_50px_rgba(15,23,42,0.08),0_1px_3px_rgba(0,0,0,0.05)] p-7 sm:p-9 space-y-6">
+        <div *ngIf="step === 'SELECT_SCHOOL'" class="schoolsence-platform-select w-full max-w-md bg-white rounded-3xl border border-slate-200/90 shadow-[0_20px_50px_rgba(15,23,42,0.08),0_1px_3px_rgba(0,0,0,0.05)] p-7 sm:p-9 space-y-6">
             
             <div class="space-y-2 text-center flex flex-col items-center">
               <img src="/brand/icon.png" alt="SchoolSense Emblem" class="w-10 h-10 object-contain mx-auto" />
@@ -502,7 +663,7 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
               </div>
 
               <!-- Cold cache loading placeholder on custom domain -->
-              <div *ngIf="!isRootLogin && !selectedSchool && subdomainForced" class="flex flex-col items-center text-center space-y-2.5 pt-2 pb-2 animate-pulse">
+              <div *ngIf="!isRootLogin && !selectedSchool && subdomainForced && step !== 'SELECT_SCHOOL'" class="flex flex-col items-center text-center space-y-2.5 pt-2 pb-2 animate-pulse">
                 <div class="w-14 h-14 rounded-2xl bg-slate-200 mx-auto"></div>
                 <div class="h-6 w-44 bg-slate-200 rounded-lg mx-auto"></div>
                 <div class="h-3.5 w-56 bg-slate-100 rounded-lg mx-auto"></div>
@@ -725,6 +886,7 @@ const DEFAULT_SCHOOLS: SchoolItem[] = [
         </div>
 
       </div>
+      </div>
     </div>
   `,
 })
@@ -821,6 +983,71 @@ export class LoginComponent implements OnInit {
   forgotSuccessMessage = '';
   resendCountdown = 0;
   private resendTimer: any = null;
+
+  /**
+   * Navigates user back to the primary platform root website (escapes any invalid subdomain).
+   */
+  goToMainSite(): void {
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      if (host.includes('schoolsense.in')) {
+        window.location.href = 'https://schoolsense.in';
+      } else if (host.includes('localhost')) {
+        const port = window.location.port ? `:${window.location.port}` : '';
+        window.location.href = `http://localhost${port}/`;
+      } else {
+        window.location.href = '/';
+      }
+    }
+  }
+
+  /**
+   * Directs interested school administrators to the demo booking page on the main site.
+   */
+  goToDemo(): void {
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      const port = window.location.port ? `:${window.location.port}` : '';
+      if (host.includes('schoolsense.in')) {
+        window.location.href = 'https://schoolsense.in/contact?type=demo';
+      } else if (host.includes('localhost')) {
+        window.location.href = `http://localhost${port}/contact?type=demo`;
+      } else {
+        window.location.href = '/contact?type=demo';
+      }
+    }
+  }
+
+  /**
+   * Dismisses the unknown subdomain error view and navigates to the platform school search.
+   */
+  browseAllSchools(): void {
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      const port = window.location.port ? `:${window.location.port}` : '';
+
+      // If on an unknown/unregistered subdomain (e.g. dt.localhost or ts.schoolsense.in),
+      // cleanly redirect to the main institutional directory URL without the invalid subdomain.
+      if (host.includes('schoolsense.in') && host !== 'schoolsense.in' && host !== 'www.schoolsense.in') {
+        window.location.href = 'https://schoolsense.in/login';
+        return;
+      }
+      if (host.endsWith('.localhost') || (host.includes('localhost') && host !== 'localhost')) {
+        window.location.href = `http://localhost${port}/login`;
+        return;
+      }
+    }
+
+    // In-place fallback
+    this.subdomainNotFound = null;
+    this.subdomainForced = false;
+    this.selectedSchool = null;
+    this.selectedSchoolId = '';
+    this.searchQuery = '';
+    this.schools = [];
+    this.step = 'SELECT_SCHOOL';
+    this.branding.resetToDefault();
+  }
 
   get emailPlaceholder(): string {
     if (this.selectedSchool?.email) {
@@ -938,6 +1165,7 @@ export class LoginComponent implements OnInit {
           return;
         } else {
           this.subdomainNotFound = sub;
+          this.subdomainForced = false;
           this.step = 'SELECT_SCHOOL';
           return;
         }

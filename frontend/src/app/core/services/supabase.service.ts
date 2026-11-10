@@ -249,7 +249,8 @@ export class SupabaseService {
       const isPreLoginEndpoint =
         urlStr.includes('/rpc/authenticate_user') ||
         urlStr.includes('/rpc/search_schools') ||
-        urlStr.includes('/rpc/create_demo_lead');
+        urlStr.includes('/rpc/create_demo_lead') ||
+        urlStr.includes('school_public_profiles');
 
       const activeToken = isPreLoginEndpoint ? null : (token || this.readStoredToken());
       const activeSecret = isPreLoginEndpoint ? null : (signingSecret || this.readStoredSigningSecret());
