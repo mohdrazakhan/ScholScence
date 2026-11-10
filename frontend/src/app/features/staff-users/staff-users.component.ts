@@ -1,0 +1,2023 @@
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
+import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../core/services/toast.service';
+import { ImageUploadService } from '../../core/services/image-upload.service';
+import { DepartmentalStaffUser } from '../../core/models';
+
+interface FeatureSectionDef {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  isParent?: boolean;
+  parentId?: string;
+}
+
+@Component({
+  selector: 'app-staff-users',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule],
+  template: `
+    <!-- Unauthorized Access State -->
+    <div *ngIf="!canAccess" class="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center animate-fadeIn">
+      <div class="w-16 h-16 rounded-3xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center shadow-md mb-4">
+        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m0 0v2m0-2h2m-2 0H10m11-3.5a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <h2 class="text-xl font-black text-slate-900 tracking-tight">Access Restricted</h2>
+      <p class="text-xs text-slate-500 max-w-md mt-2 leading-relaxed">
+        Only Institution Administrators, Principals, and Super Admins have permission to manage departmental staff accounts and configure feature-level access.
+      </p>
+      <a routerLink="/dashboard" class="mt-5 px-5 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md transition-all">
+        Return to Dashboard
+      </a>
+    </div>
+
+    <!-- Main Content (Authorized Admins Only) -->
+    <div *ngIf="canAccess" class="space-y-6 animate-fadeIn pb-12">
+      
+      <!-- Top Title Bar & Actions -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/60 shadow-2xs">
+              ADMIN ACCESS CONTROL
+            </span>
+            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Campus Identity & Permissions</span>
+          </div>
+          <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-1 flex items-center gap-2.5">
+            <span>Departmental Users & Feature Access</span>
+          </h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Provision dedicated administrative logins for Fee Accountants, Transport Supervisors, Librarians, Sports In-Charges & Sub-Admins with granular feature switches.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2.5 flex-wrap">
+          <button type="button" (click)="openAddModal()"
+                  class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-2xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-98">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Add Departmental User</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs: Non-Teaching Staff Accounts vs Staff Payroll Register -->
+      <div class="flex items-center gap-2 p-1 bg-slate-100 dark:bg-[#18181c] rounded-2xl max-w-md border border-slate-200/80 dark:border-[#27272e]">
+        <button type="button" (click)="activeMainTab = 'staff'"
+                [ngClass]="activeMainTab === 'staff' ? 'bg-white dark:bg-[#222228] text-slate-900 dark:text-white shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400 font-medium'"
+                class="flex-1 py-2 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+          <span>🏢</span>
+          <span>Non-Teaching Staff</span>
+        </button>
+        <button type="button" (click)="activeMainTab = 'payroll'"
+                [ngClass]="activeMainTab === 'payroll' ? 'bg-white dark:bg-[#222228] text-slate-900 dark:text-white shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400 font-medium'"
+                class="flex-1 py-2 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+          <span>💳</span>
+          <span>Staff Payroll</span>
+        </button>
+      </div>
+
+      <div *ngIf="activeMainTab === 'staff'" class="space-y-6">
+      <!-- Campus Metrics Ribbon (Unified Minimalist Theme) -->
+      <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+        <div class="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs flex flex-col justify-between">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0 pr-1">
+              <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider leading-snug break-words">Total Staff Accounts</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0 mt-0.5">
+              <div class="relative group/info inline-flex items-center">
+                <button type="button" aria-label="Info" class="w-4 h-4 rounded-full text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors flex items-center justify-center cursor-help">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </button>
+                <div class="absolute bottom-full right-0 mb-1.5 hidden group-hover/info:block z-50 w-48 p-2 rounded-lg bg-slate-900/95 dark:bg-slate-800 text-slate-100 text-[10px] font-normal leading-relaxed shadow-xl border border-slate-700/50 backdrop-blur-sm pointer-events-none">
+                  <span>Total departmental staff logins provisioned across all campus operational divisions.</span>
+                </div>
+              </div>
+              <div class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-[#18181c] border border-slate-200/80 dark:border-[#27272e] text-slate-600 dark:text-slate-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="mt-2 text-2xl font-black text-slate-900 dark:text-white">{{ usersList.length }}</div>
+          <span class="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">Across all departments</span>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs flex flex-col justify-between">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0 pr-1">
+              <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider leading-snug break-words">Active Logins</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0 mt-0.5">
+              <div class="relative group/info inline-flex items-center">
+                <button type="button" aria-label="Info" class="w-4 h-4 rounded-full text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors flex items-center justify-center cursor-help">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </button>
+                <div class="absolute bottom-full right-0 mb-1.5 hidden group-hover/info:block z-50 w-48 p-2 rounded-lg bg-slate-900/95 dark:bg-slate-800 text-slate-100 text-[10px] font-normal leading-relaxed shadow-xl border border-slate-700/50 backdrop-blur-sm pointer-events-none">
+                  <span>Staff accounts with live authentication access enabled to log into the portal.</span>
+                </div>
+              </div>
+              <div class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-[#18181c] border border-slate-200/80 dark:border-[#27272e] text-slate-600 dark:text-slate-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <polyline points="16 11 18 13 22 9"></polyline>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="mt-2 text-2xl font-black text-slate-900 dark:text-white">{{ activeUsersCount }}</div>
+          <span class="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">Can authenticate live</span>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs flex flex-col justify-between">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0 pr-1">
+              <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider leading-snug break-words">Fee & Accounts</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0 mt-0.5">
+              <div class="relative group/info inline-flex items-center">
+                <button type="button" aria-label="Info" class="w-4 h-4 rounded-full text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors flex items-center justify-center cursor-help">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </button>
+                <div class="absolute bottom-full right-0 mb-1.5 hidden group-hover/info:block z-50 w-48 p-2 rounded-lg bg-slate-900/95 dark:bg-slate-800 text-slate-100 text-[10px] font-normal leading-relaxed shadow-xl border border-slate-700/50 backdrop-blur-sm pointer-events-none">
+                  <span>Staff assigned to fee collection, cash day-books, invoices, and accounting ledger.</span>
+                </div>
+              </div>
+              <div class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-[#18181c] border border-slate-200/80 dark:border-[#27272e] text-slate-600 dark:text-slate-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                  <line x1="2" y1="10" x2="22" y2="10"></line>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="mt-2 text-2xl font-black text-slate-900 dark:text-white">{{ feeDeptCount }}</div>
+          <span class="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">Invoicing & Ledger</span>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs flex flex-col justify-between">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0 pr-1">
+              <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider leading-snug break-words">Transport & Fleet</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0 mt-0.5">
+              <div class="relative group/info inline-flex items-center">
+                <button type="button" aria-label="Info" class="w-4 h-4 rounded-full text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors flex items-center justify-center cursor-help">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </button>
+                <div class="absolute bottom-full right-0 mb-1.5 hidden group-hover/info:block z-50 w-48 p-2 rounded-lg bg-slate-900/95 dark:bg-slate-800 text-slate-100 text-[10px] font-normal leading-relaxed shadow-xl border border-slate-700/50 backdrop-blur-sm pointer-events-none">
+                  <span>Staff managing bus routes, vehicle fleet, pick-up points, and student bus passes.</span>
+                </div>
+              </div>
+              <div class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-[#18181c] border border-slate-200/80 dark:border-[#27272e] text-slate-600 dark:text-slate-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="1" y="3" width="15" height="13"></rect>
+                  <polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon>
+                  <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                  <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="mt-2 text-2xl font-black text-slate-900 dark:text-white">{{ transportDeptCount }}</div>
+          <span class="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">Routes & Bus Passes</span>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs flex flex-col justify-between">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0 pr-1">
+              <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider leading-snug break-words">Specialized Depts</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0 mt-0.5">
+              <div class="relative group/info inline-flex items-center">
+                <button type="button" aria-label="Info" class="w-4 h-4 rounded-full text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors flex items-center justify-center cursor-help">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </button>
+                <div class="absolute bottom-full right-0 mb-1.5 hidden group-hover/info:block z-50 w-48 p-2 rounded-lg bg-slate-900/95 dark:bg-slate-800 text-slate-100 text-[10px] font-normal leading-relaxed shadow-xl border border-slate-700/50 backdrop-blur-sm pointer-events-none">
+                  <span>Staff managing Library, Physical Education / Sports, Security, and Admissions.</span>
+                </div>
+              </div>
+              <div class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-[#18181c] border border-slate-200/80 dark:border-[#27272e] text-slate-600 dark:text-slate-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+                  <line x1="9" y1="22" x2="9" y2="22.01"></line>
+                  <line x1="15" y1="22" x2="15" y2="22.01"></line>
+                  <line x1="9" y1="6" x2="9" y2="6.01"></line>
+                  <line x1="15" y1="6" x2="15" y2="6.01"></line>
+                  <line x1="9" y1="10" x2="9" y2="10.01"></line>
+                  <line x1="15" y1="10" x2="15" y2="10.01"></line>
+                  <line x1="9" y1="14" x2="9" y2="14.01"></line>
+                  <line x1="15" y1="14" x2="15" y2="14.01"></line>
+                  <line x1="9" y1="18" x2="9" y2="18.01"></line>
+                  <line x1="15" y1="18" x2="15" y2="18.01"></line>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="mt-2 text-2xl font-black text-slate-900 dark:text-white">{{ specializedDeptCount }}</div>
+          <span class="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">Library, Sports, Security</span>
+        </div>
+      </div>
+
+      <!-- Filters, Search & Department Pills -->
+      <div class="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200 dark:border-[#222226] shadow-2xs space-y-3.5">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <!-- Search input -->
+          <div class="relative flex-1">
+            <input type="text" [(ngModel)]="searchQuery"
+                   placeholder="Search staff by name, email, phone, designation or role..."
+                   class="w-full pl-9 pr-8 py-2 bg-slate-50 dark:bg-[#0e0e11] hover:bg-slate-100/60 dark:hover:bg-[#141418] focus:bg-white dark:focus:bg-[#141418] border border-slate-200 dark:border-[#27272e] rounded-xl text-xs font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-slate-400 dark:focus:border-slate-600 transition-colors" />
+            <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <button *ngIf="searchQuery" (click)="searchQuery = ''"
+                    class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold p-0.5 cursor-pointer">&times;</button>
+          </div>
+
+          <!-- Status Filter -->
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" (click)="statusFilter = 'ALL'"
+                    class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                    [ngClass]="statusFilter === 'ALL' ? 'bg-indigo-600 text-white shadow-2xs' : 'bg-slate-50 dark:bg-[#18181c] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#222228] border border-slate-200 dark:border-[#27272e]'">
+              All ({{ usersList.length }})
+            </button>
+            <button type="button" (click)="statusFilter = 'ACTIVE'"
+                    class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                    [ngClass]="statusFilter === 'ACTIVE' ? 'bg-emerald-600 text-white shadow-2xs' : 'bg-slate-50 dark:bg-[#18181c] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#222228] border border-slate-200 dark:border-[#27272e]'">
+              Active ({{ activeUsersCount }})
+            </button>
+            <button type="button" (click)="statusFilter = 'INACTIVE'"
+                    class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                    [ngClass]="statusFilter === 'INACTIVE' ? 'bg-slate-700 text-white shadow-2xs' : 'bg-slate-50 dark:bg-[#18181c] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#222228] border border-slate-200 dark:border-[#27272e]'">
+              Inactive ({{ usersList.length - activeUsersCount }})
+            </button>
+          </div>
+        </div>
+
+        <!-- Department Filter Pills (Only show departments that have staff added) -->
+        <div *ngIf="departmentsList.length > 1" class="flex items-center gap-1.5 overflow-x-auto py-1 no-scrollbar border-t border-slate-100 dark:border-[#222226] pt-3">
+          <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider shrink-0 mr-1">Department:</span>
+          <button *ngFor="let dept of departmentsList"
+                  type="button"
+                  (click)="activeDepartment = dept"
+                  class="px-3 py-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer"
+                  [ngClass]="activeDepartment === dept 
+                              ? 'bg-indigo-600 text-white shadow-2xs' 
+                              : 'bg-slate-50 dark:bg-[#18181c] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#222228] border border-slate-200/80 dark:border-[#27272e]'">
+            {{ dept }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Users Grid / List -->
+      <div *ngIf="loading" class="p-12 text-center text-xs text-slate-400 bg-white dark:bg-[#121214] rounded-2xl border border-slate-200 dark:border-[#222226] animate-pulse">
+        Loading departmental users and permission matrices...
+      </div>
+
+      <div *ngIf="!loading && filteredUsers.length === 0" class="p-12 text-center bg-white dark:bg-[#121214] rounded-2xl border border-slate-200 dark:border-[#222226] shadow-2xs">
+        <div class="w-12 h-12 rounded-2xl bg-slate-100/90 dark:bg-[#18181c] border border-white dark:border-[#27272e] text-slate-600 dark:text-slate-300 flex items-center justify-center mx-auto mb-3 shadow-[inset_2px_2px_4px_#ffffff,0_4px_10px_rgba(15,23,42,0.06)] dark:shadow-none">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none">
+            <circle cx="9" cy="8" r="3.5" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.8" />
+            <path d="M3 19.5c0-3 2.7-5.5 6-5.5s6 2.5 6 5.5" fill="currentColor" fill-opacity="0.12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            <path d="M16 7a3 3 0 010 5.6M17.5 14.5c2.2.6 3.5 2.2 3.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+          </svg>
+        </div>
+        <h3 class="text-sm font-bold text-slate-800 dark:text-white">No departmental users found</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+          {{ searchQuery ? 'Try adjusting your search query or department filter.' : 'Click "Add Departmental User" to create your first departmental accounts.' }}
+        </p>
+        <div class="mt-4 flex items-center justify-center gap-2">
+          <button *ngIf="searchQuery" (click)="searchQuery = ''; activeDepartment = 'All'"
+                  class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-[#18181c] hover:bg-slate-200 dark:hover:bg-[#222228] text-slate-700 dark:text-slate-300 border border-transparent dark:border-[#27272e] text-xs font-bold transition-colors cursor-pointer">
+            Clear Filters
+          </button>
+          <button (click)="openAddModal()"
+                  class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-2xs transition-colors cursor-pointer">
+            Add User Now
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="!loading && filteredUsers.length > 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div *ngFor="let u of filteredUsers" 
+             class="p-5 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between gap-4 relative overflow-hidden group">
+          
+          <!-- Top Accent Stripe for Root Administrator -->
+          <div *ngIf="isPrimaryAdmin(u)" class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-400"></div>
+
+          <div>
+            <!-- Card Header: Avatar, Name, Designation & Status Switch -->
+            <div class="flex items-start justify-between gap-2.5">
+              <div class="flex items-center gap-3 min-w-0 flex-1">
+                <!-- Avatar with Live Status Dot -->
+                <div class="relative shrink-0">
+                  <div class="w-10 h-10 rounded-xl overflow-hidden border border-slate-200/80 dark:border-[#27272e] shadow-2xs flex items-center justify-center bg-slate-100 dark:bg-[#18181c]">
+                    <img *ngIf="u.avatar_url || u.profile_image"
+                         [src]="u.avatar_url || u.profile_image"
+                         [alt]="u.name || u.first_name"
+                         class="w-full h-full object-cover rounded-xl"
+                         (error)="onAvatarError($event, u)" />
+                    <div *ngIf="!u.avatar_url && !u.profile_image"
+                         class="w-full h-full flex items-center justify-center font-bold text-sm tracking-wider"
+                         [ngClass]="isPrimaryAdmin(u) ? 'bg-indigo-600 text-white' : 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300'">
+                      {{ u.first_name ? u.first_name.charAt(0).toUpperCase() : 'U' }}
+                    </div>
+                  </div>
+                  <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-[#121214]"
+                        [ngClass]="u.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'">
+                  </span>
+                </div>
+
+                <!-- Name & Department Subtitle -->
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white leading-tight truncate">
+                      {{ u.name || (u.first_name + ' ' + (u.last_name || '')) }}
+                    </h3>
+                    <span *ngIf="isPrimaryAdmin(u)" 
+                          class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 leading-normal">
+                      Root Admin
+                    </span>
+                    <span *ngIf="!isPrimaryAdmin(u) && (u.role === 'SCHOOL_ADMIN' || u.department === 'Administration')" 
+                          class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/60 leading-normal">
+                      {{ u.designation?.toLowerCase()?.includes('co-admin') ? 'Co-Admin' : 'Admin' }}
+                    </span>
+                  </div>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate" title="{{ (u.designation || u.role_name || u.role) }} • {{ u.department }}">
+                    <span class="font-semibold text-slate-700 dark:text-slate-200">{{ u.designation || u.role_name || u.role }}</span>
+                    <span class="text-slate-300 dark:text-slate-600 mx-1">•</span>
+                    <span>{{ u.department }}</span>
+                  </p>
+                </div>
+              </div>
+
+              <!-- Status Toggle Switch (Active / Inactive) -->
+              <div class="flex items-center gap-1.5 shrink-0 bg-slate-50/90 dark:bg-[#18181c] py-1 px-2 rounded-xl border border-slate-200/70 dark:border-[#27272e] shadow-2xs">
+                <button type="button"
+                        (click)="toggleUserStatus(u)"
+                        [disabled]="isPrimaryAdmin(u)"
+                        [title]="isPrimaryAdmin(u) ? 'Primary Administrator cannot be deactivated' : (u.status === 'ACTIVE' ? 'Click to make Inactive' : 'Click to make Active')"
+                        class="relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none"
+                        [ngClass]="{
+                          'bg-emerald-500 hover:bg-emerald-600 cursor-pointer': u.status === 'ACTIVE' && !isPrimaryAdmin(u),
+                          'bg-emerald-500/75 cursor-not-allowed': u.status === 'ACTIVE' && isPrimaryAdmin(u),
+                          'bg-slate-300 dark:bg-[#2a2a32] hover:bg-slate-400 dark:hover:bg-[#34343e] cursor-pointer': u.status !== 'ACTIVE'
+                        }">
+                  <span class="sr-only">Toggle user status</span>
+                  <span class="inline-block h-3 w-3 transform rounded-full bg-white dark:bg-slate-100 shadow-2xs transition-transform duration-200 ease-in-out"
+                        [ngClass]="u.status === 'ACTIVE' ? 'translate-x-3.5' : 'translate-x-0.5'">
+                  </span>
+                </button>
+                <span class="text-[10px] font-bold select-none"
+                      [ngClass]="u.status === 'ACTIVE' ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'">
+                  {{ u.status === 'ACTIVE' ? 'Active' : 'Inactive' }}
+                </span>
+                <svg *ngIf="isPrimaryAdmin(u)" title="Account locked from deactivation" class="w-2.5 h-2.5 text-slate-400 dark:text-slate-500" viewBox="0 0 24 24" fill="none">
+                  <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2" />
+                  <path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" stroke-width="2" />
+                </svg>
+              </div>
+            </div>
+
+            <!-- Contact & Credentials Block with Quick Copy -->
+            <div class="mt-3.5 space-y-1.5 bg-slate-50/70 dark:bg-[#18181c] p-2.5 rounded-xl border border-slate-100 dark:border-[#222226] text-xs">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                  <svg class="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <span class="font-medium text-slate-700 dark:text-slate-200 truncate select-all">{{ u.email }}</span>
+                </div>
+                <button type="button" (click)="copyText(u.email, 'Email address')" title="Copy email address"
+                        class="p-1 text-slate-400 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-[#25252c] rounded transition-colors cursor-pointer shrink-0">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
+              </div>
+
+              <div *ngIf="u.phone" class="flex items-center justify-between gap-2 pt-1 border-t border-slate-200/60 dark:border-[#27272e]">
+                <div class="flex items-center gap-2 min-w-0">
+                  <svg class="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                  <span class="font-medium text-slate-700 dark:text-slate-200 truncate select-all">{{ u.phone }}</span>
+                </div>
+                <button type="button" (click)="copyText(u.phone, 'Phone number')" title="Copy phone number"
+                        class="p-1 text-slate-400 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-[#25252c] rounded transition-colors cursor-pointer shrink-0">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Feature Access Section (Unified 102px Container for Perfect Grid Alignment) -->
+            <div>
+              <!-- Primary Admin Full Access Card -->
+              <div *ngIf="isPrimaryAdmin(u)" class="mt-3.5 rounded-xl bg-indigo-50/60 dark:bg-[#161622] border border-indigo-100 dark:border-indigo-500/25 p-3 h-[102px] flex flex-col justify-between">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    Full Platform Access
+                  </span>
+                  <span class="text-[10px] font-mono font-bold text-indigo-700 dark:text-indigo-300 bg-white dark:bg-[#1e1e28] px-2 py-0.5 rounded border border-indigo-200/70 dark:border-indigo-500/40 shadow-2xs">
+                    20/20 Enabled
+                  </span>
+                </div>
+                <div class="w-full bg-indigo-200/60 dark:bg-indigo-950/70 rounded-full h-1.5 overflow-hidden">
+                  <div class="bg-indigo-600 h-full rounded-full w-full"></div>
+                </div>
+                <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-snug">
+                  Master institutional access across Academics, Fees, Fleet, Attendance & Campus Settings.
+                </p>
+              </div>
+
+              <!-- Departmental Staff Permissions Box -->
+              <div *ngIf="!isPrimaryAdmin(u)" class="mt-3.5 rounded-xl bg-slate-50/80 dark:bg-[#18181c] border border-slate-100 dark:border-[#222226] p-3 h-[102px] flex flex-col justify-between">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-slate-800 dark:text-slate-200">Assigned Modules</span>
+                  <span class="text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-[#141418] px-2 py-0.5 rounded border border-slate-200/80 dark:border-[#282830] shadow-2xs">
+                    {{ u.custom_permissions.length }}/{{ allSections.length }} Enabled
+                  </span>
+                </div>
+                <div class="w-full bg-slate-200/70 dark:bg-[#27272e] rounded-full h-1.5 overflow-hidden">
+                  <div class="bg-indigo-600 h-full rounded-full transition-all duration-300"
+                       [style.width.%]="(u.custom_permissions.length / allSections.length) * 100"></div>
+                </div>
+                <div class="flex items-center gap-1.5 overflow-hidden flex-nowrap">
+                  <span *ngFor="let perm of u.custom_permissions.slice(0, 2)"
+                        class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white dark:bg-[#141418] text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-[#282830] shadow-2xs truncate shrink max-w-[125px]">
+                    {{ getSectionDisplayName(perm) }}
+                  </span>
+                  <span *ngIf="u.custom_permissions.length > 2"
+                        class="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60 shrink-0">
+                    +{{ u.custom_permissions.length - 2 }} more
+                  </span>
+                  <span *ngIf="u.custom_permissions.length === 0"
+                        class="text-[10px] font-medium text-rose-500 dark:text-rose-400 italic">
+                    No features assigned yet
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions Bar (Clean 2-Tier Layout: Never Overlaps & Equal Height) -->
+          <div class="pt-3 border-t border-slate-100 dark:border-[#222226] flex flex-col gap-2">
+            <!-- Row 1: Quick Utility Actions (Equal 50/50 Grid) -->
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" (click)="copyCredentials(u)"
+                      title="Copy complete login instructions to clipboard"
+                      class="h-8 px-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-[#18181c] hover:bg-slate-100 dark:hover:bg-[#222228] border border-slate-200/90 dark:border-[#27272e] transition-all cursor-pointer text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs active:scale-98">
+                <svg class="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <span class="truncate">Copy</span>
+              </button>
+
+              <button type="button" 
+                      (click)="canChangePasswordFor(u) ? openResetPasswordModal(u) : showRestrictedPasswordToast(u)"
+                      [title]="!canChangePasswordFor(u) ? 'Only the Root Administrator can change their own password' : 'Reset account password'"
+                      class="h-8 px-2.5 rounded-xl transition-all text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
+                      [ngClass]="canChangePasswordFor(u) 
+                        ? 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-[#18181c] hover:bg-slate-100 dark:hover:bg-[#222228] border border-slate-200/90 dark:border-[#27272e] cursor-pointer' 
+                        : 'opacity-50 text-slate-400 dark:text-slate-500 bg-slate-50/50 dark:bg-[#141416] border border-slate-200/50 dark:border-[#202024] cursor-not-allowed'">
+                <svg class="w-3.5 h-3.5 shrink-0" [ngClass]="canChangePasswordFor(u) ? 'text-slate-400 dark:text-slate-500' : 'text-slate-300 dark:text-slate-600'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path *ngIf="canChangePasswordFor(u)" stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                  <path *ngIf="!canChangePasswordFor(u)" stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <span class="truncate">{{ canChangePasswordFor(u) ? 'Password' : 'Protected' }}</span>
+              </button>
+            </div>
+
+            <!-- Row 2: Management CTA / Permanent Admin -->
+            <!-- For Departmental Staff: Prominent Edit Access CTA + Delete Button -->
+            <div *ngIf="!isPrimaryAdmin(u)" class="flex items-center gap-2">
+              <button type="button" (click)="openEditModal(u)"
+                      class="flex-1 h-8 px-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98">
+                <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span>Edit Access</span>
+              </button>
+
+              <button type="button" (click)="deleteUser(u)"
+                      title="Revoke user login"
+                      class="w-8 h-8 rounded-xl bg-slate-50 dark:bg-[#18181c] hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200/90 dark:border-[#27272e] hover:border-rose-200 dark:hover:border-rose-900/60 flex items-center justify-center transition-colors cursor-pointer shadow-2xs shrink-0">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- For Root Administrator: Dedicated Full-Width Badge -->
+            <div *ngIf="isPrimaryAdmin(u)" 
+                 class="h-8 px-3 text-[11px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50/80 dark:bg-[#161622] border border-indigo-200/80 dark:border-indigo-500/30 rounded-xl flex items-center justify-center gap-1.5 select-none shadow-2xs w-full"
+                 title="Root Administrator account has permanent privileges">
+              <svg class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" viewBox="0 0 24 24" fill="none">
+                <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2" />
+                <path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" stroke-width="2" />
+              </svg>
+              <span>Permanent Root Administrator</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- TAB 2: STAFF PAYROLL REGISTER & SALARY DISBURSEMENT             -->
+      <!-- ============================================================== -->
+      <div *ngIf="activeMainTab === 'payroll'" class="space-y-6 animate-fadeIn">
+        
+        <!-- Payroll Metrics KPI Ribbon -->
+        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div class="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs">
+            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Monthly Payroll</span>
+            <div class="mt-2 text-2xl font-black text-slate-900 dark:text-white">₹ 4,85,000</div>
+            <span class="text-[10px] text-emerald-600 font-semibold mt-0.5">Session 2026–27 (October)</span>
+          </div>
+          <div class="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs">
+            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Staff Covered</span>
+            <div class="mt-2 text-2xl font-black text-slate-900 dark:text-white">{{ payrollList.length }} Members</div>
+            <span class="text-[10px] text-slate-400 font-semibold mt-0.5">Teaching & Non-Teaching</span>
+          </div>
+          <div class="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs">
+            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Disbursed Amount</span>
+            <div class="mt-2 text-2xl font-black text-emerald-600">₹ 4,48,840</div>
+            <span class="text-[10px] text-emerald-600 font-semibold mt-0.5">Direct Bank Transfer</span>
+          </div>
+          <div class="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs">
+            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Pending Payouts</span>
+            <div class="mt-2 text-2xl font-black text-amber-600">₹ 36,160</div>
+            <span class="text-[10px] text-amber-600 font-semibold mt-0.5">1 Payout In Review</span>
+          </div>
+        </div>
+
+        <!-- Payroll Register Table -->
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-[#222226]">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white">Institutional Salary Register</h3>
+              <p class="text-xs text-slate-400">Monthly compensation, allowances, deductions and verified salary slips</p>
+            </div>
+            <button (click)="printPayslip()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#18181c] text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+              <span>Print Register</span>
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50 dark:bg-[#18181c] text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-[#27272e]">
+                  <th class="py-3 px-3">Employee</th>
+                  <th class="py-3 px-3">Designation / Dept</th>
+                  <th class="py-3 px-3 text-right">Basic Pay</th>
+                  <th class="py-3 px-3 text-right">Allowances</th>
+                  <th class="py-3 px-3 text-right">Deductions</th>
+                  <th class="py-3 px-3 text-right">Net Salary</th>
+                  <th class="py-3 px-3 text-center">Status</th>
+                  <th class="py-3 px-3 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 dark:divide-[#222226]">
+                <tr *ngFor="let p of payrollList" class="hover:bg-slate-50/60 dark:hover:bg-[#18181c] transition-colors">
+                  <td class="py-3 px-3 font-semibold text-slate-900 dark:text-white">
+                    {{ p.name }}
+                    <span class="block text-[10px] font-mono text-slate-400">{{ p.code }}</span>
+                  </td>
+                  <td class="py-3 px-3 text-slate-600 dark:text-slate-300">
+                    {{ p.designation }}
+                    <span class="block text-[10px] text-slate-400">{{ p.department }}</span>
+                  </td>
+                  <td class="py-3 px-3 text-right font-mono text-slate-700 dark:text-slate-300">₹ {{ p.basic | number }}</td>
+                  <td class="py-3 px-3 text-right font-mono text-emerald-600">+ ₹ {{ p.allowances | number }}</td>
+                  <td class="py-3 px-3 text-right font-mono text-rose-500">- ₹ {{ p.deductions | number }}</td>
+                  <td class="py-3 px-3 text-right font-mono font-bold text-slate-900 dark:text-white">₹ {{ p.net | number }}</td>
+                  <td class="py-3 px-3 text-center">
+                    <span *ngIf="p.status === 'DISBURSED'" class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800">
+                      Disbursed
+                    </span>
+                    <span *ngIf="p.status === 'PENDING'" class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800">
+                      Processing
+                    </span>
+                  </td>
+                  <td class="py-3 px-3 text-center">
+                    <button (click)="openPayslip(p)" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition-all cursor-pointer">
+                      Payslip
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ADD / EDIT USER MODAL WITH GRANULAR FEATURE ACCESS MATRIX -->
+    <div *ngIf="isUserModalOpen" 
+         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn">
+      
+      <div class="bg-white dark:bg-[#121214] rounded-3xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.2)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)] border border-slate-200/90 dark:border-[#222226] w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden animate-scaleUp">
+        
+        <!-- Modal Header -->
+        <div class="px-7 pt-7 pb-5 sm:px-8 sm:pt-8 sm:pb-5 border-b border-slate-100 dark:border-[#222226] flex items-start justify-between gap-4 bg-white dark:bg-[#121214] shrink-0">
+          <div>
+            <div class="flex items-center gap-2.5">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-md">{{ isEditing ? 'MODIFY PERMISSIONS' : 'NEW LOGIN' }}</span>
+              <h3 class="text-base font-bold text-slate-900 dark:text-white">{{ isEditing ? 'Edit Departmental User & Access' : 'Create New Departmental User' }}</h3>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Specify user details and module access permissions.</p>
+          </div>
+
+          <button type="button" (click)="closeUserModal()"
+                  class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#18181c] dark:hover:bg-[#222228] text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer text-lg font-semibold active:scale-95 shrink-0 mt-0.5">
+            &times;
+          </button>
+        </div>
+
+        <!-- Modal Body (Scrollable) -->
+        <div class="px-7 py-6 sm:px-8 overflow-y-auto custom-clay-scroll space-y-6 flex-1">
+          
+          <!-- Section 1: User Profile & Identity -->
+          <div>
+            <h4 class="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider mb-3.5 flex items-center gap-2">
+              <span>1. Profile & Login Credentials</span>
+            </h4>
+
+            <!-- Profile Photo Upload -->
+            <div class="flex items-center gap-4 mb-4 pb-4 border-b border-slate-100 dark:border-[#222226]">
+              <div class="relative w-14 h-14 rounded-2xl bg-slate-100 dark:bg-[#18181c] border border-slate-200/90 dark:border-[#27272e] flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
+                <img *ngIf="formData.avatar_url" [src]="formData.avatar_url" alt="Profile preview" class="w-full h-full object-cover" />
+                <svg *ngIf="!formData.avatar_url && !uploadingAvatar" class="w-6 h-6 text-slate-400 dark:text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <div *ngIf="uploadingAvatar" class="absolute inset-0 bg-white/80 dark:bg-[#121214]/80 flex items-center justify-center">
+                  <div class="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <input type="file" #avatarInput accept="image/*" (change)="onAvatarFileChange($event)" class="hidden" />
+                  <button type="button" (click)="avatarInput.click()" [disabled]="uploadingAvatar"
+                          class="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1c1c22] dark:hover:bg-[#25252e] text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-[#2e2e38] transition-colors cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                    {{ formData.avatar_url ? 'Change Photo' : 'Upload Photo' }}
+                  </button>
+                  <button *ngIf="formData.avatar_url" type="button" (click)="removeAvatar()" [disabled]="uploadingAvatar"
+                          class="px-2.5 py-1.5 text-xs font-semibold rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer active:scale-95">
+                    Remove
+                  </button>
+                </div>
+                <p class="text-[11px] text-slate-400 dark:text-slate-500">JPG, PNG or WEBP (Max 5MB)</p>
+              </div>
+            </div>
+
+            <!-- Core Profile Fields Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">First Name *</label>
+                <input type="text" [(ngModel)]="formData.first_name" placeholder="e.g. Ramesh"
+                       class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-[#16161c] border border-slate-200 dark:border-[#27272e] text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white focus:border-indigo-600 focus:outline-none transition-all" />
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">Last Name</label>
+                <input type="text" [(ngModel)]="formData.last_name" placeholder="e.g. Sharma"
+                       class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-[#16161c] border border-slate-200 dark:border-[#27272e] text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white focus:border-indigo-600 focus:outline-none transition-all" />
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">Email (Login ID) *</label>
+                <input type="email" [(ngModel)]="formData.email" placeholder="e.g. accounts@school.in"
+                       class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-[#16161c] border border-slate-200 dark:border-[#27272e] text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white focus:border-indigo-600 focus:outline-none transition-all" />
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">Phone Number</label>
+                <input type="text" [(ngModel)]="formData.phone" placeholder="e.g. +91 98765 43210"
+                       class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-[#16161c] border border-slate-200 dark:border-[#27272e] text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white focus:border-indigo-600 focus:outline-none transition-all" />
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">Department *</label>
+                <div class="relative">
+                  <select [(ngModel)]="formData.department" (change)="onDepartmentChange()"
+                          class="w-full appearance-none px-3.5 pr-10 py-2.5 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-[#16161c] border border-slate-200 dark:border-[#27272e] text-slate-900 dark:text-white cursor-pointer focus:bg-white focus:border-indigo-600 focus:outline-none transition-all">
+                    <option value="Fee & Accounts">Fee & Accounts Department</option>
+                    <option value="Transport & Fleet">Transport & Fleet Department</option>
+                    <option value="Administration">School Administration (Sub-Admin)</option>
+                    <option value="Library & Resources">Library & Resource Center</option>
+                    <option value="Sports & Physical Education">Sports & Physical Education</option>
+                    <option value="Front Desk & Reception">Front Desk / Admissions Desk</option>
+                    <option value="Security & Safety">Security & Campus Safety</option>
+                    <option value="General Operations">General Staff & Operations</option>
+                  </select>
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400">
+                    <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">Designation / Title</label>
+                <input type="text" [(ngModel)]="formData.designation" placeholder="e.g. Senior Bursar"
+                       class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-[#16161c] border border-slate-200 dark:border-[#27272e] text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white focus:border-indigo-600 focus:outline-none transition-all" />
+              </div>
+            </div>
+
+            <!-- Login Password & Login Status Subgrid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-3.5 pt-3.5 border-t border-slate-100 dark:border-[#222226]">
+              <div *ngIf="!isEditing">
+                <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">Login Password *</label>
+                <div class="relative flex items-center">
+                  <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="formData.password" placeholder="Enter secure password"
+                         class="w-full px-3.5 pr-24 py-2.5 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-[#16161c] border border-slate-200 dark:border-[#27272e] text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white focus:border-indigo-600 focus:outline-none transition-all" />
+                  <div class="absolute right-1.5 flex items-center gap-1">
+                    <button type="button" (click)="generateStrongPassword()"
+                            class="px-2 py-1 text-[10px] font-bold rounded-lg bg-slate-200/70 hover:bg-slate-300/80 dark:bg-[#25252c] dark:hover:bg-[#2f2f38] text-slate-700 dark:text-slate-200 cursor-pointer transition-colors active:scale-95">
+                      Generate
+                    </button>
+                    <button type="button" (click)="showPassword = !showPassword"
+                            class="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer">
+                      <svg *ngIf="!showPassword" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      <svg *ngIf="showPassword" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">Minimum 6 characters with mixed characters.</p>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">Login Status</label>
+                <div class="relative">
+                  <select [(ngModel)]="formData.status"
+                          class="w-full appearance-none px-3.5 pr-10 py-2.5 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-[#16161c] border border-slate-200 dark:border-[#27272e] text-slate-900 dark:text-white cursor-pointer focus:bg-white focus:border-indigo-600 focus:outline-none transition-all">
+                    <option value="ACTIVE">Active (Immediate Login)</option>
+                    <option value="INACTIVE">Inactive (Suspended)</option>
+                  </select>
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400">
+                    <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Module & Feature Permissions -->
+          <div class="pt-4 border-t border-slate-100 dark:border-[#222226]">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3.5">
+              <div>
+                <h4 class="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                  <span>2. Module & Feature Permissions ({{ selectedPermissionsCount }}/{{ allSections.length }} Selected)</span>
+                </h4>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Only enabled features will appear in this staff member's navigation sidebar upon login.</p>
+              </div>
+
+              <!-- Batch Toggles -->
+              <div class="flex items-center gap-2 shrink-0">
+                <button type="button" (click)="selectAllPermissions()"
+                        class="px-3 py-1.5 text-[11px] font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#18181c] dark:hover:bg-[#222228] text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-[#27272e] transition-colors cursor-pointer active:scale-95">
+                  Select All
+                </button>
+                <button type="button" (click)="deselectAllPermissions()"
+                        class="px-3 py-1.5 text-[11px] font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#18181c] dark:hover:bg-[#222228] text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-[#27272e] transition-colors cursor-pointer active:scale-95">
+                  Deselect All
+                </button>
+              </div>
+            </div>
+
+            <!-- Categorized Feature List -->
+            <div class="space-y-4">
+              <div *ngFor="let cat of sectionCategories" class="p-4 rounded-2xl bg-slate-50/70 dark:bg-[#16161c] border border-slate-200/80 dark:border-[#222226]">
+                <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-[#222226] pb-2.5 mb-3">
+                  <span class="text-xs font-black text-slate-900 dark:text-white">{{ cat.name }}</span>
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-white dark:bg-[#141418] border border-slate-200/80 dark:border-[#282830] text-slate-600 dark:text-slate-400 shadow-2xs">
+                    {{ getSelectedCategoryCount(cat.name) }}/{{ cat.items.length }} Enabled
+                  </span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                  <div *ngFor="let item of cat.items"
+                       (click)="togglePermission(item.id)"
+                       class="p-3 rounded-xl border transition-all flex items-start gap-2.5 cursor-pointer select-none"
+                       [ngClass]="isPermissionSelected(item.id) 
+                                   ? 'bg-indigo-50/70 dark:bg-[#181824] border-indigo-200 dark:border-indigo-800/60 shadow-2xs' 
+                                   : 'bg-white dark:bg-[#141418] border-slate-200/80 dark:border-[#222226] hover:bg-slate-50/80 dark:hover:bg-[#18181e] hover:border-slate-300 text-slate-600 dark:text-slate-400'">
+                    
+                    <input type="checkbox" [checked]="isPermissionSelected(item.id)"
+                           (click)="$event.stopPropagation(); togglePermission(item.id)"
+                           class="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 accent-indigo-600 cursor-pointer" />
+
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-1.5">
+                        <span class="font-bold text-xs" [ngClass]="isPermissionSelected(item.id) ? 'text-indigo-950 dark:text-indigo-200' : 'text-slate-800 dark:text-slate-200'">
+                          {{ item.name }}
+                        </span>
+                      </div>
+                      <p class="text-[10px] text-slate-400 dark:text-slate-500 leading-tight mt-1">{{ item.description }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-7 py-4 sm:px-8 border-t border-slate-100 dark:border-[#222226] bg-slate-50/90 dark:bg-[#121214] flex items-center justify-end gap-3 shrink-0">
+          <button type="button" (click)="closeUserModal()"
+                  class="px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#1e1e24] rounded-xl transition-colors cursor-pointer active:scale-98">
+            Cancel
+          </button>
+          <button type="button" (click)="saveUser()" [disabled]="saving"
+                  class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer active:scale-98 flex items-center gap-2 disabled:opacity-50">
+            <svg *ngIf="saving" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+            </svg>
+            <span>{{ saving ? 'Saving Access...' : (isEditing ? 'Save Changes' : 'Create User Login') }}</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RESET PASSWORD MODAL -->
+    <div *ngIf="isPasswordModalOpen" 
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn">
+      <div class="bg-white dark:bg-[#121214] rounded-3xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.2)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)] border border-slate-200/90 dark:border-[#222226] w-full max-w-md p-6 animate-scaleUp space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="clay-badge-indigo text-[10px] font-black uppercase tracking-wider px-2 py-0.5">SECURITY</span>
+            <h3 class="text-sm font-black text-slate-900 dark:text-white">Reset Staff Password</h3>
+          </div>
+          <button (click)="isPasswordModalOpen = false" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-[#18181c] dark:hover:bg-[#222228] text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer text-base font-bold active:scale-95">&times;</button>
+        </div>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          Resetting password for <strong>{{ targetUserForPassword?.name }}</strong> (<span class="font-mono text-slate-700 dark:text-slate-300">{{ targetUserForPassword?.email }}</span>).
+        </p>
+
+        <!-- Inactive Account Notice -->
+        <div *ngIf="targetUserForPassword?.status === 'INACTIVE'" 
+             class="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 text-xs font-medium flex items-center gap-2.5 animate-fadeIn">
+          <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span>This account is currently <strong>Inactive</strong>. Toggle it to <strong>Active</strong> on their card after updating the password to allow them to log in.</span>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300">New Password *</label>
+            <span *ngIf="newPasswordInput" class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md"
+                  [ngClass]="{
+                    'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50': resetPasswordStrength.score === 1,
+                    'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50': resetPasswordStrength.score === 2,
+                    'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50': resetPasswordStrength.score === 3
+                  }">
+              {{ resetPasswordStrength.label }} Password
+            </span>
+          </div>
+
+          <div class="relative flex items-center">
+            <input [type]="showResetPass ? 'text' : 'password'" [(ngModel)]="newPasswordInput"
+                   placeholder="Enter new password (min. 6 characters)"
+                   autocomplete="new-password"
+                   class="clay-input w-full pl-3.5 pr-24 py-2.5 text-xs font-mono font-bold text-slate-900 dark:text-white outline-none" />
+            <div class="absolute right-1.5 flex items-center gap-1">
+              <button type="button" (click)="generateResetPassword()"
+                      title="Generate strong random password"
+                      class="clay-button-secondary px-2.5 py-1 text-[10px] font-bold rounded-lg cursor-pointer flex items-center gap-1 active:scale-95">
+                <svg class="w-3 h-3 text-indigo-600 dark:text-indigo-400" viewBox="0 0 24 24" fill="none">
+                  <path d="M13 2L4.5 13.5h6L9.5 22 19.5 10.5h-6L13 2z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>Auto</span>
+              </button>
+              <button type="button" (click)="showResetPass = !showResetPass" 
+                      class="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer">
+                <svg *ngIf="!showResetPass" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" />
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8" />
+                </svg>
+                <svg *ngIf="showResetPass" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                  <path d="M17.94 17.94A10.07 10.07 0 0112 20c-6.5 0-10-8-10-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c6.5 0 10 8 10 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Dynamic Password Strength Bar (3 segmented blocks) -->
+          <div class="mt-2 space-y-1">
+            <div class="h-1.5 w-full bg-slate-200/70 dark:bg-[#18181c] rounded-full overflow-hidden flex gap-1 p-0.5 border border-slate-200/50 dark:border-[#27272e]">
+              <div class="h-full rounded-full flex-1 transition-all duration-300"
+                   [ngClass]="resetPasswordStrength.score >= 1 ? (resetPasswordStrength.score === 1 ? 'bg-rose-500' : (resetPasswordStrength.score === 2 ? 'bg-amber-500' : 'bg-emerald-500')) : 'bg-slate-200 dark:bg-[#25252c]'"></div>
+              <div class="h-full rounded-full flex-1 transition-all duration-300"
+                   [ngClass]="resetPasswordStrength.score >= 2 ? (resetPasswordStrength.score === 2 ? 'bg-amber-500' : 'bg-emerald-500') : 'bg-slate-200 dark:bg-[#25252c]'"></div>
+              <div class="h-full rounded-full flex-1 transition-all duration-300"
+                   [ngClass]="resetPasswordStrength.score >= 3 ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-[#25252c]'"></div>
+            </div>
+          </div>
+
+          <!-- PASSWORD MUST CONTAIN: (Live Interactive Validation Checklist) -->
+          <div class="mt-3.5 p-3.5 rounded-2xl bg-white dark:bg-[#141418] border border-slate-200/90 dark:border-[#222226] space-y-2.5 shadow-2xs">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                PASSWORD MUST CONTAIN:
+              </span>
+              <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500">
+                All 5 required
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <!-- Lowercase -->
+              <div class="flex items-center gap-2 transition-colors duration-200"
+                   [ngClass]="resetPasswordValidation.hasLower ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-slate-400 dark:text-slate-500 font-medium'">
+                <span class="w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0 font-black transition-all"
+                      [ngClass]="resetPasswordValidation.hasLower ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 shadow-2xs' : 'bg-slate-200 dark:bg-[#25252c] text-slate-400 dark:text-slate-500'">
+                  {{ resetPasswordValidation.hasLower ? '✓' : '✕' }}
+                </span>
+                <span class="text-[11px]">One lowercase letter (a-z)</span>
+              </div>
+
+              <!-- Uppercase -->
+              <div class="flex items-center gap-2 transition-colors duration-200"
+                   [ngClass]="resetPasswordValidation.hasUpper ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-slate-400 dark:text-slate-500 font-medium'">
+                <span class="w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0 font-black transition-all"
+                      [ngClass]="resetPasswordValidation.hasUpper ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 shadow-2xs' : 'bg-slate-200 dark:bg-[#25252c] text-slate-400 dark:text-slate-500'">
+                  {{ resetPasswordValidation.hasUpper ? '✓' : '✕' }}
+                </span>
+                <span class="text-[11px]">One uppercase letter (A-Z)</span>
+              </div>
+
+              <!-- Number -->
+              <div class="flex items-center gap-2 transition-colors duration-200"
+                   [ngClass]="resetPasswordValidation.hasNumber ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-slate-400 dark:text-slate-500 font-medium'">
+                <span class="w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0 font-black transition-all"
+                      [ngClass]="resetPasswordValidation.hasNumber ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 shadow-2xs' : 'bg-slate-200 dark:bg-[#25252c] text-slate-400 dark:text-slate-500'">
+                  {{ resetPasswordValidation.hasNumber ? '✓' : '✕' }}
+                </span>
+                <span class="text-[11px]">One number (0-9)</span>
+              </div>
+
+              <!-- Special char -->
+              <div class="flex items-center gap-2 transition-colors duration-200"
+                   [ngClass]="resetPasswordValidation.hasSpecial ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-slate-400 dark:text-slate-500 font-medium'">
+                <span class="w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0 font-black transition-all"
+                      [ngClass]="resetPasswordValidation.hasSpecial ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 shadow-2xs' : 'bg-slate-200 dark:bg-[#25252c] text-slate-400 dark:text-slate-500'">
+                  {{ resetPasswordValidation.hasSpecial ? '✓' : '✕' }}
+                </span>
+                <span class="text-[11px]">Special character (!&#64;#$...)</span>
+              </div>
+
+              <!-- Min 6 characters -->
+              <div class="sm:col-span-2 flex items-center gap-2 transition-colors duration-200"
+                   [ngClass]="resetPasswordValidation.hasMinLength ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-slate-400 dark:text-slate-500 font-medium'">
+                <span class="w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0 font-black transition-all"
+                      [ngClass]="resetPasswordValidation.hasMinLength ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 shadow-2xs' : 'bg-slate-200 dark:bg-[#25252c] text-slate-400 dark:text-slate-500'">
+                  {{ resetPasswordValidation.hasMinLength ? '✓' : '✕' }}
+                </span>
+                <span class="text-[11px]">Minimum 6 characters length</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-[#222226]">
+          <button type="button" (click)="isPasswordModalOpen = false"
+                  class="clay-button-secondary px-5 py-2.5 text-xs font-bold rounded-xl active:scale-98">
+            Cancel
+          </button>
+          <button type="button" (click)="saveResetPassword()" [disabled]="resettingPass"
+                  class="clay-button-primary px-6 py-2.5 text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50 active:scale-98">
+            {{ resettingPass ? 'Resetting...' : 'Confirm Reset' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYSLIP MODAL -->
+    <div *ngIf="showPayslipModal && selectedPayrollStaff" 
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn">
+      <div class="bg-white dark:bg-[#121214] rounded-3xl shadow-2xl border border-slate-200/90 dark:border-[#222226] w-full max-w-lg p-6 animate-scaleUp space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#222226]">
+          <div>
+            <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Salary Statement / Payslip</h3>
+            <p class="text-xs text-slate-400">{{ selectedPayrollStaff.month }} · SchoolSense Campus OS</p>
+          </div>
+          <button (click)="showPayslipModal = false" class="text-slate-400 hover:text-slate-700 text-lg font-bold cursor-pointer">&times;</button>
+        </div>
+
+        <div class="p-4 bg-slate-50 dark:bg-[#18181c] rounded-2xl border border-slate-200/80 dark:border-[#27272e] space-y-2 text-xs">
+          <div class="flex justify-between">
+            <span class="text-slate-500">Employee Name:</span>
+            <span class="font-bold text-slate-900 dark:text-white">{{ selectedPayrollStaff.name }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">Employee Code:</span>
+            <span class="font-mono font-bold text-slate-800 dark:text-slate-200">{{ selectedPayrollStaff.code }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">Designation &amp; Dept:</span>
+            <span class="text-slate-800 dark:text-slate-200">{{ selectedPayrollStaff.designation }} ({{ selectedPayrollStaff.department }})</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 text-xs">
+          <div class="p-3 bg-white dark:bg-[#121214] border border-slate-200 rounded-xl space-y-1.5">
+            <div class="font-bold text-emerald-700 uppercase text-[10px]">Earnings</div>
+            <div class="flex justify-between text-slate-600"><span>Basic Pay:</span> <span>₹ {{ selectedPayrollStaff.basic | number }}</span></div>
+            <div class="flex justify-between text-slate-600"><span>Allowances:</span> <span>₹ {{ selectedPayrollStaff.allowances | number }}</span></div>
+            <div class="flex justify-between font-bold text-slate-900 pt-1 border-t border-slate-100">
+              <span>Gross Earnings:</span> <span>₹ {{ (selectedPayrollStaff.basic + selectedPayrollStaff.allowances) | number }}</span>
+            </div>
+          </div>
+          <div class="p-3 bg-white dark:bg-[#121214] border border-slate-200 rounded-xl space-y-1.5">
+            <div class="font-bold text-rose-600 uppercase text-[10px]">Deductions</div>
+            <div class="flex justify-between text-slate-600"><span>PF &amp; TDS:</span> <span>₹ {{ selectedPayrollStaff.deductions | number }}</span></div>
+            <div class="flex justify-between text-slate-600"><span>Other Deduc.:</span> <span>₹ 0</span></div>
+            <div class="flex justify-between font-bold text-slate-900 pt-1 border-t border-slate-100">
+              <span>Total Deductions:</span> <span>₹ {{ selectedPayrollStaff.deductions | number }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-3.5 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl border border-indigo-100 dark:border-indigo-900/60 flex items-center justify-between text-xs">
+          <div>
+            <span class="text-[10px] uppercase font-bold text-indigo-700 dark:text-indigo-300">Net Disbursed Salary</span>
+            <div class="text-lg font-black text-indigo-950 dark:text-indigo-200">₹ {{ selectedPayrollStaff.net | number }}</div>
+          </div>
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+            Verified Transfer
+          </span>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-[#222226]">
+          <button (click)="showPayslipModal = false" class="px-4 py-2 text-xs font-semibold text-slate-600 rounded-xl cursor-pointer">Close</button>
+          <button (click)="printPayslip()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all cursor-pointer">
+            Print Official Slip
+          </button>
+        </div>
+      </div>
+    </div>
+  `,
+  styles: [`
+    .custom-clay-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-clay-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-clay-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .custom-clay-scroll::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    :host-context(.dark) .custom-clay-scroll::-webkit-scrollbar-thumb,
+    :host-context([data-theme="dark"]) .custom-clay-scroll::-webkit-scrollbar-thumb {
+      background: #27272e;
+    }
+    :host-context(.dark) .custom-clay-scroll::-webkit-scrollbar-thumb:hover,
+    :host-context([data-theme="dark"]) .custom-clay-scroll::-webkit-scrollbar-thumb:hover {
+      background: #383844;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  `],
+})
+export class StaffUsersComponent implements OnInit {
+  private api = inject(ApiService);
+  auth = inject(AuthService);
+  private toast = inject(ToastService);
+  private router = inject(Router);
+  private imageUploadService = inject(ImageUploadService);
+
+  get canAccess(): boolean {
+    return this.auth.canManageStaffUsers();
+  }
+
+  loading = true;
+  seeding = false;
+  saving = false;
+  resettingPass = false;
+  uploadingAvatar = false;
+
+  usersList: DepartmentalStaffUser[] = [];
+  searchQuery = '';
+  statusFilter: 'ALL' | 'ACTIVE' | 'INACTIVE' = 'ALL';
+  activeDepartment = 'All';
+
+  get departmentsList(): string[] {
+    const present = new Set<string>();
+    for (const u of this.usersList) {
+      if (u.department && u.department.trim()) {
+        present.add(u.department.trim());
+      }
+    }
+    return ['All', ...Array.from(present).sort()];
+  }
+
+  // Master List of all platform sections available for grant/revoke
+  allSections: FeatureSectionDef[] = [
+    { id: 'dashboard', name: 'Dashboard Overview', category: 'Core Operations', description: 'Metrics, widgets & campus summaries' },
+    { id: 'academics', name: 'Academics Hub', category: 'Academics & Master Data', description: 'Academics core module root' },
+    { id: 'academics_classes', name: 'Classes & Sections', category: 'Academics & Master Data', description: 'Manage grade divisions & room capacities' },
+    { id: 'academics_students', name: 'Student Roster & Admissions', category: 'Academics & Master Data', description: 'Student register, enrollments & parent data' },
+    { id: 'academics_alumni', name: 'Alumni & Transfer Certificates', category: 'Academics & Master Data', description: 'Permanent alumni directory & TC registry' },
+    { id: 'academics_staff', name: 'Faculty & Staff Directory', category: 'Academics & Master Data', description: 'Teaching faculty profiles & assignments' },
+    { id: 'academics_subjects', name: 'Curriculum Subjects Master', category: 'Academics & Master Data', description: 'Subjects, codes & curriculum records' },
+    { id: 'timetable', name: 'Timetable Hub', category: 'Schedule & Operations', description: 'Campus routines & master timetable' },
+    { id: 'timetable_student', name: 'Student Timetable', category: 'Schedule & Operations', description: 'Class period routines' },
+    { id: 'timetable_faculty', name: 'Faculty Timetable', category: 'Schedule & Operations', description: 'Teacher period assignments' },
+    { id: 'timetable_academic', name: 'Academic Calendar', category: 'Schedule & Operations', description: 'Term schedules & annual routines' },
+    { id: 'attendance', name: 'Daily Attendance Register', category: 'Schedule & Operations', description: 'Student attendance marking & summaries' },
+    { id: 'homework', name: 'Homework Center', category: 'Assessments & Learning', description: 'Assignments & student submissions' },
+    { id: 'exams', name: 'Exams & Marksheets', category: 'Assessments & Learning', description: 'Exam schedules, marksheets & report cards' },
+    { id: 'communication', name: 'Communication Hub', category: 'Campus Communications', description: 'Announcements & grievances root' },
+    { id: 'communication_notices', name: 'Circulars & Notices', category: 'Campus Communications', description: 'Publish school circulars & alerts' },
+    { id: 'communication_complaints', name: 'Grievance Desk', category: 'Campus Communications', description: 'Parent grievances & complaints' },
+    { id: 'fees', name: 'Fee Management & Invoicing', category: 'Finance & Institutional', description: 'Student invoices, offline fee collections & receipts' },
+    { id: 'transport', name: 'Transport Department & Fleet', category: 'Fleet & Logistics', description: 'Vehicles, routes, stops & student bus passes' },
+    { id: 'subscription', name: 'Subscription & SaaS Wallet', category: 'Finance & Institutional', description: 'SaaS plan billing & SMS balance' },
+  ];
+
+  get sectionCategories(): { name: string; items: FeatureSectionDef[] }[] {
+    const catsMap = new Map<string, FeatureSectionDef[]>();
+    for (const sec of this.allSections) {
+      if (!catsMap.has(sec.category)) {
+        catsMap.set(sec.category, []);
+      }
+      catsMap.get(sec.category)!.push(sec);
+    }
+    return Array.from(catsMap.entries()).map(([name, items]) => ({ name, items }));
+  }
+
+  // Modal State
+  isUserModalOpen = false;
+  isEditing = false;
+  showPassword = false;
+  selectedUserId: string | null = null;
+
+  formData: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+    department: string;
+    designation: string;
+    role: string;
+    password?: string;
+    status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+    custom_permissions: string[];
+    avatar_url?: string;
+  } = {
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    department: 'Fee & Accounts',
+    designation: 'Accounts In-Charge',
+    role: 'FEE_MANAGER',
+    password: 'School@123',
+    status: 'ACTIVE',
+    custom_permissions: [],
+    avatar_url: '',
+  };
+
+  // Password Reset Modal
+  isPasswordModalOpen = false;
+  targetUserForPassword: DepartmentalStaffUser | null = null;
+  newPasswordInput = '';
+  showResetPass = false;
+
+  private activatedRoute = inject(ActivatedRoute);
+  activeMainTab: 'staff' | 'payroll' = 'staff';
+  selectedPayrollStaff: any = null;
+  showPayslipModal = false;
+
+  payrollList = [
+    { id: '1', name: 'Dr. Meenakshi Sundaram', code: 'FAC-12', designation: 'Senior PGT Mathematics', department: 'Academics', basic: 52000, allowances: 14000, deductions: 6240, net: 59760, status: 'DISBURSED', month: 'October 2026' },
+    { id: '2', name: 'Rajesh K. Nambiar', code: 'FAC-18', designation: 'TGT Science & Physics', department: 'Academics', basic: 42000, allowances: 11000, deductions: 5040, net: 47960, status: 'DISBURSED', month: 'October 2026' },
+    { id: '3', name: 'Rameshwar Lal', code: 'STF-05', designation: 'Chief Fee Accountant', department: 'Accounts', basic: 38000, allowances: 9500, deductions: 4560, net: 42940, status: 'DISBURSED', month: 'October 2026' },
+    { id: '4', name: 'Gurpreet Singh', code: 'STF-09', designation: 'Fleet & Transport Supervisor', department: 'Transport', basic: 32000, allowances: 8000, deductions: 3840, net: 36160, status: 'PENDING', month: 'October 2026' },
+    { id: '5', name: 'Pooja Verma', code: 'STF-14', designation: 'Head Librarian', department: 'Library', basic: 34000, allowances: 8500, deductions: 4080, net: 38420, status: 'DISBURSED', month: 'October 2026' },
+    { id: '6', name: 'Sunita Deshmukh', code: 'FAC-25', designation: 'PGT English Literature', department: 'Academics', basic: 48000, allowances: 12500, deductions: 5760, net: 54740, status: 'DISBURSED', month: 'October 2026' },
+  ];
+
+  openPayslip(item: any) {
+    this.selectedPayrollStaff = item;
+    this.showPayslipModal = true;
+  }
+
+  printPayslip() {
+    window.print();
+  }
+
+  ngOnInit(): void {
+    if (!this.canAccess) {
+      return;
+    }
+    this.activatedRoute.queryParams.subscribe((params) => {
+      if (params['tab'] === 'payroll') {
+        this.activeMainTab = 'payroll';
+      } else {
+        this.activeMainTab = 'staff';
+      }
+    });
+    this.loadUsers();
+  }
+
+  loadUsers(): void {
+    this.loading = true;
+    this.api.get<any>('departmental-users/overview').subscribe({
+      next: (res) => {
+        const rawList: DepartmentalStaffUser[] =
+          res && Array.isArray(res.users) ? res.users : Array.isArray(res) ? res : [];
+        const seen = new Set<string>();
+        const filtered = rawList.filter((u) => {
+          if (!u || !u.id || seen.has(u.id)) return false;
+          const r = (u.role || '').toUpperCase();
+          if (r === 'SUPER_ADMIN' || r === 'PLATFORM_ADMIN' || r === 'BINARY') return false;
+          if ((u.email || '').toLowerCase() === 'admin@schoolscence.in') return false;
+          seen.add(u.id);
+          return true;
+        });
+
+        // Enrich with localStorage cache for avatar and profile image if empty
+        const schoolId = this.auth.currentUser()?.school?.id || (() => {
+          try { return JSON.parse(localStorage.getItem('schoolsense_user') || '{}')?.school?.id || ''; } catch { return ''; }
+        })();
+
+        let cachedRaw = schoolId ? localStorage.getItem(`schoolsense_dept_users_${schoolId}`) : null;
+        if (!cachedRaw) {
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('schoolsense_dept_users_')) {
+              cachedRaw = localStorage.getItem(key);
+              break;
+            }
+          }
+        }
+
+        if (cachedRaw) {
+          try {
+            const cachedList: DepartmentalStaffUser[] = JSON.parse(cachedRaw);
+            const cacheMap = new Map(cachedList.map((c) => [c.id, c]));
+            const emailMap = new Map(cachedList.filter((c) => c.email).map((c) => [c.email!.toLowerCase(), c]));
+            filtered.forEach((u) => {
+              const c = cacheMap.get(u.id) || (u.email ? emailMap.get(u.email.toLowerCase()) : undefined);
+              if (c) {
+                const av = (u.avatar_url && u.avatar_url.trim()) || (u.profile_image && u.profile_image.trim()) || c.avatar_url || c.profile_image || '';
+                u.avatar_url = av;
+                u.profile_image = av;
+              }
+            });
+          } catch {}
+        }
+
+        this.usersList = filtered;
+        // Ensure the singular permanent root admin always retains full 20/20 platform access
+        this.usersList.forEach((u) => {
+          if (this.isPrimaryAdmin(u)) {
+            u.custom_permissions = this.allSections.map((s) => s.id);
+          }
+        });
+        this.loading = false;
+      },
+      error: () => {
+        this.loading = false;
+      },
+    });
+  }
+
+  get filteredUsers(): DepartmentalStaffUser[] {
+    if (this.activeDepartment !== 'All' && !this.departmentsList.includes(this.activeDepartment)) {
+      this.activeDepartment = 'All';
+    }
+
+    return this.usersList.filter((u) => {
+      // Status Filter
+      if (this.statusFilter !== 'ALL' && u.status !== this.statusFilter) {
+        return false;
+      }
+
+      // Department Filter
+      if (this.activeDepartment !== 'All' && u.department !== this.activeDepartment) {
+        return false;
+      }
+
+      // Search Query
+      if (this.searchQuery.trim()) {
+        const q = this.searchQuery.toLowerCase().trim();
+        const matchName = (u.name || `${u.first_name} ${u.last_name || ''}`).toLowerCase().includes(q);
+        const matchEmail = (u.email || '').toLowerCase().includes(q);
+        const matchPhone = (u.phone || '').toLowerCase().includes(q);
+        const matchDesig = (u.designation || '').toLowerCase().includes(q);
+        const matchDept = (u.department || '').toLowerCase().includes(q);
+        if (!matchName && !matchEmail && !matchPhone && !matchDesig && !matchDept) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }
+
+  get activeUsersCount(): number {
+    return this.usersList.filter((u) => u.status === 'ACTIVE').length;
+  }
+
+  get feeDeptCount(): number {
+    return this.usersList.filter((u) => u.department?.includes('Fee') || u.department?.includes('Account') || u.role === 'FEE_MANAGER').length;
+  }
+
+  get transportDeptCount(): number {
+    return this.usersList.filter((u) => u.department?.includes('Transport') || u.role === 'TRANSPORT_MANAGER').length;
+  }
+
+  get specializedDeptCount(): number {
+    return this.usersList.filter((u) => 
+      u.department?.includes('Library') || 
+      u.department?.includes('Sports') || 
+      u.department?.includes('Security') || 
+      u.department?.includes('Reception')
+    ).length;
+  }
+
+  get selectedPermissionsCount(): number {
+    return this.formData.custom_permissions.length;
+  }
+
+  getSelectedCategoryCount(categoryName: string): number {
+    const items = this.allSections.filter((s) => s.category === categoryName);
+    return items.filter((s) => this.formData.custom_permissions.includes(s.id)).length;
+  }
+
+  getSectionDisplayName(sectionId: string): string {
+    const found = this.allSections.find((s) => s.id === sectionId);
+    return found ? found.name : sectionId;
+  }
+
+  getDepartmentBadgeClass(dept: string): string {
+    if (dept?.includes('Fee') || dept?.includes('Account')) return 'bg-amber-100 text-amber-800 border border-amber-200';
+    if (dept?.includes('Transport')) return 'bg-indigo-100 text-indigo-800 border border-indigo-200';
+    if (dept?.includes('Admin')) return 'bg-indigo-100 text-indigo-800 border border-indigo-200';
+    if (dept?.includes('Library')) return 'bg-purple-100 text-purple-800 border border-purple-200';
+    if (dept?.includes('Sports')) return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+    if (dept?.includes('Reception')) return 'bg-rose-100 text-rose-800 border border-rose-200';
+    if (dept?.includes('Security')) return 'bg-cyan-100 text-cyan-800 border border-cyan-200';
+    return 'bg-slate-100 text-slate-800 border border-slate-200';
+  }
+
+  getDepartmentPillClass(dept: string): string {
+    if (dept?.includes('Fee') || dept?.includes('Account')) return 'bg-amber-50 text-amber-800 border-amber-200';
+    if (dept?.includes('Transport')) return 'bg-indigo-50 text-indigo-800 border-indigo-200';
+    if (dept?.includes('Admin')) return 'bg-slate-100 text-slate-900 border-slate-300 font-bold';
+    if (dept?.includes('Library')) return 'bg-purple-50 text-purple-800 border-purple-200';
+    if (dept?.includes('Sports')) return 'bg-emerald-50 text-emerald-800 border-emerald-200';
+    if (dept?.includes('Reception')) return 'bg-rose-50 text-rose-800 border-rose-200';
+    if (dept?.includes('Security')) return 'bg-cyan-50 text-cyan-800 border-cyan-200';
+    return 'bg-slate-50 text-slate-700 border-slate-200';
+  }
+
+  // Preset Applicator
+  isPresetActive(presetKey: string): boolean {
+    if (!this.formData) return false;
+    if (presetKey === 'FEE') return this.formData.role === 'FEE_MANAGER' || this.formData.department === 'Fee & Accounts';
+    if (presetKey === 'TRANSPORT') return this.formData.role === 'TRANSPORT_MANAGER' || this.formData.department === 'Transport & Fleet';
+    if (presetKey === 'ADMIN') return this.formData.role === 'SCHOOL_ADMIN' || this.formData.department === 'Administration';
+    if (presetKey === 'LIBRARY') return this.formData.role === 'LIBRARIAN' || this.formData.department === 'Library & Resources';
+    if (presetKey === 'SPORTS') return this.formData.role === 'SPORTS_DIRECTOR' || this.formData.department === 'Sports & Physical Education';
+    if (presetKey === 'RECEPTION') return this.formData.role === 'RECEPTIONIST' || this.formData.department === 'Front Desk & Reception';
+    if (presetKey === 'SECURITY') return this.formData.role === 'SECURITY_STAFF' || this.formData.department === 'Security & Safety';
+    return false;
+  }
+
+  applyPreset(presetKey: string): void {
+    if (presetKey === 'FEE') {
+      this.formData.department = 'Fee & Accounts';
+      this.formData.designation = 'Senior Accountant / Fee Manager';
+      this.formData.role = 'FEE_MANAGER';
+      this.formData.custom_permissions = [
+        'dashboard',
+        'fees',
+        'academics',
+        'academics_students',
+        'academics_alumni',
+        'communication',
+        'communication_notices',
+        'subscription',
+      ];
+    } else if (presetKey === 'TRANSPORT') {
+      this.formData.department = 'Transport & Fleet';
+      this.formData.designation = 'Transport Supervisor';
+      this.formData.role = 'TRANSPORT_MANAGER';
+      this.formData.custom_permissions = [
+        'dashboard',
+        'transport',
+        'academics',
+        'academics_students',
+        'communication',
+        'communication_notices',
+      ];
+    } else if (presetKey === 'ADMIN') {
+      this.formData.department = 'Administration';
+      this.formData.designation = 'Co-Administrator';
+      this.formData.role = 'SCHOOL_ADMIN';
+      this.formData.custom_permissions = this.allSections.map((s) => s.id);
+    } else if (presetKey === 'LIBRARY') {
+      this.formData.department = 'Library & Resources';
+      this.formData.designation = 'Chief Librarian';
+      this.formData.role = 'LIBRARIAN';
+      this.formData.custom_permissions = [
+        'dashboard',
+        'academics',
+        'academics_students',
+        'academics_subjects',
+        'communication',
+        'communication_notices',
+      ];
+    } else if (presetKey === 'SPORTS') {
+      this.formData.department = 'Sports & Physical Education';
+      this.formData.designation = 'Sports & PE Director';
+      this.formData.role = 'SPORTS_DIRECTOR';
+      this.formData.custom_permissions = [
+        'dashboard',
+        'attendance',
+        'academics',
+        'academics_students',
+        'communication',
+        'communication_notices',
+      ];
+    } else if (presetKey === 'RECEPTION') {
+      this.formData.department = 'Front Desk & Reception';
+      this.formData.designation = 'Front Desk / Admissions Desk';
+      this.formData.role = 'RECEPTIONIST';
+      this.formData.custom_permissions = [
+        'dashboard',
+        'academics',
+        'academics_students',
+        'communication',
+        'communication_notices',
+        'communication_complaints',
+      ];
+    } else if (presetKey === 'SECURITY') {
+      this.formData.department = 'Security & Safety';
+      this.formData.designation = 'Chief Security Warden';
+      this.formData.role = 'SECURITY_STAFF';
+      this.formData.custom_permissions = [
+        'dashboard',
+        'transport',
+        'academics',
+        'academics_students',
+        'communication',
+        'communication_notices',
+      ];
+    }
+    this.toast.info(`Applied ${presetKey} feature preset.`);
+  }
+
+  onDepartmentChange(): void {
+    if (this.formData.department === 'Fee & Accounts') this.applyPreset('FEE');
+    else if (this.formData.department === 'Transport & Fleet') this.applyPreset('TRANSPORT');
+    else if (this.formData.department === 'Administration') this.applyPreset('ADMIN');
+    else if (this.formData.department === 'Library & Resources') this.applyPreset('LIBRARY');
+    else if (this.formData.department === 'Sports & Physical Education') this.applyPreset('SPORTS');
+    else if (this.formData.department === 'Front Desk & Reception') this.applyPreset('RECEPTION');
+    else if (this.formData.department === 'Security & Safety') this.applyPreset('SECURITY');
+  }
+
+  isPermissionSelected(secId: string): boolean {
+    return this.formData.custom_permissions.includes(secId);
+  }
+
+  togglePermission(secId: string): void {
+    const list = this.formData.custom_permissions;
+    const idx = list.indexOf(secId);
+    if (idx >= 0) {
+      this.formData.custom_permissions = list.filter((id) => id !== secId);
+    } else {
+      const updated = [...list, secId];
+      // If adding child section, auto-add parent if required
+      const parentMap: Record<string, string> = {
+        academics_classes: 'academics',
+        academics_students: 'academics',
+        academics_alumni: 'academics',
+        academics_staff: 'academics',
+        academics_subjects: 'academics',
+        timetable_student: 'timetable',
+        timetable_faculty: 'timetable',
+        timetable_academic: 'timetable',
+        communication_notices: 'communication',
+        communication_complaints: 'communication',
+      };
+      const parentId = parentMap[secId];
+      if (parentId && !updated.includes(parentId)) {
+        updated.push(parentId);
+      }
+      this.formData.custom_permissions = updated;
+    }
+  }
+
+  selectAllPermissions(): void {
+    this.formData.custom_permissions = this.allSections.map((s) => s.id);
+  }
+
+  deselectAllPermissions(): void {
+    this.formData.custom_permissions = [];
+  }
+
+  getPasswordValidation(pwd: string) {
+    const p = pwd || '';
+    return {
+      hasMinLength: p.length >= 6,
+      hasLower: /[a-z]/.test(p),
+      hasUpper: /[A-Z]/.test(p),
+      hasNumber: /[0-9]/.test(p),
+      hasSpecial: /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?/~`'"\\/]/.test(p),
+    };
+  }
+
+  getPasswordStrength(pwd: string): { score: number; label: string; colorClass: string } {
+    const v = this.getPasswordValidation(pwd);
+    if (!pwd || pwd.length === 0) {
+      return { score: 0, label: '', colorClass: 'bg-slate-200' };
+    }
+    let passed = 0;
+    if (v.hasMinLength) passed++;
+    if (v.hasLower) passed++;
+    if (v.hasUpper) passed++;
+    if (v.hasNumber) passed++;
+    if (v.hasSpecial) passed++;
+
+    if (passed <= 2) {
+      return { score: 1, label: 'Weak', colorClass: 'bg-rose-500' };
+    } else if (passed <= 4) {
+      return { score: 2, label: 'Medium', colorClass: 'bg-amber-500' };
+    } else {
+      return { score: 3, label: 'Strong', colorClass: 'bg-emerald-500' };
+    }
+  }
+
+  get resetPasswordValidation() {
+    return this.getPasswordValidation(this.newPasswordInput);
+  }
+
+  get resetPasswordStrength() {
+    return this.getPasswordStrength(this.newPasswordInput);
+  }
+
+  get createPasswordValidation() {
+    return this.getPasswordValidation(this.formData.password);
+  }
+
+  get createPasswordStrength() {
+    return this.getPasswordStrength(this.formData.password);
+  }
+
+  generateStrongPassword(): void {
+    const lowers = 'abcdefghjkmnpqrstuvwxyz';
+    const uppers = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const numbers = '23456789';
+    const specials = '!@#$%&*';
+    const all = lowers + uppers + numbers + specials;
+
+    const chars = [
+      lowers[Math.floor(Math.random() * lowers.length)],
+      uppers[Math.floor(Math.random() * uppers.length)],
+      numbers[Math.floor(Math.random() * numbers.length)],
+      specials[Math.floor(Math.random() * specials.length)],
+    ];
+    for (let i = 0; i < 4; i++) {
+      chars.push(all[Math.floor(Math.random() * all.length)]);
+    }
+    this.formData.password = chars.sort(() => Math.random() - 0.5).join('');
+    this.showPassword = true;
+  }
+
+  generateResetPassword(): void {
+    const lowers = 'abcdefghjkmnpqrstuvwxyz';
+    const uppers = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const numbers = '23456789';
+    const specials = '!@#$%&*';
+    const all = lowers + uppers + numbers + specials;
+
+    const chars = [
+      lowers[Math.floor(Math.random() * lowers.length)],
+      uppers[Math.floor(Math.random() * uppers.length)],
+      numbers[Math.floor(Math.random() * numbers.length)],
+      specials[Math.floor(Math.random() * specials.length)],
+    ];
+    for (let i = 0; i < 4; i++) {
+      chars.push(all[Math.floor(Math.random() * all.length)]);
+    }
+    this.newPasswordInput = chars.sort(() => Math.random() - 0.5).join('');
+    this.showResetPass = true;
+  }
+
+  openAddModal(): void {
+    this.isEditing = false;
+    this.selectedUserId = null;
+    this.showPassword = false;
+    this.formData = {
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone: '',
+      department: 'Fee & Accounts',
+      designation: 'Fee Accountant',
+      role: 'FEE_MANAGER',
+      password: 'School@123',
+      status: 'ACTIVE',
+      avatar_url: '',
+      custom_permissions: [
+        'dashboard',
+        'fees',
+        'academics',
+        'academics_students',
+        'academics_alumni',
+        'communication',
+        'communication_notices',
+        'subscription',
+      ],
+    };
+    this.isUserModalOpen = true;
+  }
+
+  openEditModal(u: DepartmentalStaffUser): void {
+    this.isEditing = true;
+    this.selectedUserId = u.id;
+    this.showPassword = false;
+    this.formData = {
+      first_name: u.first_name,
+      last_name: u.last_name || '',
+      email: u.email,
+      phone: u.phone || '',
+      department: u.department || 'Administration',
+      designation: u.designation || u.role_name || u.role,
+      role: u.role || 'STAFF',
+      status: u.status || 'ACTIVE',
+      avatar_url: u.avatar_url || u.profile_image || '',
+      custom_permissions: [...(u.custom_permissions || [])],
+    };
+    this.isUserModalOpen = true;
+  }
+
+  async onAvatarFileChange(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    this.uploadingAvatar = true;
+    try {
+      const uploadedUrl = await this.imageUploadService.processAndUploadImage(file, 'staff');
+      this.formData.avatar_url = uploadedUrl;
+      this.toast.success('Profile photo uploaded.');
+    } catch (err: any) {
+      this.toast.error(err.message || 'Failed to upload image.');
+    } finally {
+      this.uploadingAvatar = false;
+      input.value = '';
+    }
+  }
+
+  removeAvatar(): void {
+    this.formData.avatar_url = '';
+  }
+
+  onAvatarError(event: Event, u: DepartmentalStaffUser): void {
+    const target = event.target as HTMLImageElement;
+    if (target) {
+      target.style.display = 'none';
+    }
+  }
+
+  closeUserModal(): void {
+    this.isUserModalOpen = false;
+  }
+
+  saveUser(): void {
+    if (!this.formData.first_name.trim()) {
+      this.toast.error('First name is required.');
+      return;
+    }
+    if (!this.formData.email.trim() || !this.formData.email.includes('@')) {
+      this.toast.error('Valid login email address is required.');
+      return;
+    }
+    if (this.formData.custom_permissions.length === 0) {
+      this.toast.error('Please grant at least one feature permission for this user.');
+      return;
+    }
+
+    if (!this.isEditing) {
+      const v = this.createPasswordValidation;
+      if (!v.hasMinLength || !v.hasLower || !v.hasUpper || !v.hasNumber || !v.hasSpecial) {
+        this.toast.error('Password must be at least 6 characters and include uppercase, lowercase, number, and special character.');
+        return;
+      }
+    }
+
+    this.saving = true;
+
+    if (this.isEditing && this.selectedUserId) {
+      // Optimistic update in local list
+      const existingIdx = this.usersList.findIndex((u) => u.id === this.selectedUserId);
+      if (existingIdx !== -1) {
+        this.usersList[existingIdx] = {
+          ...this.usersList[existingIdx],
+          ...this.formData,
+          avatar_url: this.formData.avatar_url,
+          profile_image: this.formData.avatar_url,
+          name: `${this.formData.first_name} ${this.formData.last_name || ''}`.trim(),
+        };
+        this.usersList = [...this.usersList];
+      }
+      this.api.put(`departmental-users/${this.selectedUserId}`, this.formData).subscribe({
+        next: (updatedRes: any) => {
+          this.toast.success(`Updated feature permissions for ${this.formData.first_name}.`);
+          this.saving = false;
+          if (existingIdx !== -1) {
+            const finalAv = this.formData.avatar_url || updatedRes?.avatar_url;
+            this.usersList[existingIdx].avatar_url = finalAv;
+            this.usersList[existingIdx].profile_image = finalAv;
+            this.usersList = [...this.usersList];
+          }
+          this.closeUserModal();
+          this.loadUsers();
+        },
+        error: (err) => {
+          this.toast.error('Failed to update user: ' + (err.message || 'Unknown error'));
+          this.saving = false;
+        },
+      });
+    } else {
+      this.api.post<DepartmentalStaffUser>('departmental-users', this.formData).subscribe({
+        next: (created) => {
+          this.toast.success(`Created login for ${created.name} (${this.formData.department}).`);
+          this.saving = false;
+          if (created && created.id) {
+            const exists = this.usersList.some((u) => u.id === created.id);
+            if (!exists) {
+              const enrichedCreated: DepartmentalStaffUser = {
+                ...created,
+                avatar_url: created.avatar_url || this.formData.avatar_url,
+                profile_image: created.profile_image || this.formData.avatar_url,
+              };
+              this.usersList = [enrichedCreated, ...this.usersList];
+            }
+          }
+          this.closeUserModal();
+          this.loadUsers();
+        },
+        error: (err) => {
+          this.toast.error('Failed to create user: ' + (err.message || 'Unknown error'));
+          this.saving = false;
+        },
+      });
+    }
+  }
+
+  resolveRootAdmin(): DepartmentalStaffUser | null {
+    const fromFlag = this.usersList.find((u) => u.is_root_admin);
+    if (fromFlag) return fromFlag;
+
+    const adminCandidates = this.usersList.filter((x) => {
+      const r = (x.role || '').toUpperCase();
+      return r === 'SCHOOL_ADMIN' || r === 'PRINCIPAL' || x.department === 'Administration';
+    });
+
+    if (adminCandidates.length === 0) return null;
+
+    let root = adminCandidates[0];
+    for (let i = 1; i < adminCandidates.length; i++) {
+      const cand = adminCandidates[i];
+      const candIsAdminEmail = (cand.email || '').toLowerCase().startsWith('admin@');
+      const rootIsAdminEmail = (root.email || '').toLowerCase().startsWith('admin@');
+      if (candIsAdminEmail && !rootIsAdminEmail) {
+        root = cand;
+      } else if (candIsAdminEmail === rootIsAdminEmail) {
+        const candTime = cand.created_at ? new Date(cand.created_at).getTime() : Infinity;
+        const rootTime = root.created_at ? new Date(root.created_at).getTime() : Infinity;
+        if (candTime < rootTime) {
+          root = cand;
+        }
+      }
+    }
+
+    return root;
+  }
+
+  isPrimaryAdmin(u: DepartmentalStaffUser): boolean {
+    if (!u) return false;
+    if (u.is_root_admin === true) return true;
+    if (u.is_root_admin === false) return false;
+    const root = this.resolveRootAdmin();
+    return root ? u.id === root.id : false;
+  }
+
+  isCurrentUserRootAdmin(): boolean {
+    const curr = this.auth.currentUser();
+    if (!curr) return false;
+    const root = this.resolveRootAdmin();
+    if (!root) return false;
+    return curr.id === root.id || (!!curr.email && !!root.email && curr.email.toLowerCase() === root.email.toLowerCase());
+  }
+
+  canChangePasswordFor(u: DepartmentalStaffUser): boolean {
+    if (!u) return false;
+    // If target user is the singular Root Admin:
+    if (this.isPrimaryAdmin(u)) {
+      return this.isCurrentUserRootAdmin();
+    }
+    // Any other user's password can be reset by any admin
+    return this.auth.isAdmin();
+  }
+
+  showRestrictedPasswordToast(u: DepartmentalStaffUser): void {
+    this.toast.error('Security Policy: Only the Root Administrator can change their own password.');
+  }
+
+  toggleUserStatus(u: DepartmentalStaffUser): void {
+    if (this.isPrimaryAdmin(u)) {
+      this.toast.error('The primary School Administrator cannot be made inactive.');
+      return;
+    }
+    const nextStatus = u.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    this.api.put(`departmental-users/${u.id}`, { status: nextStatus }).subscribe({
+      next: () => {
+        u.status = nextStatus;
+        if (nextStatus === 'ACTIVE') {
+          this.toast.success(`Account for ${u.name} is now Active. Login access enabled.`);
+        } else {
+          this.toast.warning(`Account for ${u.name} is now Inactive. Login access is disabled.`);
+        }
+      },
+      error: () => {
+        this.toast.error('Failed to change status.');
+      },
+    });
+  }
+
+  openResetPasswordModal(u: DepartmentalStaffUser): void {
+    if (!this.canChangePasswordFor(u)) {
+      this.toast.error('Security Policy: Only the Root Administrator can change their own password.');
+      return;
+    }
+    this.targetUserForPassword = u;
+    this.newPasswordInput = ''; // Cleared so modal never opens with a pre-filled password
+    this.showResetPass = false;
+    this.isPasswordModalOpen = true;
+  }
+
+  saveResetPassword(): void {
+    if (!this.targetUserForPassword) return;
+    if (!this.canChangePasswordFor(this.targetUserForPassword)) {
+      this.toast.error('Security Policy: Only the Root Administrator can change their own password.');
+      return;
+    }
+    const pwd = this.newPasswordInput.trim();
+    if (!pwd) {
+      this.toast.error('Please enter a new password or click Auto to generate one.');
+      return;
+    }
+    const v = this.resetPasswordValidation;
+    if (!v.hasMinLength || !v.hasLower || !v.hasUpper || !v.hasNumber || !v.hasSpecial) {
+      this.toast.error('Password must fulfill all requirements: min 6 chars, uppercase, lowercase, number & special character.');
+      return;
+    }
+
+    this.resettingPass = true;
+    this.api.post('departmental-users/reset-password', {
+      userId: this.targetUserForPassword.id,
+      newPassword: pwd,
+    }).subscribe({
+      next: (res: any) => {
+        this.toast.success(`Password updated successfully for ${this.targetUserForPassword?.name}. They can now login with this new password.`);
+        this.resettingPass = false;
+        this.isPasswordModalOpen = false;
+        this.newPasswordInput = '';
+      },
+      error: (err: any) => {
+        this.toast.error(err?.message || 'Failed to reset password. Please check permissions.');
+        this.resettingPass = false;
+      },
+    });
+  }
+
+  deleteUser(u: DepartmentalStaffUser): void {
+    if (this.isPrimaryAdmin(u)) {
+      this.toast.error('The primary School Administrator account cannot be deleted.');
+      return;
+    }
+    if (!confirm(`Are you sure you want to revoke and delete the login account for ${u.name}?`)) {
+      return;
+    }
+    this.api.delete(`departmental-users/${u.id}`).subscribe({
+      next: () => {
+        this.toast.success(`Login revoked for ${u.name}.`);
+        this.usersList = this.usersList.filter((x) => x.id !== u.id);
+      },
+      error: () => {
+        this.toast.error('Failed to delete user.');
+      },
+    });
+  }
+
+  copyCredentials(u: DepartmentalStaffUser): void {
+    const text = `SchoolSense Portal Login Details:\n• Name: ${u.name}\n• Department: ${u.department}\n• Role: ${u.designation || u.role_name}\n• Login Email: ${u.email}\n• Portal URL: ${window.location.origin}/login\n• Assigned Features: ${u.custom_permissions.join(', ')}`;
+    navigator.clipboard.writeText(text).then(() => {
+      this.toast.success(`Login details for ${u.name} copied to clipboard!`);
+    }).catch(() => {
+      this.toast.info(`Login Email: ${u.email}`);
+    });
+  }
+
+  copyText(val: string, label: string): void {
+    if (!val) return;
+    navigator.clipboard.writeText(val).then(() => {
+      this.toast.success(`Copied ${label} to clipboard!`);
+    }).catch(() => {
+      this.toast.info(val);
+    });
+  }
+
+  seedSampleUsers(): void {
+    this.seeding = true;
+    this.api.post<any>('departmental-users/seed-samples', {}).subscribe({
+      next: (res) => {
+        this.toast.success(res.message || 'Seeded departmental user accounts.');
+        this.seeding = false;
+        this.loadUsers();
+      },
+      error: () => {
+        this.toast.error('Failed to seed departmental users.');
+        this.seeding = false;
+      },
+    });
+  }
+}

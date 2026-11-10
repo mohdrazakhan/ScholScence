@@ -24,6 +24,7 @@
 create table if not exists public.app_sessions (
   id                 uuid primary key default gen_random_uuid(),
   token_hash         text not null unique,
+  signing_secret     text,
   user_id            uuid not null references public.users(id) on delete cascade,
   school_id          uuid references public.schools(id) on delete cascade,
   role_code          text not null,
@@ -33,6 +34,9 @@ create table if not exists public.app_sessions (
   revoked_at         timestamptz,
   user_agent         text
 );
+
+alter table public.app_sessions
+  add column if not exists signing_secret text;
 
 create index if not exists idx_app_sessions_lookup
   on public.app_sessions(token_hash)
@@ -44,14 +48,187 @@ comment on table public.app_sessions is
 alter table public.app_sessions enable row level security;
 revoke all on public.app_sessions from anon, authenticated;
 
+-- Single-use Nonce Registry (Replay Attack Prevention)
+create unlogged table if not exists public.api_request_nonces (
+  nonce_hash text primary key,
+  session_id uuid references public.app_sessions(id) on delete cascade,
+  created_at timestamptz not null default clock_timestamp()
+);
+
+create index if not exists idx_api_request_nonces_created_at
+  on public.api_request_nonces(created_at);
+
+alter table public.api_request_nonces enable row level security;
+revoke all on public.api_request_nonces from anon, authenticated;
+
 
 -- ============================================================
--- 2. IDENTITY HELPERS (used by RLS policies and RPCs)
+-- 2. IDENTITY & SIGNATURE HELPERS (used by RLS policies and RPCs)
 -- ============================================================
+create or replace function public.verify_request_signature(
+  p_session_id     uuid default null,
+  p_signing_secret text default null,
+  p_raw_token      text default null
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_headers        jsonb;
+  v_user_agent     text;
+  v_client_id      text;
+  v_ts_text        text;
+  v_ts             bigint;
+  v_now            bigint;
+  v_nonce          text;
+  v_sig            text;
+  v_target         text;
+  v_req_method     text;
+  v_req_path       text;
+  v_target_method  text;
+  v_target_path    text;
+  v_signing_key    text;
+  v_canonical_1    text;
+  v_canonical_2    text;
+  v_expected_1     text;
+  v_expected_2     text;
+  v_nonce_key      text;
+  v_sig_matched    boolean := false;
+  v_tok_header     text;
+  v_tok_hash       text;
+  v_sess_secret    text;
+begin
+  v_headers := coalesce(current_setting('request.headers', true), '{}')::jsonb;
+
+  v_nonce := v_headers ->> 'x-schoolsense-nonce';
+  if v_nonce is not null
+     and v_nonce <> ''
+     and coalesce(current_setting('request.ss_verified_nonce', true), '') = v_nonce then
+    return true;
+  end if;
+
+  v_user_agent := lower(coalesce(v_headers ->> 'user-agent', ''));
+  if v_user_agent ~ '(postmanruntime|insomnia|curl/|python-requests|python-urllib|httpie|go-http-client|okhttp|axios/|pycurl)' then
+    return false;
+  end if;
+
+  v_client_id := coalesce(v_headers ->> 'x-schoolsense-client', '');
+  if v_client_id not in ('schoolsense-web-v1', 'schoolsense-mobile-v1') then
+    return false;
+  end if;
+
+  v_ts_text := v_headers ->> 'x-schoolsense-timestamp';
+  v_sig     := lower(coalesce(v_headers ->> 'x-schoolsense-signature', ''));
+  v_target  := coalesce(v_headers ->> 'x-schoolsense-target', '');
+
+  if v_ts_text is null or v_nonce is null or v_sig = '' then
+    return false;
+  end if;
+
+  if length(v_nonce) < 16 or length(v_nonce) > 128 or length(v_sig) <> 64 then
+    return false;
+  end if;
+
+  begin
+    v_ts := v_ts_text::bigint;
+  exception when others then
+    return false;
+  end;
+
+  v_now := extract(epoch from clock_timestamp())::bigint;
+  if abs(v_now - v_ts) > 60 then
+    return false;
+  end if;
+
+  v_target_method := upper(coalesce(nullif(split_part(v_target, ':', 1), ''), 'POST'));
+  v_target_path   := regexp_replace(coalesce(nullif(substring(v_target from ':(.+)$'), ''), ''), '^/rest/v1', '');
+
+  v_req_method := upper(coalesce(nullif(current_setting('request.method', true), ''), v_target_method));
+  v_req_path   := regexp_replace(coalesce(nullif(current_setting('request.path', true), ''), v_target_path), '^/rest/v1', '');
+
+  if p_session_id is not null then
+    v_signing_key := coalesce(
+      nullif(p_signing_secret, ''),
+      encode(hmac(coalesce(p_raw_token, '')::bytea, 'schoolsense-v1-hmac-salt-2026'::bytea, 'sha256'), 'hex')
+    );
+
+    v_canonical_1 := v_ts_text || '.' || v_nonce || '.' || v_req_method || '.' || v_req_path;
+    v_expected_1  := encode(hmac(v_canonical_1::bytea, v_signing_key::bytea, 'sha256'), 'hex');
+
+    v_canonical_2 := v_ts_text || '.' || v_nonce || '.' || v_target_method || '.' || v_target_path;
+    v_expected_2  := encode(hmac(v_canonical_2::bytea, v_signing_key::bytea, 'sha256'), 'hex');
+
+    v_sig_matched := (v_sig = v_expected_1 or v_sig = v_expected_2);
+  else
+    v_signing_key := 'schoolsense-client-app-v1-2026-hmac-key';
+    v_canonical_1 := v_ts_text || '.' || v_nonce || '.' || v_req_method || '.' || v_req_path;
+    v_expected_1  := encode(hmac(v_canonical_1::bytea, v_signing_key::bytea, 'sha256'), 'hex');
+
+    v_canonical_2 := v_ts_text || '.' || v_nonce || '.' || v_target_method || '.' || v_target_path;
+    v_expected_2  := encode(hmac(v_canonical_2::bytea, v_signing_key::bytea, 'sha256'), 'hex');
+
+    v_sig_matched := (v_sig = v_expected_1 or v_sig = v_expected_2);
+
+    if not v_sig_matched then
+      v_tok_header := v_headers ->> 'x-schoolsense-token';
+      if v_tok_header is not null and length(v_tok_header) >= 20 then
+        v_tok_hash := encode(digest(v_tok_header, 'sha256'), 'hex');
+        select s.signing_secret into v_sess_secret
+          from public.app_sessions s
+         where s.token_hash = v_tok_hash
+           and s.revoked_at is null
+           and s.expires_at > now()
+         limit 1;
+
+        v_signing_key := coalesce(
+          nullif(v_sess_secret, ''),
+          encode(hmac(v_tok_header::bytea, 'schoolsense-v1-hmac-salt-2026'::bytea, 'sha256'), 'hex')
+        );
+        v_expected_1 := encode(hmac(v_canonical_1::bytea, v_signing_key::bytea, 'sha256'), 'hex');
+        v_expected_2 := encode(hmac(v_canonical_2::bytea, v_signing_key::bytea, 'sha256'), 'hex');
+        v_sig_matched := (v_sig = v_expected_1 or v_sig = v_expected_2);
+      end if;
+    end if;
+  end if;
+
+  if not v_sig_matched then
+    return false;
+  end if;
+
+  v_nonce_key := encode(digest(coalesce(p_session_id::text, 'anon') || ':' || v_nonce, 'sha256'), 'hex');
+
+  if exists (select 1 from public.api_request_nonces where nonce_hash = v_nonce_key) then
+    return false;
+  end if;
+
+  begin
+    delete from public.api_request_nonces
+     where created_at < clock_timestamp() - interval '2 minutes';
+
+    insert into public.api_request_nonces (nonce_hash, session_id, created_at)
+    values (v_nonce_key, p_session_id, clock_timestamp());
+  exception
+    when unique_violation then
+      return false;
+    when read_only_sql_transaction then
+      null;
+  end;
+
+  perform set_config('request.ss_verified_nonce', v_nonce, true);
+
+  return true;
+end;
+$$;
+
+revoke all on function public.verify_request_signature(uuid, text, text) from public, anon, authenticated;
+
 create or replace function public.current_session()
 returns jsonb
 language plpgsql
-stable
+volatile
 security definer
 set search_path = public, extensions
 as $$
@@ -67,7 +244,7 @@ begin
 
   v_hash := encode(digest(v_token, 'sha256'), 'hex');
 
-  select s.id, s.user_id, s.school_id, s.role_code, s.is_support_session
+  select s.id, s.user_id, s.school_id, s.role_code, s.is_support_session, s.signing_secret
     into v_sess
     from public.app_sessions s
    where s.token_hash = v_hash
@@ -76,6 +253,10 @@ begin
    limit 1;
 
   if not found then
+    return null;
+  end if;
+
+  if not public.verify_request_signature(v_sess.id, v_sess.signing_secret, v_token) then
     return null;
   end if;
 
@@ -183,9 +364,17 @@ declare
   v_target_school_id UUID := NULL;
   v_session_token TEXT;
   v_full_token TEXT;
+  v_signing_secret TEXT;
   v_platform_school_id UUID;
   v_user_agent TEXT;
 begin
+  -- 0. Enforce Anti-Postman / Request Signature Verification on Login
+  if not public.verify_request_signature(null, null, null) then
+    perform set_config('response.status', '403', true);
+    raise exception 'Access denied. This API can only be accessed through the official SchoolSense application.'
+      using errcode = '42501';
+  end if;
+
   -- 1. Input Validation
   if p_identifier is null or trim(p_identifier) = '' or p_password is null or trim(p_password) = '' then
     raise exception 'Identifier and password are required.';
@@ -238,9 +427,10 @@ begin
   -- housekeeping: purge long-expired sessions
   delete from public.app_sessions where expires_at < now() - interval '7 days';
 
-  v_session_token := encode(gen_random_bytes(32), 'hex');
-  v_full_token := 'sec_' || v_session_token;
-  v_user_agent := left(coalesce(coalesce(current_setting('request.headers', true), '{}')::jsonb ->> 'user-agent', ''), 300);
+  v_session_token  := encode(gen_random_bytes(32), 'hex');
+  v_full_token     := 'sec_' || v_session_token;
+  v_signing_secret := 'sig_' || encode(gen_random_bytes(32), 'hex');
+  v_user_agent     := left(coalesce(coalesce(current_setting('request.headers', true), '{}')::jsonb ->> 'user-agent', ''), 300);
 
   -- ----------------------------------------------------------------------------
   -- Case A: Platform Console Login (school code = 'PLATFORM')
@@ -255,8 +445,8 @@ begin
      where code = 'PLATFORM'
      limit 1;
 
-    insert into public.app_sessions (token_hash, user_id, school_id, role_code, expires_at, user_agent)
-    values (encode(digest(v_full_token, 'sha256'), 'hex'), v_user.id, v_platform_school_id,
+    insert into public.app_sessions (token_hash, signing_secret, user_id, school_id, role_code, expires_at, user_agent)
+    values (encode(digest(v_full_token, 'sha256'), 'hex'), v_signing_secret, v_user.id, v_platform_school_id,
             'SUPER_ADMIN', now() + interval '30 days', v_user_agent);
 
     insert into public.audit_logs (user_id, action, entity)
@@ -264,6 +454,7 @@ begin
 
     return jsonb_build_object(
       'accessToken', v_full_token,
+      'signingSecret', v_signing_secret,
       'refreshToken', 'ref_' || encode(gen_random_bytes(32), 'hex'),
       'user', jsonb_build_object(
         'id', v_user.id,
@@ -303,11 +494,16 @@ begin
     r.name as role_name,
     s.name as school_name,
     s.code as school_code,
-    s.status as school_status
+    s.status as school_status,
+    s.logo_url as school_logo_url,
+    coalesce(usr.custom_permissions, u.custom_permissions, '[]'::jsonb) as custom_permissions,
+    coalesce(usr.department, u.department, '') as department,
+    coalesce(usr.designation, u.designation, r.name) as designation
   into v_usr
   from public.user_school_roles usr
   join public.roles r on r.id = usr.role_id
   join public.schools s on s.id = usr.school_id
+  join public.users u on u.id = usr.user_id
   where usr.user_id = v_user.id
     and usr.status = 'ACTIVE'
     and s.status = 'ACTIVE'
@@ -322,8 +518,8 @@ begin
     end if;
   end if;
 
-  insert into public.app_sessions (token_hash, user_id, school_id, role_code, expires_at, user_agent)
-  values (encode(digest(v_full_token, 'sha256'), 'hex'), v_user.id, v_usr.school_id,
+  insert into public.app_sessions (token_hash, signing_secret, user_id, school_id, role_code, expires_at, user_agent)
+  values (encode(digest(v_full_token, 'sha256'), 'hex'), v_signing_secret, v_user.id, v_usr.school_id,
           v_usr.role_code, now() + interval '30 days', v_user_agent);
 
   insert into public.audit_logs (school_id, user_id, action, entity)
@@ -331,6 +527,7 @@ begin
 
   return jsonb_build_object(
     'accessToken', v_full_token,
+    'signingSecret', v_signing_secret,
     'refreshToken', 'ref_' || encode(gen_random_bytes(32), 'hex'),
     'user', jsonb_build_object(
       'id', v_user.id,
@@ -340,11 +537,16 @@ begin
       'lastName', coalesce(v_user.last_name, ''),
       'role', v_usr.role_code,
       'roleName', v_usr.role_name,
+      'department', v_usr.department,
+      'designation', v_usr.designation,
+      'customPermissions', v_usr.custom_permissions,
       'school', jsonb_build_object(
         'id', v_usr.school_id,
         'name', v_usr.school_name,
         'code', v_usr.school_code,
         'status', v_usr.school_status,
+        'logoUrl', v_usr.school_logo_url,
+        'logo_url', v_usr.school_logo_url,
         'disabledServices', jsonb_build_array()
       ),
       'permissions', jsonb_build_array()
@@ -362,7 +564,7 @@ grant execute on function public.authenticate_user(text, text, text) to anon, au
 create or replace function public.whoami()
 returns jsonb
 language plpgsql
-stable
+volatile
 security definer
 set search_path = public, extensions
 as $$
@@ -370,27 +572,39 @@ declare
   v_sess jsonb;
   v_user RECORD;
   v_school RECORD;
+  v_usr RECORD;
 begin
   v_sess := public.current_session();
   if v_sess is null then
     return jsonb_build_object('valid', false);
   end if;
 
-  select id, email, phone, first_name, last_name, status
+  select id, email, phone, first_name, last_name, status, department, designation, custom_permissions
     into v_user from public.users where id = (v_sess ->> 'user_id')::uuid;
 
   select id, name, code
     into v_school from public.schools where id = nullif(v_sess ->> 'school_id', '')::uuid;
+
+  select coalesce(usr.custom_permissions, v_user.custom_permissions, '[]'::jsonb) as custom_permissions,
+         coalesce(usr.department, v_user.department, '') as department,
+         coalesce(usr.designation, v_user.designation, '') as designation
+    into v_usr
+    from public.user_school_roles usr
+   where usr.user_id = v_user.id and (v_school.id is null or usr.school_id = v_school.id)
+   limit 1;
 
   return jsonb_build_object(
     'valid', true,
     'user', jsonb_build_object(
       'id', v_user.id, 'email', v_user.email, 'phone', v_user.phone,
       'firstName', v_user.first_name, 'lastName', coalesce(v_user.last_name, ''),
-      'status', v_user.status
+      'status', v_user.status,
+      'department', coalesce(v_usr.department, v_user.department, ''),
+      'designation', coalesce(v_usr.designation, v_user.designation, ''),
+      'customPermissions', coalesce(v_usr.custom_permissions, v_user.custom_permissions, '[]'::jsonb)
     ),
     'school', case when v_school.id is null then null else
-      jsonb_build_object('id', v_school.id, 'name', v_school.name, 'code', v_school.code) end,
+      jsonb_build_object('id', v_school.id, 'name', v_school.name, 'code', v_school.code, 'logoUrl', v_school.logo_url, 'logo_url', v_school.logo_url) end,
     'role', v_sess ->> 'role',
     'isSupportSession', coalesce((v_sess ->> 'is_support')::boolean, false)
   );
@@ -440,6 +654,7 @@ declare
   v_school_admin RECORD;
   v_session_token TEXT;
   v_full_token TEXT;
+  v_signing_secret TEXT;
   v_actor RECORD;
 begin
   -- 1. Caller must be an authenticated platform admin
@@ -478,8 +693,9 @@ begin
     )
   );
 
-  v_session_token := encode(gen_random_bytes(32), 'hex');
-  v_full_token := 'sec_' || v_session_token;
+  v_session_token  := encode(gen_random_bytes(32), 'hex');
+  v_full_token     := 'sec_' || v_session_token;
+  v_signing_secret := 'sig_' || encode(gen_random_bytes(32), 'hex');
 
   -- 4. Prefer the school's real admin persona; else synthetic support persona
   select u.*, usr.school_id, r.code AS role_code, r.name AS role_name
@@ -493,12 +709,13 @@ begin
   limit 1;
 
   if found then
-    insert into public.app_sessions (token_hash, user_id, school_id, role_code, is_support_session, expires_at)
-    values (encode(digest(v_full_token, 'sha256'), 'hex'), v_school_admin.id, v_school.id,
+    insert into public.app_sessions (token_hash, signing_secret, user_id, school_id, role_code, is_support_session, expires_at)
+    values (encode(digest(v_full_token, 'sha256'), 'hex'), v_signing_secret, v_school_admin.id, v_school.id,
             'SCHOOL_ADMIN', true, now() + interval '12 hours');
 
     return jsonb_build_object(
       'accessToken', v_full_token,
+      'signingSecret', v_signing_secret,
       'refreshToken', 'ref_' || encode(gen_random_bytes(32), 'hex'),
       'user', jsonb_build_object(
         'id', v_school_admin.id,
@@ -521,12 +738,13 @@ begin
     );
   else
     -- Synthetic persona: session belongs to the REAL platform admin, scoped to the target school
-    insert into public.app_sessions (token_hash, user_id, school_id, role_code, is_support_session, expires_at)
-    values (encode(digest(v_full_token, 'sha256'), 'hex'), public.current_user_id(), v_school.id,
+    insert into public.app_sessions (token_hash, signing_secret, user_id, school_id, role_code, is_support_session, expires_at)
+    values (encode(digest(v_full_token, 'sha256'), 'hex'), v_signing_secret, public.current_user_id(), v_school.id,
             'SCHOOL_ADMIN', true, now() + interval '12 hours');
 
     return jsonb_build_object(
       'accessToken', v_full_token,
+      'signingSecret', v_signing_secret,
       'refreshToken', 'ref_' || encode(gen_random_bytes(32), 'hex'),
       'user', jsonb_build_object(
         'id', public.current_user_id(),

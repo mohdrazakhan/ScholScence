@@ -19,6 +19,9 @@ export interface User {
   };
   isSupportSession?: boolean;
   permissions: string[];
+  customPermissions?: string[];
+  department?: string;
+  designation?: string;
   children?: {
     id: string;
     studentId?: string;
@@ -54,6 +57,7 @@ export interface User {
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
+  signingSecret?: string;
   user: User;
 }
 
@@ -126,6 +130,179 @@ export interface TeacherDashboardData {
   classStudents: TeacherStudentItem[];
   todayTimetable: TeacherTimetablePeriod[];
   subjectAssignments: TeacherSubjectAssignment[];
+  teacherHomeworkCount?: number;
+  recentHomework?: any[];
+  upcomingExamsCount?: number;
+  openComplaintsCount?: number;
+}
+
+export interface DashboardModulesOverview {
+  academics: {
+    totalStudents: number;
+    activeStudents: number;
+    inactiveStudents: number;
+    totalClasses: number;
+    totalSections: number;
+    totalSubjects: number;
+    totalTeachers: number;
+    totalAlumni: number;
+  };
+  departmental: {
+    totalUsers: number;
+    activeUsers: number;
+    feeUsers: number;
+    transportUsers: number;
+    adminUsers: number;
+    specializedUsers: number;
+  };
+  fees: {
+    totalBilled: number;
+    totalCollected: number;
+    totalOutstanding: number;
+    collectionRate: number;
+    totalInvoicesCount: number;
+    paidCount: number;
+    unpaidCount: number;
+    partialCount: number;
+    overdueCount: number;
+    recentInvoices?: any[];
+  };
+  transport: {
+    totalVehicles: number;
+    activeVehiclesCount: number;
+    maintenanceVehiclesCount: number;
+    totalRoutes: number;
+    totalStopsCount: number;
+    totalFleetCapacity: number;
+    subscribedStudentsCount: number;
+    estimatedMonthlyTransportRevenue: number;
+    fleetOccupancyRate: number;
+    routesSummary?: any[];
+  };
+  timetable: {
+    totalPeriods: number;
+    configuredSectionsCount: number;
+    activeTeachersInRoutine: number;
+  };
+  attendance: {
+    todayPercentage: string;
+    presentCount: number;
+    absentCount: number;
+    lateCount: number;
+    markedCount: number;
+    classesMarkedCount?: number;
+    totalClasses?: number;
+    totalStudents: number;
+    isMarkedToday: boolean;
+  };
+  homework: {
+    totalHomework: number;
+    activeHomework: number;
+    dueTodayCount: number;
+    recentHomework: any[];
+  };
+  exams: {
+    totalExams: number;
+    upcomingCount: number;
+    completedCount: number;
+    upcomingExams: any[];
+  };
+  communication: {
+    totalNotices: number;
+    openComplaints: number;
+    resolvedComplaints: number;
+    totalComplaints: number;
+    recentComplaints: any[];
+  };
+}
+
+export interface ParentChildDashboardItem {
+  id: string;
+  studentId: string;
+  name: string;
+  firstName?: string;
+  lastName?: string;
+  admissionNumber: string;
+  rollNumber?: string | number;
+  classId?: string;
+  className: string;
+  sectionId?: string;
+  sectionName: string;
+  photoUrl?: string;
+  relationship?: string;
+  status?: string;
+  attendance?: {
+    todayStatus: 'PRESENT' | 'ABSENT' | 'LATE' | 'HALF_DAY' | 'UNMARKED' | string;
+    percentage: string;
+    presentDays: number;
+    absentDays: number;
+    lateDays: number;
+    totalDays: number;
+  };
+  todayTimetable?: {
+    periodNumber: number;
+    subjectName: string;
+    startTime: string;
+    endTime: string;
+    teacherName?: string;
+    roomNumber?: string;
+  }[];
+  homework?: {
+    totalCount: number;
+    pendingCount: number;
+    recentItems: {
+      id: string;
+      title: string;
+      subjectName: string;
+      dueDate?: string;
+      status?: string;
+    }[];
+  };
+  exams?: {
+    upcomingCount: number;
+    upcomingItems: any[];
+    recentMarks?: {
+      examName: string;
+      subjectName: string;
+      marksObtained: number;
+      maxMarks: number;
+      grade?: string;
+    }[];
+  };
+  fees?: {
+    totalBilled: number;
+    totalPaid: number;
+    pendingAmount: number;
+    status: 'PAID' | 'PARTIAL' | 'PENDING' | 'NO_DUES';
+    invoicesCount: number;
+    recentInvoices?: any[];
+  };
+  transport?: {
+    isSubscribed: boolean;
+    routeName?: string;
+    routeCode?: string;
+    busNumber?: string;
+    stopName?: string;
+    pickupTime?: string;
+    dropTime?: string;
+    monthlyFare?: number;
+    driverName?: string;
+    driverPhone?: string;
+  } | null;
+}
+
+export interface ParentDashboardData {
+  children: ParentChildDashboardItem[];
+  activeChild?: ParentChildDashboardItem | null;
+  familySummary?: {
+    totalChildren: number;
+    presentTodayCount: number;
+    totalPendingHomework: number;
+    totalPendingFees: number;
+    transportSubscribedCount: number;
+    openComplaintsCount: number;
+  };
+  complaints?: any[];
 }
 
 export interface DashboardStats {
@@ -134,9 +311,16 @@ export interface DashboardStats {
     activeStudents?: number;
     inactiveStudents?: number;
     totalClasses: number;
+    totalSections?: number;
+    totalSubjects?: number;
     totalTeachers: number;
+    totalDepartmentalStaff?: number;
     attendanceTodayPercentage: string;
     attendanceMarkedCount: number;
+    attendanceClassesMarkedCount?: number;
+    attendancePresentCount?: number;
+    attendanceAbsentCount?: number;
+    attendanceLateCount?: number;
     pendingComplaints: number;
     roleCounts?: Record<string, number>;
   };
@@ -153,11 +337,13 @@ export interface DashboardStats {
     status?: string;
     activeSession?: any;
     activeSessionId?: string;
+    disabledServices?: string[];
   };
+  modulesOverview?: DashboardModulesOverview;
   recentNotices: Notice[];
   upcomingExams: Exam[];
   teacherData?: TeacherDashboardData;
-  parentData?: any;
+  parentData?: ParentDashboardData;
 }
 
 export interface AcademicSession {
@@ -171,6 +357,7 @@ export interface AcademicSession {
   student_count?: number;
   section_count?: number;
   created_at?: string;
+  updated_at?: string;
 }
 
 export interface AlumniStudent {
@@ -624,4 +811,505 @@ export interface OnboardingEmailTemplates {
   teacherWelcome: OnboardingEmailTemplateItem;
   updatedAt?: string;
 }
+
+// ==============================================================
+// FEE MANAGEMENT & INVOICING MODELS
+// ==============================================================
+export interface FeeCategory {
+  id: string;
+  school_id?: string;
+  name: string;
+  code?: string;
+  description?: string;
+  status: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface FeeStructure {
+  id: string;
+  school_id?: string;
+  academic_year_id?: string;
+  class_id: string;
+  class_name?: string;
+  fee_category_id: string;
+  fee_category_name?: string;
+  category_name?: string;
+  categoryName?: string;
+  amount: number;
+  frequency: 'MONTHLY' | 'QUARTERLY' | 'ANNUAL' | 'ONE_TIME';
+  due_day?: number;
+  status: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface FeePaymentRecord {
+  id: string;
+  invoice_id: string;
+  student_id: string;
+  receipt_number: string;
+  amount_paid: number;
+  payment_mode: 'CASH' | 'UPI' | 'NET_BANKING' | 'CHEQUE' | 'CARD';
+  payment_date: string;
+  transaction_reference?: string;
+  collected_by_name?: string;
+  remarks?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface StudentFeeInvoice {
+  id: string;
+  school_id?: string;
+  student_id: string;
+  student_name?: string;
+  admission_number?: string;
+  class_id?: string;
+  class_name?: string;
+  section_id?: string;
+  section_name?: string;
+  academic_year_id?: string;
+  invoice_number: string;
+  month_name?: string;
+  total_amount: number;
+  paid_amount: number;
+  discount_amount?: number;
+  discount_code?: string;
+  discount_type?: string;
+  fine_amount?: number;
+  due_date: string;
+  status: 'PAID' | 'PARTIAL' | 'UNPAID' | 'OVERDUE';
+  items?: { description: string; amount: number }[];
+  payments?: FeePaymentRecord[];
+  photo_url?: string;
+  profile_image?: string;
+  avatar_url?: string;
+  student?: any;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface DailyDayBookSummary {
+  date: string;
+  startDate?: string;
+  endDate?: string;
+  isRecentFallback?: boolean;
+  totalCollected: number;
+  cashAmount: number;
+  upiAmount: number;
+  bankAmount: number;
+  chequeAmount: number;
+  transactionCount: number;
+  transactions: {
+    receiptNumber: string;
+    studentName: string;
+    admissionNumber: string;
+    className: string;
+    amount: number;
+    paymentMode: string;
+    paymentDate?: string;
+    paymentTime?: string;
+    collectedBy?: string;
+    remarks?: string;
+  }[];
+}
+
+export interface Student80cCertificate {
+  certificateNumber: string;
+  financialYear: string;
+  assessmentYear: string;
+  generatedAt: string;
+  student: {
+    name: string;
+    admissionNumber: string;
+    className: string;
+    sectionName: string;
+    rollNumber?: string;
+  };
+  guardian: {
+    parentName: string;
+    panNumber?: string;
+    address?: string;
+    phone?: string;
+  };
+  school: {
+    name: string;
+    affiliationNumber?: string;
+    address?: string;
+    panNumber?: string;
+    logoUrl?: string;
+  };
+  eligibleTuitionFeePaid: number;
+  totalFeePaid: number;
+  paymentsBreakdown: {
+    receiptNumber: string;
+    date: string;
+    amount: number;
+    tuitionComponent: number;
+    paymentMode: string;
+  }[];
+}
+
+export interface PromocodeValidationResult {
+  success: boolean;
+  code: string;
+  discountAmount: number;
+  discountPercentage?: number;
+  finalAmount: number;
+  message: string;
+}
+
+export interface StudentSiblingInfo {
+  hasSiblings: boolean;
+  siblingsCount: number;
+  suggestedDiscountPct: number;
+  siblings: {
+    studentId: string;
+    name: string;
+    admissionNumber: string;
+    className: string;
+    sectionName: string;
+    relationship?: string;
+  }[];
+}
+
+export interface ClassFeeMatrixItem {
+  classId: string;
+  className?: string;
+  feeCategoryId: string;
+  feeCategoryName?: string;
+  amount: number;
+  frequency: 'MONTHLY' | 'QUARTERLY' | 'ANNUAL' | 'ONE_TIME';
+  dueDay?: number;
+}
+
+// ==============================================================
+// TRANSPORT DEPARTMENT & FLEET MODELS
+// ==============================================================
+export interface TransportVehicle {
+  id: string;
+  school_id?: string;
+  vehicle_number: string;
+  bus_number?: string;
+  vehicle_type: 'BUS' | 'MINI_BUS' | 'VAN' | 'CAB';
+  model?: string;
+  seating_capacity: number;
+  driver_name: string;
+  driver_phone: string;
+  driver_license?: string;
+  driver_photo_url?: string;
+  conductor_name?: string;
+  conductor_phone?: string;
+  gps_device_id?: string;
+  insurance_expiry?: string;
+  fitness_expiry?: string;
+  pollution_expiry?: string;
+  status: 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE';
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface TransportStop {
+  id: string;
+  route_id?: string;
+  stop_name: string;
+  pickup_time: string;
+  drop_time: string;
+  sequence_order: number;
+  monthly_fare: number;
+  landmark?: string;
+  status?: string;
+}
+
+export interface TransportRoute {
+  id: string;
+  school_id?: string;
+  academic_year_id?: string;
+  name: string;
+  code: string;
+  vehicle_id?: string;
+  vehicle_number?: string;
+  bus_number?: string;
+  driver_name?: string;
+  driver_phone?: string;
+  morning_start_time?: string;
+  evening_start_time?: string;
+  description?: string;
+  stops: TransportStop[];
+  stops_count?: number;
+  assigned_students_count?: number;
+  status: 'ACTIVE' | 'INACTIVE';
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface StudentTransportAssignment {
+  id: string;
+  school_id?: string;
+  academic_year_id?: string;
+  student_id: string;
+  student_name: string;
+  admission_number: string;
+  class_name: string;
+  section_name: string;
+  photo_url?: string;
+  guardian_name?: string;
+  guardian_phone?: string;
+  route_id: string;
+  route_name?: string;
+  route_code?: string;
+  stop_id: string;
+  stop_name?: string;
+  pickup_time?: string;
+  drop_time?: string;
+  monthly_fare?: number;
+  bus_number?: string;
+  seat_number?: string;
+  pass_number: string;
+  emergency_contact?: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface DepartmentalStaffUser {
+  id: string;
+  school_id?: string;
+  first_name: string;
+  last_name?: string;
+  name?: string;
+  email: string;
+  phone?: string;
+  avatar_url?: string;
+  profile_image?: string;
+  role: string;
+  role_name?: string;
+  department: string;
+  designation?: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  is_root_admin?: boolean;
+  custom_permissions: string[];
+  last_login_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface StudentFeeLedgerEntry {
+  date: string;
+  type: 'INVOICE' | 'PAYMENT' | 'CONCESSION' | 'OPENING_BALANCE' | 'CHARGE' | 'ADDITIONAL_CHARGE' | 'REFUND';
+  referenceNumber: string;
+  description: string;
+  debit: number;
+  credit: number;
+  runningBalance: number;
+  status?: string;
+  paymentMode?: string;
+}
+
+export interface StudentFeeRefund {
+  id?: string;
+  school_id?: string;
+  student_id: string;
+  academic_year_id?: string;
+  voucher_number: string;
+  voucherNumber?: string;
+  amount: number;
+  refund_mode: 'BANK_TRANSFER' | 'UPI' | 'CASH' | 'CHEQUE';
+  refundMode?: 'BANK_TRANSFER' | 'UPI' | 'CASH' | 'CHEQUE';
+  transaction_reference?: string;
+  transactionReference?: string;
+  reason: string;
+  refund_date: string;
+  refundDate?: string;
+  processed_by_user_id?: string;
+  processed_by_name?: string;
+  processedByName?: string;
+  status?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface StudentFeeLedgerStatement {
+  studentId: string;
+  studentName: string;
+  admissionNumber: string;
+  className: string;
+  sectionName: string;
+  photo_url?: string;
+  profile_image?: string;
+  avatar_url?: string;
+  academicYearId: string;
+  academicYearName: string;
+  frequencyPreference: 'MONTHLY' | 'QUARTERLY' | 'ANNUAL';
+  annualConcessionPct?: number;
+  totalBilled: number;
+  totalPaid: number;
+  totalDiscount: number;
+  totalRefunded?: number;
+  netBilled: number;
+  advanceBalance: number;
+  pendingDue: number;
+  invoices: StudentFeeInvoice[];
+  payments: any[];
+  refunds?: StudentFeeRefund[];
+  ledgerEntries: StudentFeeLedgerEntry[];
+  generatedAt: string;
+}
+
+export interface StudentFeePreference {
+  id?: string;
+  schoolId?: string;
+  school_id?: string;
+  studentId: string;
+  student_id?: string;
+  academicYearId?: string;
+  academic_year_id?: string;
+  frequency: 'MONTHLY' | 'QUARTERLY' | 'ANNUAL';
+  annualConcessionPct?: number;
+  annual_concession_pct?: number;
+  notes?: string;
+  updatedAt?: string;
+  updated_at?: string;
+}
+
+export interface SchoolFeeRules {
+  id?: string;
+  school_id?: string;
+  academic_year_id?: string;
+  monthly_discount_pct: number;
+  quarterly_discount_pct: number;
+  annual_discount_pct: number;
+  due_day_of_month: number;
+  grace_period_days: number;
+  enable_late_fee: boolean;
+  late_fee_type: 'FLAT' | 'DAILY';
+  late_fee_amount: number;
+  updated_at?: string;
+}
+
+export interface StudentFeeAdditionalCharge {
+  id?: string;
+  school_id?: string;
+  student_id: string;
+  academic_year_id?: string;
+  charge_type: 'ADMISSION' | 'FINE_PENALTY' | 'EXAM' | 'ANNUAL' | 'OTHER';
+  amount: number;
+  description: string;
+  effective_date: string;
+  status?: 'PENDING' | 'PAID';
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type SchoolDocumentType =
+  | 'TRANSFER_CERTIFICATE'
+  | 'BONAFIDE_CERTIFICATE'
+  | 'CHARACTER_CERTIFICATE'
+  | 'FEE_NO_DUES'
+  | 'MARKSHEET'
+  | 'REPORT_CARD'
+  | 'SPORTS_CERTIFICATE'
+  | 'CUSTOM';
+
+export interface SchoolDocument {
+  id: string;
+  schoolId?: string;
+  school_id?: string;
+  academicYearId?: string;
+  academic_year_id?: string;
+  serialNumber: string;
+  serial_number?: string;
+  documentType: SchoolDocumentType;
+  document_type?: SchoolDocumentType;
+  title: string;
+  recipientType: 'STUDENT' | 'STAFF' | 'OTHER';
+  recipient_type?: 'STUDENT' | 'STAFF' | 'OTHER';
+  studentId?: string;
+  student_id?: string;
+  userId?: string;
+  user_id?: string;
+  recipientName: string;
+  recipient_name?: string;
+  admissionNumber?: string;
+  admission_number?: string;
+  className?: string;
+  class_name?: string;
+  sectionName?: string;
+  section_name?: string;
+  rollNumber?: string;
+  roll_number?: string;
+  guardianName?: string;
+  guardian_name?: string;
+  issueDate: string;
+  issue_date?: string;
+  issuedById?: string;
+  issued_by_id?: string;
+  status: 'ISSUED' | 'REVOKED';
+  revocationReason?: string;
+  revocation_reason?: string;
+  revokedAt?: string;
+  revoked_at?: string;
+  verificationToken: string;
+  verification_token?: string;
+  verificationUrl?: string;
+  remarks?: string;
+  metadata?: Record<string, any>;
+  createdAt?: string;
+  created_at?: string;
+}
+
+export interface IssueDocumentRequest {
+  documentType: SchoolDocumentType;
+  title: string;
+  studentId?: string;
+  recipientName: string;
+  admissionNumber?: string;
+  className?: string;
+  sectionName?: string;
+  rollNumber?: string;
+  guardianName?: string;
+  issueDate?: string;
+  serialNumber?: string;
+  remarks?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface DocumentVerificationResult {
+  success: boolean;
+  verified: boolean;
+  error?: string;
+  document?: {
+    id: string;
+    serialNumber: string;
+    documentType: string;
+    title: string;
+    recipientName: string;
+    admissionNumber?: string;
+    className?: string;
+    sectionName?: string;
+    rollNumber?: string;
+    guardianName?: string;
+    issueDate: string;
+    status: 'ISSUED' | 'REVOKED';
+    revocationReason?: string;
+    remarks?: string;
+    metadata?: Record<string, any>;
+    createdAt: string;
+  };
+  school?: {
+    name: string;
+    code: string;
+    logoUrl?: string;
+    city?: string;
+    state?: string;
+    affiliationNumber?: string;
+    board?: string;
+    email?: string;
+    phone?: string;
+  };
+}
+
+
+
 

@@ -1,144 +1,220 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, from, map, tap, of, throwError } from 'rxjs';
+import { Observable, from, map, tap, of, throwError, switchMap } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { AuthResponse, User, AcademicSession } from '../models';
 
 export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: [
     'dashboard',
-    'academics',
-    'academics_classes',
-    'academics_students',
-    'academics_alumni',
-    'academics_staff',
-    'academics_subjects',
+    'attendance',
+    'homework',
     'timetable',
     'timetable_student',
     'timetable_faculty',
     'timetable_academic',
-    'attendance',
-    'homework',
+    'academics',
+    'academics_classes',
+    'academics_subjects',
+    'academics_students',
     'exams',
+    'academics_exams',
+    'academics_marksheets',
+    'academics_alumni',
+    'academics_staff',
+    'fees',
+    'documents',
+    'employees',
+    'employees_teaching',
+    'employees_non_teaching',
+    'employees_payroll',
+    'transport',
     'communication',
     'communication_notices',
+    'complaints',
     'communication_complaints',
+    'id_card',
+    'id_card_student',
+    'id_card_teaching',
+    'id_card_non_teaching',
     'subscription',
+    'staff_users',
   ],
   SCHOOL_ADMIN: [
     'dashboard',
-    'academics',
-    'academics_classes',
-    'academics_students',
-    'academics_alumni',
-    'academics_staff',
-    'academics_subjects',
+    'attendance',
+    'homework',
     'timetable',
     'timetable_student',
     'timetable_faculty',
     'timetable_academic',
-    'attendance',
-    'homework',
+    'academics',
+    'academics_classes',
+    'academics_subjects',
+    'academics_students',
     'exams',
+    'academics_exams',
+    'academics_marksheets',
+    'academics_alumni',
+    'academics_staff',
+    'fees',
+    'documents',
+    'employees',
+    'employees_teaching',
+    'employees_non_teaching',
+    'employees_payroll',
+    'transport',
     'communication',
     'communication_notices',
+    'complaints',
     'communication_complaints',
+    'id_card',
+    'id_card_student',
+    'id_card_teaching',
+    'id_card_non_teaching',
     'subscription',
+    'staff_users',
   ],
   PRINCIPAL: [
     'dashboard',
-    'academics',
-    'academics_classes',
-    'academics_students',
-    'academics_alumni',
-    'academics_staff',
-    'academics_subjects',
+    'attendance',
+    'homework',
     'timetable',
     'timetable_student',
     'timetable_faculty',
     'timetable_academic',
-    'attendance',
-    'homework',
+    'academics',
+    'academics_classes',
+    'academics_subjects',
+    'academics_students',
     'exams',
+    'academics_exams',
+    'academics_marksheets',
+    'academics_alumni',
+    'academics_staff',
+    'fees',
+    'documents',
+    'employees',
+    'employees_teaching',
+    'employees_non_teaching',
+    'employees_payroll',
+    'transport',
     'communication',
     'communication_notices',
+    'complaints',
     'communication_complaints',
+    'id_card',
+    'id_card_student',
+    'id_card_teaching',
+    'id_card_non_teaching',
     'subscription',
+    'staff_users',
   ],
   CLASS_TEACHER: [
     'dashboard',
-    'academics',
-    'academics_classes',
-    'academics_students',
-    'academics_alumni',
-    'academics_subjects',
+    'attendance',
+    'homework',
     'timetable',
     'timetable_student',
     'timetable_faculty',
     'timetable_academic',
-    'attendance',
-    'homework',
+    'academics',
+    'academics_classes',
+    'academics_subjects',
+    'academics_students',
     'exams',
+    'academics_exams',
+    'academics_marksheets',
+    'academics_alumni',
+    'documents',
     'communication',
     'communication_notices',
+    'complaints',
     'communication_complaints',
+    'id_card',
+    'id_card_student',
+    'id_card_teaching',
   ],
   TEACHER: [
     'dashboard',
-    'academics',
-    'academics_subjects',
+    'attendance',
+    'homework',
     'timetable',
     'timetable_student',
     'timetable_faculty',
     'timetable_academic',
-    'attendance',
-    'homework',
+    'academics',
+    'academics_subjects',
     'exams',
+    'academics_exams',
+    'academics_marksheets',
+    'documents',
     'communication',
     'communication_notices',
+    'complaints',
     'communication_complaints',
+    'id_card',
+    'id_card_student',
+    'id_card_teaching',
   ],
   FEE_MANAGER: [
     'dashboard',
     'academics',
     'academics_students',
     'academics_alumni',
+    'fees',
+    'documents',
     'communication',
     'communication_notices',
-    'subscription',
+    'id_card',
+    'id_card_student',
+  ],
+  TRANSPORT_MANAGER: [
+    'dashboard',
+    'academics',
+    'academics_students',
+    'transport',
+    'communication',
+    'communication_notices',
+    'id_card',
   ],
   GUARDIAN: [
     'dashboard',
+    'attendance',
+    'homework',
     'timetable',
     'timetable_student',
     'timetable_academic',
-    'attendance',
-    'homework',
     'exams',
+    'documents',
     'communication',
     'communication_notices',
+    'complaints',
     'communication_complaints',
   ],
   PARENT: [
     'dashboard',
+    'attendance',
+    'homework',
     'timetable',
     'timetable_student',
     'timetable_academic',
-    'attendance',
-    'homework',
     'exams',
+    'documents',
     'communication',
     'communication_notices',
+    'complaints',
     'communication_complaints',
   ],
   STUDENT: [
     'dashboard',
+    'attendance',
+    'homework',
     'timetable',
     'timetable_student',
     'timetable_academic',
-    'attendance',
-    'homework',
     'exams',
+    'documents',
     'communication',
     'communication_notices',
   ],
@@ -149,6 +225,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
 })
 export class AuthService {
   private readonly TOKEN_KEY = 'schoolsense_token';
+  private readonly SIGNING_SECRET_KEY = 'schoolsense_signing_secret';
   private readonly USER_KEY = 'schoolsense_user';
   private readonly SESSION_KEY = 'schoolsense_active_session';
   private readonly ROLE_PERMS_KEY_PREFIX = 'schoolsense_role_perms_';
@@ -178,21 +255,189 @@ export class AuthService {
     return !!(scope?.classTeacherSections && scope.classTeacherSections.length > 0);
   });
   isParent = computed(() => ['GUARDIAN', 'PARENT'].includes(this.userRole()));
+  isStudent = computed(() => this.userRole() === 'STUDENT');
+  isFeeManager = computed(() => this.userRole() === 'FEE_MANAGER' || (this.currentUser()?.department || '').toLowerCase().includes('fee'));
+  isTransportManager = computed(() => this.userRole() === 'TRANSPORT_MANAGER' || (this.currentUser()?.department || '').toLowerCase().includes('transport'));
+  isDepartmentalStaff = computed(() => {
+    const r = this.userRole();
+    return !!r && !this.isAdmin() && !this.isTeacher() && !this.isParent() && r !== 'STUDENT';
+  });
+
+  /**
+   * Set simulated role for Support Session view
+   */
+  setSupportRole(role: string): void {
+    const user = this.currentUser();
+    if (!user || !user.isSupportSession) return;
+    const cleanRole = role.toUpperCase();
+    const updatedUser: User = {
+      ...user,
+      role: cleanRole,
+      roleName: this.getRoleDisplayName(cleanRole),
+    };
+    this.currentUser.set(updatedUser);
+    localStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser));
+  }
+
+  /**
+   * Set specific Teacher Impersonation in Support Session
+   */
+  setSupportTeacher(teacher: any): void {
+    const user = this.currentUser();
+    if (!user || !user.isSupportSession) return;
+
+    const teacherName = teacher.fullName || teacher.name || `${teacher.firstName || teacher.first_name || ''} ${teacher.lastName || teacher.last_name || ''}`.trim() || 'Teacher';
+    const roleCode = (teacher.role || (teacher.isClassTeacher ? 'CLASS_TEACHER' : 'TEACHER')).toUpperCase();
+
+    const updatedUser: User = {
+      ...user,
+      id: teacher.id || teacher.user_id || user.id,
+      firstName: teacher.firstName || teacher.first_name || teacherName.split(' ')[0] || 'Teacher',
+      lastName: teacher.lastName || teacher.last_name || teacherName.split(' ').slice(1).join(' ') || '',
+      email: teacher.email || user.email,
+      phone: teacher.phone || user.phone,
+      role: roleCode,
+      roleName: teacher.designation || teacher.roleName || (roleCode === 'CLASS_TEACHER' ? 'Class Teacher' : 'Teacher'),
+      teachingScope: {
+        classTeacherSections: teacher.classTeacherSections || [],
+        subjectAssignments: teacher.subjectAssignments || teacher.subjects || [],
+      },
+      customPermissions: teacher.custom_permissions || undefined,
+    };
+
+    this.currentUser.set(updatedUser);
+    localStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser));
+  }
+
+  /**
+   * Set specific Parent & Student Impersonation in Support Session
+   */
+  setSupportParent(student: any, guardian?: any): void {
+    const user = this.currentUser();
+    if (!user || !user.isSupportSession) return;
+
+    const gName = guardian?.name || guardian?.fullName || student.guardianName || student.guardian_name || student.primaryContact?.name || 'Parent / Guardian';
+    const firstGName = guardian?.firstName || guardian?.first_name || gName.split(' ')[0] || 'Parent';
+    const lastGName = guardian?.lastName || guardian?.last_name || gName.split(' ').slice(1).join(' ') || '';
+
+    const childRecord = {
+      id: student.id || student.studentId,
+      studentId: student.id || student.studentId,
+      admissionNumber: student.admissionNumber || student.admission_number || '',
+      name: student.fullName || student.name || 'Student',
+      className: student.className || student.class_name || 'Class',
+      sectionName: student.sectionName || student.section_name || 'A',
+      sectionId: student.sectionId || student.section_id,
+      rollNumber: student.rollNumber || student.roll_number,
+      relationship: student.guardianRelationship || 'Parent',
+      isPrimaryContact: true,
+    };
+
+    const updatedUser: User = {
+      ...user,
+      id: guardian?.id || guardian?.user_id || student.guardian_user_id || 'parent-support-sim',
+      firstName: firstGName,
+      lastName: lastGName,
+      email: guardian?.email || student.primaryContact?.email || 'parent@schoolscence.in',
+      phone: guardian?.phone || student.primaryContact?.phone || '',
+      role: 'PARENT',
+      roleName: 'Parent / Guardian',
+      children: [childRecord],
+    };
+
+    try {
+      localStorage.setItem('schoolsense_parent_students', JSON.stringify([childRecord]));
+    } catch {}
+
+    this.currentUser.set(updatedUser);
+    localStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser));
+  }
+
+  /**
+   * Set specific Departmental User Impersonation in Support Session
+   */
+  setSupportDepartmentalUser(deptUser: any): void {
+    const user = this.currentUser();
+    if (!user || !user.isSupportSession) return;
+
+    const roleCode = (deptUser.role || 'STAFF').toUpperCase();
+    const updatedUser: User = {
+      ...user,
+      id: deptUser.id || user.id,
+      firstName: deptUser.first_name || deptUser.name?.split(' ')[0] || 'Staff',
+      lastName: deptUser.last_name || deptUser.name?.split(' ').slice(1).join(' ') || '',
+      email: deptUser.email || user.email,
+      phone: deptUser.phone || user.phone,
+      role: roleCode,
+      roleName: deptUser.designation || deptUser.role_name || deptUser.role,
+      department: deptUser.department,
+      designation: deptUser.designation,
+      customPermissions: deptUser.custom_permissions || undefined,
+    };
+
+    this.currentUser.set(updatedUser);
+    localStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser));
+  }
+
+  private getRoleDisplayName(role: string): string {
+    switch (role) {
+      case 'SUPER_ADMIN': return 'Binary (Delegated Admin)';
+      case 'SCHOOL_ADMIN': return 'School Admin';
+      case 'PRINCIPAL': return 'Principal';
+      case 'CLASS_TEACHER': return 'Class Teacher';
+      case 'TEACHER': return 'Teacher';
+      case 'FEE_MANAGER': return 'Fee Department';
+      case 'TRANSPORT_MANAGER': return 'Transport Department';
+      case 'PARENT':
+      case 'GUARDIAN': return 'Parent / Guardian';
+      case 'STUDENT': return 'Student';
+      default: return role;
+    }
+  }
 
   /**
    * Check if a specific section / service is allowed for the active user based on role permissions
    */
   isSectionAllowedForUser(sectionId: string): boolean {
-    if (this.isSuperAdmin() || this.isSupportSession()) return true;
-
+    const user = this.currentUser();
     const role = this.userRole();
     if (!role) return false;
 
-    // Super Admin & Platform Admin have universal access
-    if (role === 'SUPER_ADMIN' || role === 'PLATFORM_ADMIN') return true;
+    // Super Admin / Platform Admin / Binary / School Admin / Principal have universal access
+    if (role === 'SUPER_ADMIN' || role === 'PLATFORM_ADMIN' || role === 'BINARY' || role === 'SCHOOL_ADMIN' || role === 'PRINCIPAL') return true;
 
     // Map any aliases
     const normalizedId = this.normalizeSectionId(sectionId);
+    if (normalizedId === 'dashboard') return true;
+
+    // If user has custom explicit permissions granted by admin, check against them
+    if (user?.customPermissions && Array.isArray(user.customPermissions)) {
+      const parentMap: Record<string, string> = {
+        academics_classes: 'academics',
+        academics_students: 'academics',
+        academics_alumni: 'academics',
+        academics_staff: 'academics',
+        academics_subjects: 'academics',
+        academics_exams: 'academics',
+        academics_marksheets: 'academics',
+        timetable_student: 'timetable',
+        timetable_faculty: 'timetable',
+        timetable_academic: 'timetable',
+        employees_teaching: 'employees',
+        employees_non_teaching: 'employees',
+        employees_payroll: 'employees',
+        id_card_student: 'id_card',
+        id_card_teaching: 'id_card',
+        id_card_non_teaching: 'id_card',
+        communication_notices: 'communication',
+        communication_complaints: 'communication',
+      };
+      const parentId = parentMap[normalizedId];
+      if (parentId && !user.customPermissions.includes(parentId)) {
+        return false;
+      }
+      return user.customPermissions.includes(normalizedId);
+    }
 
     const perms = this.rolePermissions();
     const roleList = perms[role] || DEFAULT_ROLE_PERMISSIONS[role] || [];
@@ -204,9 +449,17 @@ export class AuthService {
       academics_alumni: 'academics',
       academics_staff: 'academics',
       academics_subjects: 'academics',
+      academics_exams: 'academics',
+      academics_marksheets: 'academics',
       timetable_student: 'timetable',
       timetable_faculty: 'timetable',
       timetable_academic: 'timetable',
+      employees_teaching: 'employees',
+      employees_non_teaching: 'employees',
+      employees_payroll: 'employees',
+      id_card_student: 'id_card',
+      id_card_teaching: 'id_card',
+      id_card_non_teaching: 'id_card',
       communication_notices: 'communication',
       communication_complaints: 'communication',
     };
@@ -219,6 +472,11 @@ export class AuthService {
     return roleList.includes(normalizedId);
   }
 
+  canManageStaffUsers(): boolean {
+    const role = this.userRole();
+    return role === 'SUPER_ADMIN' || role === 'PLATFORM_ADMIN' || role === 'BINARY' || role === 'SCHOOL_ADMIN' || role === 'PRINCIPAL';
+  }
+
   private normalizeSectionId(sectionId: string): string {
     const clean = (sectionId || '').trim();
     if (clean === 'classes') return 'academics_classes';
@@ -228,26 +486,95 @@ export class AuthService {
     if (clean === 'subjects') return 'academics_subjects';
     if (clean === 'complaints') return 'communication_complaints';
     if (clean === 'notices') return 'communication_notices';
+    if (clean === 'teaching_staff' || clean === 'employees_teaching') return 'academics_staff';
+    if (clean === 'non_teaching_staff' || clean === 'employees_non_teaching') return 'staff_users';
+    if (clean === 'exams' || clean === 'exam' || clean === 'academics_exams' || clean === 'academics_marksheets') return 'exams';
     return clean;
   }
 
   isServiceEnabled(serviceCode: string): boolean {
-    if (this.isSuperAdmin() || this.isSupportSession()) return true;
-    const disabled = this.currentUser()?.school?.disabledServices || [];
-    if (disabled.includes(serviceCode)) return false;
+    const code = (serviceCode || '').toUpperCase().trim();
+    if (!code) return true;
+
+    const user = this.currentUser();
+    const schoolId = user?.school?.id;
+    let disabled: string[] = user?.school?.disabledServices || [];
+
+    if (schoolId) {
+      try {
+        const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
+        if (Array.isArray(localProfiles[schoolId]?.disabledServices)) {
+          disabled = localProfiles[schoolId].disabledServices;
+        }
+      } catch {}
+    }
+
+    const disabledUpper = disabled.map((d) => String(d).toUpperCase().trim());
+
+    // 1. Direct match: is this service code disabled by super admin?
+    if (disabledUpper.includes(code)) {
+      return false;
+    }
+
+    // 2. Parent-child hierarchy match: if parent service is disabled, child is automatically disabled
+    const parentMap: Record<string, string> = {
+      TIMETABLE_STUDENT: 'TIMETABLE',
+      TIMETABLE_FACULTY: 'TIMETABLE',
+      TIMETABLE_ACADEMIC: 'TIMETABLE',
+      ACADEMICS_CLASSES: 'ACADEMICS',
+      ACADEMICS_SUBJECTS: 'ACADEMICS',
+      ACADEMICS_STUDENTS: 'ACADEMICS',
+      EXAMS: 'ACADEMICS',
+      ACADEMICS_MARKSHEETS: 'ACADEMICS',
+      ACADEMICS_ALUMNI: 'ACADEMICS',
+      EMPLOYEES_TEACHING: 'EMPLOYEES',
+      EMPLOYEES_NON_TEACHING: 'EMPLOYEES',
+      EMPLOYEES_PAYROLL: 'EMPLOYEES',
+      ID_CARD_STUDENT: 'ID_CARD',
+      ID_CARD_TEACHING: 'ID_CARD',
+      ID_CARD_NON_TEACHING: 'ID_CARD',
+    };
+
+    const parentCode = parentMap[code];
+    if (parentCode && disabledUpper.includes(parentCode)) {
+      return false;
+    }
+
+    const role = this.userRole();
+    if (role === 'SUPER_ADMIN' || role === 'PLATFORM_ADMIN' || role === 'BINARY') return true;
 
     const serviceToSectionMap: Record<string, string> = {
+      DASHBOARD: 'dashboard',
       TIMETABLE: 'timetable',
+      TIMETABLE_STUDENT: 'timetable',
+      TIMETABLE_FACULTY: 'timetable',
+      TIMETABLE_ACADEMIC: 'timetable',
       ATTENDANCE: 'attendance',
       HOMEWORK: 'homework',
+      ACADEMICS: 'academics',
+      ACADEMICS_CLASSES: 'academics_classes',
+      ACADEMICS_SUBJECTS: 'academics_subjects',
+      ACADEMICS_STUDENTS: 'academics_students',
       EXAMS: 'exams',
+      ACADEMICS_MARKSHEETS: 'exams',
+      ACADEMICS_ALUMNI: 'academics_alumni',
+      FEES: 'fees',
+      DOCUMENTS: 'documents',
+      EMPLOYEES: 'employees',
+      EMPLOYEES_TEACHING: 'academics_staff',
+      EMPLOYEES_NON_TEACHING: 'staff_users',
+      EMPLOYEES_PAYROLL: 'staff_users',
+      TRANSPORT: 'transport',
       COMMUNICATION: 'communication',
       COMPLAINTS: 'communication_complaints',
-      ACADEMICS: 'academics',
+      ID_CARD: 'id_card',
+      ID_CARD_STUDENT: 'id_card',
+      ID_CARD_TEACHING: 'id_card',
+      ID_CARD_NON_TEACHING: 'id_card',
       SUBSCRIPTION: 'subscription',
     };
 
-    const sectionId = serviceToSectionMap[serviceCode.toUpperCase()];
+    const sectionId = serviceToSectionMap[code];
     if (sectionId) {
       return this.isSectionAllowedForUser(sectionId);
     }
@@ -317,10 +644,29 @@ export class AuthService {
 
   constructor() {
     const user = this.currentUser();
-    if (user?.school?.id && !user.school.name && !user.school.logoUrl) {
+    if (user?.school?.id && (!user.school.logoUrl || !user.school.logo_url || !user.school.name)) {
       this.syncSchoolProfileFromDb(user.school.id);
     }
     this.validateStoredSession();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('schoolsense_permissions_updated', ((event: CustomEvent) => {
+        const detail = event.detail;
+        const cur = this.currentUser();
+        if (cur && (cur.id === detail?.userId || (detail?.email && cur.email?.toLowerCase() === detail.email.toLowerCase()))) {
+          if (Array.isArray(detail?.permissions)) {
+            const updated: User = {
+              ...cur,
+              customPermissions: [...detail.permissions],
+            };
+            this.currentUser.set(updated);
+            try {
+              localStorage.setItem(this.USER_KEY, JSON.stringify(updated));
+            } catch {}
+          }
+        }
+      }) as EventListener);
+    }
   }
 
   /**
@@ -332,17 +678,58 @@ export class AuthService {
     if (!token) return;
     try {
       const { data, error } = await this.supabase.rpc('whoami');
-      if (!error && data && (data as { valid?: boolean }).valid === false) {
-        localStorage.removeItem(this.TOKEN_KEY);
-        localStorage.removeItem(this.USER_KEY);
-        this.currentUser.set(null);
-        const publicPaths = ['/', '/features', '/pricing', '/about', '/contact', '/login'];
-        if (!publicPaths.some((p) => this.router.url === p || this.router.url.startsWith(p + '?'))) {
-          this.router.navigate(['/login']);
+      if (!error && data) {
+        const payload = data as { valid?: boolean; signingSecret?: string };
+        if (payload.valid === false) {
+          localStorage.removeItem(this.TOKEN_KEY);
+          localStorage.removeItem(this.SIGNING_SECRET_KEY);
+          localStorage.removeItem(this.USER_KEY);
+          this.supabase.setAuthToken(null, null);
+          this.currentUser.set(null);
+          const publicPaths = ['/', '/features', '/pricing', '/about', '/contact', '/login'];
+          if (!publicPaths.some((p) => this.router.url === p || this.router.url.startsWith(p + '?'))) {
+            this.router.navigate(['/login']);
+          }
+        } else if (payload.valid === true && payload.signingSecret) {
+          localStorage.setItem(this.SIGNING_SECRET_KEY, payload.signingSecret);
+          this.supabase.setAuthToken(token, payload.signingSecret);
+          await this.syncCurrentStaffPermissions();
         }
       }
     } catch {
       // Network hiccup — keep the local session; subsequent calls decide.
+    }
+  }
+
+  async syncCurrentStaffPermissions(): Promise<void> {
+    const user = this.currentUser();
+    if (!user || !user.id || !user.school?.id) return;
+    const role = (user.role || '').toUpperCase();
+    if (['SUPER_ADMIN', 'PLATFORM_ADMIN', 'BINARY', 'SCHOOL_ADMIN', 'PRINCIPAL'].includes(role)) {
+      return;
+    }
+    try {
+      const { data: roleRow, error } = await this.supabase
+        .from('user_school_roles')
+        .select('custom_permissions, department, designation')
+        .eq('user_id', user.id)
+        .eq('school_id', user.school.id)
+        .maybeSingle();
+
+      if (!error && roleRow && Array.isArray(roleRow.custom_permissions)) {
+        const updated: User = {
+          ...user,
+          customPermissions: roleRow.custom_permissions,
+          department: roleRow.department || user.department,
+          designation: roleRow.designation || user.designation,
+        };
+        this.currentUser.set(updated);
+        try {
+          localStorage.setItem(this.USER_KEY, JSON.stringify(updated));
+        } catch {}
+      }
+    } catch (e) {
+      console.warn('syncCurrentStaffPermissions error:', e);
     }
   }
 
@@ -581,14 +968,64 @@ export class AuthService {
 
   login(identifier: string, password: string, schoolCode?: string): Observable<AuthResponse> {
     return from(this.executeLogin(identifier, password, schoolCode)).pipe(
-      tap((res) => {
-        localStorage.setItem(this.TOKEN_KEY, res.accessToken);
-        localStorage.setItem(this.USER_KEY, JSON.stringify(res.user));
-        this.supabase.setAuthToken(res.accessToken);
-        this.currentUser.set(res.user);
-        if (res.user?.school?.id) {
-          this.syncSchoolProfileFromDb(res.user.school.id);
+      switchMap(async (res) => {
+        const token = res.accessToken || (res as any).token;
+        const secret = res.signingSecret || (res as any).signing_secret;
+        localStorage.setItem(this.TOKEN_KEY, token);
+        if (secret) {
+          localStorage.setItem(this.SIGNING_SECRET_KEY, secret);
+        } else {
+          localStorage.removeItem(this.SIGNING_SECRET_KEY);
         }
+        this.supabase.setAuthToken(token, secret || null);
+
+        // Fetch fresh custom permissions for departmental/staff users directly from DB
+        const role = (res.user?.role || '').toUpperCase();
+        const isRootAdmin = ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'BINARY', 'SCHOOL_ADMIN', 'PRINCIPAL'].includes(role);
+        if (!isRootAdmin && res.user?.school?.id) {
+          try {
+            const { data: roleRow, error: roleErr } = await this.supabase
+              .from('user_school_roles')
+              .select('custom_permissions, department, designation')
+              .eq('user_id', res.user.id)
+              .eq('school_id', res.user.school.id)
+              .maybeSingle();
+
+            if (!roleErr && roleRow) {
+              if (roleRow.custom_permissions && Array.isArray(roleRow.custom_permissions)) {
+                res.user.customPermissions = roleRow.custom_permissions;
+              }
+              if (roleRow.department) res.user.department = roleRow.department;
+              if (roleRow.designation) res.user.designation = roleRow.designation;
+            }
+          } catch (e) {
+            console.warn('Could not fetch custom permissions on login:', e);
+          }
+        }
+
+        if (res.user && !res.user.customPermissions) {
+          this.resolveUserCustomPermissionsFromLocal(res.user);
+        }
+
+        localStorage.setItem(this.USER_KEY, JSON.stringify(res.user));
+        this.currentUser.set(res.user);
+        if (res.user?.school) {
+          const sLogo = res.user.school.logoUrl || res.user.school.logo_url;
+          if (sLogo) {
+            localStorage.setItem('schoolsense_selected_school_logo', sLogo);
+          }
+          if (res.user.school.name) {
+            localStorage.setItem('schoolsense_selected_school_name', res.user.school.name);
+          }
+          if (res.user.school.code) {
+            localStorage.setItem('schoolsense_selected_school_code', res.user.school.code);
+          }
+          if (res.user.school.id) {
+            localStorage.setItem('schoolsense_selected_school_id', res.user.school.id);
+            this.syncSchoolProfileFromDb(res.user.school.id);
+          }
+        }
+        return res;
       })
     );
   }
@@ -607,10 +1044,78 @@ export class AuthService {
     if (error) {
       throw new Error(error.message || 'Invalid email/phone or password.');
     }
-    if (!data || !data.accessToken || !data.user) {
-      throw new Error('Invalid email/phone or password.');
+
+    const token = data?.accessToken || (data as any)?.token;
+    const signingSecret = data?.signingSecret || (data as any)?.signing_secret;
+
+    if (!data || !token || !data.user) {
+      const serverMsg = (data as any)?.message;
+      throw new Error(serverMsg || 'Invalid email/phone or password.');
     }
-    return data as AuthResponse;
+
+    const authRes = data as AuthResponse;
+    authRes.accessToken = token;
+    authRes.signingSecret = signingSecret || undefined;
+
+    if (!authRes.user.role && (data as any).is_platform_admin) {
+      authRes.user.role = 'PLATFORM_ADMIN';
+    }
+
+    if (!authRes.user.school && (data as any).school_id) {
+      const schoolId = (data as any).school_id || '00000000-0000-0000-0000-000000000001';
+      const schoolName = (data as any).school_name || (authRes.user.role === 'SUPER_ADMIN' || authRes.user.role === 'PLATFORM_ADMIN' ? 'Platform Console' : 'School');
+      const schoolCodeVal = (data as any).school_code || (authRes.user.role === 'SUPER_ADMIN' || authRes.user.role === 'PLATFORM_ADMIN' ? 'PLATFORM' : cleanCode || 'SCH');
+      authRes.user.school = {
+        id: schoolId,
+        name: schoolName,
+        code: schoolCodeVal,
+        status: 'ACTIVE',
+      };
+    } else if (!authRes.user.school && (authRes.user.role === 'SUPER_ADMIN' || authRes.user.role === 'PLATFORM_ADMIN')) {
+      authRes.user.school = {
+        id: '00000000-0000-0000-0000-000000000001',
+        name: 'Platform Console',
+        code: 'PLATFORM',
+        status: 'ACTIVE',
+      };
+    }
+
+    if (authRes.user) {
+      this.resolveUserCustomPermissionsFromLocal(authRes.user);
+    }
+    return authRes;
+  }
+
+  private resolveUserCustomPermissionsFromLocal(user: any): void {
+    if (!user) return;
+    const role = (user.role || '').toUpperCase();
+    if (role === 'SUPER_ADMIN' || role === 'PLATFORM_ADMIN' || role === 'SCHOOL_ADMIN' || role === 'PRINCIPAL') {
+      return;
+    }
+
+    if (user.customPermissions && Array.isArray(user.customPermissions) && user.customPermissions.length > 0) {
+      return;
+    }
+    if (user.custom_permissions && Array.isArray(user.custom_permissions) && user.custom_permissions.length > 0) {
+      user.customPermissions = user.custom_permissions;
+      return;
+    }
+
+    const schoolId = user.school?.id;
+    if (schoolId && typeof localStorage !== 'undefined') {
+      try {
+        const cachedRaw = localStorage.getItem(`schoolsense_dept_users_${schoolId}`);
+        if (cachedRaw) {
+          const list = JSON.parse(cachedRaw);
+          const match = list.find((u: any) => u.id === user.id || (u.email && u.email.toLowerCase() === user.email?.toLowerCase()));
+          if (match && Array.isArray(match.custom_permissions)) {
+            user.customPermissions = match.custom_permissions;
+            if (match.department && !user.department) user.department = match.department;
+            if (match.designation && !user.designation) user.designation = match.designation;
+          }
+        }
+      } catch (e) {}
+    }
   }
 
   fetchProfile(): Observable<User> {
@@ -624,9 +1129,10 @@ export class AuthService {
         .eq('id', current.id)
         .single()
     ).pipe(
-      map(({ data, error }) => {
+      switchMap(async ({ data, error }) => {
         if (error || !data) throw error || new Error('User not found');
-        return current;
+        await this.syncCurrentStaffPermissions();
+        return this.currentUser() || current;
       })
     );
   }
@@ -635,11 +1141,15 @@ export class AuthService {
     const current = this.currentUser();
     if (!current || !current.school) return;
     const logo = schoolData.logoUrl || schoolData.logo_url || current.school.logoUrl || current.school.logo_url;
+    const name = schoolData.name || current.school.name;
+    const code = schoolData.code || current.school.code;
     const updatedUser: User = {
       ...current,
       school: {
         ...current.school,
         ...schoolData,
+        name,
+        code,
         logoUrl: logo,
         logo_url: logo,
       },
@@ -647,6 +1157,18 @@ export class AuthService {
     this.currentUser.set(updatedUser);
     try {
       localStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser));
+      if (logo) {
+        localStorage.setItem('schoolsense_selected_school_logo', logo);
+      }
+      if (name) {
+        localStorage.setItem('schoolsense_selected_school_name', name);
+      }
+      if (code) {
+        localStorage.setItem('schoolsense_selected_school_code', code);
+      }
+      if (current.school.id) {
+        localStorage.setItem('schoolsense_selected_school_id', current.school.id);
+      }
     } catch {}
   }
 
@@ -665,6 +1187,30 @@ export class AuthService {
   }
 
   updateSchoolServices(schoolId: string, disabledServices: string[]): Observable<any> {
+    try {
+      const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
+      localProfiles[schoolId] = {
+        ...(localProfiles[schoolId] || {}),
+        disabledServices: [...disabledServices],
+      };
+      localStorage.setItem('schoolsense_school_profiles', JSON.stringify(localProfiles));
+    } catch {}
+
+    const user = this.currentUser();
+    if (user && user.school && user.school.id === schoolId) {
+      const updatedUser: User = {
+        ...user,
+        school: {
+          ...user.school,
+          disabledServices: [...disabledServices],
+        },
+      };
+      this.currentUser.set(updatedUser);
+      try {
+        localStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser));
+      } catch {}
+    }
+
     return of({ success: true, disabledServices });
   }
 
@@ -781,11 +1327,15 @@ export class AuthService {
       const wallet = walletMap.get(s.id) || localWallets[s.id];
       const localProfile = localProfiles[s.id] || {};
       const resolvedLogo = localProfile.logoUrl || localProfile.logo_url || s.logo_url || s.logoUrl || '';
+      const resolvedDisabledServices = Array.isArray(localProfile.disabledServices)
+        ? localProfile.disabledServices
+        : (Array.isArray(s.disabled_services) ? s.disabled_services : (Array.isArray(s.disabledServices) ? s.disabledServices : []));
 
       return {
         ...s,
         logo_url: resolvedLogo,
         logoUrl: resolvedLogo,
+        disabledServices: resolvedDisabledServices,
         admin: adminUser
           ? {
               id: adminUser.id,
@@ -832,6 +1382,19 @@ export class AuthService {
     const adminPhone = payload.adminPhone ? payload.adminPhone.trim() : null;
     const adminPassword = payload.adminPassword || 'password123';
 
+    const saveDisabledServices = (sId: string) => {
+      if (sId && Array.isArray(payload.disabledServices)) {
+        try {
+          const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
+          localProfiles[sId] = {
+            ...(localProfiles[sId] || {}),
+            disabledServices: [...payload.disabledServices],
+          };
+          localStorage.setItem('schoolsense_school_profiles', JSON.stringify(localProfiles));
+        } catch {}
+      }
+    };
+
     // 1. Try RPC with 15 arguments (including p_per_student_fee)
     try {
       const { data, error } = await this.supabase.rpc('onboard_school_tenant', {
@@ -853,9 +1416,13 @@ export class AuthService {
       });
 
       if (!error && data) {
-        if (adminEmail && (data.schoolId || data.school_id)) {
+        const sId = data.schoolId || data.school_id;
+        if (sId) {
+          saveDisabledServices(sId);
+        }
+        if (adminEmail && sId) {
           await this.ensureSchoolAdminLinked(
-            data.schoolId || data.school_id,
+            sId,
             adminEmail,
             adminFirstName,
             adminLastName,
@@ -891,6 +1458,7 @@ export class AuthService {
       if (!error && data) {
         const targetSchoolId = data.schoolId || data.school_id;
         if (targetSchoolId) {
+          saveDisabledServices(targetSchoolId);
           try {
             await this.supabase
               .from('school_subscriptions')
@@ -1001,6 +1569,8 @@ export class AuthService {
         };
         localStorage.setItem('schoolsense_saas_subscriptions', JSON.stringify(subs));
       } catch {}
+
+      saveDisabledServices(schoolId);
 
       // E. Create School Admin User & Role Assignment
       if (adminEmail) {
@@ -1133,13 +1703,19 @@ export class AuthService {
             this.ROOT_BACKUP_KEY,
             JSON.stringify({
               token: localStorage.getItem(this.TOKEN_KEY),
+              signingSecret: localStorage.getItem(this.SIGNING_SECRET_KEY),
               user: currentSuper,
             })
           );
         }
         localStorage.setItem(this.TOKEN_KEY, res.accessToken);
+        if (res.signingSecret) {
+          localStorage.setItem(this.SIGNING_SECRET_KEY, res.signingSecret);
+        } else {
+          localStorage.removeItem(this.SIGNING_SECRET_KEY);
+        }
         localStorage.setItem(this.USER_KEY, JSON.stringify(res.user));
-        this.supabase.setAuthToken(res.accessToken);
+        this.supabase.setAuthToken(res.accessToken, res.signingSecret || null);
         this.currentUser.set(res.user);
         if (res.user?.school?.id) {
           this.syncSchoolProfileFromDb(res.user.school.id);
@@ -1154,8 +1730,13 @@ export class AuthService {
       try {
         const backup = JSON.parse(backupRaw);
         localStorage.setItem(this.TOKEN_KEY, backup.token);
+        if (backup.signingSecret) {
+          localStorage.setItem(this.SIGNING_SECRET_KEY, backup.signingSecret);
+        } else {
+          localStorage.removeItem(this.SIGNING_SECRET_KEY);
+        }
         localStorage.setItem(this.USER_KEY, JSON.stringify(backup.user));
-        this.supabase.setAuthToken(backup.token);
+        this.supabase.setAuthToken(backup.token, backup.signingSecret || null);
         localStorage.removeItem(this.ROOT_BACKUP_KEY);
         this.currentUser.set(backup.user);
         this.router.navigate(['/super-admin']);
@@ -1179,8 +1760,9 @@ export class AuthService {
   logout(): void {
     // Best-effort server-side revocation, then clear the local session.
     try { void this.supabase.rpc('logout_session'); } catch { /* ignore */ }
-    this.supabase.setAuthToken(null);
+    this.supabase.setAuthToken(null, null);
     localStorage.removeItem(this.TOKEN_KEY);
+    localStorage.removeItem(this.SIGNING_SECRET_KEY);
     localStorage.removeItem(this.USER_KEY);
     localStorage.removeItem(this.ROOT_BACKUP_KEY);
     localStorage.removeItem(this.SESSION_KEY);
@@ -1220,6 +1802,9 @@ export class AuthService {
             }
             if (lp.name) user.school.name = lp.name;
             if (lp.code) user.school.code = lp.code;
+            if (Array.isArray(lp.disabledServices)) {
+              user.school.disabledServices = lp.disabledServices;
+            }
           }
         } catch {}
 

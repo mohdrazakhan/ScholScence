@@ -812,7 +812,11 @@ export interface MonthItem {
                         <div>
                           <div class="flex items-center justify-between gap-1">
                             <span class="text-[9px] font-black uppercase tracking-wider text-amber-800 bg-amber-100/90 px-2 py-0.5 rounded-lg border border-amber-300/60 flex items-center gap-1">
-                              <span>☕</span> Recess
+                              <svg class="w-3 h-3 text-amber-700" viewBox="0 0 24 24" fill="none">
+                                <path d="M5 9h11v5a5.5 5.5 0 01-11 0V9z" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.8" />
+                                <path d="M16 10h2a2 2 0 010 4h-2M4 20h13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                              </svg>
+                              <span>Recess</span>
                             </span>
                             <span class="text-[9px] font-bold text-amber-700/90 font-mono">{{ slot.startTime }}</span>
                           </div>
@@ -848,7 +852,11 @@ export interface MonthItem {
                         <div>
                           <div class="flex items-center justify-between gap-1">
                             <span class="text-[9px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded-lg border border-emerald-300/60 flex items-center gap-1">
-                              <span>🍱</span> Lunch
+                              <svg class="w-3 h-3 text-emerald-700" viewBox="0 0 24 24" fill="none">
+                                <rect x="3" y="6" width="18" height="12" rx="3" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.8" />
+                                <path d="M3 12h18M12 6v12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                              </svg>
+                              <span>Lunch</span>
                             </span>
                             <span class="text-[9px] font-bold text-emerald-700/90 font-mono">{{ slot.startTime }}</span>
                           </div>
@@ -935,7 +943,7 @@ export interface MonthItem {
                           </span>
                         </div>
 
-                        <!-- Hover Action Toolbar (Edit ✏️ & Delete 🗑️) -->
+                        <!-- Hover Action Toolbar (Edit & Delete) -->
                         <div *ngIf="canEditCurrentTimetable && timetableMode === 'STUDENT'"
                              class="absolute top-1.5 right-1.5 hidden group-hover:flex items-center gap-0.5 bg-white/95 p-0.5 rounded-xl shadow-md border border-slate-200/80 backdrop-blur-xs">
                           <button (click)="openEditPeriodModal(slot, $event)" title="Edit Period"
@@ -1002,8 +1010,12 @@ export interface MonthItem {
                         class="text-[10px] font-bold px-2 py-0.5 rounded-lg border uppercase tracking-wider">
                     {{ getSubjectTheme(slot).category }}
                   </span>
-                  <span *ngIf="slot.roomNumber" class="text-[10px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
-                    📍 {{ slot.roomNumber }}
+                  <span *ngIf="slot.roomNumber" class="text-[10px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-2xs inline-flex items-center gap-1">
+                    <svg class="w-3 h-3 text-slate-400" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 21s-6-5.2-6-10a6 6 0 1112 0c0 4.8-6 10-6 10z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                      <circle cx="12" cy="11" r="2" fill="currentColor" />
+                    </svg>
+                    <span>{{ slot.roomNumber }}</span>
                   </span>
                 </div>
 

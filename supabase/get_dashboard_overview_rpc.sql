@@ -40,6 +40,7 @@ DECLARE
   v_today_absent INT := 0;
   v_today_late INT := 0;
   v_today_total_att INT := 0;
+  v_today_classes_marked INT := 0;
   v_attendance_pct NUMERIC(5, 1) := 0.0;
   v_pending_complaints INT := 0;
   v_role_counts JSONB := '{}'::JSONB;
@@ -453,13 +454,20 @@ BEGIN
     JOIN public.roles r ON r.id = role_agg.role_id
     JOIN public.user_school_roles usr ON usr.school_id = v_school_id AND usr.status = 'ACTIVE' AND usr.deleted_at IS NULL;
 
-    -- Today's Attendance Percentage
+    -- Today's Attendance Percentage & Classes Marked
     SELECT
       COUNT(CASE WHEN status IN ('PRESENT', 'LATE', 'HALF_DAY') THEN 1 END),
       COUNT(*)
     INTO v_today_present, v_today_total_att
     FROM public.attendance
     WHERE school_id = v_school_id AND date = v_today_date;
+
+    SELECT COUNT(DISTINCT COALESCE(s.class_id, se.class_id))
+    INTO v_today_classes_marked
+    FROM public.attendance a
+    LEFT JOIN public.sections s ON s.id = a.section_id
+    LEFT JOIN public.student_enrollments se ON se.student_id = a.student_id
+    WHERE a.school_id = v_school_id AND date = v_today_date;
 
     IF v_today_total_att > 0 THEN
       v_attendance_pct := ROUND((v_today_present::NUMERIC / v_today_total_att::NUMERIC) * 100, 1);
@@ -529,6 +537,7 @@ BEGIN
       'totalClasses', v_total_classes,
       'attendanceTodayPercentage', v_attendance_pct::TEXT,
       'attendanceMarkedCount', v_today_total_att,
+      'attendanceClassesMarkedCount', v_today_classes_marked,
       'pendingComplaints', v_pending_complaints,
       'roleCounts', COALESCE(v_role_counts, '{}'::JSONB)
     ),

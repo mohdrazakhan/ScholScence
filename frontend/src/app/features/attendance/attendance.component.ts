@@ -45,11 +45,14 @@ interface FlatSection {
         <!-- ADMIN ATTENDANCE POLICY SETUP BANNER / DIALOG (IF UNCONFIGURED)-->
         <!-- ============================================================== -->
         <div *ngIf="isAdmin && !attendanceConfig.isConfigured"
-             class="p-6 bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 text-white rounded-3xl shadow-[6px_6px_20px_#cbd5e1,-6px_-6px_20px_#ffffff] border border-indigo-700/50 space-y-4 animate-fadeIn">
+              class="p-6 bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 text-white rounded-3xl shadow-[6px_6px_20px_#cbd5e1,-6px_-6px_20px_#ffffff] border border-indigo-700/50 space-y-4 animate-fadeIn">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="flex items-start gap-3.5">
-              <div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center shrink-0 border border-white/20">
-                <span class="text-2xl">📋</span>
+              <div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center shrink-0 border border-white/20 shadow-[inset_1px_1px_2px_rgba(255,255,255,0.2)]">
+                <svg class="w-6 h-6 text-indigo-200" viewBox="0 0 24 24" fill="none">
+                  <rect x="5" y="4" width="14" height="17" rx="2.5" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.8" />
+                  <path d="M9 4h6v2.5H9V4zM9 12l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
               </div>
               <div>
                 <span class="text-[10px] font-black uppercase tracking-wider text-indigo-300 bg-indigo-950/60 px-2.5 py-0.5 rounded-lg border border-indigo-400/30">
@@ -66,7 +69,9 @@ interface FlatSection {
               <button (click)="openPolicyModal()"
                       class="px-5 py-2.5 bg-white hover:bg-slate-100 text-indigo-950 text-xs font-black rounded-2xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2 cursor-pointer">
                 <span>Configure School Policy</span>
-                <span>&rarr;</span>
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                  <path d="M5 12h14m-4-4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
               </button>
             </div>
           </div>
@@ -91,7 +96,7 @@ interface FlatSection {
                     <select [(ngModel)]="selectedSectionId" (change)="loadAttendance()"
                             class="w-full appearance-none px-4 py-2.5 pr-10 bg-[#f8fafc] border border-slate-300 rounded-2xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:border-slate-800 shadow-[inset_2px_2px_5px_#e2e8f0,inset_-2px_-2px_5px_#ffffff] cursor-pointer transition-all">
                       <option *ngFor="let sec of availableSections" [value]="sec.id">
-                        {{ sec.displayName }} {{ sec.isClassTeacher ? '★ (Your Homeroom)' : '' }}
+                        {{ sec.displayName }} {{ sec.isClassTeacher ? '(Your Homeroom)' : '' }}
                       </option>
                     </select>
                     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-500">
@@ -183,7 +188,11 @@ interface FlatSection {
                             [class.shadow-xs]="selectedSession === 'MORNING'"
                             [class.text-slate-500]="selectedSession !== 'MORNING'"
                             class="px-3.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5">
-                      <span>🌅 Morning Homeroom (1st Half)</span>
+                      <svg class="w-3.5 h-3.5 text-amber-500" viewBox="0 0 24 24" fill="none">
+                        <path d="M17 16a5 5 0 00-10 0" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                        <path d="M3 16h18M12 7v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                      </svg>
+                      <span>Morning Homeroom (1st Half)</span>
                     </button>
                     <button type="button" (click)="setSession('AFTERNOON')"
                             [class.bg-white]="selectedSession === 'AFTERNOON'"
@@ -191,7 +200,11 @@ interface FlatSection {
                             [class.shadow-xs]="selectedSession === 'AFTERNOON'"
                             [class.text-slate-500]="selectedSession !== 'AFTERNOON'"
                             class="px-3.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5">
-                      <span>☀️ Afternoon Session (2nd Half)</span>
+                      <svg class="w-3.5 h-3.5 text-amber-600" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="4" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="1.8" />
+                        <path d="M12 3v2m0 14v2m9-9h-2M5 12H3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                      </svg>
+                      <span>Afternoon Session (2nd Half)</span>
                     </button>
                   </div>
                 </ng-container>
@@ -199,14 +212,22 @@ interface FlatSection {
                 <!-- If Once Daily -->
                 <ng-container *ngIf="attendanceConfig.frequency !== 'TWICE_DAILY'">
                   <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-indigo-50/70 border border-indigo-100 text-indigo-800 text-xs font-bold">
-                    <span>🌅 Daily Homeroom Roll Call (Once Daily)</span>
+                    <svg class="w-3.5 h-3.5 text-indigo-600" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="4" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.8" />
+                      <path d="M12 3v2m0 14v2m9-9h-2M5 12H3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                    </svg>
+                    <span>Daily Homeroom Roll Call (Once Daily)</span>
                   </div>
                 </ng-container>
 
                 <!-- Admin Policy Edit Trigger -->
                 <button *ngIf="isAdmin" (click)="openPolicyModal()"
-                        class="px-3 py-1.5 rounded-2xl bg-[#f8fafc] hover:bg-slate-100 text-slate-600 border border-slate-200 text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer">
-                  <span>⚙️ Policy: <strong>{{ attendanceConfig.frequency === 'TWICE_DAILY' ? '2 Times/Day' : '1 Time/Day' }}</strong></span>
+                        class="px-3 py-1.5 rounded-2xl bg-[#f8fafc] hover:bg-slate-100 text-slate-600 border border-slate-200 text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer">
+                  <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="3" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                    <path d="M12 3v2m0 14v2m9-9h-2M5 12H3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  </svg>
+                  <span>Policy: <strong>{{ attendanceConfig.frequency === 'TWICE_DAILY' ? '2 Times/Day' : '1 Time/Day' }}</strong></span>
                 </button>
               </div>
 
@@ -519,17 +540,30 @@ interface FlatSection {
               <button type="button" (click)="parentViewMode = 'MONTHLY'"
                       [ngClass]="parentViewMode === 'MONTHLY' ? 'bg-white text-indigo-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'"
                       class="px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2">
-                <span>📅 Monthly Calendar</span>
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                  <rect x="3.5" y="5" width="17" height="15.5" rx="3" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                  <path d="M3.5 9.5h17M8 3.5v3M16 3.5v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+                <span>Monthly Calendar</span>
               </button>
               <button type="button" (click)="parentViewMode = 'YEARLY'"
                       [ngClass]="parentViewMode === 'YEARLY' ? 'bg-white text-indigo-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'"
                       class="px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2">
-                <span>📊 Yearly Overview</span>
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                  <rect x="4" y="12" width="4" height="8" rx="1.2" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                  <rect x="10" y="8" width="4" height="12" rx="1.2" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                  <rect x="16" y="4" width="4" height="16" rx="1.2" fill="currentColor" fill-opacity="0.3" stroke="currentColor" stroke-width="1.8" />
+                </svg>
+                <span>Yearly Overview</span>
               </button>
               <button type="button" (click)="parentViewMode = 'LIST'"
                       [ngClass]="parentViewMode === 'LIST' ? 'bg-white text-indigo-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'"
                       class="px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2">
-                <span>📜 Daily History Log</span>
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                  <rect x="5" y="3" width="14" height="18" rx="2.5" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                  <path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+                <span>Daily History Log</span>
               </button>
             </div>
 
@@ -668,11 +702,17 @@ interface FlatSection {
                     <div *ngIf="attendanceConfig.frequency !== 'TWICE_DAILY' && cell.status">
                       <span *ngIf="cell.status === 'PRESENT'"
                             class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black bg-emerald-600 text-white shadow-xs">
-                        <span>✓</span> <span>Present</span>
+                        <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none">
+                          <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <span>Present</span>
                       </span>
                       <span *ngIf="cell.status === 'ABSENT'"
                             class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black bg-rose-600 text-white shadow-xs animate-pulse">
-                        <span>✕</span> <span>Absent</span>
+                        <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none">
+                          <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <span>Absent</span>
                       </span>
                       <span *ngIf="cell.status === 'HALF_DAY'"
                             class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black bg-sky-600 text-white shadow-xs">
@@ -680,19 +720,23 @@ interface FlatSection {
                       </span>
                       <span *ngIf="cell.status === 'LATE'"
                             class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black bg-amber-500 text-white shadow-xs">
-                        <span>⏱</span> <span>Late</span>
+                        <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none">
+                          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" />
+                          <path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+                        </svg>
+                        <span>Late</span>
                       </span>
                     </div>
 
                     <!-- Status Badge (Twice Daily) -->
                     <div *ngIf="attendanceConfig.frequency === 'TWICE_DAILY' && cell.status" class="space-y-0.5">
-                      <div class="text-[9px] font-black px-1.5 py-0.5 rounded"
+                      <div class="text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-1"
                            [ngClass]="cell.morningStatus === 'PRESENT' ? 'bg-emerald-200 text-emerald-900' : 'bg-rose-200 text-rose-900'">
-                        🌅 {{ cell.morningStatus === 'PRESENT' ? 'Pres' : (cell.morningStatus === 'LATE' ? 'Late' : 'Abs') }}
+                        <span>AM: {{ cell.morningStatus === 'PRESENT' ? 'Pres' : (cell.morningStatus === 'LATE' ? 'Late' : 'Abs') }}</span>
                       </div>
-                      <div class="text-[9px] font-black px-1.5 py-0.5 rounded"
+                      <div class="text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-1"
                            [ngClass]="cell.afternoonStatus === 'PRESENT' ? 'bg-emerald-200 text-emerald-900' : (cell.afternoonStatus ? 'bg-rose-200 text-rose-900' : 'bg-slate-200 text-slate-700')">
-                        ☀️ {{ cell.afternoonStatus === 'PRESENT' ? 'Pres' : (cell.afternoonStatus ? 'Abs' : '—') }}
+                        <span>PM: {{ cell.afternoonStatus === 'PRESENT' ? 'Pres' : (cell.afternoonStatus ? 'Abs' : '—') }}</span>
                       </div>
                     </div>
 
@@ -703,7 +747,7 @@ interface FlatSection {
 
                     <!-- Remark snippet if available -->
                     <div *ngIf="cell.reason" class="text-[9px] text-slate-600 italic truncate" [title]="cell.reason">
-                      📝 {{ cell.reason }}
+                      {{ cell.reason }}
                     </div>
                   </div>
                 </div>
@@ -789,7 +833,9 @@ interface FlatSection {
 
                 <div class="flex items-center justify-between text-xs font-bold text-indigo-600 group-hover:translate-x-1 transition-transform">
                   <span>View Full Month</span>
-                  <span>&rarr;</span>
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                    <path d="M5 12h14m-4-4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
                 </div>
               </div>
             </div>
@@ -817,7 +863,7 @@ interface FlatSection {
                   <span *ngIf="attendanceConfig.frequency === 'TWICE_DAILY' && record.session"
                         class="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-md"
                         [ngClass]="record.session === 'MORNING' ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800'">
-                    {{ record.session === 'MORNING' ? '🌅 Morning 1st Half' : '☀️ Afternoon 2nd Half' }}
+                    {{ record.session === 'MORNING' ? 'Morning 1st Half' : 'Afternoon 2nd Half' }}
                   </span>
                   <span *ngIf="record.reason" class="ml-2 text-[11px] text-slate-500 italic">({{ record.reason }})</span>
                 </div>
@@ -861,8 +907,11 @@ interface FlatSection {
         <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full p-6 sm:p-7 space-y-5 animate-scaleUp">
           <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <div class="flex items-center gap-2.5">
-              <div class="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center border border-indigo-200">
-                <span class="text-lg">⚙️</span>
+              <div class="w-9 h-9 rounded-2xl bg-indigo-50/90 text-indigo-700 flex items-center justify-center border border-white shadow-[inset_1px_1px_2px_#ffffff,0_2px_5px_rgba(79,70,229,0.1)]">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="3" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                  <path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36 6.36l-1.41-1.41M7.05 7.05L5.64 5.64m12.72 0l-1.41 1.41M7.05 16.95l-1.41 1.41" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
               </div>
               <div>
                 <h3 class="text-base font-black text-slate-900">Attendance Policy Configuration</h3>

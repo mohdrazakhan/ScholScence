@@ -1255,9 +1255,63 @@ interface ActivityLog {
                 </div>
               </div>
 
-              <p class="text-[10px] text-slate-500 leading-tight">
-                This verified email will be used by the family to log into the SchoolSense Parent Portal to track attendance, fees, homework, and report cards.
-              </p>
+              <!-- Parent Portal Password Setting & Immediate Editing -->
+              <div class="pt-2.5 border-t border-indigo-100/90">
+                <div class="flex items-center justify-between mb-1.5">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <label class="block font-bold text-slate-800 text-xs">
+                      Parent Portal Login Password
+                    </label>
+                    <span class="text-[10px] font-medium text-slate-500">(Leave blank to keep unchanged)</span>
+                  </div>
+                  <button type="button" (click)="showGuardianPassword = !showGuardianPassword"
+                          class="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 focus:outline-none transition-colors cursor-pointer">
+                    <svg *ngIf="!showGuardianPassword" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <svg *ngIf="showGuardianPassword" class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                    </svg>
+                    <span>{{ showGuardianPassword ? 'Hide Password' : 'Show Password' }}</span>
+                  </button>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <div class="relative flex-1">
+                    <input [type]="showGuardianPassword ? 'text' : 'password'"
+                           [(ngModel)]="editStudent.guardianPassword"
+                           (input)="parentPasswordSuccessMsg = ''"
+                           placeholder="Enter new password (min. 6 characters)"
+                           class="w-full px-3.5 py-2 bg-white border border-indigo-200 rounded-xl text-xs font-mono font-medium text-slate-900 focus:outline-none focus:border-indigo-600 shadow-inner" />
+                  </div>
+
+                  <button type="button"
+                          (click)="updateParentPasswordImmediately()"
+                          [disabled]="updatingParentPassword || !editStudent.guardianPassword || editStudent.guardianPassword.trim().length < 6"
+                          class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer">
+                    <svg *ngIf="!updatingParentPassword" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+                    </svg>
+                    <svg *ngIf="updatingParentPassword" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                    </svg>
+                    <span>{{ updatingParentPassword ? 'Changing...' : 'Update Password Now' }}</span>
+                  </button>
+                </div>
+
+                <div *ngIf="parentPasswordSuccessMsg" class="mt-1.5 text-[11px] font-bold text-emerald-600 flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>{{ parentPasswordSuccessMsg }}</span>
+                </div>
+
+                <p class="text-[10px] text-slate-500 leading-tight mt-1.5">
+                  Clicking "Update Password Now" or saving changes immediately updates the database credentials so the parent can log into the portal with the new password.
+                </p>
+              </div>
             </div>
 
             <!-- Error Banner -->
@@ -1332,6 +1386,9 @@ export class StudentDetailComponent implements OnInit {
   savingStudent: boolean = false;
   editModalError: string = '';
   hideLoginEmail: boolean = false;
+  showGuardianPassword: boolean = false;
+  updatingParentPassword: boolean = false;
+  parentPasswordSuccessMsg: string = '';
   uploadingStudentPhoto: boolean = false;
   uploadingGuardianPhoto: boolean = false;
   classes: any[] = [];
@@ -1357,6 +1414,7 @@ export class StudentDetailComponent implements OnInit {
     primaryGuardianType: 'FATHER' as 'FATHER' | 'MOTHER' | 'GUARDIAN',
     guardianEmail: '',
     confirmGuardianEmail: '',
+    guardianPassword: '',
     guardianPhotoUrl: '',
     relationship: 'FATHER',
   };
@@ -1727,10 +1785,14 @@ export class StudentDetailComponent implements OnInit {
       primaryGuardianType: primaryRel,
       guardianEmail: email,
       confirmGuardianEmail: email,
+      guardianPassword: '',
       guardianPhotoUrl: st.guardian_photo_url || st.guardianPhotoUrl || '',
       relationship: primaryRel,
     };
 
+    this.showGuardianPassword = false;
+    this.updatingParentPassword = false;
+    this.parentPasswordSuccessMsg = '';
     this.showEditStudentModal = true;
   }
 
@@ -1785,6 +1847,13 @@ export class StudentDetailComponent implements OnInit {
       }
     }
 
+    // Validate parent login password if provided
+    const pwdInput = (this.editStudent.guardianPassword || '').trim();
+    if (pwdInput && pwdInput.length < 6) {
+      this.editModalError = 'Parent Portal Login Password must be at least 6 characters long.';
+      return;
+    }
+
     this.savingStudent = true;
     this.editModalError = '';
 
@@ -1834,6 +1903,38 @@ export class StudentDetailComponent implements OnInit {
         this.savingStudent = false;
         this.editModalError = err?.error?.message || err?.message || 'Failed to update student details.';
       },
+    });
+  }
+
+  updateParentPasswordImmediately() {
+    const targetStudentId = this.profileData?.student?.id || this.studentId;
+    const pwd = (this.editStudent.guardianPassword || '').trim();
+    if (!targetStudentId) {
+      this.toast.error('Student context missing.');
+      return;
+    }
+    if (!pwd || pwd.length < 6) {
+      this.toast.error('Password must be at least 6 characters long.');
+      return;
+    }
+
+    this.updatingParentPassword = true;
+    this.parentPasswordSuccessMsg = '';
+
+    this.api.post(`academics/students/${targetStudentId}/reset-parent-password`, {
+      password: pwd,
+      guardianEmail: (this.editStudent.guardianEmail || '').trim().toLowerCase(),
+    }).subscribe({
+      next: (res: any) => {
+        this.updatingParentPassword = false;
+        this.parentPasswordSuccessMsg = 'Password updated immediately! Parent can now log in with the new password.';
+        this.toast.success(res?.message || 'Parent login password updated immediately!');
+      },
+      error: (err: any) => {
+        this.updatingParentPassword = false;
+        const msg = err?.error?.message || err?.message || 'Failed to update parent password.';
+        this.toast.error(msg);
+      }
     });
   }
 }

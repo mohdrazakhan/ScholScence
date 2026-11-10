@@ -13,10 +13,14 @@ import { CommunicationModule } from './modules/communication/communication.modul
 import { ComplaintsModule } from './modules/complaints/complaints.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { TimetableModule } from './modules/timetable/timetable.module';
+import { FeesModule } from './modules/fees/fees.module';
+import { TransportModule } from './modules/transport/transport.module';
+import { CacheModule } from './common/cache/cache.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    CacheModule,
     PrismaModule,
     AuthModule,
     SchoolsModule,
@@ -28,6 +32,8 @@ import { TimetableModule } from './modules/timetable/timetable.module';
     ComplaintsModule,
     DashboardModule,
     TimetableModule,
+    FeesModule,
+    TransportModule,
   ],
   providers: [
     {

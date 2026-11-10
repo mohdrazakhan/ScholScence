@@ -20,16 +20,54 @@
     }
   ],
   "tags": [
-    { "name": "Authentication", "description": "Token issuance, multi-tenant credential verification, profile inspection, and campus switching" },
-    { "name": "Dashboard", "description": "Role-scoped institutional KPIs, attendance metrics, faculty workloads, and parent student widgets" },
-    { "name": "Schools", "description": "School directories, multi-branch profiles, academic sessions, and super-admin onboarding" },
-    { "name": "Academics", "description": "Classes, sections, curriculum subjects, student enrollment rosters, and faculty directories" },
-    { "name": "Timetable", "description": "Weekly period matrices, teacher teaching routines, parent child timetables, and interval slots" },
-    { "name": "Attendance", "description": "Section daily registers, bulk student marking, parent live attendance diary, and subject-wise logs" },
-    { "name": "Homework", "description": "Subject assignments, submission deadlines, attachment uploads, and student homework feeds" },
-    { "name": "Exams & Marks", "description": "Examination papers, grading criteria, marksheet bulk entry, and student academic report cards" },
-    { "name": "Complaints & Grievances", "description": "Multi-tier grievance tickets, role-scoped inboxes, delegation, and real-time conversation threads" },
-    { "name": "Communication", "description": "Broadcast circulars, school notices, and academic events calendar" }
+    {
+      "name": "Authentication",
+      "description": "Token issuance, multi-tenant credential verification, profile inspection, and campus switching"
+    },
+    {
+      "name": "Dashboard",
+      "description": "Role-scoped institutional KPIs, attendance metrics, faculty workloads, and parent student widgets"
+    },
+    {
+      "name": "Schools",
+      "description": "School directories, multi-branch profiles, academic sessions, and super-admin onboarding"
+    },
+    {
+      "name": "Academics",
+      "description": "Classes, sections, curriculum subjects, student enrollment rosters, and faculty directories"
+    },
+    {
+      "name": "Timetable",
+      "description": "Weekly period matrices, teacher teaching routines, parent child timetables, and interval slots"
+    },
+    {
+      "name": "Attendance",
+      "description": "Section daily registers, bulk student marking, parent live attendance diary, and subject-wise logs"
+    },
+    {
+      "name": "Homework",
+      "description": "Subject assignments, submission deadlines, attachment uploads, and student homework feeds"
+    },
+    {
+      "name": "Exams & Marks",
+      "description": "Examination papers, grading criteria, marksheet bulk entry, and student academic report cards"
+    },
+    {
+      "name": "Complaints & Grievances",
+      "description": "Multi-tier grievance tickets, role-scoped inboxes, delegation, and real-time conversation threads"
+    },
+    {
+      "name": "Communication",
+      "description": "Broadcast circulars, school notices, and academic events calendar"
+    },
+    {
+      "name": "Fees & Invoicing",
+      "description": "Session-scoped fee structures, monthly billing batches, counter collections, invoice ledgers, and official receipts"
+    },
+    {
+      "name": "Transport & Fleet",
+      "description": "Session-scoped bus routes, stops, student transport passes, fleet vehicles, and driver logistics"
+    }
   ],
   "components": {
     "securitySchemes": {
@@ -44,15 +82,29 @@
       "ApiResponse": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean", "example": true },
-          "data": { "type": "object" },
-          "message": { "type": "string", "example": "Operation completed successfully" },
-          "timestamp": { "type": "string", "example": "2026-09-23T16:50:00.000Z" }
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object"
+          },
+          "message": {
+            "type": "string",
+            "example": "Operation completed successfully"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-09-23T16:50:00.000Z"
+          }
         }
       },
       "LoginRequest": {
         "type": "object",
-        "required": ["identifier", "password"],
+        "required": [
+          "identifier",
+          "password"
+        ],
         "properties": {
           "identifier": {
             "type": "string",
@@ -74,27 +126,69 @@
       "LoginResponse": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean", "example": true },
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
           "data": {
             "type": "object",
             "properties": {
-              "accessToken": { "type": "string", "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." },
-              "refreshToken": { "type": "string", "example": "dGhpc2lzYXJlZnJlc2h0b2tlbjEyMzQ1Ng..." },
+              "accessToken": {
+                "type": "string",
+                "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              },
+              "refreshToken": {
+                "type": "string",
+                "example": "dGhpc2lzYXJlZnJlc2h0b2tlbjEyMzQ1Ng..."
+              },
               "user": {
                 "type": "object",
                 "properties": {
-                  "id": { "type": "string", "format": "uuid", "example": "8f3b2e50-9c1a-4e2b-8a71-6c2e3d4f5a6b" },
-                  "name": { "type": "string", "example": "Rajesh Gupta" },
-                  "email": { "type": "string", "example": "admin@demo-school.com" },
-                  "phone": { "type": "string", "example": "+91 98765 43210" },
-                  "role": { "type": "string", "example": "SCHOOL_ADMIN" },
-                  "schoolId": { "type": "string", "format": "uuid", "example": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d" },
-                  "schoolName": { "type": "string", "example": "Delhi Heritage Academy" },
-                  "schoolCode": { "type": "string", "example": "DHA01" },
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "8f3b2e50-9c1a-4e2b-8a71-6c2e3d4f5a6b"
+                  },
+                  "name": {
+                    "type": "string",
+                    "example": "Rajesh Gupta"
+                  },
+                  "email": {
+                    "type": "string",
+                    "example": "admin@demo-school.com"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "example": "+91 98765 43210"
+                  },
+                  "role": {
+                    "type": "string",
+                    "example": "SCHOOL_ADMIN"
+                  },
+                  "schoolId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"
+                  },
+                  "schoolName": {
+                    "type": "string",
+                    "example": "Delhi Heritage Academy"
+                  },
+                  "schoolCode": {
+                    "type": "string",
+                    "example": "DHA01"
+                  },
                   "permissions": {
                     "type": "array",
-                    "items": { "type": "string" },
-                    "example": ["MANAGE_TIMETABLE", "MANAGE_ACADEMICS", "VIEW_REPORTS", "MANAGE_ATTENDANCE"]
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": [
+                      "MANAGE_TIMETABLE",
+                      "MANAGE_ACADEMICS",
+                      "VIEW_REPORTS",
+                      "MANAGE_ATTENDANCE"
+                    ]
                   }
                 }
               }
@@ -104,37 +198,132 @@
       },
       "CreateTimetablePeriodRequest": {
         "type": "object",
-        "required": ["sectionId", "dayOfWeek", "periodNumber", "startTime", "endTime"],
+        "required": [
+          "sectionId",
+          "dayOfWeek",
+          "periodNumber",
+          "startTime",
+          "endTime"
+        ],
         "properties": {
-          "sectionId": { "type": "string", "format": "uuid", "example": "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f" },
-          "dayOfWeek": { "type": "integer", "minimum": 1, "maximum": 6, "description": "1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat", "example": 1 },
-          "periodNumber": { "type": "integer", "minimum": 1, "maximum": 12, "example": 1 },
-          "startTime": { "type": "string", "example": "08:30" },
-          "endTime": { "type": "string", "example": "09:15" },
-          "slotType": { "type": "string", "enum": ["ACADEMIC", "BREAK", "LUNCH", "ASSEMBLY", "SPORTS", "LIBRARY", "ACTIVITY"], "example": "ACADEMIC" },
-          "title": { "type": "string", "example": "Computer Science" },
-          "classSubjectId": { "type": "string", "format": "uuid", "example": "e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b" },
-          "teacherId": { "type": "string", "format": "uuid", "example": "8f3b2e50-9c1a-4e2b-8a71-6c2e3d4f5a6b" },
-          "roomNumber": { "type": "string", "example": "Room 101" }
+          "sectionId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f"
+          },
+          "dayOfWeek": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6,
+            "description": "1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat",
+            "example": 1
+          },
+          "periodNumber": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "example": 1
+          },
+          "startTime": {
+            "type": "string",
+            "example": "08:30"
+          },
+          "endTime": {
+            "type": "string",
+            "example": "09:15"
+          },
+          "slotType": {
+            "type": "string",
+            "enum": [
+              "ACADEMIC",
+              "BREAK",
+              "LUNCH",
+              "ASSEMBLY",
+              "SPORTS",
+              "LIBRARY",
+              "ACTIVITY"
+            ],
+            "example": "ACADEMIC"
+          },
+          "title": {
+            "type": "string",
+            "example": "Computer Science"
+          },
+          "classSubjectId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b"
+          },
+          "teacherId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "8f3b2e50-9c1a-4e2b-8a71-6c2e3d4f5a6b"
+          },
+          "roomNumber": {
+            "type": "string",
+            "example": "Room 101"
+          }
         }
       },
       "BulkMarkAttendanceRequest": {
         "type": "object",
-        "required": ["sectionId", "date", "records"],
+        "required": [
+          "sectionId",
+          "date",
+          "records"
+        ],
         "properties": {
-          "sectionId": { "type": "string", "format": "uuid", "example": "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f" },
-          "date": { "type": "string", "format": "date", "example": "2026-09-23" },
-          "classSubjectId": { "type": "string", "format": "uuid", "nullable": true, "example": "e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b" },
-          "periodNumber": { "type": "integer", "nullable": true, "example": 1 },
+          "sectionId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-09-23"
+          },
+          "classSubjectId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "example": "e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b"
+          },
+          "periodNumber": {
+            "type": "integer",
+            "nullable": true,
+            "example": 1
+          },
           "records": {
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["studentId", "status"],
+              "required": [
+                "studentId",
+                "status"
+              ],
               "properties": {
-                "studentId": { "type": "string", "format": "uuid", "example": "f07f88be-6d92-4b17-87a5-a4753498aace" },
-                "status": { "type": "string", "enum": ["PRESENT", "ABSENT", "LATE", "HALF_DAY", "EXCUSED"], "example": "PRESENT" },
-                "reason": { "type": "string", "nullable": true, "example": "Medical leave verified" }
+                "studentId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "f07f88be-6d92-4b17-87a5-a4753498aace"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "PRESENT",
+                    "ABSENT",
+                    "LATE",
+                    "HALF_DAY",
+                    "EXCUSED"
+                  ],
+                  "example": "PRESENT"
+                },
+                "reason": {
+                  "type": "string",
+                  "nullable": true,
+                  "example": "Medical leave verified"
+                }
               }
             }
           }
@@ -142,33 +331,92 @@
       },
       "CreateHomeworkRequest": {
         "type": "object",
-        "required": ["sectionId", "classSubjectId", "title", "description", "dueDate"],
+        "required": [
+          "sectionId",
+          "classSubjectId",
+          "title",
+          "description",
+          "dueDate"
+        ],
         "properties": {
-          "sectionId": { "type": "string", "format": "uuid", "example": "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f" },
-          "classSubjectId": { "type": "string", "format": "uuid", "example": "e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b" },
-          "title": { "type": "string", "example": "Chapter 4: Linear Equations Practice Set" },
-          "description": { "type": "string", "example": "Complete exercises 4.1 & 4.2 in homework notebook. Show all steps." },
-          "dueDate": { "type": "string", "format": "date", "example": "2026-09-26" },
-          "attachmentUrl": { "type": "string", "format": "uri", "nullable": true, "example": "https://schoolsense-files.s3.amazonaws.com/math_ch4.pdf" },
-          "attachmentFileName": { "type": "string", "nullable": true, "example": "math_worksheet_ch4.pdf" }
+          "sectionId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f"
+          },
+          "classSubjectId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b"
+          },
+          "title": {
+            "type": "string",
+            "example": "Chapter 4: Linear Equations Practice Set"
+          },
+          "description": {
+            "type": "string",
+            "example": "Complete exercises 4.1 & 4.2 in homework notebook. Show all steps."
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-09-26"
+          },
+          "attachmentUrl": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "example": "https://schoolsense-files.s3.amazonaws.com/math_ch4.pdf"
+          },
+          "attachmentFileName": {
+            "type": "string",
+            "nullable": true,
+            "example": "math_worksheet_ch4.pdf"
+          }
         }
       },
       "BulkEnterMarksRequest": {
         "type": "object",
-        "required": ["examSubjectId", "marks"],
+        "required": [
+          "examSubjectId",
+          "marks"
+        ],
         "properties": {
-          "examSubjectId": { "type": "string", "format": "uuid", "example": "d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a" },
+          "examSubjectId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a"
+          },
           "marks": {
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["studentId"],
+              "required": [
+                "studentId"
+              ],
               "properties": {
-                "studentId": { "type": "string", "format": "uuid", "example": "f07f88be-6d92-4b17-87a5-a4753498aace" },
-                "marksObtained": { "type": "number", "example": 92.5 },
-                "isAbsent": { "type": "boolean", "default": false, "example": false },
-                "grade": { "type": "string", "example": "A1" },
-                "remarks": { "type": "string", "example": "Outstanding problem solving skills" }
+                "studentId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "f07f88be-6d92-4b17-87a5-a4753498aace"
+                },
+                "marksObtained": {
+                  "type": "number",
+                  "example": 92.5
+                },
+                "isAbsent": {
+                  "type": "boolean",
+                  "default": false,
+                  "example": false
+                },
+                "grade": {
+                  "type": "string",
+                  "example": "A1"
+                },
+                "remarks": {
+                  "type": "string",
+                  "example": "Outstanding problem solving skills"
+                }
               }
             }
           }
@@ -176,43 +424,955 @@
       },
       "CreateComplaintRequest": {
         "type": "object",
-        "required": ["category", "subject", "message"],
+        "required": [
+          "category",
+          "subject",
+          "message"
+        ],
         "properties": {
-          "category": { "type": "string", "enum": ["ACADEMIC", "BEHAVIOR", "FACILITIES", "TRANSPORT", "FEES", "BULLYING", "OTHER"], "example": "ACADEMIC" },
-          "subject": { "type": "string", "example": "Query regarding Science chapter 3 assessment evaluation" },
-          "message": { "type": "string", "example": "My child needs clarity on question 4 marks deduction. Please arrange a discussion." },
-          "studentId": { "type": "string", "format": "uuid", "nullable": true, "example": "f07f88be-6d92-4b17-87a5-a4753498aace" },
-          "priority": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "URGENT"], "default": "MEDIUM", "example": "MEDIUM" }
+          "category": {
+            "type": "string",
+            "enum": [
+              "ACADEMIC",
+              "BEHAVIOR",
+              "FACILITIES",
+              "TRANSPORT",
+              "FEES",
+              "BULLYING",
+              "OTHER"
+            ],
+            "example": "ACADEMIC"
+          },
+          "subject": {
+            "type": "string",
+            "example": "Query regarding Science chapter 3 assessment evaluation"
+          },
+          "message": {
+            "type": "string",
+            "example": "My child needs clarity on question 4 marks deduction. Please arrange a discussion."
+          },
+          "studentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "example": "f07f88be-6d92-4b17-87a5-a4753498aace"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "URGENT"
+            ],
+            "default": "MEDIUM",
+            "example": "MEDIUM"
+          }
         }
       },
       "CreateNoticeRequest": {
         "type": "object",
-        "required": ["title", "content"],
+        "required": [
+          "title",
+          "content"
+        ],
         "properties": {
-          "title": { "type": "string", "example": "Annual Sports Day 2026 - Registration & Schedule" },
-          "content": { "type": "string", "example": "The Annual Sports Meet will be held on October 15-16. All students can register with sports faculty." },
-          "targetAudience": { "type": "string", "enum": ["ALL", "TEACHERS", "PARENTS", "STUDENTS"], "default": "ALL", "example": "ALL" },
-          "expiresAt": { "type": "string", "format": "date-time", "nullable": true, "example": "2026-10-31T23:59:59Z" }
+          "title": {
+            "type": "string",
+            "example": "Annual Sports Day 2026 - Registration & Schedule"
+          },
+          "content": {
+            "type": "string",
+            "example": "The Annual Sports Meet will be held on October 15-16. All students can register with sports faculty."
+          },
+          "targetAudience": {
+            "type": "string",
+            "enum": [
+              "ALL",
+              "TEACHERS",
+              "PARENTS",
+              "STUDENTS"
+            ],
+            "default": "ALL",
+            "example": "ALL"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "example": "2026-10-31T23:59:59Z"
+          }
         }
       },
       "OnboardSchoolRequest": {
         "type": "object",
-        "required": ["name", "code", "adminFirstName", "adminEmail"],
+        "required": [
+          "name",
+          "code",
+          "adminFirstName",
+          "adminEmail"
+        ],
         "properties": {
-          "name": { "type": "string", "example": "Delhi Heritage Academy" },
-          "code": { "type": "string", "example": "DHA01" },
-          "affiliation": { "type": "string", "example": "CBSE" },
-          "email": { "type": "string", "format": "email", "example": "contact@delhiheritage.edu" },
-          "phone": { "type": "string", "example": "+91 11 23456789" },
-          "addressLine1": { "type": "string", "example": "Institutional Area, Phase 2" },
-          "city": { "type": "string", "example": "New Delhi" },
-          "state": { "type": "string", "example": "Delhi" },
-          "postalCode": { "type": "string", "example": "110025" },
-          "adminFirstName": { "type": "string", "example": "Rajesh" },
-          "adminLastName": { "type": "string", "example": "Gupta" },
-          "adminEmail": { "type": "string", "format": "email", "example": "admin@delhiheritage.edu" },
-          "adminPhone": { "type": "string", "example": "+91 98765 43210" },
-          "adminPassword": { "type": "string", "example": "AdminPass123!" }
+          "name": {
+            "type": "string",
+            "example": "Delhi Heritage Academy"
+          },
+          "code": {
+            "type": "string",
+            "example": "DHA01"
+          },
+          "affiliation": {
+            "type": "string",
+            "example": "CBSE"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "contact@delhiheritage.edu"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+91 11 23456789"
+          },
+          "addressLine1": {
+            "type": "string",
+            "example": "Institutional Area, Phase 2"
+          },
+          "city": {
+            "type": "string",
+            "example": "New Delhi"
+          },
+          "state": {
+            "type": "string",
+            "example": "Delhi"
+          },
+          "postalCode": {
+            "type": "string",
+            "example": "110025"
+          },
+          "adminFirstName": {
+            "type": "string",
+            "example": "Rajesh"
+          },
+          "adminLastName": {
+            "type": "string",
+            "example": "Gupta"
+          },
+          "adminEmail": {
+            "type": "string",
+            "format": "email",
+            "example": "admin@delhiheritage.edu"
+          },
+          "adminPhone": {
+            "type": "string",
+            "example": "+91 98765 43210"
+          },
+          "adminPassword": {
+            "type": "string",
+            "example": "AdminPass123!"
+          }
+        }
+      },
+      "FeeCategory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "fc_01"
+          },
+          "schoolId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Tuition & Academic Fee"
+          },
+          "description": {
+            "type": "string",
+            "example": "Composite monthly academic instruction fee"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ],
+            "example": "ACTIVE"
+          }
+        }
+      },
+      "CreateFeeCategoryRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Laboratory & Computer Science Fee"
+          },
+          "description": {
+            "type": "string",
+            "example": "Science lab equipment and IT lab charges"
+          }
+        }
+      },
+      "FeeStructure": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "fs_01"
+          },
+          "schoolId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "academicYearId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Academic session scope"
+          },
+          "classId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "className": {
+            "type": "string",
+            "example": "Class 10"
+          },
+          "feeCategoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "feeCategoryName": {
+            "type": "string",
+            "example": "Tuition & Academic Fee"
+          },
+          "amount": {
+            "type": "number",
+            "example": 2800
+          },
+          "frequency": {
+            "type": "string",
+            "enum": [
+              "MONTHLY",
+              "QUARTERLY",
+              "ANNUALLY",
+              "ONE_TIME"
+            ],
+            "example": "MONTHLY"
+          },
+          "dueDay": {
+            "type": "integer",
+            "example": 10
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ],
+            "example": "ACTIVE"
+          }
+        }
+      },
+      "CreateFeeStructureRequest": {
+        "type": "object",
+        "required": [
+          "classId",
+          "feeCategoryId",
+          "amount"
+        ],
+        "properties": {
+          "academicYearId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Academic session ID (defaults to active session)"
+          },
+          "classId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "c10"
+          },
+          "feeCategoryId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "fc_01"
+          },
+          "amount": {
+            "type": "number",
+            "example": 3200
+          },
+          "frequency": {
+            "type": "string",
+            "enum": [
+              "MONTHLY",
+              "QUARTERLY",
+              "ANNUALLY",
+              "ONE_TIME"
+            ],
+            "default": "MONTHLY"
+          },
+          "dueDay": {
+            "type": "integer",
+            "default": 10
+          }
+        }
+      },
+      "StudentFeeInvoice": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "inv_01"
+          },
+          "schoolId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "academicYearId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Academic session scope"
+          },
+          "studentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studentName": {
+            "type": "string",
+            "example": "Aarav Kumar Sharma"
+          },
+          "admissionNumber": {
+            "type": "string",
+            "example": "ADM-2024-001"
+          },
+          "className": {
+            "type": "string",
+            "example": "Class 10"
+          },
+          "sectionName": {
+            "type": "string",
+            "example": "Section A"
+          },
+          "invoiceNumber": {
+            "type": "string",
+            "example": "INV-2026-1049"
+          },
+          "monthName": {
+            "type": "string",
+            "example": "April 2026"
+          },
+          "totalAmount": {
+            "type": "number",
+            "example": 3200
+          },
+          "paidAmount": {
+            "type": "number",
+            "example": 3200
+          },
+          "discountAmount": {
+            "type": "number",
+            "example": 0
+          },
+          "fineAmount": {
+            "type": "number",
+            "example": 0
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-04-15"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PAID",
+              "PARTIAL",
+              "UNPAID",
+              "OVERDUE"
+            ],
+            "example": "PAID"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "GenerateBatchInvoicesRequest": {
+        "type": "object",
+        "required": [
+          "monthName",
+          "dueDate"
+        ],
+        "properties": {
+          "academicYearId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Academic session scope"
+          },
+          "monthName": {
+            "type": "string",
+            "example": "May 2026"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-05-15"
+          }
+        }
+      },
+      "CollectFeePaymentRequest": {
+        "type": "object",
+        "required": [
+          "invoiceId",
+          "amountPaid",
+          "paymentMode"
+        ],
+        "properties": {
+          "invoiceId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "inv_01"
+          },
+          "amountPaid": {
+            "type": "number",
+            "example": 3200
+          },
+          "paymentMode": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "UPI",
+              "CARD",
+              "NET_BANKING",
+              "CHEQUE"
+            ],
+            "example": "UPI"
+          },
+          "transactionReference": {
+            "type": "string",
+            "example": "UPI/2026/89472190"
+          },
+          "remarks": {
+            "type": "string",
+            "example": "Cleared at institutional counter"
+          }
+        }
+      },
+      "FeeOverview": {
+        "type": "object",
+        "properties": {
+          "totalBilled": {
+            "type": "number",
+            "example": 845000
+          },
+          "totalCollected": {
+            "type": "number",
+            "example": 712000
+          },
+          "totalOutstanding": {
+            "type": "number",
+            "example": 133000
+          },
+          "collectionRate": {
+            "type": "number",
+            "example": 84.2
+          },
+          "invoicesCount": {
+            "type": "integer",
+            "example": 320
+          },
+          "paidCount": {
+            "type": "integer",
+            "example": 275
+          },
+          "defaultersCount": {
+            "type": "integer",
+            "example": 45
+          }
+        }
+      },
+      "TransportVehicle": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "veh_01"
+          },
+          "schoolId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vehicleNumber": {
+            "type": "string",
+            "example": "DL-01-AB-1001"
+          },
+          "busNumber": {
+            "type": "string",
+            "example": "Bus #01"
+          },
+          "vehicleType": {
+            "type": "string",
+            "enum": [
+              "BUS",
+              "VAN",
+              "MINI_BUS"
+            ],
+            "example": "BUS"
+          },
+          "model": {
+            "type": "string",
+            "example": "Tata Starbus Ultra 40S"
+          },
+          "seatingCapacity": {
+            "type": "integer",
+            "example": 42
+          },
+          "driverName": {
+            "type": "string",
+            "example": "Rameshwar Yadav"
+          },
+          "driverPhone": {
+            "type": "string",
+            "example": "+91 98101 23456"
+          },
+          "conductorName": {
+            "type": "string",
+            "example": "Satish Kumar"
+          },
+          "gpsDeviceId": {
+            "type": "string",
+            "example": "GPS-BUS-01"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "MAINTENANCE",
+              "INACTIVE"
+            ],
+            "example": "ACTIVE"
+          }
+        }
+      },
+      "CreateTransportVehicleRequest": {
+        "type": "object",
+        "required": [
+          "vehicleNumber",
+          "driverName",
+          "driverPhone"
+        ],
+        "properties": {
+          "vehicleNumber": {
+            "type": "string",
+            "example": "DL-01-AB-1004"
+          },
+          "busNumber": {
+            "type": "string",
+            "example": "Bus #04"
+          },
+          "vehicleType": {
+            "type": "string",
+            "enum": [
+              "BUS",
+              "VAN",
+              "MINI_BUS"
+            ],
+            "default": "BUS"
+          },
+          "model": {
+            "type": "string",
+            "example": "Ashok Leyland 40S"
+          },
+          "seatingCapacity": {
+            "type": "integer",
+            "default": 40
+          },
+          "driverName": {
+            "type": "string",
+            "example": "Sunil Kumar"
+          },
+          "driverPhone": {
+            "type": "string",
+            "example": "+91 98104 56789"
+          },
+          "conductorName": {
+            "type": "string",
+            "example": "Mahesh Rawat"
+          },
+          "gpsDeviceId": {
+            "type": "string",
+            "example": "GPS-BUS-04"
+          }
+        }
+      },
+      "TransportStop": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "st_01"
+          },
+          "stopName": {
+            "type": "string",
+            "example": "Central Metro Station (Gate 2)"
+          },
+          "pickupTime": {
+            "type": "string",
+            "example": "07:00 AM"
+          },
+          "dropTime": {
+            "type": "string",
+            "example": "03:15 PM"
+          },
+          "sequenceOrder": {
+            "type": "integer",
+            "example": 1
+          },
+          "monthlyFare": {
+            "type": "number",
+            "example": 1400
+          },
+          "landmark": {
+            "type": "string",
+            "example": "Near Footover bridge"
+          }
+        }
+      },
+      "TransportRoute": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "rt_01"
+          },
+          "schoolId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "academicYearId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Academic session scope"
+          },
+          "name": {
+            "type": "string",
+            "example": "Route 1: City Plaza via Civil Lines"
+          },
+          "code": {
+            "type": "string",
+            "example": "RT-01"
+          },
+          "vehicleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vehicleNumber": {
+            "type": "string",
+            "example": "DL-01-AB-1001"
+          },
+          "busNumber": {
+            "type": "string",
+            "example": "Bus #01"
+          },
+          "driverName": {
+            "type": "string",
+            "example": "Rameshwar Yadav"
+          },
+          "driverPhone": {
+            "type": "string",
+            "example": "+91 98101 23456"
+          },
+          "morningStartTime": {
+            "type": "string",
+            "example": "06:50 AM"
+          },
+          "eveningStartTime": {
+            "type": "string",
+            "example": "02:30 PM"
+          },
+          "description": {
+            "type": "string",
+            "example": "Covers Metro, Civil Lines & Sector 14"
+          },
+          "stops": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransportStop"
+            }
+          },
+          "stopsCount": {
+            "type": "integer",
+            "example": 5
+          },
+          "assignedStudentsCount": {
+            "type": "integer",
+            "example": 24
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ],
+            "example": "ACTIVE"
+          }
+        }
+      },
+      "CreateTransportRouteRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "code",
+          "vehicleId"
+        ],
+        "properties": {
+          "academicYearId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Academic session ID (defaults to active session)"
+          },
+          "name": {
+            "type": "string",
+            "example": "Route 3: Rohini Sector 15 Express"
+          },
+          "code": {
+            "type": "string",
+            "example": "RT-03"
+          },
+          "vehicleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "morningStartTime": {
+            "type": "string",
+            "example": "06:45 AM"
+          },
+          "eveningStartTime": {
+            "type": "string",
+            "example": "02:30 PM"
+          },
+          "description": {
+            "type": "string",
+            "example": "Serves Rohini Sectors 13, 14 and 15"
+          },
+          "stops": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "stop_name",
+                "pickup_time",
+                "drop_time",
+                "monthly_fare"
+              ],
+              "properties": {
+                "stop_name": {
+                  "type": "string",
+                  "example": "Sector 15 Community Center"
+                },
+                "pickup_time": {
+                  "type": "string",
+                  "example": "07:05 AM"
+                },
+                "drop_time": {
+                  "type": "string",
+                  "example": "03:10 PM"
+                },
+                "sequence_order": {
+                  "type": "integer",
+                  "example": 1
+                },
+                "monthly_fare": {
+                  "type": "number",
+                  "example": 1350
+                }
+              }
+            }
+          }
+        }
+      },
+      "StudentTransportAssignment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "pass_01"
+          },
+          "schoolId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "academicYearId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Academic session scope"
+          },
+          "studentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studentName": {
+            "type": "string",
+            "example": "Aarav Kumar Sharma"
+          },
+          "admissionNumber": {
+            "type": "string",
+            "example": "ADM-2024-001"
+          },
+          "className": {
+            "type": "string",
+            "example": "Class 10"
+          },
+          "sectionName": {
+            "type": "string",
+            "example": "Section A"
+          },
+          "routeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "routeName": {
+            "type": "string",
+            "example": "Route 1: City Plaza via Civil Lines"
+          },
+          "routeCode": {
+            "type": "string",
+            "example": "RT-01"
+          },
+          "busNumber": {
+            "type": "string",
+            "example": "Bus #01"
+          },
+          "stopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stopName": {
+            "type": "string",
+            "example": "Central Metro Station (Gate 2)"
+          },
+          "pickupTime": {
+            "type": "string",
+            "example": "07:00 AM"
+          },
+          "dropTime": {
+            "type": "string",
+            "example": "03:15 PM"
+          },
+          "monthlyFare": {
+            "type": "number",
+            "example": 1400
+          },
+          "passNumber": {
+            "type": "string",
+            "example": "PASS-2026-1001"
+          },
+          "seatNumber": {
+            "type": "string",
+            "example": "S-14"
+          },
+          "emergencyContact": {
+            "type": "string",
+            "example": "+91 98101 23456"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "SUSPENDED"
+            ],
+            "example": "ACTIVE"
+          }
+        }
+      },
+      "AssignTransportPassRequest": {
+        "type": "object",
+        "required": [
+          "studentId",
+          "routeId",
+          "stopId"
+        ],
+        "properties": {
+          "academicYearId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Academic session ID (defaults to active session)"
+          },
+          "studentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "routeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "seatNumber": {
+            "type": "string",
+            "example": "S-18"
+          },
+          "emergencyContact": {
+            "type": "string",
+            "example": "+91 98765 43210"
+          }
+        }
+      },
+      "TransportOverview": {
+        "type": "object",
+        "properties": {
+          "totalVehicles": {
+            "type": "integer",
+            "example": 12
+          },
+          "activeVehiclesCount": {
+            "type": "integer",
+            "example": 11
+          },
+          "maintenanceVehiclesCount": {
+            "type": "integer",
+            "example": 1
+          },
+          "totalRoutes": {
+            "type": "integer",
+            "example": 8
+          },
+          "totalStopsCount": {
+            "type": "integer",
+            "example": 38
+          },
+          "totalFleetCapacity": {
+            "type": "integer",
+            "example": 440
+          },
+          "subscribedStudentsCount": {
+            "type": "integer",
+            "example": 342
+          },
+          "estimatedMonthlyTransportRevenue": {
+            "type": "number",
+            "example": 444600
+          },
+          "fleetOccupancyRate": {
+            "type": "number",
+            "example": 78
+          }
         }
       }
     }
@@ -220,14 +1380,18 @@
   "paths": {
     "/auth/login": {
       "post": {
-        "tags": ["Authentication"],
+        "tags": [
+          "Authentication"
+        ],
         "summary": "User Login & JWT Issuance",
         "description": "Authenticates users across all roles (Admin, Teacher, Parent, Student) and returns access token with scoped profile.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/LoginRequest" },
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              },
               "example": {
                 "identifier": "admin@demo-school.com",
                 "password": "password123",
@@ -241,7 +1405,9 @@
             "description": "Login successful",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/LoginResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
               }
             }
           },
@@ -253,9 +1419,15 @@
     },
     "/auth/me": {
       "get": {
-        "tags": ["Authentication"],
+        "tags": [
+          "Authentication"
+        ],
         "summary": "Get Authenticated User Profile",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Current profile retrieved",
@@ -285,11 +1457,24 @@
     },
     "/dashboard/overview": {
       "get": {
-        "tags": ["Dashboard"],
+        "tags": [
+          "Dashboard"
+        ],
         "summary": "Role-Scoped Dashboard Metrics",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "academicYearId", "in": "query", "required": false, "schema": { "type": "string" } }
+          {
+            "name": "academicYearId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -352,11 +1537,26 @@
     },
     "/timetable/section/{sectionId}": {
       "get": {
-        "tags": ["Timetable"],
+        "tags": [
+          "Timetable"
+        ],
         "summary": "Get Section Weekly Timetable Matrix",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "sectionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" }, "example": "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f" }
+          {
+            "name": "sectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f"
+          }
         ],
         "responses": {
           "200": {
@@ -366,7 +1566,11 @@
                 "example": {
                   "success": true,
                   "data": {
-                    "section": { "id": "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f", "name": "Section B", "className": "Nursery" },
+                    "section": {
+                      "id": "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f",
+                      "name": "Section B",
+                      "className": "Nursery"
+                    },
                     "periods": [
                       {
                         "id": "11111111-2222-3333-4444-555555555555",
@@ -418,11 +1622,26 @@
     },
     "/timetable/my-child": {
       "get": {
-        "tags": ["Timetable"],
+        "tags": [
+          "Timetable"
+        ],
         "summary": "Get Child Timetable for Logged-In Parent",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "studentId", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" }, "description": "Optional child UUID if parent has multiple children" }
+          {
+            "name": "studentId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Optional child UUID if parent has multiple children"
+          }
         ],
         "responses": {
           "200": {
@@ -432,11 +1651,43 @@
                 "example": {
                   "success": true,
                   "data": {
-                    "student": { "id": "f07f88be-6d92-4b17-87a5-a4753498aace", "name": "Aarav Sharma", "className": "Nursery", "sectionName": "Section B" },
+                    "student": {
+                      "id": "f07f88be-6d92-4b17-87a5-a4753498aace",
+                      "name": "Aarav Sharma",
+                      "className": "Nursery",
+                      "sectionName": "Section B"
+                    },
                     "periods": [
-                      { "dayOfWeek": 1, "periodNumber": 1, "startTime": "08:30", "endTime": "09:15", "slotType": "ACADEMIC", "subjectName": "Computer Science", "teacherName": "Rajesh Gupta", "roomNumber": "Room 101" },
-                      { "dayOfWeek": 1, "periodNumber": 2, "startTime": "09:15", "endTime": "10:00", "slotType": "ACADEMIC", "subjectName": "Computer Science", "teacherName": "Mohd Raza Khan", "roomNumber": "Room 101" },
-                      { "dayOfWeek": 1, "periodNumber": 3, "startTime": "10:00", "endTime": "10:20", "slotType": "ACADEMIC", "subjectName": "Computer Science", "teacherName": "Teacher Faculty", "roomNumber": "Room 101" }
+                      {
+                        "dayOfWeek": 1,
+                        "periodNumber": 1,
+                        "startTime": "08:30",
+                        "endTime": "09:15",
+                        "slotType": "ACADEMIC",
+                        "subjectName": "Computer Science",
+                        "teacherName": "Rajesh Gupta",
+                        "roomNumber": "Room 101"
+                      },
+                      {
+                        "dayOfWeek": 1,
+                        "periodNumber": 2,
+                        "startTime": "09:15",
+                        "endTime": "10:00",
+                        "slotType": "ACADEMIC",
+                        "subjectName": "Computer Science",
+                        "teacherName": "Mohd Raza Khan",
+                        "roomNumber": "Room 101"
+                      },
+                      {
+                        "dayOfWeek": 1,
+                        "periodNumber": 3,
+                        "startTime": "10:00",
+                        "endTime": "10:20",
+                        "slotType": "ACADEMIC",
+                        "subjectName": "Computer Science",
+                        "teacherName": "Teacher Faculty",
+                        "roomNumber": "Room 101"
+                      }
                     ]
                   }
                 }
@@ -448,14 +1699,22 @@
     },
     "/timetable/periods": {
       "post": {
-        "tags": ["Timetable"],
+        "tags": [
+          "Timetable"
+        ],
         "summary": "Create or Save Timetable Period Slot",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateTimetablePeriodRequest" },
+              "schema": {
+                "$ref": "#/components/schemas/CreateTimetablePeriodRequest"
+              },
               "example": {
                 "sectionId": "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f",
                 "dayOfWeek": 1,
@@ -489,18 +1748,35 @@
     },
     "/timetable/periods/{id}": {
       "delete": {
-        "tags": ["Timetable"],
+        "tags": [
+          "Timetable"
+        ],
         "summary": "Delete Timetable Period Slot",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "example": "33333333-4444-5555-6666-777777777777" }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "33333333-4444-5555-6666-777777777777"
+          }
         ],
         "responses": {
           "200": {
             "description": "Period slot removed",
             "content": {
               "application/json": {
-                "example": { "success": true, "message": "Period slot removed successfully" }
+                "example": {
+                  "success": true,
+                  "message": "Period slot removed successfully"
+                }
               }
             }
           }
@@ -509,20 +1785,35 @@
     },
     "/attendance/bulk": {
       "post": {
-        "tags": ["Attendance"],
+        "tags": [
+          "Attendance"
+        ],
         "summary": "Bulk Mark Student Attendance",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/BulkMarkAttendanceRequest" },
+              "schema": {
+                "$ref": "#/components/schemas/BulkMarkAttendanceRequest"
+              },
               "example": {
                 "sectionId": "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f",
                 "date": "2026-09-23",
                 "records": [
-                  { "studentId": "f07f88be-6d92-4b17-87a5-a4753498aace", "status": "PRESENT" },
-                  { "studentId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "status": "ABSENT", "reason": "Fever / Medical" }
+                  {
+                    "studentId": "f07f88be-6d92-4b17-87a5-a4753498aace",
+                    "status": "PRESENT"
+                  },
+                  {
+                    "studentId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                    "status": "ABSENT",
+                    "reason": "Fever / Medical"
+                  }
                 ]
               }
             }
@@ -536,7 +1827,11 @@
                 "example": {
                   "success": true,
                   "message": "Attendance marked for 2 students",
-                  "summary": { "present": 1, "absent": 1, "total": 2 }
+                  "summary": {
+                    "present": 1,
+                    "absent": 1,
+                    "total": 2
+                  }
                 }
               }
             }
@@ -546,11 +1841,25 @@
     },
     "/attendance/my-children": {
       "get": {
-        "tags": ["Attendance"],
+        "tags": [
+          "Attendance"
+        ],
         "summary": "Parent Live Child Attendance Diary",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "studentId", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "studentId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -565,12 +1874,28 @@
                     "absentDays": 2,
                     "totalDays": 53,
                     "subjectRates": [
-                      { "subject": "Mathematics", "rate": 98.0, "total": 45, "attended": 44 },
-                      { "subject": "Computer Science", "rate": 100.0, "total": 40, "attended": 40 }
+                      {
+                        "subject": "Mathematics",
+                        "rate": 98,
+                        "total": 45,
+                        "attended": 44
+                      },
+                      {
+                        "subject": "Computer Science",
+                        "rate": 100,
+                        "total": 40,
+                        "attended": 40
+                      }
                     ],
                     "recentLogs": [
-                      { "date": "2026-09-23", "status": "PRESENT" },
-                      { "date": "2026-09-22", "status": "PRESENT" }
+                      {
+                        "date": "2026-09-23",
+                        "status": "PRESENT"
+                      },
+                      {
+                        "date": "2026-09-22",
+                        "status": "PRESENT"
+                      }
                     ]
                   }
                 }
@@ -582,14 +1907,22 @@
     },
     "/homework": {
       "post": {
-        "tags": ["Homework"],
+        "tags": [
+          "Homework"
+        ],
         "summary": "Publish New Homework Assignment",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateHomeworkRequest" },
+              "schema": {
+                "$ref": "#/components/schemas/CreateHomeworkRequest"
+              },
               "example": {
                 "sectionId": "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f",
                 "classSubjectId": "e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b",
@@ -623,19 +1956,37 @@
     },
     "/exams/marks/bulk": {
       "post": {
-        "tags": ["Exams & Marks"],
+        "tags": [
+          "Exams & Marks"
+        ],
         "summary": "Bulk Enter Student Exam Marks",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/BulkEnterMarksRequest" },
+              "schema": {
+                "$ref": "#/components/schemas/BulkEnterMarksRequest"
+              },
               "example": {
                 "examSubjectId": "d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a",
                 "marks": [
-                  { "studentId": "f07f88be-6d92-4b17-87a5-a4753498aace", "marksObtained": 92.5, "grade": "A1", "remarks": "Excellent mastery of concepts" },
-                  { "studentId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "marksObtained": 78.0, "grade": "B1", "remarks": "Good performance" }
+                  {
+                    "studentId": "f07f88be-6d92-4b17-87a5-a4753498aace",
+                    "marksObtained": 92.5,
+                    "grade": "A1",
+                    "remarks": "Excellent mastery of concepts"
+                  },
+                  {
+                    "studentId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                    "marksObtained": 78,
+                    "grade": "B1",
+                    "remarks": "Good performance"
+                  }
                 ]
               }
             }
@@ -646,7 +1997,10 @@
             "description": "Marks successfully stored and grades computed",
             "content": {
               "application/json": {
-                "example": { "success": true, "message": "Marks entered for 2 students" }
+                "example": {
+                  "success": true,
+                  "message": "Marks entered for 2 students"
+                }
               }
             }
           }
@@ -655,12 +2009,35 @@
     },
     "/exams/student/{studentId}/report": {
       "get": {
-        "tags": ["Exams & Marks"],
+        "tags": [
+          "Exams & Marks"
+        ],
         "summary": "Get Student Academic Report Card",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "studentId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" }, "example": "f07f88be-6d92-4b17-87a5-a4753498aace" },
-          { "name": "examId", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "f07f88be-6d92-4b17-87a5-a4753498aace"
+          },
+          {
+            "name": "examId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -670,16 +2047,39 @@
                 "example": {
                   "success": true,
                   "data": {
-                    "student": { "id": "f07f88be-6d92-4b17-87a5-a4753498aace", "name": "Aarav Sharma", "rollNumber": "01", "className": "Nursery - B" },
-                    "exam": { "id": "ex1", "name": "Term 1 Assessment 2026" },
+                    "student": {
+                      "id": "f07f88be-6d92-4b17-87a5-a4753498aace",
+                      "name": "Aarav Sharma",
+                      "rollNumber": "01",
+                      "className": "Nursery - B"
+                    },
+                    "exam": {
+                      "id": "ex1",
+                      "name": "Term 1 Assessment 2026"
+                    },
                     "totalMaxMarks": 500,
                     "totalObtainedMarks": 465,
-                    "percentage": 93.0,
+                    "percentage": 93,
                     "overallGrade": "A1",
                     "subjectMarks": [
-                      { "subjectName": "Mathematics", "maxMarks": 100, "marksObtained": 95, "grade": "A1" },
-                      { "subjectName": "Computer Science", "maxMarks": 100, "marksObtained": 92.5, "grade": "A1" },
-                      { "subjectName": "English", "maxMarks": 100, "marksObtained": 88, "grade": "A2" }
+                      {
+                        "subjectName": "Mathematics",
+                        "maxMarks": 100,
+                        "marksObtained": 95,
+                        "grade": "A1"
+                      },
+                      {
+                        "subjectName": "Computer Science",
+                        "maxMarks": 100,
+                        "marksObtained": 92.5,
+                        "grade": "A1"
+                      },
+                      {
+                        "subjectName": "English",
+                        "maxMarks": 100,
+                        "marksObtained": 88,
+                        "grade": "A2"
+                      }
                     ]
                   }
                 }
@@ -691,12 +2091,47 @@
     },
     "/complaints": {
       "get": {
-        "tags": ["Complaints & Grievances"],
+        "tags": [
+          "Complaints & Grievances"
+        ],
         "summary": "List Grievance Tickets",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "status", "in": "query", "required": false, "schema": { "type": "string", "enum": ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"] } },
-          { "name": "category", "in": "query", "required": false, "schema": { "type": "string", "enum": ["ACADEMIC", "BEHAVIOR", "FACILITIES", "TRANSPORT", "FEES", "BULLYING", "OTHER"] } }
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "OPEN",
+                "IN_PROGRESS",
+                "RESOLVED",
+                "CLOSED"
+              ]
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACADEMIC",
+                "BEHAVIOR",
+                "FACILITIES",
+                "TRANSPORT",
+                "FEES",
+                "BULLYING",
+                "OTHER"
+              ]
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -723,14 +2158,22 @@
         }
       },
       "post": {
-        "tags": ["Complaints & Grievances"],
+        "tags": [
+          "Complaints & Grievances"
+        ],
         "summary": "Submit Grievance Ticket",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateComplaintRequest" },
+              "schema": {
+                "$ref": "#/components/schemas/CreateComplaintRequest"
+              },
               "example": {
                 "category": "ACADEMIC",
                 "subject": "Query regarding Science chapter 3 assessment evaluation",
@@ -762,9 +2205,15 @@
     },
     "/communication/notices": {
       "get": {
-        "tags": ["Communication"],
+        "tags": [
+          "Communication"
+        ],
         "summary": "List Broadcast Notices & Circulars",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Notices circular list",
@@ -777,7 +2226,9 @@
                       "id": "n1",
                       "title": "Annual Sports Day 2026 - Registration & Schedule",
                       "content": "The Annual Sports Meet will be held on October 15-16.",
-                      "targetAudience": ["ALL"],
+                      "targetAudience": [
+                        "ALL"
+                      ],
                       "publishedAt": "2026-09-23T08:00:00Z"
                     }
                   ]
@@ -788,14 +2239,22 @@
         }
       },
       "post": {
-        "tags": ["Communication"],
+        "tags": [
+          "Communication"
+        ],
         "summary": "Publish Notice Circular",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateNoticeRequest" },
+              "schema": {
+                "$ref": "#/components/schemas/CreateNoticeRequest"
+              },
               "example": {
                 "title": "Annual Sports Day 2026 - Registration & Schedule",
                 "content": "The Annual Sports Meet will be held on October 15-16. All students can register with sports faculty.",
@@ -811,7 +2270,10 @@
               "application/json": {
                 "example": {
                   "success": true,
-                  "data": { "id": "n1", "title": "Annual Sports Day 2026 - Registration & Schedule" }
+                  "data": {
+                    "id": "n1",
+                    "title": "Annual Sports Day 2026 - Registration & Schedule"
+                  }
                 }
               }
             }
@@ -821,14 +2283,22 @@
     },
     "/schools/onboard": {
       "post": {
-        "tags": ["Schools"],
+        "tags": [
+          "Schools"
+        ],
         "summary": "Onboard New School Tenant (Super Admin Only)",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/OnboardSchoolRequest" },
+              "schema": {
+                "$ref": "#/components/schemas/OnboardSchoolRequest"
+              },
               "example": {
                 "name": "Delhi Heritage Academy",
                 "code": "DHA01",
@@ -862,6 +2332,753 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/fees/overview": {
+      "get": {
+        "tags": [
+          "Fees & Invoicing"
+        ],
+        "summary": "Get Session-Scoped Fee Financial Overview & Metrics",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "academicYearId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Target academic session ID (defaults to active school session)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fee metrics and collection rate returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeeOverview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fees/categories": {
+      "get": {
+        "tags": [
+          "Fees & Invoicing"
+        ],
+        "summary": "List Institutional Fee Categories & Heads",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active fee categories returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FeeCategory"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Fees & Invoicing"
+        ],
+        "summary": "Create Fee Category",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFeeCategoryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Category created successfully"
+          }
+        }
+      }
+    },
+    "/fees/structures": {
+      "get": {
+        "tags": [
+          "Fees & Invoicing"
+        ],
+        "summary": "Get Session-Scoped Fee Structures per Class",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "academicYearId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter by academic session ID"
+          },
+          {
+            "name": "classId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter by class grade"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fee structures for the selected session returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FeeStructure"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Fees & Invoicing"
+        ],
+        "summary": "Create Session-Scoped Fee Structure",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFeeStructureRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Fee structure configured"
+          }
+        }
+      }
+    },
+    "/fees/structures/{id}": {
+      "patch": {
+        "tags": [
+          "Fees & Invoicing"
+        ],
+        "summary": "Update Fee Structure Amount or Rules",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Fee structure updated"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Fees & Invoicing"
+        ],
+        "summary": "Remove Fee Structure",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fee structure removed"
+          }
+        }
+      }
+    },
+    "/fees/invoices": {
+      "get": {
+        "tags": [
+          "Fees & Invoicing"
+        ],
+        "summary": "Get Student Fee Invoices & Ledger",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "academicYearId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Target academic session ID"
+          },
+          {
+            "name": "studentId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PAID",
+                "PARTIAL",
+                "UNPAID",
+                "OVERDUE"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Student fee invoices returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StudentFeeInvoice"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fees/invoices/generate-batch": {
+      "post": {
+        "tags": [
+          "Fees & Invoicing"
+        ],
+        "summary": "Run Automated Monthly Billing Run for Session",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateBatchInvoicesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Student fee invoices generated for enrolled students in session"
+          }
+        }
+      }
+    },
+    "/fees/payments": {
+      "post": {
+        "tags": [
+          "Fees & Invoicing"
+        ],
+        "summary": "Collect Fee Payment and Issue Official Receipt",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CollectFeePaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Payment credited and receipt issued"
+          }
+        }
+      }
+    },
+    "/transport/overview": {
+      "get": {
+        "tags": [
+          "Transport & Fleet"
+        ],
+        "summary": "Get Transport Fleet Logistics & Route Overview",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "academicYearId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Academic session ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fleet capacity and transport occupancy metrics returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransportOverview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/transport/vehicles": {
+      "get": {
+        "tags": [
+          "Transport & Fleet"
+        ],
+        "summary": "List School Fleet Vehicles",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Registered fleet vehicles returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransportVehicle"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Transport & Fleet"
+        ],
+        "summary": "Add Fleet Vehicle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTransportVehicleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Vehicle registered to campus fleet"
+          }
+        }
+      }
+    },
+    "/transport/vehicles/{id}": {
+      "patch": {
+        "tags": [
+          "Transport & Fleet"
+        ],
+        "summary": "Update Vehicle Details & Driver Info",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Vehicle updated"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Transport & Fleet"
+        ],
+        "summary": "Decommission Fleet Vehicle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vehicle deleted"
+          }
+        }
+      }
+    },
+    "/transport/routes": {
+      "get": {
+        "tags": [
+          "Transport & Fleet"
+        ],
+        "summary": "Get Session-Scoped Transport Bus Routes & Stops",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "academicYearId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Academic session ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session routes and itinerary stops returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransportRoute"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Transport & Fleet"
+        ],
+        "summary": "Create Session-Scoped Transport Route & Stops",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTransportRouteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Route and stops itinerary saved"
+          }
+        }
+      }
+    },
+    "/transport/routes/{id}": {
+      "patch": {
+        "tags": [
+          "Transport & Fleet"
+        ],
+        "summary": "Update Transport Route Schedule",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Route updated"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Transport & Fleet"
+        ],
+        "summary": "Delete Transport Route",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Route deleted"
+          }
+        }
+      }
+    },
+    "/transport/assignments": {
+      "get": {
+        "tags": [
+          "Transport & Fleet"
+        ],
+        "summary": "Get Student Transport Bus Subscriptions & Passes for Session",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "academicYearId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Academic session ID"
+          },
+          {
+            "name": "routeId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "studentId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assigned bus passes for session returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StudentTransportAssignment"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Transport & Fleet"
+        ],
+        "summary": "Issue Student Bus Pass for Academic Session",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignTransportPassRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Bus pass issued and seat assigned"
+          }
+        }
+      }
+    },
+    "/transport/assignments/{id}": {
+      "delete": {
+        "tags": [
+          "Transport & Fleet"
+        ],
+        "summary": "Cancel Student Bus Pass Subscription",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscription removed"
           }
         }
       }

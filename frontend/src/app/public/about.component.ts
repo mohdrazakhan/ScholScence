@@ -40,18 +40,18 @@ interface Value {
             <div class="mt-5 space-y-4 text-sm leading-relaxed text-slate-600 sm:text-base">
               <p>
                 A school with 100 students in a tier-3 town runs on the same dedication as a
-                2,000-student city school — often with less help. Yet most school software is
+                2,000-student city school: often with less help. Yet most school software is
                 priced and designed for the biggest institutions, with modules nobody uses and
                 charges nobody explains.
               </p>
               <p>
                 We built SchoolSense the other way around: one complete system, one honest price,
                 and screens so simple that any teacher, clerk or principal can start on day one.
-                And we made Parent Connect the heart of it — because a school and its families
+                And we made Parent Connect the heart of it: because a school and its families
                 should feel like one team, not two worlds.
               </p>
               <p>
-                That's why SchoolSense speaks your school's language: April–March academic years,
+                That's why SchoolSense speaks your school's language: April-March academic years,
                 ₹ pricing, class teachers, TCs and character certificates in proper Indian formats.
               </p>
             </div>
@@ -94,14 +94,14 @@ interface Value {
           </div>
           <div class="order-1 lg:order-2">
             <h2 id="work-heading" class="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-              We work like your school's IT team — so you don't need one
+              We work like your school's IT team: so you don't need one
             </h2>
             <ul class="mt-6 space-y-4">
               <li class="flex items-start gap-3">
                 <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
                   <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
                 </span>
-                <p class="text-sm leading-relaxed text-slate-700"><strong class="font-semibold text-slate-900">We set everything up.</strong> Classes, sections, subjects, fees — done by our team, free.</p>
+                <p class="text-sm leading-relaxed text-slate-700"><strong class="font-semibold text-slate-900">We set everything up.</strong> Classes, sections, subjects, fees: done by our team, free.</p>
               </li>
               <li class="flex items-start gap-3">
                 <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
@@ -158,12 +158,12 @@ export class AboutComponent {
     {
       art: 'parent-phone',
       title: 'Parents as partners',
-      detail: 'When parents see school life live, trust grows — and students get the support they need at home.',
+      detail: 'When parents see school life live, trust grows: and students get the support they need at home.',
     },
     {
       art: 'school-bus',
       title: 'Made for India',
-      detail: 'April–March sessions, ₹ pricing, Indian certificate formats, Hindi-English friendly language.',
+      detail: 'April-March sessions, ₹ pricing, Indian certificate formats, Hindi-English friendly language.',
     },
     {
       art: 'complaint',
@@ -174,9 +174,9 @@ export class AboutComponent {
 
   constructor() {
     this.seo.setPage({
-      title: 'About SchoolSense — Simple School Software, Built for Indian Schools',
+      title: 'About SchoolSense: Simple School Software, Built for Indian Schools',
       description:
-        'SchoolSense is an India-first school management system with a mission: every school deserves simple, complete and honestly-priced software — with parents connected live to their child\'s school life.',
+        'SchoolSense is an India-first school management system with a mission: every school deserves simple, complete and honestly-priced software: with parents connected live to their child\'s school life.',
       path: '/about',
       jsonLd: [
         {

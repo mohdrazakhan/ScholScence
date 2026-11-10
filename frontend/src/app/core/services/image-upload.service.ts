@@ -14,9 +14,9 @@ export class ImageUploadService {
   async processAndUploadImage(
     file: File,
     folder: 'logos' | 'staff' | 'students' | 'guardians' = 'students',
-    maxWidth = 600,
-    maxHeight = 600,
-    quality = 0.85
+    maxWidth = 400,
+    maxHeight = 400,
+    quality = 0.8
   ): Promise<string> {
     // 1. Validate File
     if (!file) {
@@ -38,35 +38,10 @@ export class ImageUploadService {
       return await this.readFileAsDataUrl(file);
     }
 
-    // 2. Compress & Resize using Client-Side HTML5 Canvas
+    // 2. Compress & Resize using Client-Side HTML5 Canvas to high-efficiency WebP (~10-15KB)
     const compressedDataUrl = await this.compressImageToDataUrl(file, maxWidth, maxHeight, quality);
 
-    // 3. Attempt Supabase Storage Upload if bucket is reachable
-    try {
-      const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(2, 9)}.webp`;
-      const blob = await this.dataUrlToBlob(compressedDataUrl);
-
-      const { data, error } = await this.supabase.storage
-        .from('school-assets')
-        .upload(fileName, blob, {
-          contentType: 'image/webp',
-          upsert: true,
-        });
-
-      if (!error && data?.path) {
-        const { data: publicUrlData } = this.supabase.storage
-          .from('school-assets')
-          .getPublicUrl(data.path);
-
-        if (publicUrlData?.publicUrl) {
-          return publicUrlData.publicUrl;
-        }
-      }
-    } catch (e) {
-      console.warn('Supabase storage upload skipped or bucket unavailable, using compressed data URI', e);
-    }
-
-    // 4. Fallback: Return high-efficiency compressed Data URI
+    // Return high-efficiency compressed WebP Data URI directly (100% instant, reliable, and offline-compatible)
     return compressedDataUrl;
   }
 

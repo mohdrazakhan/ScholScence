@@ -94,21 +94,38 @@ BEGIN
       c.code,
       c.display_order AS "displayOrder",
       c.status,
-      COUNT(DISTINCT sec.id) AS "sectionCount",
-      COALESCE(SUM(COALESCE(sec.capacity, 40)), 0) AS "totalCapacity",
-      COUNT(DISTINCT cs.id) AS "subjectCount",
-      COUNT(DISTINCT CASE WHEN se.status = 'ACTIVE' AND s.status = 'ACTIVE' AND s.deleted_at IS NULL THEN se.student_id END) AS "enrolledCount"
+      COALESCE((
+        SELECT COUNT(*)
+        FROM public.sections sec
+        WHERE sec.class_id = c.id
+          AND sec.deleted_at IS NULL
+          AND (v_active_year_id IS NULL OR sec.academic_year_id = v_active_year_id)
+      ), 0) AS "sectionCount",
+      COALESCE((
+        SELECT SUM(COALESCE(sec.capacity, 40))
+        FROM public.sections sec
+        WHERE sec.class_id = c.id
+          AND sec.deleted_at IS NULL
+          AND (v_active_year_id IS NULL OR sec.academic_year_id = v_active_year_id)
+      ), 0) AS "totalCapacity",
+      COALESCE((
+        SELECT COUNT(*)
+        FROM public.class_subjects cs
+        WHERE cs.class_id = c.id
+          AND (v_active_year_id IS NULL OR cs.academic_year_id = v_active_year_id)
+      ), 0) AS "subjectCount",
+      COALESCE((
+        SELECT COUNT(DISTINCT se.student_id)
+        FROM public.student_enrollments se
+        JOIN public.students s ON s.id = se.student_id
+        WHERE se.class_id = c.id
+          AND (v_active_year_id IS NULL OR se.academic_year_id = v_active_year_id)
+          AND se.status = 'ACTIVE'
+          AND s.status = 'ACTIVE'
+          AND s.deleted_at IS NULL
+      ), 0) AS "enrolledCount"
     FROM public.classes c
-    LEFT JOIN public.sections sec ON sec.class_id = c.id
-      AND sec.deleted_at IS NULL
-      AND (v_active_year_id IS NULL OR sec.academic_year_id = v_active_year_id)
-    LEFT JOIN public.class_subjects cs ON cs.class_id = c.id
-      AND (v_active_year_id IS NULL OR cs.academic_year_id = v_active_year_id)
-    LEFT JOIN public.student_enrollments se ON se.class_id = c.id
-      AND (v_active_year_id IS NULL OR se.academic_year_id = v_active_year_id)
-    LEFT JOIN public.students s ON s.id = se.student_id
     WHERE c.school_id = v_school_id AND c.deleted_at IS NULL
-    GROUP BY c.id, c.name, c.code, c.display_order, c.status
     ORDER BY c.display_order ASC, c.name ASC
   ) cls_row;
 
