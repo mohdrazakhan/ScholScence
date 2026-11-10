@@ -190,6 +190,8 @@ export interface DashboardModulesOverview {
     absentCount: number;
     lateCount: number;
     markedCount: number;
+    classesMarkedCount?: number;
+    totalClasses?: number;
     totalStudents: number;
     isMarkedToday: boolean;
   };
@@ -315,6 +317,7 @@ export interface DashboardStats {
     totalDepartmentalStaff?: number;
     attendanceTodayPercentage: string;
     attendanceMarkedCount: number;
+    attendanceClassesMarkedCount?: number;
     attendancePresentCount?: number;
     attendanceAbsentCount?: number;
     attendanceLateCount?: number;
@@ -1197,6 +1200,114 @@ export interface StudentFeeAdditionalCharge {
   status?: 'PENDING' | 'PAID';
   created_at?: string;
   updated_at?: string;
+}
+
+export type SchoolDocumentType =
+  | 'TRANSFER_CERTIFICATE'
+  | 'BONAFIDE_CERTIFICATE'
+  | 'CHARACTER_CERTIFICATE'
+  | 'FEE_NO_DUES'
+  | 'MARKSHEET'
+  | 'REPORT_CARD'
+  | 'SPORTS_CERTIFICATE'
+  | 'CUSTOM';
+
+export interface SchoolDocument {
+  id: string;
+  schoolId?: string;
+  school_id?: string;
+  academicYearId?: string;
+  academic_year_id?: string;
+  serialNumber: string;
+  serial_number?: string;
+  documentType: SchoolDocumentType;
+  document_type?: SchoolDocumentType;
+  title: string;
+  recipientType: 'STUDENT' | 'STAFF' | 'OTHER';
+  recipient_type?: 'STUDENT' | 'STAFF' | 'OTHER';
+  studentId?: string;
+  student_id?: string;
+  userId?: string;
+  user_id?: string;
+  recipientName: string;
+  recipient_name?: string;
+  admissionNumber?: string;
+  admission_number?: string;
+  className?: string;
+  class_name?: string;
+  sectionName?: string;
+  section_name?: string;
+  rollNumber?: string;
+  roll_number?: string;
+  guardianName?: string;
+  guardian_name?: string;
+  issueDate: string;
+  issue_date?: string;
+  issuedById?: string;
+  issued_by_id?: string;
+  status: 'ISSUED' | 'REVOKED';
+  revocationReason?: string;
+  revocation_reason?: string;
+  revokedAt?: string;
+  revoked_at?: string;
+  verificationToken: string;
+  verification_token?: string;
+  verificationUrl?: string;
+  remarks?: string;
+  metadata?: Record<string, any>;
+  createdAt?: string;
+  created_at?: string;
+}
+
+export interface IssueDocumentRequest {
+  documentType: SchoolDocumentType;
+  title: string;
+  studentId?: string;
+  recipientName: string;
+  admissionNumber?: string;
+  className?: string;
+  sectionName?: string;
+  rollNumber?: string;
+  guardianName?: string;
+  issueDate?: string;
+  serialNumber?: string;
+  remarks?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface DocumentVerificationResult {
+  success: boolean;
+  verified: boolean;
+  error?: string;
+  document?: {
+    id: string;
+    serialNumber: string;
+    documentType: string;
+    title: string;
+    recipientName: string;
+    admissionNumber?: string;
+    className?: string;
+    sectionName?: string;
+    rollNumber?: string;
+    guardianName?: string;
+    issueDate: string;
+    status: 'ISSUED' | 'REVOKED';
+    revocationReason?: string;
+    remarks?: string;
+    metadata?: Record<string, any>;
+    createdAt: string;
+  };
+  school?: {
+    name: string;
+    code: string;
+    logoUrl?: string;
+    city?: string;
+    state?: string;
+    affiliationNumber?: string;
+    board?: string;
+    email?: string;
+    phone?: string;
+  };
 }
 
 

@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -69,6 +69,23 @@ interface FeatureSectionDef {
         </div>
       </div>
 
+      <!-- Navigation Tabs: Non-Teaching Staff Accounts vs Staff Payroll Register -->
+      <div class="flex items-center gap-2 p-1 bg-slate-100 dark:bg-[#18181c] rounded-2xl max-w-md border border-slate-200/80 dark:border-[#27272e]">
+        <button type="button" (click)="activeMainTab = 'staff'"
+                [ngClass]="activeMainTab === 'staff' ? 'bg-white dark:bg-[#222228] text-slate-900 dark:text-white shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400 font-medium'"
+                class="flex-1 py-2 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+          <span>🏢</span>
+          <span>Non-Teaching Staff</span>
+        </button>
+        <button type="button" (click)="activeMainTab = 'payroll'"
+                [ngClass]="activeMainTab === 'payroll' ? 'bg-white dark:bg-[#222228] text-slate-900 dark:text-white shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400 font-medium'"
+                class="flex-1 py-2 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+          <span>💳</span>
+          <span>Staff Payroll</span>
+        </button>
+      </div>
+
+      <div *ngIf="activeMainTab === 'staff'" class="space-y-6">
       <!-- Campus Metrics Ribbon (Unified Minimalist Theme) -->
       <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
         <div class="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs flex flex-col justify-between">
@@ -546,6 +563,98 @@ interface FeatureSectionDef {
 
         </div>
       </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- TAB 2: STAFF PAYROLL REGISTER & SALARY DISBURSEMENT             -->
+      <!-- ============================================================== -->
+      <div *ngIf="activeMainTab === 'payroll'" class="space-y-6 animate-fadeIn">
+        
+        <!-- Payroll Metrics KPI Ribbon -->
+        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div class="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs">
+            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Monthly Payroll</span>
+            <div class="mt-2 text-2xl font-black text-slate-900 dark:text-white">₹ 4,85,000</div>
+            <span class="text-[10px] text-emerald-600 font-semibold mt-0.5">Session 2026–27 (October)</span>
+          </div>
+          <div class="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs">
+            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Staff Covered</span>
+            <div class="mt-2 text-2xl font-black text-slate-900 dark:text-white">{{ payrollList.length }} Members</div>
+            <span class="text-[10px] text-slate-400 font-semibold mt-0.5">Teaching & Non-Teaching</span>
+          </div>
+          <div class="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs">
+            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Disbursed Amount</span>
+            <div class="mt-2 text-2xl font-black text-emerald-600">₹ 4,48,840</div>
+            <span class="text-[10px] text-emerald-600 font-semibold mt-0.5">Direct Bank Transfer</span>
+          </div>
+          <div class="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs">
+            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Pending Payouts</span>
+            <div class="mt-2 text-2xl font-black text-amber-600">₹ 36,160</div>
+            <span class="text-[10px] text-amber-600 font-semibold mt-0.5">1 Payout In Review</span>
+          </div>
+        </div>
+
+        <!-- Payroll Register Table -->
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-[#222226] shadow-2xs space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-[#222226]">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white">Institutional Salary Register</h3>
+              <p class="text-xs text-slate-400">Monthly compensation, allowances, deductions and verified salary slips</p>
+            </div>
+            <button (click)="printPayslip()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#18181c] text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+              <span>Print Register</span>
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50 dark:bg-[#18181c] text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-[#27272e]">
+                  <th class="py-3 px-3">Employee</th>
+                  <th class="py-3 px-3">Designation / Dept</th>
+                  <th class="py-3 px-3 text-right">Basic Pay</th>
+                  <th class="py-3 px-3 text-right">Allowances</th>
+                  <th class="py-3 px-3 text-right">Deductions</th>
+                  <th class="py-3 px-3 text-right">Net Salary</th>
+                  <th class="py-3 px-3 text-center">Status</th>
+                  <th class="py-3 px-3 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 dark:divide-[#222226]">
+                <tr *ngFor="let p of payrollList" class="hover:bg-slate-50/60 dark:hover:bg-[#18181c] transition-colors">
+                  <td class="py-3 px-3 font-semibold text-slate-900 dark:text-white">
+                    {{ p.name }}
+                    <span class="block text-[10px] font-mono text-slate-400">{{ p.code }}</span>
+                  </td>
+                  <td class="py-3 px-3 text-slate-600 dark:text-slate-300">
+                    {{ p.designation }}
+                    <span class="block text-[10px] text-slate-400">{{ p.department }}</span>
+                  </td>
+                  <td class="py-3 px-3 text-right font-mono text-slate-700 dark:text-slate-300">₹ {{ p.basic | number }}</td>
+                  <td class="py-3 px-3 text-right font-mono text-emerald-600">+ ₹ {{ p.allowances | number }}</td>
+                  <td class="py-3 px-3 text-right font-mono text-rose-500">- ₹ {{ p.deductions | number }}</td>
+                  <td class="py-3 px-3 text-right font-mono font-bold text-slate-900 dark:text-white">₹ {{ p.net | number }}</td>
+                  <td class="py-3 px-3 text-center">
+                    <span *ngIf="p.status === 'DISBURSED'" class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800">
+                      Disbursed
+                    </span>
+                    <span *ngIf="p.status === 'PENDING'" class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800">
+                      Processing
+                    </span>
+                  </td>
+                  <td class="py-3 px-3 text-center">
+                    <button (click)="openPayslip(p)" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition-all cursor-pointer">
+                      Payslip
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
 
     </div>
 
@@ -943,6 +1052,71 @@ interface FeatureSectionDef {
         </div>
       </div>
     </div>
+
+    <!-- PAYSLIP MODAL -->
+    <div *ngIf="showPayslipModal && selectedPayrollStaff" 
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn">
+      <div class="bg-white dark:bg-[#121214] rounded-3xl shadow-2xl border border-slate-200/90 dark:border-[#222226] w-full max-w-lg p-6 animate-scaleUp space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#222226]">
+          <div>
+            <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Salary Statement / Payslip</h3>
+            <p class="text-xs text-slate-400">{{ selectedPayrollStaff.month }} · SchoolSense Campus OS</p>
+          </div>
+          <button (click)="showPayslipModal = false" class="text-slate-400 hover:text-slate-700 text-lg font-bold cursor-pointer">&times;</button>
+        </div>
+
+        <div class="p-4 bg-slate-50 dark:bg-[#18181c] rounded-2xl border border-slate-200/80 dark:border-[#27272e] space-y-2 text-xs">
+          <div class="flex justify-between">
+            <span class="text-slate-500">Employee Name:</span>
+            <span class="font-bold text-slate-900 dark:text-white">{{ selectedPayrollStaff.name }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">Employee Code:</span>
+            <span class="font-mono font-bold text-slate-800 dark:text-slate-200">{{ selectedPayrollStaff.code }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">Designation &amp; Dept:</span>
+            <span class="text-slate-800 dark:text-slate-200">{{ selectedPayrollStaff.designation }} ({{ selectedPayrollStaff.department }})</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 text-xs">
+          <div class="p-3 bg-white dark:bg-[#121214] border border-slate-200 rounded-xl space-y-1.5">
+            <div class="font-bold text-emerald-700 uppercase text-[10px]">Earnings</div>
+            <div class="flex justify-between text-slate-600"><span>Basic Pay:</span> <span>₹ {{ selectedPayrollStaff.basic | number }}</span></div>
+            <div class="flex justify-between text-slate-600"><span>Allowances:</span> <span>₹ {{ selectedPayrollStaff.allowances | number }}</span></div>
+            <div class="flex justify-between font-bold text-slate-900 pt-1 border-t border-slate-100">
+              <span>Gross Earnings:</span> <span>₹ {{ (selectedPayrollStaff.basic + selectedPayrollStaff.allowances) | number }}</span>
+            </div>
+          </div>
+          <div class="p-3 bg-white dark:bg-[#121214] border border-slate-200 rounded-xl space-y-1.5">
+            <div class="font-bold text-rose-600 uppercase text-[10px]">Deductions</div>
+            <div class="flex justify-between text-slate-600"><span>PF &amp; TDS:</span> <span>₹ {{ selectedPayrollStaff.deductions | number }}</span></div>
+            <div class="flex justify-between text-slate-600"><span>Other Deduc.:</span> <span>₹ 0</span></div>
+            <div class="flex justify-between font-bold text-slate-900 pt-1 border-t border-slate-100">
+              <span>Total Deductions:</span> <span>₹ {{ selectedPayrollStaff.deductions | number }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-3.5 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl border border-indigo-100 dark:border-indigo-900/60 flex items-center justify-between text-xs">
+          <div>
+            <span class="text-[10px] uppercase font-bold text-indigo-700 dark:text-indigo-300">Net Disbursed Salary</span>
+            <div class="text-lg font-black text-indigo-950 dark:text-indigo-200">₹ {{ selectedPayrollStaff.net | number }}</div>
+          </div>
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+            Verified Transfer
+          </span>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-[#222226]">
+          <button (click)="showPayslipModal = false" class="px-4 py-2 text-xs font-semibold text-slate-600 rounded-xl cursor-pointer">Close</button>
+          <button (click)="printPayslip()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all cursor-pointer">
+            Print Official Slip
+          </button>
+        </div>
+      </div>
+    </div>
   `,
   styles: [`
     .custom-clay-scroll::-webkit-scrollbar {
@@ -1081,10 +1255,40 @@ export class StaffUsersComponent implements OnInit {
   newPasswordInput = '';
   showResetPass = false;
 
+  private activatedRoute = inject(ActivatedRoute);
+  activeMainTab: 'staff' | 'payroll' = 'staff';
+  selectedPayrollStaff: any = null;
+  showPayslipModal = false;
+
+  payrollList = [
+    { id: '1', name: 'Dr. Meenakshi Sundaram', code: 'FAC-12', designation: 'Senior PGT Mathematics', department: 'Academics', basic: 52000, allowances: 14000, deductions: 6240, net: 59760, status: 'DISBURSED', month: 'October 2026' },
+    { id: '2', name: 'Rajesh K. Nambiar', code: 'FAC-18', designation: 'TGT Science & Physics', department: 'Academics', basic: 42000, allowances: 11000, deductions: 5040, net: 47960, status: 'DISBURSED', month: 'October 2026' },
+    { id: '3', name: 'Rameshwar Lal', code: 'STF-05', designation: 'Chief Fee Accountant', department: 'Accounts', basic: 38000, allowances: 9500, deductions: 4560, net: 42940, status: 'DISBURSED', month: 'October 2026' },
+    { id: '4', name: 'Gurpreet Singh', code: 'STF-09', designation: 'Fleet & Transport Supervisor', department: 'Transport', basic: 32000, allowances: 8000, deductions: 3840, net: 36160, status: 'PENDING', month: 'October 2026' },
+    { id: '5', name: 'Pooja Verma', code: 'STF-14', designation: 'Head Librarian', department: 'Library', basic: 34000, allowances: 8500, deductions: 4080, net: 38420, status: 'DISBURSED', month: 'October 2026' },
+    { id: '6', name: 'Sunita Deshmukh', code: 'FAC-25', designation: 'PGT English Literature', department: 'Academics', basic: 48000, allowances: 12500, deductions: 5760, net: 54740, status: 'DISBURSED', month: 'October 2026' },
+  ];
+
+  openPayslip(item: any) {
+    this.selectedPayrollStaff = item;
+    this.showPayslipModal = true;
+  }
+
+  printPayslip() {
+    window.print();
+  }
+
   ngOnInit(): void {
     if (!this.canAccess) {
       return;
     }
+    this.activatedRoute.queryParams.subscribe((params) => {
+      if (params['tab'] === 'payroll') {
+        this.activeMainTab = 'payroll';
+      } else {
+        this.activeMainTab = 'staff';
+      }
+    });
     this.loadUsers();
   }
 

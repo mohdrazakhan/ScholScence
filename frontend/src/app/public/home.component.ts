@@ -972,12 +972,13 @@ interface FaqItem {
           </a>
         </div>
 
-        <!-- No hidden costs banner: ₹0 Setup, ₹0 Data migration, ₹0 On-site training -->
-        <div class="mx-auto mt-16 sm:mt-20 max-w-4xl text-center border-t border-slate-200/80 pt-12 sm:pt-16">
+        <!-- Unified No Hidden Costs Section: 3 Top Zero-Cost Pillars + 3 Bottom Billing Cards -->
+        <div class="mx-auto mt-16 sm:mt-20 max-w-5xl text-center border-t border-slate-200/80 pt-12 sm:pt-16">
           <h3 class="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
             No hidden costs. <span class="text-blue-600">Really.</span>
           </h3>
 
+          <!-- Top Row: ₹0 Setup fee | ₹0 Data migration | ₹0 On-site training -->
           <div class="mt-8 sm:mt-12 grid grid-cols-1 divide-y divide-slate-200 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
             <div class="py-5 sm:py-0">
               <p class="text-5xl sm:text-6xl font-extrabold tracking-tight text-slate-900">₹0</p>
@@ -993,7 +994,32 @@ interface FaqItem {
             </div>
           </div>
 
-          <p class="mt-8 text-xs text-slate-500 max-w-lg mx-auto leading-relaxed">
+          <!-- Bottom Row: 3 White Cards side-by-side -->
+          <div class="mt-8 sm:mt-10 grid gap-4 sm:grid-cols-3">
+            <div class="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-7 text-center shadow-xs">
+              <app-vector-art name="timetable" class="mx-auto h-14 w-14 sm:h-16 sm:w-16" />
+              <h4 class="mt-3 text-sm sm:text-base font-bold text-slate-900">Pay monthly</h4>
+              <p class="mt-1.5 text-xs sm:text-sm leading-relaxed text-slate-500">
+                Pay as you go each month. No large upfront annual checks required.
+              </p>
+            </div>
+            <div class="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-7 text-center shadow-xs">
+              <app-vector-art name="classroom" class="mx-auto h-14 w-14 sm:h-16 sm:w-16" />
+              <h4 class="mt-3 text-sm sm:text-base font-bold text-slate-900">Only for enrolled students</h4>
+              <p class="mt-1.5 text-xs sm:text-sm leading-relaxed text-slate-500">
+                Only pay for active students. Teachers, staff, and parents log in free on all plans.
+              </p>
+            </div>
+            <div class="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-7 text-center shadow-xs">
+              <app-vector-art name="security" class="mx-auto h-14 w-14 sm:h-16 sm:w-16" />
+              <h4 class="mt-3 text-sm sm:text-base font-bold text-slate-900">Zero lock-in</h4>
+              <p class="mt-1.5 text-xs sm:text-sm leading-relaxed text-slate-500">
+                Your data belongs to your school. Export anytime in Excel/CSV/PDF.
+              </p>
+            </div>
+          </div>
+
+          <p class="mt-8 text-xs text-slate-500 max-w-xl mx-auto leading-relaxed">
             WhatsApp, SMS and payment gateway fees are charged by those providers at cost. We add nothing on top.
           </p>
         </div>

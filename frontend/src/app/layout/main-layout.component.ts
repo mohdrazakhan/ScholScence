@@ -155,13 +155,14 @@ export interface RoleSectionItem {
                         <rect x="10" y="8" width="4" height="12" rx="1.2" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.8" />
                         <rect x="16" y="4" width="4" height="16" rx="1.2" fill="currentColor" fill-opacity="0.28" stroke="currentColor" stroke-width="1.8" />
                       </svg>
-                      <svg *ngIf="group.id === 'subscription'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
-                        <rect x="3" y="5" width="18" height="14" rx="3" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" />
-                        <path d="M3 10h18M7 15h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                      </svg>
                       <svg *ngIf="group.id === 'fees'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
                         <circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" />
                         <path d="M9.5 8.5h5M9.5 11.5h5M9.5 8.5c1.5 0 2.5 1 2.5 2.5s-1 2.5-2.5 2.5l4 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                      <svg *ngIf="group.id === 'documents'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                        <path d="M14 2V8H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M16 13H8M16 17H8M10 9H8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
                       </svg>
                       <svg *ngIf="group.id === 'transport'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
                         <rect x="4" y="4" width="16" height="13" rx="3" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" />
@@ -169,7 +170,19 @@ export interface RoleSectionItem {
                         <circle cx="8" cy="14" r="1" fill="currentColor" />
                         <circle cx="16" cy="14" r="1" fill="currentColor" />
                       </svg>
-                      <svg *ngIf="group.id === 'staff_users'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                      <svg *ngIf="group.id === 'communication'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <path d="M17 5.5L8.5 9H5.5A2 2 0 003.5 11v2a2 2 0 002 2h3l8.5 3.5V5.5z" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                        <path d="M20 9.5a3 3 0 010 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                      </svg>
+                      <svg *ngIf="group.id === 'complaints'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                        <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                      </svg>
+                      <svg *ngIf="group.id === 'subscription'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="5" width="18" height="14" rx="3" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" />
+                        <path d="M3 10h18M7 15h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                      </svg>
+                      <svg *ngIf="group.id === 'staff_users' || group.id === 'employees'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
                         <circle cx="9.5" cy="8" r="3.2" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
                         <path d="M3.5 19c0-2.8 2.7-5 6-5s6 2.2 6 5" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                         <path d="M16 7a2.8 2.8 0 010 5.4M17.5 14.5c2 .5 3.5 2 3.5 4.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
@@ -180,7 +193,7 @@ export interface RoleSectionItem {
                 </a>
               </div>
 
-              <!-- CASE 2: ACCORDION HEADING WITH SUB-HEADINGS (Timetable, Academics, Onboarding, Communication) -->
+              <!-- CASE 2: ACCORDION HEADING WITH SUB-HEADINGS (Timetable, Academics, Onboarding, Employees, ID Card) -->
               <div *ngIf="group.children && group.children.length > 0" class="space-y-0.5">
                 
                 <!-- Main Heading (Clean div role="button") -->
@@ -199,16 +212,28 @@ export interface RoleSectionItem {
                         <rect x="5" y="4" width="14" height="16" rx="2.5" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" />
                         <path d="M9 8h2m2 0h2M9 12h2m2 0h2M10 20v-4h4v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
                       </svg>
-                      <!-- Icon for Academics -->
-                      <svg *ngIf="group.id === 'academics'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-                      </svg>
                       <!-- Icon for Timetable -->
                       <svg *ngIf="group.id === 'timetable'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
                         <rect x="3.5" y="5" width="17" height="15.5" rx="3" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" />
                         <path d="M3.5 9.5h17M8 3.5v3M16 3.5v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                       </svg>
-                      <!-- Icon for Communication -->
+                      <!-- Icon for Academics -->
+                      <svg *ngIf="group.id === 'academics'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                      <!-- Icon for Employees -->
+                      <svg *ngIf="group.id === 'employees' || group.id === 'staff_users'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <circle cx="9.5" cy="8" r="3.2" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" />
+                        <path d="M3.5 19c0-2.8 2.7-5 6-5s6 2.2 6 5" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                        <path d="M16 7a2.8 2.8 0 010 5.4M17.5 14.5c2 .5 3.5 2 3.5 4.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                      </svg>
+                      <!-- Icon for ID Card -->
+                      <svg *ngIf="group.id === 'id_card'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="4" width="18" height="16" rx="3" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.8" />
+                        <circle cx="9" cy="10" r="2" fill="currentColor" fill-opacity="0.3" stroke="currentColor" stroke-width="1.5" />
+                        <path d="M6 16c0-1.5 1.5-2.5 3-2.5s3 1 3 2.5M14 9h4M14 12h4M14 15h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                      </svg>
+                      <!-- Icon for Communication (fallback if accordion) -->
                       <svg *ngIf="group.id === 'communication'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
                         <path d="M17 5.5L8.5 9H5.5A2 2 0 003.5 11v2a2 2 0 002 2h3l8.5 3.5V5.5z" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
                         <path d="M20 9.5a3 3 0 010 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
@@ -2457,69 +2482,6 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       description: 'Campus metrics, daily summaries, quick insights, and widgets',
     },
     {
-      id: 'academics',
-      name: 'Academics Hub (Main Module)',
-      category: 'Academics & Master Data',
-      description: 'Main academic module hub, student rosters, and curriculum records',
-      isParent: true,
-    },
-    {
-      id: 'academics_classes',
-      name: 'Manage Classes & Sections',
-      category: 'Academics & Master Data',
-      description: 'Configure grade hierarchy, divisions, sections and classroom capacities',
-      parentId: 'academics',
-    },
-    {
-      id: 'academics_students',
-      name: 'Student Admissions & Roster',
-      category: 'Academics & Master Data',
-      description: 'Enrollment registry, student profiles, parent details, promotions & demotions',
-      parentId: 'academics',
-    },
-    {
-      id: 'academics_alumni',
-      name: 'Alumni Directory & Certificates',
-      category: 'Academics & Master Data',
-      description: 'Permanent alumni register, Transfer Certificates (TC), Character Certificates & Alumni IDs',
-      parentId: 'academics',
-    },
-    {
-      id: 'academics_staff',
-      name: 'Faculty & Staff Directory',
-      category: 'Academics & Master Data',
-      description: 'Teaching faculty profiles, department assignments & employment records',
-      parentId: 'academics',
-    },
-    {
-      id: 'academics_subjects',
-      name: 'Curriculum Subjects Master',
-      category: 'Academics & Master Data',
-      description: 'Subject course codes, credit hours, and institutional curriculum mapping',
-      parentId: 'academics',
-    },
-    {
-      id: 'timetable',
-      name: 'Timetable & Schedule (Main Module)',
-      category: 'Schedule & Operations',
-      description: 'Campus daily schedule, bell timings, class routine tables and teacher allocations',
-      isParent: true,
-    },
-    {
-      id: 'timetable_student',
-      name: 'Student / Class Timetable',
-      category: 'Schedule & Operations',
-      description: 'View and manage student class period timetables by grade and section',
-      parentId: 'timetable',
-    },
-    {
-      id: 'timetable_faculty',
-      name: 'Faculty / Teacher Timetable',
-      category: 'Schedule & Operations',
-      description: 'View teacher assignments and faculty routine schedules',
-      parentId: 'timetable',
-    },
-    {
       id: 'attendance',
       name: 'Attendance Register',
       category: 'Schedule & Operations',
@@ -2532,55 +2494,166 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       description: 'Assign homework, track student submissions, attachments & grading',
     },
     {
-      id: 'exams',
-      name: 'Exams & Marksheets',
-      category: 'Assessments & Learning',
-      description: 'Exam scheduling, marks entry, grades and report card printing',
-    },
-    {
-      id: 'communication',
-      name: 'Communication & Notices (Main Module)',
-      category: 'Campus Communications',
-      description: 'Broadcast notices, school circulars and parent grievances',
+      id: 'timetable',
+      name: 'Time Table (Main Module)',
+      category: 'Schedule & Operations',
+      description: 'Campus daily schedule, bell timings, class routine tables and teacher allocations',
       isParent: true,
     },
     {
-      id: 'communication_notices',
-      name: 'Circulars & Notices',
-      category: 'Campus Communications',
-      description: 'Publish and view announcements, circulars and event alerts',
-      parentId: 'communication',
+      id: 'timetable_student',
+      name: 'Student Time table',
+      category: 'Schedule & Operations',
+      description: 'View and manage student class period timetables by grade and section',
+      parentId: 'timetable',
     },
     {
-      id: 'communication_complaints',
-      name: 'Grievance Desk',
-      category: 'Campus Communications',
-      description: 'Manage complaints, inquiries, student/parent grievances',
-      parentId: 'communication',
+      id: 'timetable_faculty',
+      name: 'Teacher Time table',
+      category: 'Schedule & Operations',
+      description: 'View teacher assignments and faculty routine schedules',
+      parentId: 'timetable',
     },
     {
-      id: 'subscription',
-      name: 'Subscription & Wallet',
-      category: 'Finance & Institutional',
-      description: 'SaaS plan billing, SMS quota, payments and institution wallet',
+      id: 'timetable_academic',
+      name: 'Academic Timetable',
+      category: 'Schedule & Operations',
+      description: 'Academic calendar, institutional events, holidays and schedule overview',
+      parentId: 'timetable',
+    },
+    {
+      id: 'academics',
+      name: 'Academics Hub (Main Module)',
+      category: 'Academics & Master Data',
+      description: 'Main academic module hub, student rosters, exams, marksheets and curriculum records',
+      isParent: true,
+    },
+    {
+      id: 'academics_classes',
+      name: 'Classes',
+      category: 'Academics & Master Data',
+      description: 'Configure grade hierarchy, divisions, sections and classroom capacities',
+      parentId: 'academics',
+    },
+    {
+      id: 'academics_subjects',
+      name: 'Subjects',
+      category: 'Academics & Master Data',
+      description: 'Subject course codes, credit hours, and institutional curriculum mapping',
+      parentId: 'academics',
+    },
+    {
+      id: 'academics_students',
+      name: 'Student Admissions & Roster',
+      category: 'Academics & Master Data',
+      description: 'Enrollment registry, student profiles, parent details, promotions & demotions',
+      parentId: 'academics',
+    },
+    {
+      id: 'exams',
+      name: 'Exam & Marksheets',
+      category: 'Academics & Master Data',
+      description: 'Exam scheduling, term papers, grading and printable marksheets',
+      parentId: 'academics',
+    },
+    {
+      id: 'academics_alumni',
+      name: 'Alumni Directory',
+      category: 'Academics & Master Data',
+      description: 'Permanent alumni register, Transfer Certificates (TC) & Alumni Records',
+      parentId: 'academics',
     },
     {
       id: 'fees',
-      name: 'Fee Management & Invoicing',
+      name: 'Students Fees',
       category: 'Finance & Institutional',
       description: 'Fee structures, student fee invoices, ledger payments, offline collections and receipts',
     },
     {
+      id: 'documents',
+      name: 'Documents',
+      category: 'Assessments & Learning',
+      description: 'Issue official certificates, TCs, bonafide & report card QR verification',
+    },
+    {
+      id: 'employees',
+      name: 'Employees (Main Module)',
+      category: 'Human Resources & Staff',
+      description: 'Teaching faculty, non-teaching departmental users and staff payroll register',
+      isParent: true,
+    },
+    {
+      id: 'academics_staff',
+      name: 'Teaching Employees',
+      category: 'Human Resources & Staff',
+      description: 'Teaching faculty profiles, department assignments & employment records',
+      parentId: 'employees',
+    },
+    {
+      id: 'staff_users',
+      name: 'Non - Teaching Employees',
+      category: 'Human Resources & Staff',
+      description: 'Administrative and departmental logins (Fee, Transport, Library, Sports, Security, Co-Admins)',
+      parentId: 'employees',
+    },
+    {
+      id: 'staff_payroll',
+      name: 'Payroll',
+      category: 'Human Resources & Staff',
+      description: 'Monthly salary registers, allowances, deductions, net salary & printable payslips',
+      parentId: 'employees',
+    },
+    {
       id: 'transport',
-      name: 'Transport Department',
+      name: 'Transport',
       category: 'Operations & Fleet',
       description: 'Vehicle fleet roster, bus routes, pickup stops, and student bus pass assignments',
     },
     {
-      id: 'staff_users',
-      name: 'Departmental Users & Access',
-      category: 'Core Operations',
-      description: 'Administrative and departmental logins (Fee, Transport, Library, Sports, Security, Co-Admins)',
+      id: 'communication',
+      name: 'Circulars & Notices',
+      category: 'Campus Communications',
+      description: 'Publish and view announcements, circulars and event alerts',
+    },
+    {
+      id: 'complaints',
+      name: 'Grievance',
+      category: 'Campus Communications',
+      description: 'Manage complaints, inquiries, student/parent grievances and ticket resolution',
+    },
+    {
+      id: 'id_card',
+      name: 'ID Card (Main Module)',
+      category: 'Assessments & Learning',
+      description: 'CR80 Smart ID cards with QR authenticity for students, faculty & staff',
+      isParent: true,
+    },
+    {
+      id: 'id_card_student',
+      name: 'Student ID',
+      category: 'Assessments & Learning',
+      description: 'Design and batch-print student smart ID cards with QR authenticity',
+      parentId: 'id_card',
+    },
+    {
+      id: 'id_card_teaching',
+      name: 'Teaching Staff ID',
+      category: 'Assessments & Learning',
+      description: 'Generate official teaching faculty smart ID cards',
+      parentId: 'id_card',
+    },
+    {
+      id: 'id_card_non_teaching',
+      name: 'Non Teaching Staff ID',
+      category: 'Assessments & Learning',
+      description: 'Generate departmental administrative and staff ID cards',
+      parentId: 'id_card',
+    },
+    {
+      id: 'subscription',
+      name: 'Subscription',
+      category: 'Finance & Institutional',
+      description: 'SaaS plan billing, SMS quota, payments and institution wallet',
     },
   ];
 
@@ -2601,94 +2674,132 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
         { label: 'Onboard New School', route: '/super-admin' },
       ],
     },
+    // 1. Dashboard
     {
       id: 'dashboard',
       label: 'Dashboard',
+      service: 'DASHBOARD',
       route: '/dashboard',
       roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT', 'FEE_MANAGER'],
     },
-    {
-      id: 'staff_users',
-      label: 'Departmental Staff Access',
-      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL'],
-      route: '/staff-users',
-    },
-    {
-      id: 'academics',
-      label: 'Academics & Directory',
-      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'FEE_MANAGER'],
-      expanded: true,
-      children: [
-        { id: 'academics_classes', label: 'Manage Classes & Sections', route: '/academics', queryParams: { tab: 'classes' } },
-        { id: 'academics_students', label: 'Student Admissions & Roster', route: '/academics', queryParams: { tab: 'students' } },
-        { id: 'academics_alumni', label: 'Alumni Directory', route: '/academics', queryParams: { tab: 'alumni' } },
-        { id: 'academics_staff', label: 'Faculty & Staff Directory', route: '/academics', queryParams: { tab: 'staff' } },
-        { id: 'academics_subjects', label: 'Curriculum Subjects Master', route: '/academics', queryParams: { tab: 'subjects' } },
-      ],
-    },
-    {
-      id: 'fees',
-      label: 'Fee Management & Invoices',
-      service: 'FEES',
-      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'FEE_MANAGER'],
-      route: '/fees',
-    },
-    {
-      id: 'transport',
-      label: 'Transport Department',
-      service: 'TRANSPORT',
-      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL'],
-      route: '/transport',
-    },
-    {
-      id: 'subscription',
-      label: 'Subscription & Wallet',
-      route: '/subscription',
-      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL'],
-    },
-    {
-      id: 'timetable',
-      label: 'Timetable & Schedule',
-      service: 'TIMETABLE',
-      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
-      expanded: true,
-      children: [
-        { id: 'timetable_student', label: 'Student / Class Timetable', route: '/timetable', queryParams: { type: 'student' } },
-        { id: 'timetable_faculty', label: 'Faculty / Teacher Timetable', route: '/timetable', queryParams: { type: 'faculty' } },
-        { id: 'timetable_academic', label: 'Academic Year Timetable & Calendar', route: '/timetable', queryParams: { type: 'academic' } },
-      ],
-    },
+    // 2. Attendance
     {
       id: 'attendance',
-      label: 'Attendance Register',
+      label: 'Attendance',
       service: 'ATTENDANCE',
       roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
       route: '/attendance',
     },
+    // 3. Homework
     {
       id: 'homework',
-      label: 'Homework Center',
+      label: 'Homework',
       service: 'HOMEWORK',
       roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
       route: '/homework',
     },
+    // 4. Time Table
     {
-      id: 'exams',
-      label: 'Exams & Marksheets',
-      service: 'EXAMS',
+      id: 'timetable',
+      label: 'Time Table',
+      service: 'TIMETABLE',
       roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
-      route: '/exams',
+      expanded: true,
+      children: [
+        { id: 'timetable_student', label: 'Student Time table', service: 'TIMETABLE_STUDENT', route: '/timetable', queryParams: { type: 'student' } },
+        { id: 'timetable_faculty', label: 'Teacher Time table', service: 'TIMETABLE_FACULTY', route: '/timetable', queryParams: { type: 'faculty' } },
+        { id: 'timetable_academic', label: 'Academic Timetable', service: 'TIMETABLE_ACADEMIC', route: '/timetable', queryParams: { type: 'academic' } },
+      ],
     },
+    // 5. Academics
+    {
+      id: 'academics',
+      label: 'Academics',
+      service: 'ACADEMICS',
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'FEE_MANAGER'],
+      expanded: true,
+      children: [
+        { id: 'academics_classes', label: 'Classes', service: 'ACADEMICS_CLASSES', route: '/academics', queryParams: { tab: 'classes' } },
+        { id: 'academics_subjects', label: 'Subjects', service: 'ACADEMICS_SUBJECTS', route: '/academics', queryParams: { tab: 'subjects' } },
+        { id: 'academics_students', label: 'Student', service: 'ACADEMICS_STUDENTS', route: '/academics', queryParams: { tab: 'students' } },
+        { id: 'exams', label: 'Exam', service: 'EXAMS', route: '/exams', queryParams: { tab: 'exams' } },
+        { id: 'exams', label: 'Marksheet', service: 'ACADEMICS_MARKSHEETS', route: '/exams', queryParams: { tab: 'marksheets' } },
+        { id: 'academics_alumni', label: 'Alumni', service: 'ACADEMICS_ALUMNI', route: '/academics', queryParams: { tab: 'alumni' } },
+      ],
+    },
+    // 6. Students Fees
+    {
+      id: 'fees',
+      label: 'Students Fees',
+      service: 'FEES',
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'FEE_MANAGER'],
+      route: '/fees',
+    },
+    // 7. Documents
+    {
+      id: 'documents',
+      label: 'Documents',
+      service: 'DOCUMENTS',
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT', 'FEE_MANAGER'],
+      route: '/documents',
+    },
+    // 8. Employees
+    {
+      id: 'employees',
+      label: 'Employees',
+      service: 'EMPLOYEES',
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL'],
+      expanded: true,
+      children: [
+        { id: 'academics_staff', label: 'Teaching Employees', service: 'EMPLOYEES_TEACHING', route: '/academics', queryParams: { tab: 'staff' } },
+        { id: 'staff_users', label: 'Non - Teaching Employees', service: 'EMPLOYEES_NON_TEACHING', route: '/staff-users', queryParams: { tab: 'staff' } },
+        { id: 'staff_payroll', label: 'Payroll', service: 'EMPLOYEES_PAYROLL', route: '/staff-users', queryParams: { tab: 'payroll' } },
+      ],
+    },
+    // 9. Transport
+    {
+      id: 'transport',
+      label: 'Transport',
+      service: 'TRANSPORT',
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL'],
+      route: '/transport',
+    },
+    // 10. Circulars & Notices
     {
       id: 'communication',
-      label: 'Communication & Notices',
+      label: 'Circulars & Notices',
       service: 'COMMUNICATION',
       roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT', 'FEE_MANAGER'],
-      expanded: false,
+      route: '/communication',
+    },
+    // 11. Grievance
+    {
+      id: 'complaints',
+      label: 'Grievance',
+      service: 'COMPLAINTS',
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'GUARDIAN', 'PARENT', 'STUDENT'],
+      route: '/complaints',
+    },
+    // 12. ID Card
+    {
+      id: 'id_card',
+      label: 'ID Card',
+      service: 'ID_CARD',
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TEACHER', 'CLASS_TEACHER', 'FEE_MANAGER'],
+      expanded: true,
       children: [
-        { id: 'communication_notices', label: 'Circulars & Notices', route: '/communication' },
-        { id: 'communication_complaints', label: 'Grievance Desk', route: '/complaints', service: 'COMPLAINTS' },
+        { id: 'id_card_student', label: 'Student ID', service: 'ID_CARD_STUDENT', route: '/id-cards', queryParams: { type: 'student' } },
+        { id: 'id_card_teaching', label: 'Teaching Staff ID', service: 'ID_CARD_TEACHING', route: '/id-cards', queryParams: { type: 'teaching' } },
+        { id: 'id_card_non_teaching', label: 'Non Teaching Staff ID', service: 'ID_CARD_NON_TEACHING', route: '/id-cards', queryParams: { type: 'non-teaching' } },
       ],
+    },
+    // 13. Subscription
+    {
+      id: 'subscription',
+      label: 'Subscription',
+      service: 'SUBSCRIPTION',
+      route: '/subscription',
+      roles: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL'],
     },
   ];
 
@@ -3819,8 +3930,20 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
         continue;
       }
 
-      const labelMatches = g.label.toLowerCase().includes(q);
-      const matchingChildren = children?.filter((c) => c.label.toLowerCase().includes(q));
+      const labelMatches =
+        g.label.toLowerCase().includes(q) ||
+        (q.includes('attand') && g.id === 'attendance') ||
+        (q.includes('transpo') && g.id === 'transport') ||
+        (q.includes('employ') && g.id === 'employees') ||
+        (q.includes('notic') && g.id === 'communication') ||
+        (q.includes('acadm') && g.id === 'academics') ||
+        (q.includes('griev') && g.id === 'complaints');
+      const matchingChildren = children?.filter((c) =>
+        c.label.toLowerCase().includes(q) ||
+        (q.includes('attand') && c.id?.includes('attend')) ||
+        (q.includes('acadm') && c.id?.includes('acad')) ||
+        (q.includes('employ') && c.id?.includes('staff'))
+      );
 
       if (labelMatches) {
         result.push({ ...g, children, expanded: true });

@@ -359,12 +359,13 @@ interface MatrixRow {
           </div>
         </div>
 
-        <!-- No hidden costs banner: ₹0 Setup, ₹0 Data migration, ₹0 On-site training -->
-        <div class="mx-auto mt-16 sm:mt-24 max-w-4xl text-center">
+        <!-- Unified No Hidden Costs Section: 3 Top Zero-Cost Pillars + 3 Bottom Billing Cards -->
+        <div class="mx-auto mt-16 sm:mt-24 max-w-5xl text-center">
           <h2 class="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
             No hidden costs. <span class="text-blue-600">Really.</span>
           </h2>
 
+          <!-- Top Row: ₹0 Setup fee | ₹0 Data migration | ₹0 On-site training -->
           <div class="mt-10 sm:mt-14 grid grid-cols-1 divide-y divide-slate-200 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
             <div class="py-6 sm:py-0">
               <p class="text-6xl sm:text-7xl font-extrabold tracking-tight text-slate-900">₹0</p>
@@ -380,105 +381,34 @@ interface MatrixRow {
             </div>
           </div>
 
-        </div>
+          <!-- Bottom Row: 3 White Cards side-by-side -->
+          <div class="mt-10 sm:mt-12 grid gap-4 sm:grid-cols-3">
+            <div class="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-7 text-center shadow-xs">
+              <app-vector-art name="timetable" class="mx-auto h-14 w-14 sm:h-16 sm:w-16" />
+              <h3 class="mt-3 text-sm sm:text-base font-bold text-slate-900">Pay monthly</h3>
+              <p class="mt-1.5 text-xs sm:text-sm leading-relaxed text-slate-500">
+                Pay as you go each month. No large upfront annual checks required.
+              </p>
+            </div>
+            <div class="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-7 text-center shadow-xs">
+              <app-vector-art name="classroom" class="mx-auto h-14 w-14 sm:h-16 sm:w-16" />
+              <h3 class="mt-3 text-sm sm:text-base font-bold text-slate-900">Only for enrolled students</h3>
+              <p class="mt-1.5 text-xs sm:text-sm leading-relaxed text-slate-500">
+                Only pay for active students. Teachers, staff, and parents log in free on all plans.
+              </p>
+            </div>
+            <div class="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-7 text-center shadow-xs">
+              <app-vector-art name="security" class="mx-auto h-14 w-14 sm:h-16 sm:w-16" />
+              <h3 class="mt-3 text-sm sm:text-base font-bold text-slate-900">Zero lock-in</h3>
+              <p class="mt-1.5 text-xs sm:text-sm leading-relaxed text-slate-500">
+                Your data belongs to your school. Export anytime in Excel/CSV/PDF.
+              </p>
+            </div>
+          </div>
 
-        <!-- Billing explainers -->
-        <div class="mx-auto mt-14 grid max-w-4xl gap-4 sm:grid-cols-3">
-          <div class="rounded-2xl border border-slate-200 p-6 text-center">
-            <app-vector-art name="timetable" class="mx-auto h-16 w-16" />
-            <h3 class="mt-3 text-sm font-bold text-slate-900">Pay monthly</h3>
-            <p class="mt-1.5 text-xs leading-relaxed text-slate-500">Pay as you go each month. No large upfront annual checks required.</p>
-          </div>
-          <div class="rounded-2xl border border-slate-200 p-6 text-center">
-            <app-vector-art name="classroom" class="mx-auto h-16 w-16" />
-            <h3 class="mt-3 text-sm font-bold text-slate-900">Only for enrolled students</h3>
-            <p class="mt-1.5 text-xs leading-relaxed text-slate-500">Only pay for active students. Teachers, staff, and parents log in free on all plans.</p>
-          </div>
-          <div class="rounded-2xl border border-slate-200 p-6 text-center">
-            <app-vector-art name="security" class="mx-auto h-16 w-16" />
-            <h3 class="mt-3 text-sm font-bold text-slate-900">Zero lock-in</h3>
-            <p class="mt-1.5 text-xs leading-relaxed text-slate-500">Your data belongs to your school. Export anytime in Excel/CSV/PDF.</p>
-          </div>
-        </div>
-
-        <!-- Real school cost comparison table -->
-        <div class="mx-auto mt-12 max-w-4xl rounded-3xl bg-slate-50 p-6 sm:p-8 ring-1 ring-slate-200">
-          <h3 class="text-center text-lg font-bold text-slate-900">What each plan costs for a real school</h3>
-          <p class="mt-1 text-center text-xs text-slate-500">
-            <span *ngIf="billingCycle() === 'monthly'">Monthly billing based on active student enrollments. Switch toggle above to see annual savings.</span>
-            <span *ngIf="billingCycle() === 'annual'" class="font-semibold text-emerald-700">Annual billing with 2 Months FREE on Pro and Pro+ plans (pay for 10 months, use for 12 months).</span>
+          <p class="mt-8 text-xs text-slate-400 max-w-xl mx-auto leading-relaxed">
+            WhatsApp, SMS and payment gateway fees are charged by those providers at cost. We add nothing on top.
           </p>
-
-          <div class="mt-6 overflow-x-auto">
-            <table class="w-full min-w-[500px] text-left text-sm">
-              <thead>
-                <tr class="border-b border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-500">
-                  <th class="pb-3">School Size</th>
-                  <th class="pb-3 text-center">Lite ({{ billingCycle() === 'monthly' ? '₹3.5/mo' : '₹42/yr' }})</th>
-                  <th class="pb-3 text-center text-blue-600 bg-blue-50/60 rounded-t-lg">Pro ({{ billingCycle() === 'monthly' ? '₹10/mo' : '₹100/yr · 2 Mo Free' }}) ★</th>
-                  <th class="pb-3 text-center">Pro+ ({{ billingCycle() === 'monthly' ? '₹15/mo' : '₹150/yr · 2 Mo Free' }})</th>
-                </tr>
-              </thead>
-              <tbody *ngIf="billingCycle() === 'monthly'" class="divide-y divide-slate-200 text-slate-700">
-                <tr>
-                  <td class="py-3.5 font-semibold text-slate-900">200 students</td>
-                  <td class="py-3.5 text-center text-slate-600">₹700 / mo</td>
-                  <td class="py-3.5 text-center font-bold text-blue-700 bg-blue-50/40">₹2,000 / mo</td>
-                  <td class="py-3.5 text-center text-slate-600">₹3,000 / mo</td>
-                </tr>
-                <tr>
-                  <td class="py-3.5 font-semibold text-slate-900">500 students</td>
-                  <td class="py-3.5 text-center text-slate-600">₹1,750 / mo</td>
-                  <td class="py-3.5 text-center font-bold text-blue-700 bg-blue-50/40">₹5,000 / mo</td>
-                  <td class="py-3.5 text-center text-slate-600">₹7,500 / mo</td>
-                </tr>
-                <tr>
-                  <td class="py-3.5 font-semibold text-slate-900">1,000 students</td>
-                  <td class="py-3.5 text-center text-slate-600">₹3,500 / mo</td>
-                  <td class="py-3.5 text-center font-bold text-blue-700 bg-blue-50/40">₹10,000 / mo</td>
-                  <td class="py-3.5 text-center text-slate-600">₹15,000 / mo</td>
-                </tr>
-              </tbody>
-              <tbody *ngIf="billingCycle() === 'annual'" class="divide-y divide-slate-200 text-slate-700">
-                <tr>
-                  <td class="py-3.5 font-semibold text-slate-900">200 students</td>
-                  <td class="py-3.5 text-center text-slate-600">₹8,400 / yr</td>
-                  <td class="py-3.5 text-center font-bold text-blue-700 bg-blue-50/40">
-                    <div>₹20,000 / yr</div>
-                    <span class="text-[11px] font-semibold text-emerald-600">Save ₹4,000 (2 Mo Free)</span>
-                  </td>
-                  <td class="py-3.5 text-center text-slate-600">
-                    <div>₹30,000 / yr</div>
-                    <span class="text-[11px] font-semibold text-emerald-600">Save ₹6,000 (2 Mo Free)</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="py-3.5 font-semibold text-slate-900">500 students</td>
-                  <td class="py-3.5 text-center text-slate-600">₹21,000 / yr</td>
-                  <td class="py-3.5 text-center font-bold text-blue-700 bg-blue-50/40">
-                    <div>₹50,000 / yr</div>
-                    <span class="text-[11px] font-semibold text-emerald-600">Save ₹10,000 (2 Mo Free)</span>
-                  </td>
-                  <td class="py-3.5 text-center text-slate-600">
-                    <div>₹75,000 / yr</div>
-                    <span class="text-[11px] font-semibold text-emerald-600">Save ₹15,000 (2 Mo Free)</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="py-3.5 font-semibold text-slate-900">1,000 students</td>
-                  <td class="py-3.5 text-center text-slate-600">₹42,000 / yr</td>
-                  <td class="py-3.5 text-center font-bold text-blue-700 bg-blue-50/40">
-                    <div>₹1,00,000 / yr</div>
-                    <span class="text-[11px] font-semibold text-emerald-600">Save ₹20,000 (2 Mo Free)</span>
-                  </td>
-                  <td class="py-3.5 text-center text-slate-600">
-                    <div>₹1,50,000 / yr</div>
-                    <span class="text-[11px] font-semibold text-emerald-600">Save ₹30,000 (2 Mo Free)</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
         </div>
 
         <!-- Full Feature Comparison Matrix -->
@@ -606,6 +536,7 @@ export class PricingComponent {
     { name: 'Bi-Annual Staff Training (6 mo)', category: 'Support', lite: false, pro: 'Online meets', proPlus: 'Online + In-Person' },
     { name: 'Transport & Fleet Department', category: 'Operations', lite: false, pro: false, proPlus: true },
     { name: 'Board TC & Character Certificates', category: 'Certificates', lite: false, pro: false, proPlus: true },
+    { name: 'Smart ID Card Studio (CR80 + QR)', category: 'Certificates & Cards', lite: 'View only', pro: true, proPlus: true },
     { name: 'Alumni Registry & Archives', category: 'Records', lite: false, pro: false, proPlus: true },
     { name: 'On-Campus School Visit Training', category: 'Support', lite: false, pro: false, proPlus: true },
     { name: 'Dedicated Account Manager', category: 'Support', lite: false, pro: false, proPlus: true },

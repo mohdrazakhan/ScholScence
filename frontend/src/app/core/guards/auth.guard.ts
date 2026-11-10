@@ -14,8 +14,12 @@ export const authGuard: CanActivateFn = (route, state) => {
     return false;
   }
 
-  const urlPath = (state.url || '').split('?')[0].replace(/^\//, '');
+  const [cleanUrl, queryStr] = (state.url || '').split('?');
+  const urlParams = new URLSearchParams(queryStr || '');
+  const urlPath = cleanUrl.replace(/^\//, '');
   const primarySegment = urlPath.split('/')[0] || '';
+  const tabParam = (urlParams.get('tab') || '').toLowerCase().trim();
+  const typeParam = (urlParams.get('type') || '').toLowerCase().trim();
 
   const isSuper = authService.isSuperAdmin();
   const isSupport = authService.isSupportSession();
@@ -41,29 +45,67 @@ export const authGuard: CanActivateFn = (route, state) => {
     return true;
   }
 
-  // 3. Service restrictions check for tenant users
-  const serviceMap: Record<string, string> = {
-    timetable: 'TIMETABLE',
-    attendance: 'ATTENDANCE',
-    homework: 'HOMEWORK',
-    exams: 'EXAMS',
-    communication: 'COMMUNICATION',
-    complaints: 'COMPLAINTS',
-    academics: 'ACADEMICS',
-  };
+  // 4. Resolve exact service/sub-service code for hierarchical super-admin governance
+  let requiredService: string | null = null;
+  if (primarySegment === 'dashboard' || primarySegment === '') {
+    requiredService = 'DASHBOARD';
+  } else if (primarySegment === 'attendance') {
+    requiredService = 'ATTENDANCE';
+  } else if (primarySegment === 'homework') {
+    requiredService = 'HOMEWORK';
+  } else if (primarySegment === 'timetable') {
+    if (typeParam === 'student') requiredService = 'TIMETABLE_STUDENT';
+    else if (typeParam === 'faculty' || typeParam === 'teacher') requiredService = 'TIMETABLE_FACULTY';
+    else if (typeParam === 'academic') requiredService = 'TIMETABLE_ACADEMIC';
+    else requiredService = 'TIMETABLE';
+  } else if (primarySegment === 'academics') {
+    if (tabParam === 'classes') requiredService = 'ACADEMICS_CLASSES';
+    else if (tabParam === 'subjects') requiredService = 'ACADEMICS_SUBJECTS';
+    else if (tabParam === 'students') requiredService = 'ACADEMICS_STUDENTS';
+    else if (tabParam === 'alumni') requiredService = 'ACADEMICS_ALUMNI';
+    else if (tabParam === 'staff') requiredService = 'EMPLOYEES_TEACHING';
+    else requiredService = 'ACADEMICS';
+  } else if (primarySegment === 'exams') {
+    if (tabParam === 'marksheets') requiredService = 'ACADEMICS_MARKSHEETS';
+    else requiredService = 'EXAMS';
+  } else if (primarySegment === 'fees') {
+    requiredService = 'FEES';
+  } else if (primarySegment === 'documents') {
+    requiredService = 'DOCUMENTS';
+  } else if (primarySegment === 'staff-users') {
+    if (tabParam === 'payroll') requiredService = 'EMPLOYEES_PAYROLL';
+    else requiredService = 'EMPLOYEES_NON_TEACHING';
+  } else if (primarySegment === 'transport') {
+    requiredService = 'TRANSPORT';
+  } else if (primarySegment === 'communication') {
+    requiredService = 'COMMUNICATION';
+  } else if (primarySegment === 'complaints') {
+    requiredService = 'COMPLAINTS';
+  } else if (primarySegment === 'id-cards') {
+    if (typeParam === 'student') requiredService = 'ID_CARD_STUDENT';
+    else if (typeParam === 'teaching') requiredService = 'ID_CARD_TEACHING';
+    else if (typeParam === 'non-teaching') requiredService = 'ID_CARD_NON_TEACHING';
+    else requiredService = 'ID_CARD';
+  } else if (primarySegment === 'subscription') {
+    requiredService = 'SUBSCRIPTION';
+  }
 
-  const requiredService = serviceMap[primarySegment];
   if (requiredService && !authService.isServiceEnabled(requiredService)) {
-    toast.error(`Access Restricted: Your role does not have permission to access the ${requiredService.toLowerCase()} section.`);
-    router.navigate(['/dashboard']);
+    toast.error('Access Restricted: This module has been disabled by the platform administrator for your institution.');
+    if (primarySegment !== 'dashboard' && authService.isServiceEnabled('DASHBOARD')) {
+      router.navigate(['/dashboard']);
+    } else {
+      router.navigate(['/login']);
+    }
     return false;
   }
 
-  // 4. Section / Feature module permissions check for tenant users
+  // 5. Section / Feature module permissions check for tenant users
   const sectionMap: Record<string, string> = {
     dashboard: 'dashboard',
     subscription: 'subscription',
     fees: 'fees',
+    documents: 'documents',
     transport: 'transport',
     timetable: 'timetable',
     attendance: 'attendance',
@@ -73,12 +115,17 @@ export const authGuard: CanActivateFn = (route, state) => {
     complaints: 'communication_complaints',
     academics: 'academics',
     'staff-users': 'staff_users',
+    'id-cards': 'id_card',
   };
 
   const requiredSection = sectionMap[primarySegment];
   if (requiredSection && !authService.isSectionAllowedForUser(requiredSection)) {
     toast.error('Access Restricted: You do not have permission to access this module.');
-    router.navigate(['/dashboard']);
+    if (primarySegment !== 'dashboard' && authService.isSectionAllowedForUser('dashboard')) {
+      router.navigate(['/dashboard']);
+    } else {
+      router.navigate(['/login']);
+    }
     return false;
   }
 

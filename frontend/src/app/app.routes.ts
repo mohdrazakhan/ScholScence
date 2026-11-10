@@ -25,6 +25,9 @@ import { StudentDetailComponent } from './features/academics/student-detail.comp
 import { TransportComponent } from './features/transport/transport.component';
 import { FeesComponent } from './features/fees/fees.component';
 import { StaffUsersComponent } from './features/staff-users/staff-users.component';
+import { DocumentsComponent } from './features/documents/documents.component';
+import { IdCardsComponent } from './features/id-cards/id-cards.component';
+import { VerifyDocumentComponent } from './public/verify-document.component';
 import { authGuard, authChildGuard, publicSubdomainGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -54,6 +57,10 @@ export const routes: Routes = [
     ],
   },
 
+  // Public Anti-Fraud Document Verification (No Auth Needed for QR code scanner)
+  { path: 'verify/:token', component: VerifyDocumentComponent },
+  { path: 'verify-document/:token', component: VerifyDocumentComponent },
+
   // Authenticated Portal Direct Routes
   {
     path: '',
@@ -74,9 +81,11 @@ export const routes: Routes = [
       { path: 'students/:id', component: StudentDetailComponent },
       { path: 'homework', component: HomeworkComponent },
       { path: 'exams', component: ExamsComponent },
+      { path: 'documents', component: DocumentsComponent },
       { path: 'communication', component: CommunicationComponent },
       { path: 'complaints', component: ComplaintsComponent },
       { path: 'staff-users', component: StaffUsersComponent },
+      { path: 'id-cards', component: IdCardsComponent },
     ],
   },
 

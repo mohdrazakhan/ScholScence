@@ -114,6 +114,129 @@ export class ApiService {
     return u?.role === 'GUARDIAN' || u?.role === 'PARENT';
   }
 
+  private getServiceForEndpoint(endpoint: string, params?: Record<string, any>, body?: any): string | null {
+    const ep = (endpoint || '').toLowerCase().trim();
+
+    // 1. Dashboard
+    if (ep.startsWith('dashboard')) return 'DASHBOARD';
+
+    // 2. Attendance
+    if (ep.startsWith('attendance')) return 'ATTENDANCE';
+
+    // 3. Homework
+    if (ep.startsWith('homework')) return 'HOMEWORK';
+
+    // 4. Time Table
+    if (ep.startsWith('timetable')) {
+      const type = (params?.['type'] || body?.type || '').toLowerCase();
+      if (type === 'student') return 'TIMETABLE_STUDENT';
+      if (type === 'faculty' || type === 'teacher') return 'TIMETABLE_FACULTY';
+      if (type === 'academic') return 'TIMETABLE_ACADEMIC';
+      return 'TIMETABLE';
+    }
+
+    // 5. Academics & Exams
+    if (ep.startsWith('exams')) {
+      const tab = (params?.['tab'] || body?.tab || '').toLowerCase();
+      if (tab === 'marksheets' || ep.includes('marks')) return 'ACADEMICS_MARKSHEETS';
+      return 'EXAMS';
+    }
+
+    if (ep.startsWith('academics') || ep.startsWith('students') || ep.startsWith('classes') || ep.startsWith('subjects')) {
+      if (ep.includes('alumni')) return 'ACADEMICS_ALUMNI';
+      if (ep.includes('staff')) return 'EMPLOYEES_TEACHING';
+      if (ep.includes('classes') || ep.includes('sections')) return 'ACADEMICS_CLASSES';
+      if (ep.includes('subjects')) return 'ACADEMICS_SUBJECTS';
+      if (ep.includes('student')) return 'ACADEMICS_STUDENTS';
+      return 'ACADEMICS';
+    }
+
+    // 6. Fees
+    if (ep.startsWith('fees')) return 'FEES';
+
+    // 7. Documents
+    if (ep.startsWith('documents')) return 'DOCUMENTS';
+
+    // 8. Employees / Staff
+    if (ep.startsWith('staff-users') || ep.startsWith('payroll') || ep.startsWith('departmental-users')) {
+      if (ep.includes('payroll') || params?.['tab'] === 'payroll' || body?.tab === 'payroll') return 'EMPLOYEES_PAYROLL';
+      return 'EMPLOYEES_NON_TEACHING';
+    }
+
+    // 9. Transport
+    if (ep.startsWith('transport')) return 'TRANSPORT';
+
+    // 10. Communication
+    if (ep.startsWith('communication')) return 'COMMUNICATION';
+
+    // 11. Complaints
+    if (ep.startsWith('complaints')) return 'COMPLAINTS';
+
+    // 12. ID Cards
+    if (ep.startsWith('id-cards')) {
+      const type = (params?.['type'] || body?.type || '').toLowerCase();
+      if (type === 'student') return 'ID_CARD_STUDENT';
+      if (type === 'teaching') return 'ID_CARD_TEACHING';
+      if (type === 'non-teaching') return 'ID_CARD_NON_TEACHING';
+      return 'ID_CARD';
+    }
+
+    // 13. Subscription
+    if (ep.startsWith('subscription') || ep.startsWith('wallet')) return 'SUBSCRIPTION';
+
+    return null;
+  }
+
+  private isServiceAllowed(serviceCode: string | null): boolean {
+    if (!serviceCode) return true;
+    const user = this.getCurrentUser();
+    if (!user) return true;
+
+    // Super Admin / Platform Admin have platform-wide access
+    if (user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN' || user.role === 'BINARY') {
+      return true;
+    }
+
+    const schoolId = user.school?.id;
+    let disabled: string[] = user.school?.disabledServices || [];
+    if (schoolId) {
+      try {
+        const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
+        if (Array.isArray(localProfiles[schoolId]?.disabledServices)) {
+          disabled = localProfiles[schoolId].disabledServices;
+        }
+      } catch {}
+    }
+
+    const disabledUpper = disabled.map((d) => String(d).toUpperCase().trim());
+    const code = serviceCode.toUpperCase().trim();
+
+    if (disabledUpper.includes(code)) return false;
+
+    const parentMap: Record<string, string> = {
+      TIMETABLE_STUDENT: 'TIMETABLE',
+      TIMETABLE_FACULTY: 'TIMETABLE',
+      TIMETABLE_ACADEMIC: 'TIMETABLE',
+      ACADEMICS_CLASSES: 'ACADEMICS',
+      ACADEMICS_SUBJECTS: 'ACADEMICS',
+      ACADEMICS_STUDENTS: 'ACADEMICS',
+      EXAMS: 'ACADEMICS',
+      ACADEMICS_MARKSHEETS: 'ACADEMICS',
+      ACADEMICS_ALUMNI: 'ACADEMICS',
+      EMPLOYEES_TEACHING: 'EMPLOYEES',
+      EMPLOYEES_NON_TEACHING: 'EMPLOYEES',
+      EMPLOYEES_PAYROLL: 'EMPLOYEES',
+      ID_CARD_STUDENT: 'ID_CARD',
+      ID_CARD_TEACHING: 'ID_CARD',
+      ID_CARD_NON_TEACHING: 'ID_CARD',
+    };
+
+    const parentCode = parentMap[code];
+    if (parentCode && disabledUpper.includes(parentCode)) return false;
+
+    return true;
+  }
+
   get<T>(endpoint: string, params?: Record<string, any>): Observable<T> {
     const [cleanEndpoint, queryString] = endpoint.split('?');
     const mergedParams: Record<string, any> = { ...(params || {}) };
@@ -126,6 +249,13 @@ export class ApiService {
       });
     }
     params = mergedParams;
+
+    // Guard: Verify if super-admin enabled this module for the caller's school
+    const requiredSvc = this.getServiceForEndpoint(cleanEndpoint, params);
+    if (!this.isServiceAllowed(requiredSvc)) {
+      console.warn(`[ApiService.get] Access restricted: Service ${requiredSvc} is disabled for this campus by Platform Admin.`);
+      return of([] as unknown as T);
+    }
 
     // Dashboard Overview -> Calls pure Supabase Cloud RPC get_dashboard_overview
     if (cleanEndpoint === 'dashboard/overview' || cleanEndpoint === 'dashboard') {
@@ -378,6 +508,12 @@ export class ApiService {
 
   post<T>(endpoint: string, body: any): Observable<T> {
     const cleanEndpoint = endpoint.split('?')[0];
+
+    const requiredSvc = this.getServiceForEndpoint(cleanEndpoint, undefined, body);
+    if (!this.isServiceAllowed(requiredSvc)) {
+      console.warn(`[ApiService.post] Access restricted: Service ${requiredSvc} is disabled for this campus by Platform Admin.`);
+      return of({ success: false, message: `Access restricted: Service ${requiredSvc} is disabled by Platform Admin.` } as unknown as T);
+    }
 
     // Academic Sessions & Rollover & Full Reset
     if (cleanEndpoint === 'academics/reset-all' || cleanEndpoint === 'academics/reset-database') {
@@ -674,6 +810,12 @@ export class ApiService {
   put<T>(endpoint: string, body: any): Observable<T> {
     const cleanEndpoint = endpoint.split('?')[0];
 
+    const requiredSvc = this.getServiceForEndpoint(cleanEndpoint, undefined, body);
+    if (!this.isServiceAllowed(requiredSvc)) {
+      console.warn(`[ApiService.put] Access restricted: Service ${requiredSvc} is disabled for this campus by Platform Admin.`);
+      return of({ success: false, message: `Access restricted: Service ${requiredSvc} is disabled by Platform Admin.` } as unknown as T);
+    }
+
     if (cleanEndpoint.startsWith('academics/classes/')) {
       const id = cleanEndpoint.replace('academics/classes/', '');
       return from(this.updateClass(id, body)) as unknown as Observable<T>;
@@ -732,6 +874,12 @@ export class ApiService {
 
   delete<T>(endpoint: string): Observable<T> {
     const cleanEndpoint = endpoint.split('?')[0];
+
+    const requiredSvc = this.getServiceForEndpoint(cleanEndpoint);
+    if (!this.isServiceAllowed(requiredSvc)) {
+      console.warn(`[ApiService.delete] Access restricted: Service ${requiredSvc} is disabled for this campus by Platform Admin.`);
+      return of({ success: false, message: `Access restricted: Service ${requiredSvc} is disabled by Platform Admin.` } as unknown as T);
+    }
 
     if (cleanEndpoint.startsWith('academics/alumni/')) {
       const id = cleanEndpoint.replace('academics/alumni/', '');
@@ -1008,19 +1156,37 @@ export class ApiService {
 
       let attendancePercentage = '0.0';
       let attendanceMarkedCount = 0;
+      let attendanceClassesMarkedCount = 0;
       if (effectiveYearId && totalStudentCount > 0) {
         try {
           const today = new Date().toISOString().split('T')[0];
           const { data: attRecords } = await this.supabase
             .from('attendance')
-            .select('id, status')
+            .select('id, status, section_id')
             .eq('school_id', schoolId)
             .eq('date', today);
 
           if (attRecords && attRecords.length > 0) {
             attendanceMarkedCount = attRecords.length;
             const presentCount = attRecords.filter((a: any) => a.status === 'PRESENT' || a.status === 'LATE').length;
-            attendancePercentage = ((presentCount / totalStudentCount) * 100).toFixed(1);
+            // Attendance percentage out of marked attendance
+            attendancePercentage = attendanceMarkedCount > 0
+              ? ((presentCount / attendanceMarkedCount) * 100).toFixed(1)
+              : '0.0';
+
+            const markedSecIds = Array.from(new Set(attRecords.map((a: any) => a.section_id).filter(Boolean)));
+            if (markedSecIds.length > 0) {
+              const { data: secClasses } = await this.supabase
+                .from('sections')
+                .select('class_id')
+                .in('id', markedSecIds);
+              if (secClasses && secClasses.length > 0) {
+                attendanceClassesMarkedCount = new Set(secClasses.map((s: any) => s.class_id).filter(Boolean)).size;
+              }
+            }
+            if (attendanceClassesMarkedCount === 0 && attendanceMarkedCount > 0) {
+              attendanceClassesMarkedCount = 1;
+            }
           }
         } catch {}
       }
@@ -1047,6 +1213,7 @@ export class ApiService {
           totalTeachers: teacherCount,
           attendanceTodayPercentage: attendancePercentage,
           attendanceMarkedCount: attendanceMarkedCount,
+          attendanceClassesMarkedCount: attendanceClassesMarkedCount,
           pendingComplaints: complaintsCount,
         },
         campusInfo: {
@@ -1090,6 +1257,38 @@ export class ApiService {
   ): Promise<DashboardStats> {
     const role = (userRole || 'SCHOOL_ADMIN').toUpperCase();
     const todayStr = new Date().toISOString().split('T')[0];
+
+    // Ensure attendanceClassesMarkedCount is calculated accurately
+    if (overview?.stats && overview.stats.attendanceClassesMarkedCount === undefined) {
+      const markedCount = overview.stats.attendanceMarkedCount || 0;
+      if (markedCount > 0) {
+        try {
+          const { data: attSecs } = await this.supabase
+            .from('attendance')
+            .select('section_id')
+            .eq('school_id', schoolId)
+            .eq('date', todayStr);
+
+          if (attSecs && attSecs.length > 0) {
+            const secIds = Array.from(new Set(attSecs.map((a: any) => a.section_id).filter(Boolean)));
+            if (secIds.length > 0) {
+              const { data: secs } = await this.supabase
+                .from('sections')
+                .select('class_id')
+                .in('id', secIds);
+              if (secs && secs.length > 0) {
+                overview.stats.attendanceClassesMarkedCount = new Set(secs.map((s: any) => s.class_id).filter(Boolean)).size;
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Attendance classes marked query note:', e);
+        }
+      }
+      if (overview.stats.attendanceClassesMarkedCount === undefined) {
+        overview.stats.attendanceClassesMarkedCount = markedCount > 0 ? 1 : 0;
+      }
+    }
 
     // 1. PARENT / GUARDIAN: Multi-Child Comprehensive Overview
     if (this.isParentUser() || role === 'GUARDIAN' || role === 'PARENT') {
@@ -1414,6 +1613,8 @@ export class ApiService {
             absentCount: overview.stats?.attendanceAbsentCount ?? estAbsent,
             lateCount: overview.stats?.attendanceLateCount || 0,
             markedCount: markedCnt,
+            classesMarkedCount: overview.stats?.attendanceClassesMarkedCount ?? (markedCnt > 0 ? 1 : 0),
+            totalClasses: overview.stats?.totalClasses || 0,
             totalStudents: overview.stats?.activeStudents || overview.stats?.totalStudents || 0,
             isMarkedToday: markedCnt > 0,
           },

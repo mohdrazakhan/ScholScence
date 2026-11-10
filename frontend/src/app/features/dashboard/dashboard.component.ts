@@ -101,11 +101,11 @@ import {
               </div>
             </div>
             <div class="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
-              {{ (stats?.stats?.attendanceMarkedCount || 0) > 0 ? (stats?.stats?.attendanceTodayPercentage || '0.0') + '%' : 'Pending' }}
+              {{ formattedTodayAttendancePercentage }}
             </div>
             <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-slate-100">
               <span class="text-emerald-600 font-semibold">
-                {{ stats?.stats?.attendanceMarkedCount ?? 0 }} Marked Today
+                {{ attendanceClassesStatusText }}
               </span>
               <span class="text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white font-bold text-[11px] transition-colors inline-flex items-center gap-1">
                 Registers
@@ -882,6 +882,11 @@ import {
                       <svg *ngIf="mod.id === 'EXAMS'" class="w-4 h-4" viewBox="0 0 24 24" fill="none">
                         <rect x="4" y="3" width="16" height="18" rx="2.5" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8"/>
                         <path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                      </svg>
+                      <svg *ngIf="mod.id === 'DOCUMENTS'" class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                        <path d="M14 2V8H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M16 13H8M16 17H8M10 9H8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                       </svg>
                       <svg *ngIf="mod.id === 'COMMUNICATION'" class="w-4 h-4" viewBox="0 0 24 24" fill="none">
                         <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1839,7 +1844,7 @@ import {
                 </span>
               </div>
               <p class="text-xs text-slate-500 mt-2">
-                {{ stats?.stats?.attendanceMarkedCount ?? 0 }} students marked today.
+                {{ attendanceClassesStatusText }} ({{ stats?.stats?.attendanceMarkedCount ?? 0 }} students marked).
               </p>
             </div>
             <a routerLink="/attendance" class="w-full py-2.5 rounded-2xl bg-[#f8fafc] hover:bg-slate-100 text-slate-800 border border-slate-200 text-xs font-bold text-center transition-colors">
@@ -2073,12 +2078,13 @@ export class DashboardComponent implements OnInit {
     }
 
     if (this.auth.isServiceEnabled('ATTENDANCE')) {
-      const isMarked = this.modules?.attendance?.isMarkedToday;
+      const isMarked = (this.stats?.stats?.attendanceMarkedCount || 0) > 0 || this.modules?.attendance?.isMarkedToday;
+      const rawPct = String(this.stats?.stats?.attendanceTodayPercentage || this.modules?.attendance?.todayPercentage || '0.0').replace('%', '').trim();
       list.push({
         id: 'ATTENDANCE',
         title: 'Daily Attendance',
         subtitle: 'Roll call registers & absentee tracking',
-        badge: isMarked ? `${this.modules?.attendance?.todayPercentage}% Present` : 'Awaiting Roll Call',
+        badge: isMarked ? `${rawPct}% Present` : 'Awaiting Roll Call',
         iconClass: UNIFIED_ICON,
         badgeClass: UNIFIED_BADGE,
       });
@@ -2101,6 +2107,17 @@ export class DashboardComponent implements OnInit {
         title: 'Exams & Report Cards',
         subtitle: 'Term schedules, marksheets & grading',
         badge: `${(this.stats?.upcomingExams || []).length} Scheduled`,
+        iconClass: UNIFIED_ICON,
+        badgeClass: UNIFIED_BADGE,
+      });
+    }
+
+    if (this.auth.isServiceEnabled('DOCUMENTS')) {
+      list.push({
+        id: 'DOCUMENTS',
+        title: 'Documents & Certificates',
+        subtitle: 'TCs, bonafide & QR verified credentials',
+        badge: 'QR Protected',
         iconClass: UNIFIED_ICON,
         badgeClass: UNIFIED_BADGE,
       });
@@ -2158,6 +2175,19 @@ export class DashboardComponent implements OnInit {
     }
     const nextIdx = (this.activeMatrixModuleIndex + delta + enabled.length) % enabled.length;
     this.selectedMatrixModuleId = enabled[nextIdx].id;
+  }
+
+  get attendanceClassesStatusText(): string {
+    const totalClasses = this.stats?.stats?.totalClasses || 14;
+    const markedClasses = this.stats?.stats?.attendanceClassesMarkedCount ?? ((this.stats?.stats?.attendanceMarkedCount || 0) > 0 ? 1 : 0);
+    return `${markedClasses} of ${totalClasses} Classes Marked`;
+  }
+
+  get formattedTodayAttendancePercentage(): string {
+    const marked = this.stats?.stats?.attendanceMarkedCount ?? 0;
+    if (marked <= 0) return 'Pending';
+    const raw = String(this.stats?.stats?.attendanceTodayPercentage || '0.0').replace('%', '').trim();
+    return `${raw}%`;
   }
 
   get formattedToday(): string {

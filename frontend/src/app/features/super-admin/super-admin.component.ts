@@ -56,7 +56,9 @@ export interface ServiceDefinition {
   name: string;
   category: string;
   description: string;
-  icon: string;
+  icon?: string;
+  parentId?: string;
+  children?: ServiceDefinition[];
 }
 
 export interface LeadActivity {
@@ -110,60 +112,105 @@ export interface MonthlyRevenueRecord {
 
 const AVAILABLE_SERVICES: ServiceDefinition[] = [
   {
-    code: 'TIMETABLE',
-    name: 'Timetable & Scheduling',
-    category: 'Academics',
-    description: 'Class period grids, teacher routine allocations, break & lunch recess intervals.',
-    icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+    code: 'DASHBOARD',
+    name: '1. Dashboard',
+    category: 'Core Operations',
+    description: 'Campus metrics, student strengths, collection overview, and institutional summaries.',
   },
   {
     code: 'ATTENDANCE',
-    name: 'Attendance Register',
-    category: 'Operations',
-    description: 'Daily student roll call, subject-wise period attendance, real-time parent sync.',
-    icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
+    name: '2. Attendance',
+    category: 'Daily Operations',
+    description: 'Daily student roll call register, attendance analytics, and guardian notifications.',
   },
   {
     code: 'HOMEWORK',
-    name: 'Homework & Assignments',
-    category: 'Learning',
-    description: 'Class homework publishing, digital file submissions, student completion logs.',
-    icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+    name: '3. Homework',
+    category: 'Assessments & Learning',
+    description: 'Class assignments, submissions tracking, homework center, and evaluation feedback.',
   },
   {
-    code: 'EXAMS',
-    name: 'Exams & Marksheets',
-    category: 'Assessment',
-    description: 'Exam scheduling, subject marks entry, grading schemes, and term report cards.',
-    icon: 'M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222',
+    code: 'TIMETABLE',
+    name: '4. Time Table',
+    category: 'Schedule & Routine',
+    description: 'Master schedule routine, bell timings, class grids and teacher period assignments.',
+    children: [
+      { code: 'TIMETABLE_STUDENT', parentId: 'TIMETABLE', name: 'Student Time table', category: 'Schedule', description: 'Grade & section-wise class routines' },
+      { code: 'TIMETABLE_FACULTY', parentId: 'TIMETABLE', name: 'Teacher Time table', category: 'Schedule', description: 'Individual faculty schedules & period allocations' },
+      { code: 'TIMETABLE_ACADEMIC', parentId: 'TIMETABLE', name: 'Academic Timetable', category: 'Schedule', description: 'Annual calendar, terms, institutional holidays & bell timings' },
+    ],
   },
   {
-    code: 'COMMUNICATION',
-    name: 'Circulars & Notices',
-    category: 'Announcements',
-    description: 'Institutional broadcasts, urgent alerts, event circulars, and notifications.',
-    icon: 'M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z',
-  },
-  {
-    code: 'COMPLAINTS',
-    name: 'Grievance Desk / Complaints',
-    category: 'Support',
-    description: 'Parent grievances, staff ticket assignments, dispute tracking, resolution notes.',
-    icon: 'M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z',
+    code: 'ACADEMICS',
+    name: '5. Academics',
+    category: 'Academics & Master Data',
+    description: 'Curriculum, grade hierarchy, student roster, examinations, marksheets, and alumni directory.',
+    children: [
+      { code: 'ACADEMICS_CLASSES', parentId: 'ACADEMICS', name: 'Classes', category: 'Academics', description: 'Grade hierarchy, section divisions & classroom capacities' },
+      { code: 'ACADEMICS_SUBJECTS', parentId: 'ACADEMICS', name: 'Subjects', category: 'Academics', description: 'Curriculum course master, subject codes & credit weights' },
+      { code: 'ACADEMICS_STUDENTS', parentId: 'ACADEMICS', name: 'Student', category: 'Academics', description: 'Admissions registry, enrollments & student directory' },
+      { code: 'EXAMS', parentId: 'ACADEMICS', name: 'Exam', category: 'Academics', description: 'Exam schedules, term papers & assessment planning' },
+      { code: 'ACADEMICS_MARKSHEETS', parentId: 'ACADEMICS', name: 'Marksheet', category: 'Academics', description: 'Bulk marks entry, grading scales & verified digital scorecards' },
+      { code: 'ACADEMICS_ALUMNI', parentId: 'ACADEMICS', name: 'Alumni', category: 'Academics', description: 'Permanent graduate register, TC generation & records' },
+    ],
   },
   {
     code: 'FEES',
-    name: 'Fee Management & Invoicing',
-    category: 'Finance',
-    description: 'Tuition fee categories, installment structures, invoices, and payment receipts.',
-    icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z',
+    name: '6. Students Fees',
+    category: 'Finance & Invoicing',
+    description: 'Tuition fee categories, installment structures, student fee invoices, ledger payments and receipts.',
+  },
+  {
+    code: 'DOCUMENTS',
+    name: '7. Documents',
+    category: 'Certificates & Anti-Fraud',
+    description: 'Official institutional certificates, Transfer Certificates (TC), Bonafide with QR authenticity.',
+  },
+  {
+    code: 'EMPLOYEES',
+    name: '8. Employees',
+    category: 'Human Resources & Staff',
+    description: 'Teaching faculty roster, non-teaching departmental logins, and monthly salary registers.',
+    children: [
+      { code: 'EMPLOYEES_TEACHING', parentId: 'EMPLOYEES', name: 'Teaching Employees', category: 'HR', description: 'Faculty profiles, designations, subjects taught & class teachers' },
+      { code: 'EMPLOYEES_NON_TEACHING', parentId: 'EMPLOYEES', name: 'Non - Teaching Employees', category: 'HR', description: 'Departmental logins: Fee, Transport, Library, Sports, Reception, Administration' },
+      { code: 'EMPLOYEES_PAYROLL', parentId: 'EMPLOYEES', name: 'Payroll', category: 'HR', description: 'Monthly salary disbursements, allowances, deductions & printable payslips' },
+    ],
   },
   {
     code: 'TRANSPORT',
-    name: 'Transport & Fleet Management',
-    category: 'Operations',
+    name: '9. Transport',
+    category: 'Fleet & Logistics',
     description: 'School bus fleet, transit routes, stops, driver rosters, and student transport passes.',
-    icon: 'M8 17a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4zM5 17H3V6a2 2 0 012-2h14a2 2 0 012 2v11h-2m-4 0H9m-6-6h18M8 4v7m8-7v7',
+  },
+  {
+    code: 'COMMUNICATION',
+    name: '10. Circulars & Notices',
+    category: 'Campus Broadcasts',
+    description: 'Institutional broadcasts, event announcements, holiday notices, and push circulars.',
+  },
+  {
+    code: 'COMPLAINTS',
+    name: '11. Grievance',
+    category: 'Helpdesk & Support',
+    description: 'Parent and guardian dispute tickets, tracking, responses, and resolution status.',
+  },
+  {
+    code: 'ID_CARD',
+    name: '12. ID Card',
+    category: 'Identity Studio',
+    description: 'Official CR80 PVC tamper-proof ID card studio with QR code verification.',
+    children: [
+      { code: 'ID_CARD_STUDENT', parentId: 'ID_CARD', name: 'Student ID', category: 'Identity', description: 'Batch print class student CR80 smart cards (9 per A4 sheet)' },
+      { code: 'ID_CARD_TEACHING', parentId: 'ID_CARD', name: 'Teaching Staff ID', category: 'Identity', description: 'Faculty credentials & designation smart cards' },
+      { code: 'ID_CARD_NON_TEACHING', parentId: 'ID_CARD', name: 'Non Teaching Staff ID', category: 'Identity', description: 'Departmental staff identity cards' },
+    ],
+  },
+  {
+    code: 'SUBSCRIPTION',
+    name: '13. Subscription',
+    category: 'Institutional SaaS',
+    description: 'Platform SaaS subscription billing, per-student monthly rate, and institution wallet.',
   },
 ];
 
@@ -1468,6 +1515,72 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
               </div>
             </div>
 
+            <!-- Campus Page & Module Permissions with Toggles -->
+            <div class="space-y-3 pt-3 border-t border-slate-100">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Module Permissions & Page Visibility</div>
+                  <p class="text-[11px] text-slate-500">Only enabled pages will be visible to this campus's users.</p>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <button (click)="grantAllNewSchoolServices()" type="button" class="px-2 py-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors cursor-pointer">
+                    Enable All (13)
+                  </button>
+                  <button (click)="restrictAllNewSchoolServices()" type="button" class="px-2 py-0.5 text-[10px] font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors cursor-pointer">
+                    Disable All
+                  </button>
+                </div>
+              </div>
+
+              <div class="space-y-2 max-h-64 overflow-y-auto p-1.5 pr-2 custom-clay-scroll border border-slate-200/80 rounded-2xl bg-slate-50/50">
+                <div *ngFor="let svc of availableServices" class="rounded-xl border border-slate-200 bg-white p-2.5 space-y-2">
+                  <!-- Parent Toggle Row -->
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="font-bold text-slate-800 text-xs truncate">{{ svc.name }}</div>
+                      <div class="text-[10px] text-slate-400 truncate">{{ svc.description }}</div>
+                    </div>
+                    <button (click)="toggleNewSchoolService(svc.code)"
+                            type="button"
+                            [class.bg-emerald-600]="isNewSchoolServiceAllowed(svc.code)"
+                            [class.bg-slate-300]="!isNewSchoolServiceAllowed(svc.code)"
+                            class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out">
+                      <span [class.translate-x-4]="isNewSchoolServiceAllowed(svc.code)"
+                            [class.translate-x-0]="!isNewSchoolServiceAllowed(svc.code)"
+                            class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition duration-200 ease-in-out"></span>
+                    </button>
+                  </div>
+
+                  <!-- Children Sub-Toggles -->
+                  <div *ngIf="svc.children && svc.children.length > 0" class="pl-2.5 border-l-2 border-slate-100 space-y-1.5 pt-1">
+                    <div *ngFor="let child of svc.children"
+                         class="flex items-center justify-between gap-2 py-1 px-2 rounded-lg transition-colors"
+                         [class.bg-slate-50]="!isNewSchoolServiceAllowed(child.code)"
+                         [class.bg-emerald-50]="isNewSchoolServiceAllowed(child.code)">
+                      <div class="flex items-center gap-1.5 min-w-0">
+                        <span class="text-slate-400 text-xs">•</span>
+                        <div class="min-w-0">
+                          <div class="font-semibold text-slate-700 text-[11px] truncate">{{ child.name }}</div>
+                          <div class="text-[9px] text-slate-400 truncate">{{ child.description }}</div>
+                        </div>
+                      </div>
+                      <button (click)="toggleNewSchoolService(child.code, svc.code)"
+                              type="button"
+                              [disabled]="!isNewSchoolServiceAllowed(svc.code)"
+                              [class.opacity-40]="!isNewSchoolServiceAllowed(svc.code)"
+                              [class.bg-emerald-600]="isNewSchoolServiceAllowed(child.code)"
+                              [class.bg-slate-300]="!isNewSchoolServiceAllowed(child.code)"
+                              class="relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out">
+                        <span [class.translate-x-3]="isNewSchoolServiceAllowed(child.code)"
+                              [class.translate-x-0]="!isNewSchoolServiceAllowed(child.code)"
+                              class="pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out"></span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
 
           <div class="px-6 sm:px-8 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between shrink-0">
@@ -1506,26 +1619,77 @@ const AVAILABLE_SERVICES: ServiceDefinition[] = [
             </button>
           </div>
 
-          <div class="p-6 sm:p-8 overflow-y-auto space-y-3 flex-1 text-xs">
+          <div class="px-6 sm:px-8 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between shrink-0">
+            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Configure 13 Core Pages & Modules</span>
+            <div class="flex items-center gap-2">
+              <button (click)="grantAllServices()" type="button" class="px-2.5 py-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors cursor-pointer">
+                ✓ Enable All (13)
+              </button>
+              <button (click)="restrictAllServices()" type="button" class="px-2.5 py-1 text-[11px] font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors cursor-pointer">
+                ✕ Disable All
+              </button>
+            </div>
+          </div>
+
+          <div class="p-6 sm:px-8 py-5 overflow-y-auto space-y-3 flex-1 text-xs custom-clay-scroll">
             <div *ngFor="let svc of availableServices"
-                 class="p-4 rounded-2xl border transition-all flex items-center justify-between gap-4"
+                 class="p-3.5 sm:p-4 rounded-2xl border transition-all space-y-2.5"
                  [class.bg-slate-50]="!isServiceAllowed(svc.code)"
                  [class.border-slate-200]="!isServiceAllowed(svc.code)"
                  [class.bg-white]="isServiceAllowed(svc.code)"
                  [class.border-emerald-200]="isServiceAllowed(svc.code)">
-              <div>
-                <div class="font-bold text-slate-900">{{ svc.name }}</div>
-                <div class="text-[11px] text-slate-500 mt-0.5">{{ svc.description }}</div>
+              
+              <!-- Parent Row -->
+              <div class="flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-2">
+                    <span>{{ svc.name }}</span>
+                    <span *ngIf="svc.children" class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                      {{ svc.children.length }} Sub-Pages
+                    </span>
+                  </div>
+                  <div class="text-[11px] text-slate-500 mt-0.5">{{ svc.description }}</div>
+                </div>
+                <button (click)="toggleService(svc.code)"
+                        type="button"
+                        [class.bg-emerald-600]="isServiceAllowed(svc.code)"
+                        [class.bg-slate-300]="!isServiceAllowed(svc.code)"
+                        class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out">
+                  <span [class.translate-x-5]="isServiceAllowed(svc.code)"
+                        [class.translate-x-0]="!isServiceAllowed(svc.code)"
+                        class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition duration-200 ease-in-out"></span>
+                </button>
               </div>
-              <button (click)="toggleService(svc.code)"
-                      type="button"
-                      [class.bg-emerald-600]="isServiceAllowed(svc.code)"
-                      [class.bg-slate-300]="!isServiceAllowed(svc.code)"
-                      class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out">
-                <span [class.translate-x-5]="isServiceAllowed(svc.code)"
-                      [class.translate-x-0]="!isServiceAllowed(svc.code)"
-                      class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition duration-200 ease-in-out"></span>
-              </button>
+
+              <!-- Children Sub-Toggles Row -->
+              <div *ngIf="svc.children && svc.children.length > 0" class="pt-2 border-t border-slate-100/90 space-y-1.5 pl-3">
+                <div *ngFor="let child of svc.children"
+                     class="p-2 sm:p-2.5 rounded-xl border flex items-center justify-between gap-2.5 transition-colors"
+                     [class.bg-slate-100]="!isServiceAllowed(child.code)"
+                     [class.border-slate-200]="!isServiceAllowed(child.code)"
+                     [class.bg-emerald-50]="isServiceAllowed(child.code)"
+                     [class.border-emerald-200]="isServiceAllowed(child.code)">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="text-slate-400 font-bold text-xs">•</span>
+                    <div class="min-w-0">
+                      <div class="font-bold text-slate-800 text-xs">{{ child.name }}</div>
+                      <div class="text-[10px] text-slate-500 truncate">{{ child.description }}</div>
+                    </div>
+                  </div>
+                  <button (click)="toggleService(child.code, svc.code)"
+                          type="button"
+                          [disabled]="!isServiceAllowed(svc.code)"
+                          [class.opacity-40]="!isServiceAllowed(svc.code)"
+                          [class.bg-emerald-600]="isServiceAllowed(child.code)"
+                          [class.bg-slate-300]="!isServiceAllowed(child.code)"
+                          class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out">
+                    <span [class.translate-x-4]="isServiceAllowed(child.code)"
+                          [class.translate-x-0]="!isServiceAllowed(child.code)"
+                          class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition duration-200 ease-in-out"></span>
+                  </button>
+                </div>
+              </div>
+
             </div>
           </div>
 
@@ -2198,6 +2362,7 @@ export class SuperAdminComponent implements OnInit {
     adminPhone: '',
     adminPassword: 'password123',
     perStudentFee: 20,
+    disabledServices: [] as string[],
   };
 
   // Getters for Analytics Tab
@@ -2942,6 +3107,7 @@ export class SuperAdminComponent implements OnInit {
       adminPhone: lead.phone || '',
       adminPassword: 'password123',
       perStudentFee: lead.targetRate || 20,
+      disabledServices: [],
     };
 
     this.closeLeadDiaryModal();
@@ -3038,6 +3204,7 @@ export class SuperAdminComponent implements OnInit {
       adminPhone: '+91 98765 12345',
       adminPassword: 'password123',
       perStudentFee: 20,
+      disabledServices: [],
     };
     this.onboardError = '';
     this.toast.info('Auto-filled sample school data!');
@@ -3090,16 +3257,125 @@ export class SuperAdminComponent implements OnInit {
     this.modalService.close();
   }
 
-  isServiceAllowed(code: string): boolean {
-    return !this.activeDisabledServices.includes(code);
+  private getParentServiceCode(code: string): string | null {
+    const parentMap: Record<string, string> = {
+      TIMETABLE_STUDENT: 'TIMETABLE',
+      TIMETABLE_FACULTY: 'TIMETABLE',
+      TIMETABLE_ACADEMIC: 'TIMETABLE',
+      ACADEMICS_CLASSES: 'ACADEMICS',
+      ACADEMICS_SUBJECTS: 'ACADEMICS',
+      ACADEMICS_STUDENTS: 'ACADEMICS',
+      EXAMS: 'ACADEMICS',
+      ACADEMICS_MARKSHEETS: 'ACADEMICS',
+      ACADEMICS_ALUMNI: 'ACADEMICS',
+      EMPLOYEES_TEACHING: 'EMPLOYEES',
+      EMPLOYEES_NON_TEACHING: 'EMPLOYEES',
+      EMPLOYEES_PAYROLL: 'EMPLOYEES',
+      ID_CARD_STUDENT: 'ID_CARD',
+      ID_CARD_TEACHING: 'ID_CARD',
+      ID_CARD_NON_TEACHING: 'ID_CARD',
+    };
+    return parentMap[code] || null;
   }
 
-  toggleService(code: string) {
-    if (this.activeDisabledServices.includes(code)) {
-      this.activeDisabledServices = this.activeDisabledServices.filter((c) => c !== code);
+  isServiceAllowed(code: string): boolean {
+    if (this.activeDisabledServices.includes(code)) return false;
+    const parent = this.getParentServiceCode(code);
+    if (parent && this.activeDisabledServices.includes(parent)) return false;
+    return true;
+  }
+
+  toggleService(code: string, parentCode?: string) {
+    const isCurrentlyAllowed = this.isServiceAllowed(code);
+    const svc = this.availableServices.find((s) => s.code === code);
+
+    if (svc && svc.children && svc.children.length > 0) {
+      if (isCurrentlyAllowed) {
+        // Parent turned off -> disable parent and all children
+        const toAdd = [code, ...svc.children.map((c) => c.code)];
+        this.activeDisabledServices = Array.from(new Set([...this.activeDisabledServices, ...toAdd]));
+      } else {
+        // Parent turned on -> enable parent and all children
+        const toRemove = new Set([code, ...svc.children.map((c) => c.code)]);
+        this.activeDisabledServices = this.activeDisabledServices.filter((c) => !toRemove.has(c));
+      }
     } else {
-      this.activeDisabledServices = [...this.activeDisabledServices, code];
+      if (isCurrentlyAllowed) {
+        // Child or standalone turned off
+        this.activeDisabledServices = Array.from(new Set([...this.activeDisabledServices, code]));
+      } else {
+        // Child or standalone turned on
+        this.activeDisabledServices = this.activeDisabledServices.filter((c) => c !== code);
+        if (parentCode) {
+          this.activeDisabledServices = this.activeDisabledServices.filter((c) => c !== parentCode);
+        }
+      }
     }
+  }
+
+  grantAllServices() {
+    this.activeDisabledServices = [];
+  }
+
+  restrictAllServices() {
+    const allCodes: string[] = [];
+    for (const s of this.availableServices) {
+      allCodes.push(s.code);
+      if (s.children) {
+        allCodes.push(...s.children.map((c) => c.code));
+      }
+    }
+    this.activeDisabledServices = allCodes;
+  }
+
+  // Onboard Modal Service Toggles
+  isNewSchoolServiceAllowed(code: string): boolean {
+    const disabled = this.newSchool.disabledServices || [];
+    if (disabled.includes(code)) return false;
+    const parent = this.getParentServiceCode(code);
+    if (parent && disabled.includes(parent)) return false;
+    return true;
+  }
+
+  toggleNewSchoolService(code: string, parentCode?: string) {
+    let disabled = [...(this.newSchool.disabledServices || [])];
+    const isAllowed = this.isNewSchoolServiceAllowed(code);
+    const svc = this.availableServices.find((s) => s.code === code);
+
+    if (svc && svc.children && svc.children.length > 0) {
+      if (isAllowed) {
+        const toAdd = [code, ...svc.children.map((c) => c.code)];
+        disabled = Array.from(new Set([...disabled, ...toAdd]));
+      } else {
+        const toRemove = new Set([code, ...svc.children.map((c) => c.code)]);
+        disabled = disabled.filter((c) => !toRemove.has(c));
+      }
+    } else {
+      if (isAllowed) {
+        disabled = Array.from(new Set([...disabled, code]));
+      } else {
+        disabled = disabled.filter((c) => c !== code);
+        if (parentCode) {
+          disabled = disabled.filter((c) => c !== parentCode);
+        }
+      }
+    }
+    this.newSchool.disabledServices = disabled;
+  }
+
+  grantAllNewSchoolServices() {
+    this.newSchool.disabledServices = [];
+  }
+
+  restrictAllNewSchoolServices() {
+    const allCodes: string[] = [];
+    for (const s of this.availableServices) {
+      allCodes.push(s.code);
+      if (s.children) {
+        allCodes.push(...s.children.map((c) => c.code));
+      }
+    }
+    this.newSchool.disabledServices = allCodes;
   }
 
   saveServices() {

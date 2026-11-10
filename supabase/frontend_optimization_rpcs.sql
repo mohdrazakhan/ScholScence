@@ -72,6 +72,7 @@ DECLARE
   v_today_absent INT := 0;
   v_today_late INT := 0;
   v_today_total_att INT := 0;
+  v_today_classes_marked INT := 0;
   v_attendance_pct TEXT := '0.0%';
   v_pending_complaints INT := 0;
   v_total_collected NUMERIC(12, 2) := 0.00;
@@ -192,6 +193,13 @@ BEGIN
     FROM public.attendance
    WHERE school_id = v_school_id AND date = v_today_date;
 
+  SELECT COUNT(DISTINCT COALESCE(s.class_id, se.class_id))
+    INTO v_today_classes_marked
+    FROM public.attendance a
+    LEFT JOIN public.sections s ON s.id = a.section_id
+    LEFT JOIN public.student_enrollments se ON se.student_id = a.student_id
+   WHERE a.school_id = v_school_id AND a.date = v_today_date;
+
   IF v_today_total_att > 0 THEN
     v_attendance_pct := ROUND(((v_today_present + v_today_late)::NUMERIC / v_today_total_att::NUMERIC) * 100, 1)::TEXT || '%';
   ELSE
@@ -297,6 +305,7 @@ BEGIN
       'totalDepartmentalStaff', v_total_staff,
       'attendanceTodayPercentage', v_attendance_pct,
       'attendanceMarkedCount', v_today_total_att,
+      'attendanceClassesMarkedCount', v_today_classes_marked,
       'attendancePresentCount', v_today_present,
       'attendanceAbsentCount', v_today_absent,
       'attendanceLateCount', v_today_late,

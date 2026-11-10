@@ -7,155 +7,214 @@ import { AuthResponse, User, AcademicSession } from '../models';
 export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: [
     'dashboard',
-    'academics',
-    'academics_classes',
-    'academics_students',
-    'academics_alumni',
-    'academics_staff',
-    'academics_subjects',
+    'attendance',
+    'homework',
     'timetable',
     'timetable_student',
     'timetable_faculty',
     'timetable_academic',
-    'attendance',
-    'homework',
+    'academics',
+    'academics_classes',
+    'academics_subjects',
+    'academics_students',
     'exams',
+    'academics_exams',
+    'academics_marksheets',
+    'academics_alumni',
+    'academics_staff',
+    'fees',
+    'documents',
+    'employees',
+    'employees_teaching',
+    'employees_non_teaching',
+    'employees_payroll',
+    'transport',
     'communication',
     'communication_notices',
+    'complaints',
     'communication_complaints',
+    'id_card',
+    'id_card_student',
+    'id_card_teaching',
+    'id_card_non_teaching',
     'subscription',
-    'fees',
-    'transport',
     'staff_users',
   ],
   SCHOOL_ADMIN: [
     'dashboard',
-    'academics',
-    'academics_classes',
-    'academics_students',
-    'academics_alumni',
-    'academics_staff',
-    'academics_subjects',
+    'attendance',
+    'homework',
     'timetable',
     'timetable_student',
     'timetable_faculty',
     'timetable_academic',
-    'attendance',
-    'homework',
+    'academics',
+    'academics_classes',
+    'academics_subjects',
+    'academics_students',
     'exams',
+    'academics_exams',
+    'academics_marksheets',
+    'academics_alumni',
+    'academics_staff',
+    'fees',
+    'documents',
+    'employees',
+    'employees_teaching',
+    'employees_non_teaching',
+    'employees_payroll',
+    'transport',
     'communication',
     'communication_notices',
+    'complaints',
     'communication_complaints',
+    'id_card',
+    'id_card_student',
+    'id_card_teaching',
+    'id_card_non_teaching',
     'subscription',
-    'fees',
-    'transport',
     'staff_users',
   ],
   PRINCIPAL: [
     'dashboard',
-    'academics',
-    'academics_classes',
-    'academics_students',
-    'academics_alumni',
-    'academics_staff',
-    'academics_subjects',
+    'attendance',
+    'homework',
     'timetable',
     'timetable_student',
     'timetable_faculty',
     'timetable_academic',
-    'attendance',
-    'homework',
+    'academics',
+    'academics_classes',
+    'academics_subjects',
+    'academics_students',
     'exams',
+    'academics_exams',
+    'academics_marksheets',
+    'academics_alumni',
+    'academics_staff',
+    'fees',
+    'documents',
+    'employees',
+    'employees_teaching',
+    'employees_non_teaching',
+    'employees_payroll',
+    'transport',
     'communication',
     'communication_notices',
+    'complaints',
     'communication_complaints',
+    'id_card',
+    'id_card_student',
+    'id_card_teaching',
+    'id_card_non_teaching',
     'subscription',
-    'fees',
-    'transport',
     'staff_users',
   ],
   CLASS_TEACHER: [
     'dashboard',
-    'academics',
-    'academics_classes',
-    'academics_students',
-    'academics_alumni',
-    'academics_subjects',
+    'attendance',
+    'homework',
     'timetable',
     'timetable_student',
     'timetable_faculty',
     'timetable_academic',
-    'attendance',
-    'homework',
+    'academics',
+    'academics_classes',
+    'academics_subjects',
+    'academics_students',
     'exams',
+    'academics_exams',
+    'academics_marksheets',
+    'academics_alumni',
+    'documents',
     'communication',
     'communication_notices',
+    'complaints',
     'communication_complaints',
+    'id_card',
+    'id_card_student',
+    'id_card_teaching',
   ],
   TEACHER: [
     'dashboard',
-    'academics',
-    'academics_subjects',
+    'attendance',
+    'homework',
     'timetable',
     'timetable_student',
     'timetable_faculty',
     'timetable_academic',
-    'attendance',
-    'homework',
+    'academics',
+    'academics_subjects',
     'exams',
+    'academics_exams',
+    'academics_marksheets',
+    'documents',
     'communication',
     'communication_notices',
+    'complaints',
     'communication_complaints',
+    'id_card',
+    'id_card_student',
+    'id_card_teaching',
   ],
   FEE_MANAGER: [
     'dashboard',
     'academics',
     'academics_students',
     'academics_alumni',
+    'fees',
+    'documents',
     'communication',
     'communication_notices',
-    'fees',
+    'id_card',
+    'id_card_student',
   ],
   TRANSPORT_MANAGER: [
     'dashboard',
     'academics',
     'academics_students',
+    'transport',
     'communication',
     'communication_notices',
-    'transport',
+    'id_card',
   ],
   GUARDIAN: [
     'dashboard',
+    'attendance',
+    'homework',
     'timetable',
     'timetable_student',
     'timetable_academic',
-    'attendance',
-    'homework',
     'exams',
+    'documents',
     'communication',
     'communication_notices',
+    'complaints',
     'communication_complaints',
   ],
   PARENT: [
     'dashboard',
+    'attendance',
+    'homework',
     'timetable',
     'timetable_student',
     'timetable_academic',
-    'attendance',
-    'homework',
     'exams',
+    'documents',
     'communication',
     'communication_notices',
+    'complaints',
     'communication_complaints',
   ],
   STUDENT: [
     'dashboard',
+    'attendance',
+    'homework',
     'timetable',
     'timetable_student',
     'timetable_academic',
-    'attendance',
-    'homework',
     'exams',
+    'documents',
     'communication',
     'communication_notices',
   ],
@@ -359,9 +418,17 @@ export class AuthService {
         academics_alumni: 'academics',
         academics_staff: 'academics',
         academics_subjects: 'academics',
+        academics_exams: 'academics',
+        academics_marksheets: 'academics',
         timetable_student: 'timetable',
         timetable_faculty: 'timetable',
         timetable_academic: 'timetable',
+        employees_teaching: 'employees',
+        employees_non_teaching: 'employees',
+        employees_payroll: 'employees',
+        id_card_student: 'id_card',
+        id_card_teaching: 'id_card',
+        id_card_non_teaching: 'id_card',
         communication_notices: 'communication',
         communication_complaints: 'communication',
       };
@@ -382,9 +449,17 @@ export class AuthService {
       academics_alumni: 'academics',
       academics_staff: 'academics',
       academics_subjects: 'academics',
+      academics_exams: 'academics',
+      academics_marksheets: 'academics',
       timetable_student: 'timetable',
       timetable_faculty: 'timetable',
       timetable_academic: 'timetable',
+      employees_teaching: 'employees',
+      employees_non_teaching: 'employees',
+      employees_payroll: 'employees',
+      id_card_student: 'id_card',
+      id_card_teaching: 'id_card',
+      id_card_non_teaching: 'id_card',
       communication_notices: 'communication',
       communication_complaints: 'communication',
     };
@@ -411,11 +486,16 @@ export class AuthService {
     if (clean === 'subjects') return 'academics_subjects';
     if (clean === 'complaints') return 'communication_complaints';
     if (clean === 'notices') return 'communication_notices';
+    if (clean === 'teaching_staff' || clean === 'employees_teaching') return 'academics_staff';
+    if (clean === 'non_teaching_staff' || clean === 'employees_non_teaching') return 'staff_users';
+    if (clean === 'exams' || clean === 'exam' || clean === 'academics_exams' || clean === 'academics_marksheets') return 'exams';
     return clean;
   }
 
   isServiceEnabled(serviceCode: string): boolean {
     const code = (serviceCode || '').toUpperCase().trim();
+    if (!code) return true;
+
     const user = this.currentUser();
     const schoolId = user?.school?.id;
     let disabled: string[] = user?.school?.disabledServices || [];
@@ -429,7 +509,34 @@ export class AuthService {
       } catch {}
     }
 
-    if (disabled.map((d) => String(d).toUpperCase()).includes(code)) {
+    const disabledUpper = disabled.map((d) => String(d).toUpperCase().trim());
+
+    // 1. Direct match: is this service code disabled by super admin?
+    if (disabledUpper.includes(code)) {
+      return false;
+    }
+
+    // 2. Parent-child hierarchy match: if parent service is disabled, child is automatically disabled
+    const parentMap: Record<string, string> = {
+      TIMETABLE_STUDENT: 'TIMETABLE',
+      TIMETABLE_FACULTY: 'TIMETABLE',
+      TIMETABLE_ACADEMIC: 'TIMETABLE',
+      ACADEMICS_CLASSES: 'ACADEMICS',
+      ACADEMICS_SUBJECTS: 'ACADEMICS',
+      ACADEMICS_STUDENTS: 'ACADEMICS',
+      EXAMS: 'ACADEMICS',
+      ACADEMICS_MARKSHEETS: 'ACADEMICS',
+      ACADEMICS_ALUMNI: 'ACADEMICS',
+      EMPLOYEES_TEACHING: 'EMPLOYEES',
+      EMPLOYEES_NON_TEACHING: 'EMPLOYEES',
+      EMPLOYEES_PAYROLL: 'EMPLOYEES',
+      ID_CARD_STUDENT: 'ID_CARD',
+      ID_CARD_TEACHING: 'ID_CARD',
+      ID_CARD_NON_TEACHING: 'ID_CARD',
+    };
+
+    const parentCode = parentMap[code];
+    if (parentCode && disabledUpper.includes(parentCode)) {
       return false;
     }
 
@@ -437,17 +544,34 @@ export class AuthService {
     if (role === 'SUPER_ADMIN' || role === 'PLATFORM_ADMIN' || role === 'BINARY') return true;
 
     const serviceToSectionMap: Record<string, string> = {
+      DASHBOARD: 'dashboard',
       TIMETABLE: 'timetable',
+      TIMETABLE_STUDENT: 'timetable',
+      TIMETABLE_FACULTY: 'timetable',
+      TIMETABLE_ACADEMIC: 'timetable',
       ATTENDANCE: 'attendance',
       HOMEWORK: 'homework',
+      ACADEMICS: 'academics',
+      ACADEMICS_CLASSES: 'academics_classes',
+      ACADEMICS_SUBJECTS: 'academics_subjects',
+      ACADEMICS_STUDENTS: 'academics_students',
       EXAMS: 'exams',
+      ACADEMICS_MARKSHEETS: 'exams',
+      ACADEMICS_ALUMNI: 'academics_alumni',
+      FEES: 'fees',
+      DOCUMENTS: 'documents',
+      EMPLOYEES: 'employees',
+      EMPLOYEES_TEACHING: 'academics_staff',
+      EMPLOYEES_NON_TEACHING: 'staff_users',
+      EMPLOYEES_PAYROLL: 'staff_users',
+      TRANSPORT: 'transport',
       COMMUNICATION: 'communication',
       COMPLAINTS: 'communication_complaints',
-      ACADEMICS: 'academics',
+      ID_CARD: 'id_card',
+      ID_CARD_STUDENT: 'id_card',
+      ID_CARD_TEACHING: 'id_card',
+      ID_CARD_NON_TEACHING: 'id_card',
       SUBSCRIPTION: 'subscription',
-      FEES: 'fees',
-      TRANSPORT: 'transport',
-      STAFF_USERS: 'staff_users',
     };
 
     const sectionId = serviceToSectionMap[code];
@@ -1258,6 +1382,19 @@ export class AuthService {
     const adminPhone = payload.adminPhone ? payload.adminPhone.trim() : null;
     const adminPassword = payload.adminPassword || 'password123';
 
+    const saveDisabledServices = (sId: string) => {
+      if (sId && Array.isArray(payload.disabledServices)) {
+        try {
+          const localProfiles = JSON.parse(localStorage.getItem('schoolsense_school_profiles') || '{}');
+          localProfiles[sId] = {
+            ...(localProfiles[sId] || {}),
+            disabledServices: [...payload.disabledServices],
+          };
+          localStorage.setItem('schoolsense_school_profiles', JSON.stringify(localProfiles));
+        } catch {}
+      }
+    };
+
     // 1. Try RPC with 15 arguments (including p_per_student_fee)
     try {
       const { data, error } = await this.supabase.rpc('onboard_school_tenant', {
@@ -1279,9 +1416,13 @@ export class AuthService {
       });
 
       if (!error && data) {
-        if (adminEmail && (data.schoolId || data.school_id)) {
+        const sId = data.schoolId || data.school_id;
+        if (sId) {
+          saveDisabledServices(sId);
+        }
+        if (adminEmail && sId) {
           await this.ensureSchoolAdminLinked(
-            data.schoolId || data.school_id,
+            sId,
             adminEmail,
             adminFirstName,
             adminLastName,
@@ -1317,6 +1458,7 @@ export class AuthService {
       if (!error && data) {
         const targetSchoolId = data.schoolId || data.school_id;
         if (targetSchoolId) {
+          saveDisabledServices(targetSchoolId);
           try {
             await this.supabase
               .from('school_subscriptions')
@@ -1427,6 +1569,8 @@ export class AuthService {
         };
         localStorage.setItem('schoolsense_saas_subscriptions', JSON.stringify(subs));
       } catch {}
+
+      saveDisabledServices(schoolId);
 
       // E. Create School Admin User & Role Assignment
       if (adminEmail) {

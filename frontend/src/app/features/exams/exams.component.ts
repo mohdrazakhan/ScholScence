@@ -1,10 +1,12 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ExportService } from '../../core/services/export.service';
+import { DocumentService } from '../../core/services/document.service';
 import { Exam, ClassItem } from '../../core/models';
 
 interface FlatSection {
@@ -197,16 +199,27 @@ interface StudentMarkRow {
               </table>
             </div>
 
-            <!-- Grade Scale Legend Footer -->
-            <div class="p-4 border-t border-slate-100 bg-[#f8fafc] flex items-center justify-between text-[11px] text-slate-500 flex-wrap gap-2">
-              <span class="font-bold text-slate-700">CBSE 9-Point Grading Scale:</span>
-              <div class="flex items-center gap-3 font-medium">
+            <!-- Grade Scale Legend Footer & Official QR Seal -->
+            <div class="p-4 border-t border-slate-100 bg-[#f8fafc] flex items-center justify-between text-[11px] text-slate-500 flex-wrap gap-3">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 p-0.5 bg-white border border-slate-200 rounded-lg shrink-0 flex items-center justify-center">
+                  <img *ngIf="reportCardQrUrl" [src]="reportCardQrUrl" class="w-full h-full object-contain" alt="QR">
+                  <span *ngIf="!reportCardQrUrl" class="text-[8px] text-slate-400">QR</span>
+                </div>
+                <div>
+                  <span class="font-bold text-slate-800 block text-[10px] uppercase">Official Tamper-Proof Marksheet</span>
+                  <span class="text-[9px] text-indigo-600 font-mono">Ref: DHA/2026-27/MRK-{{ parentReport.student?.admissionNumber || '001' }}</span>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 font-medium text-[10px]">
+                <span class="font-bold text-slate-700">CBSE Scale:</span>
                 <span><strong class="text-slate-800">A1:</strong> 91-100</span>
                 <span><strong class="text-slate-800">A2:</strong> 81-90</span>
                 <span><strong class="text-slate-800">B1:</strong> 71-80</span>
                 <span><strong class="text-slate-800">B2:</strong> 61-70</span>
                 <span><strong class="text-slate-800">C1:</strong> 51-60</span>
-                <span><strong class="text-slate-800">D:</strong> 33-40 (Pass)</span>
+                <span><strong class="text-slate-800">D:</strong> Pass</span>
               </div>
             </div>
           </div>
@@ -352,7 +365,7 @@ interface StudentMarkRow {
         </div>
 
         <!-- Marksheet Table Section -->
-        <div *ngIf="selectedExamSubject" class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] overflow-hidden space-y-0">
+        <div id="marksheet-section" *ngIf="selectedExamSubject" class="bg-white rounded-3xl border border-slate-200/80 shadow-[6px_6px_16px_#d9e2ec,-6px_-6px_16px_#ffffff] overflow-hidden space-y-0">
           <!-- Marksheet Header & KPIs -->
           <div class="p-5 sm:p-6 border-b border-slate-100 bg-[#f8fafc] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
@@ -582,6 +595,28 @@ interface StudentMarkRow {
                 </span>
               </div>
             </div>
+
+            <!-- Official Anti-Fraud QR Verification Banner -->
+            <div class="p-3.5 bg-indigo-50/70 rounded-2xl border border-indigo-100 flex items-center justify-between gap-4">
+              <div class="flex items-center gap-3">
+                <div class="w-14 h-14 p-1 bg-white border border-indigo-200 rounded-xl shadow-xs shrink-0 flex items-center justify-center">
+                  <img *ngIf="reportCardQrUrl" [src]="reportCardQrUrl" class="w-full h-full object-contain" alt="QR">
+                  <span *ngIf="!reportCardQrUrl" class="text-[9px] text-slate-400">QR</span>
+                </div>
+                <div>
+                  <span class="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                    <span>🛡️ Verified Digital Marksheet</span>
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-700">Official</span>
+                  </span>
+                  <p class="text-[10px] text-slate-600 mt-0.5">
+                    Scan with any smartphone camera to verify authentic grades on SchoolSense Registry.
+                  </p>
+                  <span class="text-[9px] font-mono text-indigo-700 block font-semibold mt-0.5">
+                    Serial: DHA/2026-27/MRK-{{ studentReport.student.admissionNumber || '001' }}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
@@ -605,7 +640,9 @@ export class ExamsComponent implements OnInit {
   auth = inject(AuthService);
   toast = inject(ToastService);
   exporter = inject(ExportService);
+  documentService = inject(DocumentService);
   Math = Math;
+  reportCardQrUrl = '';
 
   exams: Exam[] = [];
   selectedExamId = '';
@@ -635,8 +672,18 @@ export class ExamsComponent implements OnInit {
     return this.auth.currentUser()?.children || [];
   }
 
+  private route = inject(ActivatedRoute);
+
   ngOnInit() {
     if (!this.auth.isServiceEnabled('EXAMS')) return;
+    this.route.queryParams.subscribe((params) => {
+      if (params['tab'] === 'marksheets') {
+        setTimeout(() => {
+          const el = document.getElementById('marksheet-section');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }, 350);
+      }
+    });
     if (this.auth.isParent()) {
       if (this.parentChildren.length > 0) {
         this.selectedChildId = this.parentChildren[0].id;
@@ -668,6 +715,8 @@ export class ExamsComponent implements OnInit {
       next: (res) => {
         this.parentReport = res;
         this.loadingParentReport = false;
+        const verifyUrl = `${window.location.origin}/verify/DHA-MRK-${res?.student?.admissionNumber || this.selectedChildId}`;
+        this.documentService.generateQRCodeDataUrl(verifyUrl).then((qr) => (this.reportCardQrUrl = qr));
       },
       error: () => {
         this.loadingParentReport = false;
@@ -928,6 +977,9 @@ export class ExamsComponent implements OnInit {
       next: (res) => {
         this.studentReport = res;
         this.showReportModal = true;
+        this.reportCardQrUrl = '';
+        const verifyUrl = `${window.location.origin}/verify/DHA-MRK-${res?.student?.admissionNumber || studentId}`;
+        this.documentService.generateQRCodeDataUrl(verifyUrl).then((qr) => (this.reportCardQrUrl = qr));
       },
       error: () => this.toast.error('Could not load student report card'),
     });
